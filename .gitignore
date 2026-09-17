@@ -1,0 +1,18 @@
+# PlatformIO
+.pio
+.vscode/
+
+# Node.js / Web App
+node_modules/
+web/node_modules/
+web/dist/
+
+# Temporary / Generated Artifacts
+src/previews/
+*.log
+*.tmp
+
+# User Media Inputs (Keep codebase lightweight)
+*.mp4
+*.mov
+*.avi

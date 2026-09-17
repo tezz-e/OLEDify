@@ -1,0 +1,22 @@
+# Orchestrator Master Plan
+
+## Objective
+Deliver a production-ready, fully verified web-based OLED Visual Animation Engine & Converter (Vite + React) + ESP32-S3 firmware/streaming support matching all specifications in ORIGINAL_REQUEST.md.
+
+## Phases
+1. **Survey (Phase 0)**:
+   - Explorer 1: Inspect existing project root files (`convert_reel.py`, `igexport-DckvRqKPsI_.mp4`, `platformio.ini`, `src/`, `include/`, `lib/`, `test/`) to understand existing firmware, pinouts, dependencies, and conversion scripts.
+   - Explorer 2: Technical analysis of Web Engine requirements (Vite + React, drag-drop parser for MP4/GIF/WebM/PNG sequences, 128x64 crop/scale canvas, Atkinson/Floyd-Steinberg/Bayer/Threshold dithering algorithms, simulated monochrome OLED canvas player 15-30 FPS).
+   - Explorer 3: Technical analysis of WebSerial USB communication protocol, C++ PROGMEM frames.h XBMP/RLE code generation, and Phase 2 procedural primitives (Text Typewriter/Bounce lyrics, Glitch Shader FX XOR noise/row tear, Starfield/Particle explosion).
+2. **Decomposition & Architecture (Phase 1)**:
+   - Deduplicate and merge survey findings into `PROJECT.md` Feature Inventory.
+   - Partition into modular milestones (e.g., M1: Core Web Engine & UI, M2: Dithering & Procedural Primitives, M3: WebSerial & C++ Exporter / ESP32-S3 Firmware).
+   - Define interface contracts between web app and ESP32-S3 firmware.
+3. **Dual-Track Execution (Phase 2)**:
+   - Implementation Track: Dispatch sub-orchestrators for milestones.
+   - E2E Testing Track: Dispatch E2E Testing Orchestrator to build comprehensive opaque-box test runner and test suites (Tiers 1-4).
+4. **Integration & Final Verification (Phase 3 & 4)**:
+   - 100% pass on E2E test suite.
+   - Adversarial coverage hardening (Tier 5).
+   - Forensic integrity audit.
+   - Sentinel handoff.
