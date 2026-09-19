@@ -22,6 +22,7 @@ export default function App() {
   // --- STATE ---
   // Media & Playback
   const [media, setMedia] = useState<DecodedMedia | null>(null);
+  const [rawMedia, setRawMedia] = useState<DecodedMedia | null>(null);
   const [activeFrameIndex, setActiveFrameIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [targetFps, setTargetFps] = useState(30);
@@ -55,28 +56,55 @@ export default function App() {
   const lastStreamTime = useRef(0);
 
   // --- INITIALIZATION ---
-  useEffect(() => {
-    if (media && media.frames.length > 0) {
-      setTrimRange({ start: 0, end: media.frames.length - 1 });
-      setActiveFrameIndex(0);
-      setCropSettings(prev => {
-        const cover = computeCoverCrop(media.sourceInfo.sourceWidth, media.sourceInfo.sourceHeight);
-        return {
-          ...prev,
-          sourceWidth: media.sourceInfo.sourceWidth,
-          sourceHeight: media.sourceInfo.sourceHeight,
-          x: cover.x,
-          y: cover.y,
-          width: cover.width,
-          height: cover.height
-        };
-      });
-    }
-  }, [media]);
+  const handleMediaLoaded = (newMedia: DecodedMedia) => {
+    setRawMedia(newMedia);
+    setMedia(newMedia);
+    setTrimRange({ start: 0, end: newMedia.frames.length - 1 });
+    setActiveFrameIndex(0);
+    setCropSettings(prev => {
+      const cover = computeCoverCrop(newMedia.sourceInfo.sourceWidth, newMedia.sourceInfo.sourceHeight);
+      return {
+        ...prev,
+        sourceWidth: newMedia.sourceInfo.sourceWidth,
+        sourceHeight: newMedia.sourceInfo.sourceHeight,
+        x: cover.x,
+        y: cover.y,
+        width: cover.width,
+        height: cover.height
+      };
+    });
+  };
+
+  const handleApplyTrim = (start: number, end: number) => {
+    if (!media) return;
+    setIsPlaying(false);
+    const slicedFrames = media.frames.slice(start, end + 1).map((f, i) => ({
+      ...f,
+      index: i
+    }));
+    setMedia({
+      ...media,
+      frames: slicedFrames,
+      sourceInfo: {
+        ...media.sourceInfo,
+        frameCount: slicedFrames.length
+      }
+    });
+    setActiveFrameIndex(0);
+    setTrimRange({ start: 0, end: slicedFrames.length - 1 });
+  };
+
+  const handleResetTrim = () => {
+    if (!rawMedia) return;
+    setIsPlaying(false);
+    setMedia(rawMedia);
+    setActiveFrameIndex(0);
+    setTrimRange({ start: 0, end: rawMedia.frames.length - 1 });
+  };
 
   // --- PLAYBACK ENGINE ---
   useEffect(() => {
-    if (!isPlaying || !media) return;
+    if (!isPlaying || !media || media.frames.length === 0) return;
     let lastTime = 0;
     let accumulator = 0;
     const frameInterval = 1000 / targetFps;
@@ -94,38 +122,33 @@ export default function App() {
       }
 
       if (framesToAdvance > 0) {
-        setActiveFrameIndex(prev => {
-          let next = prev + framesToAdvance;
-          if (next > trimRange.end) {
-            next = trimRange.start + ((next - trimRange.start) % (trimRange.end - trimRange.start + 1));
-          }
-          return next;
-        });
+        setActiveFrameIndex(prev => (prev + framesToAdvance) % media.frames.length);
       }
       rafId = requestAnimationFrame(tick);
     };
 
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
-  }, [isPlaying, media, targetFps, trimRange]);
+  }, [isPlaying, media, targetFps]);
 
   // --- KEYBOARD SHORTCUTS ---
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (!media) return;
       if (e.code === 'Space') {
         e.preventDefault();
         setIsPlaying(p => !p);
       } else if (e.code === 'ArrowLeft') {
         setIsPlaying(false);
-        setActiveFrameIndex(p => Math.max(trimRange.start, p - 1));
+        setActiveFrameIndex(p => Math.max(0, p - 1));
       } else if (e.code === 'ArrowRight') {
         setIsPlaying(false);
-        setActiveFrameIndex(p => Math.min(trimRange.end, p + 1));
+        setActiveFrameIndex(p => Math.min(media.frames.length - 1, p + 1));
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [trimRange]);
+  }, [media]);
 
   // --- PROCESSING PIPELINE ---
   useEffect(() => {
@@ -166,16 +189,13 @@ export default function App() {
 
   const handleExport = () => {
     if (!media) return;
-    const activeFrames = media.frames.slice(trimRange.start, trimRange.end + 1);
-    
-    const croppedAndDithered = activeFrames.map(f => {
+    const croppedAndDithered = media.frames.map(f => {
       const sourceCanvas = imageDataToCanvas(f.imageData);
       const cropped128x64 = renderCropTo128x64(sourceCanvas, cropSettings);
       return applyDithering(cropped128x64, ditherConfig);
     });
 
     const xbmpFrames = croppedAndDithered.map(res => res.xbmpBytes);
-    const ditheredImages = croppedAndDithered.map(res => res.ditheredImageData);
 
     const code = generateCppHeader(xbmpFrames, targetFps, hardwareConfig);
     setCppCode(code);
@@ -196,11 +216,10 @@ export default function App() {
       <main className="flex-1 flex min-h-0">
         {/* Left: Source Panel */}
         <aside className="w-[220px] border-r border-oled-border flex flex-col shrink-0">
-          <DropZone onMediaLoaded={setMedia} currentMedia={media} />
+          <DropZone onMediaLoaded={handleMediaLoaded} currentMedia={media} />
           <FrameStrip 
             media={media} 
             activeFrameIndex={activeFrameIndex} 
-            trimRange={trimRange}
             onFrameSelect={(i) => {
               setIsPlaying(false);
               setActiveFrameIndex(i);
@@ -224,9 +243,8 @@ export default function App() {
             }}
             onReset={() => {
               setIsPlaying(false);
-              setActiveFrameIndex(trimRange.start);
+              setActiveFrameIndex(0);
             }}
-            trimRange={trimRange}
           />
         </section>
 
@@ -259,13 +277,9 @@ export default function App() {
             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Trim Sequence</h2>
             <TrimControls 
               totalFrames={media ? media.frames.length : 0} 
-              trimRange={trimRange}
-              onTrim={(start, end) => {
-                setTrimRange({ start, end });
-                if (activeFrameIndex < start || activeFrameIndex > end) {
-                  setActiveFrameIndex(start);
-                }
-              }}
+              originalTotalFrames={rawMedia ? rawMedia.frames.length : undefined}
+              onApplyTrim={handleApplyTrim}
+              onResetTrim={handleResetTrim}
               onFrameSeek={(f) => {
                 setIsPlaying(false);
                 setActiveFrameIndex(f);

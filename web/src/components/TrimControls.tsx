@@ -2,36 +2,43 @@ import React, { useState, useEffect } from 'react';
 
 interface TrimControlsProps {
   totalFrames: number;
-  trimRange?: { start: number; end: number };
-  onTrim: (start: number, end: number) => void;
+  originalTotalFrames?: number;
+  onApplyTrim: (start: number, end: number) => void;
+  onResetTrim?: () => void;
   onFrameSeek: (frameIndex: number) => void;
   disabled?: boolean;
 }
 
-export const TrimControls: React.FC<TrimControlsProps> = ({ totalFrames, trimRange, onTrim, onFrameSeek, disabled }) => {
+export const TrimControls: React.FC<TrimControlsProps> = ({
+  totalFrames,
+  originalTotalFrames,
+  onApplyTrim,
+  onResetTrim,
+  onFrameSeek,
+  disabled
+}) => {
   const [startFrame, setStartFrame] = useState(0);
   const [endFrame, setEndFrame] = useState(totalFrames > 0 ? totalFrames - 1 : 0);
   const [justApplied, setJustApplied] = useState(false);
 
   useEffect(() => {
-    if (trimRange) {
-      setStartFrame(trimRange.start);
-      setEndFrame(trimRange.end);
-    } else if (totalFrames > 0) {
+    if (totalFrames > 0) {
       setStartFrame(0);
       setEndFrame(totalFrames - 1);
     }
-  }, [totalFrames, trimRange?.start, trimRange?.end]);
+  }, [totalFrames]);
 
   const handleApply = () => {
     if (startFrame <= endFrame) {
-      onTrim(startFrame, endFrame);
+      onApplyTrim(startFrame, endFrame);
       setJustApplied(true);
       setTimeout(() => setJustApplied(false), 1200);
     }
   };
 
   if (totalFrames === 0) return null;
+
+  const isTrimmed = originalTotalFrames !== undefined && totalFrames < originalTotalFrames;
 
   return (
     <div className={`space-y-4 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
@@ -73,19 +80,34 @@ export const TrimControls: React.FC<TrimControlsProps> = ({ totalFrames, trimRan
         />
       </div>
 
-      <button
-        onClick={handleApply}
-        className={`w-full py-1.5 rounded text-xs font-medium transition-all ${
-          justApplied 
-            ? 'bg-emerald-600 text-white border border-emerald-500 shadow-sm shadow-emerald-900/50' 
-            : 'bg-oled-panel border border-oled-border text-slate-200 hover:bg-oled-border-bright hover:text-white'
-        }`}
-      >
-        {justApplied ? '✓ Trim Applied' : 'Apply Trim'}
-      </button>
+      <div className="flex gap-2">
+        <button
+          onClick={handleApply}
+          className={`flex-1 py-1.5 rounded text-xs font-medium transition-all ${
+            justApplied 
+              ? 'bg-emerald-600 text-white border border-emerald-500 shadow-sm shadow-emerald-900/50' 
+              : 'bg-oled-panel border border-oled-border text-slate-200 hover:bg-oled-border-bright hover:text-white'
+          }`}
+        >
+          {justApplied ? '✓ Trimmed!' : 'Apply Trim'}
+        </button>
+
+        {isTrimmed && onResetTrim && (
+          <button
+            onClick={onResetTrim}
+            className="px-3 py-1.5 rounded text-xs font-medium bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+            title="Reset to original un-trimmed media"
+          >
+            Reset
+          </button>
+        )}
+      </div>
 
       <div className="text-[10px] font-mono text-slate-500 text-center">
-        Selected: {endFrame - startFrame + 1} / {totalFrames} frames
+        {isTrimmed 
+          ? `Active Trim: ${totalFrames} frames (Original: ${originalTotalFrames})` 
+          : `Selected Range: ${endFrame - startFrame + 1} / ${totalFrames} frames`
+        }
       </div>
     </div>
   );
