@@ -14,8 +14,9 @@ import { DecodedMedia, CropSettings } from './types/media';
 import { DitherConfig, PhosphorTheme } from './types/dither';
 import { HardwareConfig } from './types/oled';
 
-import { ditherFrame } from './engine/ditherEngine';
-import { streamFrame, connectToSerial, generateFramesHeader } from './engine/webSerialStreamer';
+import { applyDithering, generateCppHeader } from './engine/ditherEngine';
+import { serialStreamer } from './engine/webSerialStreamer';
+import { renderCropTo128x64, imageDataToCanvas } from './engine/cropEngine';
 
 export default function App() {
   // --- STATE ---
@@ -49,9 +50,8 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [cppCode, setCppCode] = useState('');
+  const [exportFrames, setExportFrames] = useState<ImageData[]>([]);
 
-  // Port reference
-  const portRef = useRef<SerialPort | null>(null);
   const lastStreamTime = useRef(0);
 
   // --- INITIALIZATION ---
@@ -128,30 +128,30 @@ export default function App() {
     }
     const sourceFrame = media.frames[activeFrameIndex].imageData;
     
-    // In a real implementation, crop is applied before dither.
-    // For this simple pipeline, we assume crop is baked in or handled by a separate offscreen canvas.
-    // Here we just dither the frame.
-    const result = ditherFrame(sourceFrame, ditherConfig);
-    setProcessedFrame(result);
+    // Crop & scale to 128x64
+    const sourceCanvas = imageDataToCanvas(sourceFrame);
+    const cropped128x64 = renderCropTo128x64(sourceCanvas, cropSettings);
+    
+    // Apply dithering
+    const { ditheredImageData, xbmpBytes } = applyDithering(cropped128x64, ditherConfig);
+    setProcessedFrame(ditheredImageData);
 
     // Hardware Stream (Throttled)
     const now = performance.now();
-    if (portRef.current && serialConnected && (now - lastStreamTime.current > 1000 / targetFps)) {
+    if (serialStreamer.getConnected() && (now - lastStreamTime.current > 1000 / targetFps)) {
       lastStreamTime.current = now;
-      streamFrame(result, portRef.current).catch(console.error);
+      serialStreamer.sendFrame(xbmpBytes);
     }
   }, [media, activeFrameIndex, ditherConfig, cropSettings, serialConnected, targetFps]);
 
   // --- ACTIONS ---
   const handleSerialToggle = async () => {
-    if (serialConnected && portRef.current) {
-      await portRef.current.close();
-      portRef.current = null;
+    if (serialConnected) {
+      await serialStreamer.disconnect();
       setSerialConnected(false);
     } else {
-      const port = await connectToSerial();
-      if (port) {
-        portRef.current = port;
+      const success = await serialStreamer.connect();
+      if (success) {
         setSerialConnected(true);
       }
     }
@@ -159,9 +159,20 @@ export default function App() {
 
   const handleExport = () => {
     if (!media) return;
-    const frames = media.frames.slice(trimRange.start, trimRange.end + 1).map(f => f.imageData);
-    const code = generateFramesHeader(frames, targetFps, ditherConfig);
+    const activeFrames = media.frames.slice(trimRange.start, trimRange.end + 1);
+    
+    const croppedAndDithered = activeFrames.map(f => {
+      const sourceCanvas = imageDataToCanvas(f.imageData);
+      const cropped128x64 = renderCropTo128x64(sourceCanvas, cropSettings);
+      return applyDithering(cropped128x64, ditherConfig);
+    });
+
+    const xbmpFrames = croppedAndDithered.map(res => res.xbmpBytes);
+    const ditheredImages = croppedAndDithered.map(res => res.ditheredImageData);
+
+    const code = generateCppHeader(xbmpFrames, targetFps, hardwareConfig);
     setCppCode(code);
+    setExportFrames(ditheredImages);
     setExportModalOpen(true);
   };
 
@@ -267,7 +278,7 @@ export default function App() {
         cppCode={cppCode} 
         frameCount={trimRange.end - trimRange.start + 1}
         targetFps={targetFps}
-        frames={media ? media.frames.slice(trimRange.start, trimRange.end + 1).map(f => f.imageData) : []}
+        frames={exportFrames}
       />
     </div>
   );
