@@ -265,7 +265,9 @@ export default function App() {
         isOpen={exportModalOpen} 
         onClose={() => setExportModalOpen(false)} 
         cppCode={cppCode} 
-        frameCount={trimRange.end - trimRange.start + 1} 
+        frameCount={trimRange.end - trimRange.start + 1}
+        targetFps={targetFps}
+        frames={media ? media.frames.slice(trimRange.start, trimRange.end + 1).map(f => f.imageData) : []}
       />
     </div>
   );

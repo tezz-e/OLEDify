@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { X, Copy, Download, Save, Check } from 'lucide-react';
+import { X, Copy, Download, Save, Check, Zap } from 'lucide-react';
+import { flashAnimationToDevice } from '../engine/flasher';
 
 interface ExportModalProps {
   isOpen: boolean;
   onClose: () => void;
   cppCode: string;
   frameCount: number;
+  targetFps: number;
+  frames: ImageData[];
 }
 
 export const ExportModal: React.FC<ExportModalProps> = ({
@@ -13,10 +16,13 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   onClose,
   cppCode,
   frameCount,
+  targetFps,
+  frames,
 }) => {
-  const [activeTab, setActiveTab] = useState<'save' | 'download' | 'copy'>('save');
+  const [activeTab, setActiveTab] = useState<'flash' | 'save' | 'download' | 'copy'>('flash');
   const [copied, setCopied] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [flashStatus, setFlashStatus] = useState<'idle' | 'flashing' | 'flashed' | 'error'>('idle');
 
   if (!isOpen) return null;
 
@@ -55,6 +61,18 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     }
   };
 
+  const handleFlash = async () => {
+    try {
+      setFlashStatus('flashing');
+      await flashAnimationToDevice(frames, targetFps);
+      setFlashStatus('flashed');
+      setTimeout(() => setFlashStatus('idle'), 3000);
+    } catch (err) {
+      console.error(err);
+      setFlashStatus('error');
+    }
+  };
+
   const previewLines = cppCode.split('\n').slice(0, 15).join('\n') + '\n... (truncated)';
 
   return (
@@ -72,6 +90,23 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         <div className="p-4 flex flex-col md:flex-row gap-6">
           {/* Actions Sidebar */}
           <div className="w-full md:w-48 space-y-2 shrink-0">
+            <button
+              onClick={() => { setActiveTab('flash'); handleFlash(); }}
+              disabled={flashStatus === 'flashing'}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-medium transition-colors border ${
+                activeTab === 'flash' 
+                  ? 'bg-amber-500/20 border-amber-500/40 text-amber-400' 
+                  : 'bg-oled-panel border-oled-border text-slate-300 hover:bg-oled-border-bright'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                {flashStatus === 'flashed' ? <Check className="w-4 h-4 text-emerald-400" /> : <Zap className="w-4 h-4" />}
+                <span>{flashStatus === 'flashing' ? 'Flashing...' : 'Flash to Device'}</span>
+              </div>
+            </button>
+            
+            <div className="my-2 border-t border-oled-border"></div>
+
             <button
               onClick={() => { setActiveTab('save'); handleSaveToProject(); }}
               className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-medium transition-colors border ${
