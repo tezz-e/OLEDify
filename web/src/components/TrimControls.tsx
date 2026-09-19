@@ -3,10 +3,11 @@ import React, { useState, useEffect } from 'react';
 interface TrimControlsProps {
   totalFrames: number;
   onTrim: (start: number, end: number) => void;
+  onFrameSeek: (frameIndex: number) => void;
   disabled?: boolean;
 }
 
-export const TrimControls: React.FC<TrimControlsProps> = ({ totalFrames, onTrim, disabled }) => {
+export const TrimControls: React.FC<TrimControlsProps> = ({ totalFrames, onTrim, onFrameSeek, disabled }) => {
   const [startFrame, setStartFrame] = useState(0);
   const [endFrame, setEndFrame] = useState(totalFrames > 0 ? totalFrames - 1 : 0);
 
@@ -37,8 +38,12 @@ export const TrimControls: React.FC<TrimControlsProps> = ({ totalFrames, onTrim,
           min="0"
           max={totalFrames - 1}
           value={startFrame}
-          onChange={(e) => setStartFrame(Math.min(parseInt(e.target.value), endFrame - 1))}
-          className="w-full"
+          onChange={(e) => {
+            const val = Math.min(parseInt(e.target.value), endFrame - 1);
+            setStartFrame(val);
+            onFrameSeek(val);
+          }}
+          className="w-full cursor-pointer accent-cyan-500"
         />
       </div>
 
@@ -52,8 +57,12 @@ export const TrimControls: React.FC<TrimControlsProps> = ({ totalFrames, onTrim,
           min="0"
           max={totalFrames - 1}
           value={endFrame}
-          onChange={(e) => setEndFrame(Math.max(parseInt(e.target.value), startFrame + 1))}
-          className="w-full"
+          onChange={(e) => {
+            const val = Math.max(parseInt(e.target.value), startFrame + 1);
+            setEndFrame(val);
+            onFrameSeek(val);
+          }}
+          className="w-full cursor-pointer accent-cyan-500"
         />
       </div>
 

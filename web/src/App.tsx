@@ -257,7 +257,16 @@ export default function App() {
             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Trim Sequence</h2>
             <TrimControls 
               totalFrames={media ? media.frames.length : 0} 
-              onTrim={(start, end) => setTrimRange({ start, end })}
+              onTrim={(start, end) => {
+                setTrimRange({ start, end });
+                if (activeFrameIndex < start || activeFrameIndex > end) {
+                  setActiveFrameIndex(start);
+                }
+              }}
+              onFrameSeek={(f) => {
+                setIsPlaying(false);
+                setActiveFrameIndex(f);
+              }}
               disabled={!media}
             />
           </div>
