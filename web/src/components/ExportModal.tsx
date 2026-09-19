@@ -8,7 +8,7 @@ interface ExportModalProps {
   cppCode: string;
   frameCount: number;
   targetFps: number;
-  frames: ImageData[];
+  xbmpFrames: Uint8Array[];
 }
 
 export const ExportModal: React.FC<ExportModalProps> = ({
@@ -17,7 +17,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   cppCode,
   frameCount,
   targetFps,
-  frames,
+  xbmpFrames,
 }) => {
   const [activeTab, setActiveTab] = useState<'flash' | 'save' | 'download' | 'copy'>('flash');
   const [copied, setCopied] = useState(false);
@@ -64,7 +64,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const handleFlash = async () => {
     try {
       setFlashStatus('flashing');
-      await flashAnimationToDevice(frames, targetFps);
+      await flashAnimationToDevice(xbmpFrames, targetFps);
       setFlashStatus('flashed');
       setTimeout(() => setFlashStatus('idle'), 3000);
     } catch (err) {

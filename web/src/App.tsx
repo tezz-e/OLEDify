@@ -50,7 +50,7 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [cppCode, setCppCode] = useState('');
-  const [exportFrames, setExportFrames] = useState<ImageData[]>([]);
+  const [exportXbmpFrames, setExportXbmpFrames] = useState<Uint8Array[]>([]);
 
   const lastStreamTime = useRef(0);
 
@@ -172,7 +172,7 @@ export default function App() {
 
     const code = generateCppHeader(xbmpFrames, targetFps, hardwareConfig);
     setCppCode(code);
-    setExportFrames(ditheredImages);
+    setExportXbmpFrames(xbmpFrames);
     setExportModalOpen(true);
   };
 
@@ -278,7 +278,7 @@ export default function App() {
         cppCode={cppCode} 
         frameCount={trimRange.end - trimRange.start + 1}
         targetFps={targetFps}
-        frames={exportFrames}
+        xbmpFrames={exportXbmpFrames}
       />
     </div>
   );

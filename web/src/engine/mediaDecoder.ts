@@ -84,11 +84,20 @@ async function decodeVideoLegacy(
       const duration = video.duration;
       const width = video.videoWidth;
       const height = video.videoHeight;
+      const MAX_DIM = 400;
+      let w = width;
+      let h = height;
+      if (w > MAX_DIM || h > MAX_DIM) {
+        const scale = Math.min(MAX_DIM / w, MAX_DIM / h);
+        w = Math.floor(w * scale);
+        h = Math.floor(h * scale);
+      }
+      
       const totalFrames = Math.floor(duration * targetFps);
       const frames: ExtractedFrame[] = [];
       const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
+      canvas.width = w;
+      canvas.height = h;
       const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
 
       let currentFrame = 0;
@@ -97,7 +106,7 @@ async function decodeVideoLegacy(
         if (currentFrame >= totalFrames) {
           URL.revokeObjectURL(url);
           resolve({
-            sourceInfo: { type: 'video', filename: file.name, sourceWidth: width, sourceHeight: height, frameCount: frames.length, fps: targetFps, durationMs: duration * 1000 },
+            sourceInfo: { type: 'video', filename: file.name, sourceWidth: w, sourceHeight: h, frameCount: frames.length, fps: targetFps, durationMs: duration * 1000 },
             frames
           });
           return;
@@ -107,12 +116,12 @@ async function decodeVideoLegacy(
       };
 
       video.onseeked = () => {
-        ctx.drawImage(video, 0, 0, width, height);
+        ctx.drawImage(video, 0, 0, w, h);
         frames.push({
           index: currentFrame,
           timestampMs: (currentFrame / targetFps) * 1000,
           durationMs: 1000 / targetFps,
-          imageData: ctx.getImageData(0, 0, width, height)
+          imageData: ctx.getImageData(0, 0, w, h)
         });
 
         if (onProgress) {

@@ -1,8 +1,8 @@
 import { ESPLoader, Transport } from 'esptool-js';
 
-export async function flashAnimationToDevice(frames: ImageData[], targetFps: number) {
+export async function flashAnimationToDevice(xbmpFrames: Uint8Array[], targetFps: number) {
   // 1. Pack the frames into a binary blob
-  const totalFrames = frames.length;
+  const totalFrames = xbmpFrames.length;
   // Header: 4 bytes frame count, 4 bytes FPS
   const header = new Uint8Array(8);
   header[0] = totalFrames & 0xFF;
@@ -22,20 +22,8 @@ export async function flashAnimationToDevice(frames: ImageData[], targetFps: num
 
   let offset = 8;
   for (let i = 0; i < totalFrames; i++) {
-    const frameData = frames[i].data;
-    // Pack 0/255 dithered ImageData back to 1-bit XBMP
-    for (let y = 0; y < 64; y++) {
-      for (let x = 0; x < 128; x += 8) {
-        let byte = 0;
-        for (let b = 0; b < 8; b++) {
-          const pixelIdx = (y * 128 + (x + b)) * 4;
-          if (frameData[pixelIdx] > 128) { // If lit
-            byte |= (1 << b); // LSB first
-          }
-        }
-        blob[offset++] = byte;
-      }
-    }
+    blob.set(xbmpFrames[i], offset);
+    offset += 1024;
   }
 
   // 2. Connect via WebSerial
@@ -43,13 +31,23 @@ export async function flashAnimationToDevice(frames: ImageData[], targetFps: num
   const transport = new Transport(port);
   
   try {
-    const loader = new ESPLoader(transport, 115200, null);
-    await loader.main_fn();
+    const loader = new ESPLoader({
+      transport,
+      baudrate: 115200,
+      terminal: {
+        writeLine: (data: string) => console.log(data),
+        clean: () => {}
+      } as any
+    });
+    
+    await loader.main();
 
     // 3. Flash to offset 0x200000 (animation partition)
-    const flashOptions = {
+    const flashOptions: any = {
       fileArray: [{ data: blob, address: 0x200000 }],
       flashSize: 'keep',
+      flashMode: 'keep',
+      flashFreq: 'keep',
       eraseAll: false,
       compress: true,
       reportProgress: (fileIndex: number, written: number, total: number) => {
@@ -57,10 +55,7 @@ export async function flashAnimationToDevice(frames: ImageData[], targetFps: num
       }
     };
 
-    await loader.write_flash(flashOptions);
-    
-    // 4. Hard reset
-    await loader.hard_reset();
+    await loader.writeFlash(flashOptions);
   } finally {
     await transport.disconnect();
   }

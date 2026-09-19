@@ -24,12 +24,21 @@ self.onmessage = async (e: MessageEvent<DecodeWorkerMessage>) => {
   const initDecoder = (track: any) => {
     decoder = new VideoDecoder({
       output: (frame) => {
+        let w = frame.codedWidth;
+        let h = frame.codedHeight;
+        const MAX_DIM = 400;
+        if (w > MAX_DIM || h > MAX_DIM) {
+           const scale = Math.min(MAX_DIM / w, MAX_DIM / h);
+           w = Math.floor(w * scale);
+           h = Math.floor(h * scale);
+        }
+
         // Convert VideoFrame to ImageData to send back to main thread
-        const canvas = new OffscreenCanvas(frame.codedWidth, frame.codedHeight);
+        const canvas = new OffscreenCanvas(w, h);
         const ctx = canvas.getContext('2d');
         if (ctx) {
-          ctx.drawImage(frame, 0, 0);
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(frame, 0, 0, w, h);
+          const imageData = ctx.getImageData(0, 0, w, h);
           
           (self as any).postMessage(
             { type: 'frame', imageData, index: framesProcessed, durationMs: 1000 / targetFps },
@@ -66,12 +75,18 @@ self.onmessage = async (e: MessageEvent<DecodeWorkerMessage>) => {
     const trak = mp4boxfile.getTrackById(track.id);
     if (trak && trak.mdia && trak.mdia.minf && trak.mdia.minf.stbl && trak.mdia.minf.stbl.stsd) {
       const stsd = trak.mdia.minf.stbl.stsd.entries[0];
+      // @ts-ignore
       if (stsd.avcC) {
+        // @ts-ignore
         const stream = new MP4Box.DataStream(undefined, 0, MP4Box.DataStream.BIG_ENDIAN);
+        // @ts-ignore
         stsd.avcC.write(stream);
         description = new Uint8Array(stream.buffer, 8); // Skip box header
+      // @ts-ignore
       } else if (stsd.hvcC) {
+        // @ts-ignore
         const stream = new MP4Box.DataStream(undefined, 0, MP4Box.DataStream.BIG_ENDIAN);
+        // @ts-ignore
         stsd.hvcC.write(stream);
         description = new Uint8Array(stream.buffer, 8);
       }
@@ -129,7 +144,8 @@ self.onmessage = async (e: MessageEvent<DecodeWorkerMessage>) => {
 
   // Provide the buffer to mp4box
   // @ts-ignore
-  buffer.fileStart = 0;
+  (buffer as any).fileStart = 0;
+  // @ts-ignore
   mp4boxfile.appendBuffer(buffer);
   mp4boxfile.flush();
 };
