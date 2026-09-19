@@ -1,4 +1,5 @@
-import MP4Box, { MP4File, MP4Track, MP4VideoTrack, Sample } from 'mp4box';
+// @ts-ignore
+import * as MP4Box from 'mp4box';
 
 interface DecodeWorkerMessage {
   buffer: ArrayBuffer;
@@ -9,8 +10,8 @@ self.onmessage = async (e: MessageEvent<DecodeWorkerMessage>) => {
   const { buffer, targetFps } = e.data;
   
   let mp4boxfile = MP4Box.createFile();
-  let videoTrack: MP4VideoTrack | null = null;
-  let decoder: VideoDecoder | null = null;
+  let videoTrack: any = null;
+  let decoder: any = null;
 
   let framesProcessed = 0;
   let totalFrames = 0;
@@ -20,7 +21,7 @@ self.onmessage = async (e: MessageEvent<DecodeWorkerMessage>) => {
     self.postMessage({ type: 'progress', stage, currentFrame: framesProcessed, totalFrames, percent });
   };
 
-  const initDecoder = (track: MP4VideoTrack) => {
+  const initDecoder = (track: any) => {
     decoder = new VideoDecoder({
       output: (frame) => {
         // Convert VideoFrame to ImageData to send back to main thread
@@ -30,7 +31,7 @@ self.onmessage = async (e: MessageEvent<DecodeWorkerMessage>) => {
           ctx.drawImage(frame, 0, 0);
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           
-          self.postMessage(
+          (self as any).postMessage(
             { type: 'frame', imageData, index: framesProcessed, durationMs: 1000 / targetFps },
             [imageData.data.buffer] // Transfer ownership
           );
@@ -40,10 +41,6 @@ self.onmessage = async (e: MessageEvent<DecodeWorkerMessage>) => {
         framesProcessed++;
         if (framesProcessed % 10 === 0) {
           postProgress('decoding', (framesProcessed / totalFrames) * 100);
-        }
-        
-        if (framesProcessed >= totalFrames) {
-          self.postMessage({ type: 'complete' });
         }
       },
       error: (e) => {
@@ -105,7 +102,8 @@ self.onmessage = async (e: MessageEvent<DecodeWorkerMessage>) => {
     mp4boxfile.start();
   };
 
-  mp4boxfile.onSamples = (id: number, user: any, samples: Sample[]) => {
+  let samplesFed = 0;
+  mp4boxfile.onSamples = async (id: number, user: any, samples: any[]) => {
     for (const sample of samples) {
       const chunk = new EncodedVideoChunk({
         type: sample.is_sync ? 'key' : 'delta',
@@ -116,6 +114,16 @@ self.onmessage = async (e: MessageEvent<DecodeWorkerMessage>) => {
       if (decoder && decoder.state === 'configured') {
         decoder.decode(chunk);
       }
+      samplesFed++;
+    }
+
+    if (samplesFed === totalFrames && decoder && decoder.state === 'configured') {
+      try {
+        await decoder.flush();
+      } catch (e) {
+        console.error('Flush error:', e);
+      }
+      self.postMessage({ type: 'complete' });
     }
   };
 
