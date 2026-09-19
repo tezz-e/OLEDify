@@ -16,7 +16,7 @@ import { HardwareConfig } from './types/oled';
 
 import { applyDithering, generateCppHeader } from './engine/ditherEngine';
 import { serialStreamer } from './engine/webSerialStreamer';
-import { renderCropTo128x64, imageDataToCanvas } from './engine/cropEngine';
+import { renderCropTo128x64, imageDataToCanvas, computeCoverCrop } from './engine/cropEngine';
 
 export default function App() {
   // --- STATE ---
@@ -59,11 +59,18 @@ export default function App() {
     if (media && media.frames.length > 0) {
       setTrimRange({ start: 0, end: media.frames.length - 1 });
       setActiveFrameIndex(0);
-      setCropSettings(prev => ({
-        ...prev,
-        sourceWidth: media.sourceInfo.sourceWidth,
-        sourceHeight: media.sourceInfo.sourceHeight,
-      }));
+      setCropSettings(prev => {
+        const cover = computeCoverCrop(media.sourceInfo.sourceWidth, media.sourceInfo.sourceHeight);
+        return {
+          ...prev,
+          sourceWidth: media.sourceInfo.sourceWidth,
+          sourceHeight: media.sourceInfo.sourceHeight,
+          x: cover.x,
+          y: cover.y,
+          width: cover.width,
+          height: cover.height
+        };
+      });
     }
   }, [media]);
 
@@ -235,7 +242,14 @@ export default function App() {
             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Crop / Scale</h2>
             <CropControls 
               settings={cropSettings} 
-              onChange={setCropSettings} 
+              onChange={(newSettings) => {
+                if (newSettings.mode !== cropSettings.mode && newSettings.mode === 'cover' && media) {
+                  const cover = computeCoverCrop(media.sourceInfo.sourceWidth, media.sourceInfo.sourceHeight);
+                  setCropSettings({ ...newSettings, ...cover });
+                } else {
+                  setCropSettings(newSettings);
+                }
+              }} 
               disabled={!media} 
             />
           </div>
