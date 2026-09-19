@@ -2,25 +2,32 @@ import React, { useState, useEffect } from 'react';
 
 interface TrimControlsProps {
   totalFrames: number;
+  trimRange?: { start: number; end: number };
   onTrim: (start: number, end: number) => void;
   onFrameSeek: (frameIndex: number) => void;
   disabled?: boolean;
 }
 
-export const TrimControls: React.FC<TrimControlsProps> = ({ totalFrames, onTrim, onFrameSeek, disabled }) => {
+export const TrimControls: React.FC<TrimControlsProps> = ({ totalFrames, trimRange, onTrim, onFrameSeek, disabled }) => {
   const [startFrame, setStartFrame] = useState(0);
   const [endFrame, setEndFrame] = useState(totalFrames > 0 ? totalFrames - 1 : 0);
+  const [justApplied, setJustApplied] = useState(false);
 
   useEffect(() => {
-    if (totalFrames > 0) {
+    if (trimRange) {
+      setStartFrame(trimRange.start);
+      setEndFrame(trimRange.end);
+    } else if (totalFrames > 0) {
       setStartFrame(0);
       setEndFrame(totalFrames - 1);
     }
-  }, [totalFrames]);
+  }, [totalFrames, trimRange?.start, trimRange?.end]);
 
   const handleApply = () => {
-    if (startFrame < endFrame) {
+    if (startFrame <= endFrame) {
       onTrim(startFrame, endFrame);
+      setJustApplied(true);
+      setTimeout(() => setJustApplied(false), 1200);
     }
   };
 
@@ -39,7 +46,7 @@ export const TrimControls: React.FC<TrimControlsProps> = ({ totalFrames, onTrim,
           max={totalFrames - 1}
           value={startFrame}
           onChange={(e) => {
-            const val = Math.min(parseInt(e.target.value), endFrame - 1);
+            const val = Math.min(parseInt(e.target.value), endFrame);
             setStartFrame(val);
             onFrameSeek(val);
           }}
@@ -58,7 +65,7 @@ export const TrimControls: React.FC<TrimControlsProps> = ({ totalFrames, onTrim,
           max={totalFrames - 1}
           value={endFrame}
           onChange={(e) => {
-            const val = Math.max(parseInt(e.target.value), startFrame + 1);
+            const val = Math.max(parseInt(e.target.value), startFrame);
             setEndFrame(val);
             onFrameSeek(val);
           }}
@@ -68,9 +75,13 @@ export const TrimControls: React.FC<TrimControlsProps> = ({ totalFrames, onTrim,
 
       <button
         onClick={handleApply}
-        className="w-full py-1.5 rounded bg-oled-panel border border-oled-border text-xs font-medium text-slate-200 hover:bg-oled-border-bright transition-colors"
+        className={`w-full py-1.5 rounded text-xs font-medium transition-all ${
+          justApplied 
+            ? 'bg-emerald-600 text-white border border-emerald-500 shadow-sm shadow-emerald-900/50' 
+            : 'bg-oled-panel border border-oled-border text-slate-200 hover:bg-oled-border-bright hover:text-white'
+        }`}
       >
-        Apply Trim
+        {justApplied ? '✓ Trim Applied' : 'Apply Trim'}
       </button>
 
       <div className="text-[10px] font-mono text-slate-500 text-center">

@@ -200,6 +200,7 @@ export default function App() {
           <FrameStrip 
             media={media} 
             activeFrameIndex={activeFrameIndex} 
+            trimRange={trimRange}
             onFrameSelect={(i) => {
               setIsPlaying(false);
               setActiveFrameIndex(i);
@@ -225,6 +226,7 @@ export default function App() {
               setIsPlaying(false);
               setActiveFrameIndex(trimRange.start);
             }}
+            trimRange={trimRange}
           />
         </section>
 
@@ -257,6 +259,7 @@ export default function App() {
             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Trim Sequence</h2>
             <TrimControls 
               totalFrames={media ? media.frames.length : 0} 
+              trimRange={trimRange}
               onTrim={(start, end) => {
                 setTrimRange({ start, end });
                 if (activeFrameIndex < start || activeFrameIndex > end) {

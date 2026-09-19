@@ -4,10 +4,11 @@ import { DecodedMedia } from '../types/media';
 interface FrameStripProps {
   media: DecodedMedia | null;
   activeFrameIndex: number;
+  trimRange?: { start: number; end: number };
   onFrameSelect: (index: number) => void;
 }
 
-export const FrameStrip: React.FC<FrameStripProps> = ({ media, activeFrameIndex, onFrameSelect }) => {
+export const FrameStrip: React.FC<FrameStripProps> = ({ media, activeFrameIndex, trimRange, onFrameSelect }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [thumbnails, setThumbnails] = useState<string[]>([]);
 
@@ -25,7 +26,6 @@ export const FrameStrip: React.FC<FrameStripProps> = ({ media, activeFrameIndex,
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      // Temporary canvas to put the full size ImageData before scaling
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = media.sourceInfo.sourceWidth;
       tempCanvas.height = media.sourceInfo.sourceHeight;
@@ -33,9 +33,6 @@ export const FrameStrip: React.FC<FrameStripProps> = ({ media, activeFrameIndex,
       if (!tempCtx) return;
 
       const thumbs: string[] = [];
-      // We might not want to generate 1000s of data URLs synchronously.
-      // For performance, we'll do all of them if < 300, or a subset.
-      // But for this simple tool, generating dataURLs for all frames is usually fast enough for short reels.
       for (let i = 0; i < media.frames.length; i++) {
         tempCtx.putImageData(media.frames[i].imageData, 0, 0);
         ctx.clearRect(0, 0, 48, 24);
@@ -49,7 +46,6 @@ export const FrameStrip: React.FC<FrameStripProps> = ({ media, activeFrameIndex,
   }, [media]);
 
   useEffect(() => {
-    // Auto-scroll to keep active frame in view if playing
     const container = containerRef.current;
     if (!container) return;
     
@@ -72,12 +68,19 @@ export const FrameStrip: React.FC<FrameStripProps> = ({ media, activeFrameIndex,
     );
   }
 
+  const isExcluded = (index: number) => {
+    if (!trimRange) return false;
+    return index < trimRange.start || index > trimRange.end;
+  };
+
+  const selectedCount = trimRange ? (trimRange.end - trimRange.start + 1) : media.frames.length;
+
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-oled-surface">
       <div className="px-4 py-2 border-b border-oled-border flex justify-between items-center bg-oled-surface z-10 shrink-0">
         <span className="text-xs font-semibold text-slate-300">Frames</span>
         <span className="text-[10px] font-mono text-oled-cyan bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20">
-          {media.frames.length}
+          {selectedCount} / {media.frames.length}
         </span>
       </div>
 
@@ -85,26 +88,31 @@ export const FrameStrip: React.FC<FrameStripProps> = ({ media, activeFrameIndex,
         ref={containerRef}
         className="flex-1 overflow-y-auto p-2 space-y-1.5 hide-scrollbar"
       >
-        {thumbnails.map((thumb, index) => (
-          <div
-            key={index}
-            onClick={() => onFrameSelect(index)}
-            className={`relative flex items-center p-1 rounded cursor-pointer transition-colors ${
-              index === activeFrameIndex 
-                ? 'bg-cyan-500/20 border border-oled-cyan' 
-                : 'border border-transparent hover:bg-oled-panel'
-            }`}
-          >
-            <span className={`w-8 text-right text-[9px] font-mono pr-2 ${
-              index === activeFrameIndex ? 'text-oled-cyan font-bold' : 'text-slate-500'
-            }`}>
-              {index}
-            </span>
-            <div className="w-[48px] h-[24px] bg-black rounded-sm border border-slate-800 overflow-hidden shrink-0">
-              <img src={thumb} alt={`Frame ${index}`} className="w-full h-full object-cover" />
+        {thumbnails.map((thumb, index) => {
+          const excluded = isExcluded(index);
+          return (
+            <div
+              key={index}
+              onClick={() => onFrameSelect(index)}
+              className={`relative flex items-center p-1 rounded cursor-pointer transition-all ${
+                excluded ? 'opacity-30 grayscale hover:opacity-70' : ''
+              } ${
+                index === activeFrameIndex 
+                  ? 'bg-cyan-500/20 border border-oled-cyan' 
+                  : 'border border-transparent hover:bg-oled-panel'
+              }`}
+            >
+              <span className={`w-8 text-right text-[9px] font-mono pr-2 ${
+                index === activeFrameIndex ? 'text-oled-cyan font-bold' : excluded ? 'text-slate-600 line-through' : 'text-slate-500'
+              }`}>
+                {index}
+              </span>
+              <div className="w-[48px] h-[24px] bg-black rounded-sm border border-slate-800 overflow-hidden shrink-0">
+                <img src={thumb} alt={`Frame ${index}`} className="w-full h-full object-cover" />
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
