@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Copy, Download, Check, Code } from 'lucide-react';
+import { X, Copy, Download, Save, Check } from 'lucide-react';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -14,7 +14,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   cppCode,
   frameCount,
 }) => {
+  const [activeTab, setActiveTab] = useState<'save' | 'download' | 'copy'>('save');
   const [copied, setCopied] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   if (!isOpen) return null;
 
@@ -34,59 +36,97 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  const handleSaveToProject = async () => {
+    try {
+      setSaveStatus('saving');
+      // @ts-ignore - File System Access API
+      const handle = await window.showSaveFilePicker({
+        suggestedName: 'frames.h',
+        types: [{ description: 'C++ Header', accept: { 'text/plain': ['.h'] } }],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(cppCode);
+      await writable.close();
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } catch (err: any) {
+      if (err.name !== 'AbortError') setSaveStatus('error');
+      else setSaveStatus('idle');
+    }
+  };
+
+  const previewLines = cppCode.split('\n').slice(0, 15).join('\n') + '\n... (truncated)';
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="bg-oled-surface border border-oled-border rounded-xl max-w-3xl w-full flex flex-col max-h-[85vh] shadow-2xl">
-        {/* Modal Header */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+      <div className="bg-oled-surface border border-oled-border rounded-xl max-w-2xl w-full flex flex-col shadow-2xl animate-slide-up">
+        {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-oled-border">
-          <div className="flex items-center space-x-2">
-            <Code className="w-5 h-5 text-oled-cyan" />
-            <h3 className="text-sm font-bold text-slate-100">
-              Export C++ PROGMEM Header (`frames.h`)
-            </h3>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/20 text-oled-cyan border border-cyan-500/30">
-              {frameCount} Frames
-            </span>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all cursor-pointer"
-          >
+          <h3 className="text-sm font-semibold text-slate-100">Export C++ Array</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-200 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Code Content View */}
-        <div className="flex-1 p-4 overflow-auto font-mono text-xs text-slate-300 bg-oled-bg/90 space-y-2">
-          <p className="text-[11px] text-slate-400 font-sans">
-            Replace your <code className="text-oled-cyan">src/frames.h</code> file in PlatformIO with this content:
-          </p>
-          <pre className="p-3 bg-black/60 border border-oled-border/60 rounded text-[11px] leading-relaxed text-cyan-300 overflow-x-auto max-h-[450px]">
-            {cppCode}
-          </pre>
-        </div>
-
-        {/* Modal Footer */}
-        <div className="flex items-center justify-between p-4 border-t border-oled-border bg-oled-panel">
-          <span className="text-xs text-oled-muted font-mono">
-            Size: ~{Math.round((frameCount * 1024) / 1024)} KB PROGMEM Flash
-          </span>
-          <div className="flex items-center space-x-3">
+        {/* Content */}
+        <div className="p-4 flex flex-col md:flex-row gap-6">
+          {/* Actions Sidebar */}
+          <div className="w-full md:w-48 space-y-2 shrink-0">
             <button
-              onClick={handleCopy}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium cursor-pointer"
+              onClick={() => { setActiveTab('save'); handleSaveToProject(); }}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-medium transition-colors border ${
+                activeTab === 'save' 
+                  ? 'bg-cyan-500/20 border-cyan-500/40 text-oled-cyan' 
+                  : 'bg-oled-panel border-oled-border text-slate-300 hover:bg-oled-border-bright'
+              }`}
             >
-              {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-              <span>{copied ? 'Copied!' : 'Copy Code'}</span>
+              <div className="flex items-center gap-2">
+                {saveStatus === 'saved' ? <Check className="w-4 h-4 text-emerald-400" /> : <Save className="w-4 h-4" />}
+                <span>Save to Project</span>
+              </div>
             </button>
+            
             <button
-              onClick={handleDownload}
-              className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-oled-cyan border border-cyan-500/40 text-xs font-medium cursor-pointer"
+              onClick={() => { setActiveTab('download'); handleDownload(); }}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded text-xs font-medium transition-colors border ${
+                activeTab === 'download' 
+                  ? 'bg-cyan-500/20 border-cyan-500/40 text-oled-cyan' 
+                  : 'bg-oled-panel border-oled-border text-slate-300 hover:bg-oled-border-bright'
+              }`}
             >
               <Download className="w-4 h-4" />
-              <span>Download frames.h</span>
+              <span>Download File</span>
+            </button>
+            
+            <button
+              onClick={() => { setActiveTab('copy'); handleCopy(); }}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded text-xs font-medium transition-colors border ${
+                activeTab === 'copy' 
+                  ? 'bg-cyan-500/20 border-cyan-500/40 text-oled-cyan' 
+                  : 'bg-oled-panel border-oled-border text-slate-300 hover:bg-oled-border-bright'
+              }`}
+            >
+              {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+              <span>{copied ? 'Copied!' : 'Copy to Clipboard'}</span>
             </button>
           </div>
+
+          {/* Preview Panel */}
+          <div className="flex-1 bg-oled-panel border border-oled-border rounded-lg overflow-hidden flex flex-col">
+            <div className="px-3 py-2 bg-[#0d1117] border-b border-oled-border flex justify-between items-center text-[10px] font-mono text-slate-400">
+              <span>Preview: frames.h</span>
+              <span className="text-oled-cyan">PROGMEM: ~{Math.round((frameCount * 1024) / 1024)} KB</span>
+            </div>
+            <pre className="p-3 text-[10px] leading-relaxed text-cyan-300/80 font-mono overflow-auto h-[200px]">
+              {previewLines}
+            </pre>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-4 py-3 border-t border-oled-border bg-[#0a0e14] rounded-b-xl flex justify-between items-center text-[11px] font-mono text-slate-500">
+          <span>{frameCount} Frames Exported</span>
+          <span>Constant size: 1024 bytes/frame</span>
         </div>
       </div>
     </div>

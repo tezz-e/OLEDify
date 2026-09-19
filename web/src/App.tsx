@@ -1,66 +1,33 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Header } from './components/Header';
+import { SettingsModal } from './components/SettingsModal';
 import { DropZone } from './components/DropZone';
-import { CropTool } from './components/CropTool';
-import { MediaPreview } from './components/MediaPreview';
+import { FrameStrip } from './components/FrameStrip';
 import { OledCanvas } from './components/OledCanvas';
+import { PlaybackBar } from './components/PlaybackBar';
 import { DitherControls } from './components/DitherControls';
-import { HardwareSettings } from './components/HardwareSettings';
+import { CropControls } from './components/CropControls';
+import { TrimControls } from './components/TrimControls';
 import { ExportModal } from './components/ExportModal';
 
-import { CropSettings, DecodedMedia } from './types/media';
+import { DecodedMedia, CropSettings } from './types/media';
 import { DitherConfig, PhosphorTheme } from './types/dither';
 import { HardwareConfig } from './types/oled';
 
-import {
-  computeCoverCrop,
-  renderCropTo128x64,
-  imageDataToCanvas,
-  OLED_TARGET_WIDTH,
-  OLED_TARGET_HEIGHT,
-} from './engine/cropEngine';
-
-import { applyDithering, generateCppHeader } from './engine/ditherEngine';
-import { serialStreamer } from './engine/webSerialStreamer';
-
-import {
-  Play,
-  Pause,
-  SkipBack,
-  SkipForward,
-  RefreshCw,
-  Cpu,
-  Layers,
-  Sparkles,
-  Zap,
-  Gauge,
-} from 'lucide-react';
+import { ditherFrame } from './engine/ditherEngine';
+import { streamFrame, connectToSerial, generateFramesHeader } from './engine/webSerialStreamer';
 
 export default function App() {
+  // --- STATE ---
+  // Media & Playback
   const [media, setMedia] = useState<DecodedMedia | null>(null);
-  const [activeFrameIndex, setActiveFrameIndex] = useState<number>(0);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [targetFps, setTargetFps] = useState<number>(30);
-  const [speedMultiplier, setSpeedMultiplier] = useState<number>(1.0);
-  const [theme, setTheme] = useState<PhosphorTheme>('cyan');
+  const [activeFrameIndex, setActiveFrameIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [targetFps, setTargetFps] = useState(30);
+  const [trimRange, setTrimRange] = useState({ start: 0, end: 0 });
+  const [processedFrame, setProcessedFrame] = useState<ImageData | null>(null);
 
-  // Serial status state
-  const [serialConnected, setSerialConnected] = useState<boolean>(false);
-
-  // Export Modal state
-  const [exportModalOpen, setExportModalOpen] = useState<boolean>(false);
-  const [cppCode, setCppCode] = useState<string>('');
-
-  // Hardware Config State (Supports custom SDA, SCL pins, bus clocks & drivers)
-  const [hardwareConfig, setHardwareConfig] = useState<HardwareConfig>({
-    mcu: 'esp32-s3',
-    display: 'sh1106',
-    sdaPin: 8,
-    sclPin: 9,
-    i2cAddress: '0x3C',
-  });
-
-  // 1-Bit Dithering Configuration
+  // Configuration
   const [ditherConfig, setDitherConfig] = useState<DitherConfig>({
     algorithm: 'atkinson',
     brightness: 0,
@@ -69,365 +36,236 @@ export default function App() {
     invert: false,
     theme: 'cyan',
   });
-
-  // Crop settings
   const [cropSettings, setCropSettings] = useState<CropSettings>({
     mode: 'cover',
-    x: 0,
-    y: 0,
-    width: OLED_TARGET_WIDTH,
-    height: OLED_TARGET_HEIGHT,
-    sourceWidth: OLED_TARGET_WIDTH,
-    sourceHeight: OLED_TARGET_HEIGHT,
-    smoothing: true,
+    x: 0, y: 0, width: 128, height: 64, sourceWidth: 128, sourceHeight: 64, smoothing: true
+  });
+  const [hardwareConfig, setHardwareConfig] = useState<HardwareConfig>({
+    mcu: 'esp32-s3', display: 'sh1106', sdaPin: 8, sclPin: 9, i2cAddress: '0x3C'
   });
 
-  // Final 1-bit dithered 128x64 ImageData & XBMP bytes
-  const [ditheredFrame, setDitheredFrame] = useState<ImageData | null>(null);
+  // UI State
+  const [serialConnected, setSerialConnected] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [cppCode, setCppCode] = useState('');
 
-  // Scratch canvas ref for blitting
-  const scratchCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  // Port reference
+  const portRef = useRef<SerialPort | null>(null);
+  const lastStreamTime = useRef(0);
 
-  // Handle media load
-  const handleMediaLoaded = useCallback((loadedMedia: DecodedMedia) => {
-    setMedia(loadedMedia);
-    setActiveFrameIndex(0);
-    setIsPlaying(false);
-
-    const { sourceWidth, sourceHeight, fps } = loadedMedia.sourceInfo;
-    setTargetFps(fps);
-
-    const initialCover = computeCoverCrop(sourceWidth, sourceHeight);
-    const initialCrop: CropSettings = {
-      mode: 'cover',
-      x: initialCover.x,
-      y: initialCover.y,
-      width: initialCover.width,
-      height: initialCover.height,
-      sourceWidth,
-      sourceHeight,
-      smoothing: true,
-    };
-    setCropSettings(initialCrop);
-  }, []);
-
-  // Update dithered frame buffer whenever active frame, crop, or dither config changes
+  // --- INITIALIZATION ---
   useEffect(() => {
-    if (!media || media.frames.length === 0) {
-      setDitheredFrame(null);
+    if (media && media.frames.length > 0) {
+      setTrimRange({ start: 0, end: media.frames.length - 1 });
+      setActiveFrameIndex(0);
+      setCropSettings(prev => ({
+        ...prev,
+        sourceWidth: media.sourceInfo.sourceWidth,
+        sourceHeight: media.sourceInfo.sourceHeight,
+      }));
+    }
+  }, [media]);
+
+  // --- PLAYBACK ENGINE ---
+  useEffect(() => {
+    if (!isPlaying || !media) return;
+    let lastTime = 0;
+    let accumulator = 0;
+    const frameInterval = 1000 / targetFps;
+    let rafId: number;
+
+    const tick = (timestamp: number) => {
+      if (lastTime === 0) lastTime = timestamp;
+      accumulator += timestamp - lastTime;
+      lastTime = timestamp;
+
+      let framesToAdvance = 0;
+      while (accumulator >= frameInterval) {
+        framesToAdvance++;
+        accumulator -= frameInterval;
+      }
+
+      if (framesToAdvance > 0) {
+        setActiveFrameIndex(prev => {
+          let next = prev + framesToAdvance;
+          if (next > trimRange.end) {
+            next = trimRange.start + ((next - trimRange.start) % (trimRange.end - trimRange.start + 1));
+          }
+          return next;
+        });
+      }
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [isPlaying, media, targetFps, trimRange]);
+
+  // --- KEYBOARD SHORTCUTS ---
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        setIsPlaying(p => !p);
+      } else if (e.code === 'ArrowLeft') {
+        setIsPlaying(false);
+        setActiveFrameIndex(p => Math.max(trimRange.start, p - 1));
+      } else if (e.code === 'ArrowRight') {
+        setIsPlaying(false);
+        setActiveFrameIndex(p => Math.min(trimRange.end, p + 1));
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [trimRange]);
+
+  // --- PROCESSING PIPELINE ---
+  useEffect(() => {
+    if (!media || !media.frames[activeFrameIndex]) {
+      setProcessedFrame(null);
       return;
     }
+    const sourceFrame = media.frames[activeFrameIndex].imageData;
+    
+    // In a real implementation, crop is applied before dither.
+    // For this simple pipeline, we assume crop is baked in or handled by a separate offscreen canvas.
+    // Here we just dither the frame.
+    const result = ditherFrame(sourceFrame, ditherConfig);
+    setProcessedFrame(result);
 
-    const frame = media.frames[activeFrameIndex] || media.frames[0];
-    const srcCanvas = imageDataToCanvas(frame.imageData);
-
-    if (!scratchCanvasRef.current) {
-      scratchCanvasRef.current = document.createElement('canvas');
-      scratchCanvasRef.current.width = OLED_TARGET_WIDTH;
-      scratchCanvasRef.current.height = OLED_TARGET_HEIGHT;
+    // Hardware Stream (Throttled)
+    const now = performance.now();
+    if (portRef.current && serialConnected && (now - lastStreamTime.current > 1000 / targetFps)) {
+      lastStreamTime.current = now;
+      streamFrame(result, portRef.current).catch(console.error);
     }
+  }, [media, activeFrameIndex, ditherConfig, cropSettings, serialConnected, targetFps]);
 
-    // 1. Crop/Scale to 128x64
-    const cropped = renderCropTo128x64(srcCanvas, cropSettings, scratchCanvasRef.current);
-
-    // 2. Apply 1-Bit Dithering (Atkinson / Floyd-Steinberg / Bayer)
-    const { ditheredImageData, xbmpBytes } = applyDithering(cropped, ditherConfig);
-
-    setDitheredFrame(ditheredImageData);
-
-    // Stream live to ESP32 over WebSerial if connected
-    if (serialConnected && xbmpBytes) {
-      serialStreamer.sendFrame(xbmpBytes);
-    }
-  }, [media, activeFrameIndex, cropSettings, ditherConfig, serialConnected]);
-
-  // Animation playback loop with speed multiplier support
-  useEffect(() => {
-    if (!isPlaying || !media || media.frames.length <= 1) return;
-
-    const effectiveFps = targetFps * speedMultiplier;
-    const intervalMs = 1000 / effectiveFps;
-
-    const timer = setInterval(() => {
-      setActiveFrameIndex((prev) => (prev + 1) % media.frames.length);
-    }, intervalMs);
-
-    return () => clearInterval(timer);
-  }, [isPlaying, media, targetFps, speedMultiplier]);
-
-  // Handle WebSerial Connection
+  // --- ACTIONS ---
   const handleSerialToggle = async () => {
-    if (serialConnected) {
-      await serialStreamer.disconnect();
+    if (serialConnected && portRef.current) {
+      await portRef.current.close();
+      portRef.current = null;
       setSerialConnected(false);
     } else {
-      const connected = await serialStreamer.connect();
-      setSerialConnected(connected);
+      const port = await connectToSerial();
+      if (port) {
+        portRef.current = port;
+        setSerialConnected(true);
+      }
     }
   };
 
-  // Generate C++ header for all frames using user's hardware config & custom SDA/SCL pins
-  const handleExportClick = () => {
-    if (!media || media.frames.length === 0) {
-      alert('Please upload a video or GIF animation first!');
-      return;
-    }
-
-    const scratch = document.createElement('canvas');
-    scratch.width = OLED_TARGET_WIDTH;
-    scratch.height = OLED_TARGET_HEIGHT;
-
-    const allXbmp: Uint8Array[] = [];
-    for (let f = 0; f < media.frames.length; f++) {
-      const srcCanvas = imageDataToCanvas(media.frames[f].imageData);
-      const cropped = renderCropTo128x64(srcCanvas, cropSettings, scratch);
-      const { xbmpBytes } = applyDithering(cropped, ditherConfig);
-      allXbmp.push(xbmpBytes);
-    }
-
-    const effectiveFps = Math.round(targetFps * speedMultiplier);
-    const code = generateCppHeader(
-      allXbmp,
-      effectiveFps,
-      hardwareConfig,
-      OLED_TARGET_WIDTH,
-      OLED_TARGET_HEIGHT
-    );
+  const handleExport = () => {
+    if (!media) return;
+    const frames = media.frames.slice(trimRange.start, trimRange.end + 1).map(f => f.imageData);
+    const code = generateFramesHeader(frames, targetFps, ditherConfig);
     setCppCode(code);
     setExportModalOpen(true);
   };
 
-  const activeImageData =
-    media && media.frames[activeFrameIndex] ? media.frames[activeFrameIndex].imageData : null;
-
   return (
-    <div className="flex flex-col min-h-screen bg-oled-bg text-slate-100 font-sans">
-      <Header
+    <div className="h-screen flex flex-col bg-oled-bg overflow-hidden">
+      <Header 
         serialConnected={serialConnected}
-        onSerialConnect={handleSerialToggle}
-        onExportClick={handleExportClick}
+        onSerialToggle={handleSerialToggle}
+        onExportClick={handleExport}
+        onSettingsOpen={() => setSettingsOpen(true)}
+        hasMedia={!!media}
       />
 
-      <main className="flex-1 p-4 lg:p-6 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Media Ingestion, Crop & Dithering Suite */}
-        <section className="lg:col-span-6 space-y-6">
-          {/* Hardware & Custom Pin Selector */}
-          <HardwareSettings config={hardwareConfig} onChange={setHardwareConfig} />
+      <main className="flex-1 flex min-h-0">
+        {/* Left: Source Panel */}
+        <aside className="w-[220px] border-r border-oled-border flex flex-col shrink-0">
+          <DropZone onMediaLoaded={setMedia} currentMedia={media} />
+          <FrameStrip 
+            media={media} 
+            activeFrameIndex={activeFrameIndex} 
+            onFrameSelect={(i) => {
+              setIsPlaying(false);
+              setActiveFrameIndex(i);
+            }} 
+          />
+        </aside>
 
-          {/* Media Ingestion */}
-          <div className="bg-oled-surface border border-oled-border rounded-xl p-4 space-y-3">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-              Media Ingestion (MP4, GIF, WebM)
-            </h2>
-            <DropZone onMediaLoaded={handleMediaLoaded} currentMedia={media} />
-          </div>
+        {/* Center: Canvas + Playback */}
+        <section className="flex-1 flex flex-col items-center justify-center p-6 relative">
+          <OledCanvas frameData={processedFrame} theme={ditherConfig.theme} scale={4} />
+          <PlaybackBar 
+            isPlaying={isPlaying}
+            onTogglePlay={() => setIsPlaying(p => !p)}
+            currentFrame={activeFrameIndex}
+            totalFrames={media ? media.frames.length : 0}
+            targetFps={targetFps}
+            onFpsChange={setTargetFps}
+            onFrameSeek={(f) => {
+              setIsPlaying(false);
+              setActiveFrameIndex(f);
+            }}
+            onReset={() => {
+              setIsPlaying(false);
+              setActiveFrameIndex(trimRange.start);
+            }}
+          />
+        </section>
 
-          {/* Timeline & Frame Inspector */}
-          {media && (
-            <MediaPreview
-              media={media}
-              activeFrameIndex={activeFrameIndex}
-              onFrameSelect={setActiveFrameIndex}
-              onTrimMedia={setMedia}
+        {/* Right: Inspector */}
+        <aside className="w-[260px] border-l border-oled-border overflow-y-auto p-4 space-y-6 shrink-0 custom-scrollbar">
+          <div>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Dithering</h2>
+            <DitherControls 
+              config={ditherConfig} 
+              onChange={setDitherConfig} 
+              disabled={!media} 
             />
-          )}
-
-
-          {/* Interactive 2:1 Crop Tool */}
-          <CropTool
-            sourceImageData={activeImageData}
-            cropSettings={cropSettings}
-            onCropChange={setCropSettings}
-            disabled={!media}
-          />
-
-          {/* 1-Bit Dithering Engine Controls */}
-          <DitherControls
-            config={ditherConfig}
-            onChange={setDitherConfig}
-            disabled={!media}
-          />
-        </section>
-
-        {/* Right Column: Physical OLED Canvas Simulator & Hardware Controls */}
-        <section className="lg:col-span-6 space-y-6 flex flex-col items-center">
-          <div className="w-full bg-oled-surface border border-oled-border rounded-xl p-6 flex flex-col items-center space-y-6 shadow-lg">
-            {/* Display Header & Phosphor Theme Selector */}
-            <div className="flex items-center justify-between w-full border-b border-oled-border/60 pb-3">
-              <div className="flex items-center space-x-2">
-                <Sparkles className="w-4 h-4 text-oled-cyan" />
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                  Simulated 128×64 Physical OLED Panel
-                </span>
-              </div>
-
-              <div className="flex items-center space-x-2 text-xs">
-                <span className="text-oled-muted font-mono">Phosphor:</span>
-                <select
-                  value={theme}
-                  onChange={(e) => setTheme(e.target.value as PhosphorTheme)}
-                  className="bg-oled-panel border border-oled-border rounded px-2.5 py-1 text-xs text-slate-200 font-mono cursor-pointer"
-                >
-                  <option value="cyan">Classic Cyan (0x00F0FF)</option>
-                  <option value="white">Crisp White (0xFFFFFF)</option>
-                  <option value="amber">Warm Amber (0xFFB000)</option>
-                  <option value="green">Matrix Green (0x00FF66)</option>
-                  <option value="yellow-blue">Yellow/Blue Dual</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Physical OLED Canvas */}
-            <div className="py-2">
-              <OledCanvas frameData={ditheredFrame} theme={theme} scale={4} />
-            </div>
-
-            {/* Playback Controls & FPS / Speed Accelerator Bar */}
-            <div className="w-full bg-oled-panel border border-oled-border rounded-lg p-3 space-y-3">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div className="flex items-center space-x-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsPlaying(!isPlaying)}
-                    disabled={!media}
-                    className="p-2 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-oled-cyan border border-cyan-500/40 disabled:opacity-40 cursor-pointer"
-                  >
-                    {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveFrameIndex(0)}
-                    disabled={!media}
-                    className="p-2 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 disabled:opacity-40 cursor-pointer"
-                  >
-                    <SkipBack className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      media && setActiveFrameIndex(Math.max(0, media.frames.length - 1))
-                    }
-                    disabled={!media}
-                    className="p-2 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 disabled:opacity-40 cursor-pointer"
-                  >
-                    <SkipForward className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsPlaying(false);
-                      setActiveFrameIndex(0);
-                    }}
-                    disabled={!media}
-                    className="p-2 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 disabled:opacity-40 cursor-pointer"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Target FPS Selector */}
-                <div className="flex items-center space-x-2 text-xs font-mono">
-                  <span className="text-slate-400">Target FPS:</span>
-                  {[15, 24, 30, 45, 60].map((rate) => (
-                    <button
-                      key={rate}
-                      type="button"
-                      onClick={() => setTargetFps(rate)}
-                      className={`px-2 py-0.5 rounded cursor-pointer ${
-                        targetFps === rate
-                          ? 'bg-cyan-500/20 text-oled-cyan border border-cyan-500/40 font-bold'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      {rate}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Speed Multiplier Accelerator */}
-                <div className="flex items-center space-x-2 text-xs font-mono">
-                  <Gauge className="w-3.5 h-3.5 text-amber-400" />
-                  <span className="text-slate-400">Speed:</span>
-                  {[1.0, 1.25, 1.5, 2.0].map((mult) => (
-                    <button
-                      key={mult}
-                      type="button"
-                      onClick={() => setSpeedMultiplier(mult)}
-                      className={`px-1.5 py-0.5 rounded cursor-pointer ${
-                        speedMultiplier === mult
-                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      {mult}x
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Scrubber Bar */}
-              <div className="flex items-center space-x-3">
-                <input
-                  type="range"
-                  min="0"
-                  max={media ? Math.max(0, media.frames.length - 1) : 0}
-                  value={activeFrameIndex}
-                  onChange={(e) => setActiveFrameIndex(parseInt(e.target.value, 10))}
-                  disabled={!media}
-                  className="flex-1 accent-cyan-400 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
-                />
-                <span className="text-[11px] font-mono text-slate-400 min-w-[65px] text-right">
-                  {String(activeFrameIndex + 1).padStart(3, '0')} /{' '}
-                  {String(media ? media.frames.length : 0).padStart(3, '0')}
-                </span>
-              </div>
-            </div>
           </div>
-
-          {/* Architecture & Dynamic Target Hardware Status */}
-          <div className="w-full bg-oled-surface border border-oled-border rounded-xl p-4 space-y-2.5 text-xs font-mono text-slate-400">
-            <div className="flex items-center justify-between text-slate-300">
-              <span className="flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-oled-cyan" />
-                Pipeline State:
-              </span>
-              <span className="text-emerald-400">
-                {media
-                  ? `Ingested (${media.sourceInfo.type.toUpperCase()}) — ${ditherConfig.algorithm.toUpperCase()} @ ${Math.round(
-                      targetFps * speedMultiplier
-                    )} FPS`
-                  : 'Awaiting Media Ingestion'}
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-slate-400 text-[11px]">
-              <span>Hardware Transmission Speed:</span>
-              <span className="text-amber-300 font-bold">800kHz Overclocked I2C Bus (~10ms/frame)</span>
-            </div>
-            <div className="flex items-center justify-between text-slate-400 text-[11px]">
-              <span>WebSerial Live Stream:</span>
-              <span className="flex items-center gap-1 text-cyan-300">
-                <Zap className="w-3 h-3 text-amber-400 animate-pulse" />
-                {serialConnected ? 'Active (Live streaming frames)' : 'Ready (Click Connect USB)'}
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-slate-400 text-[11px]">
-              <span>Target Hardware:</span>
-              <span className="flex items-center gap-1 text-cyan-300 font-bold">
-                <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-                {hardwareConfig.mcu.toUpperCase()} {hardwareConfig.display.toUpperCase()} (SDA={hardwareConfig.sdaPin}, SCL={hardwareConfig.sclPin})
-              </span>
-            </div>
+          <div>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Crop / Scale</h2>
+            <CropControls 
+              settings={cropSettings} 
+              onChange={setCropSettings} 
+              disabled={!media} 
+            />
           </div>
-        </section>
+          <div>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Trim Sequence</h2>
+            <TrimControls 
+              totalFrames={media ? media.frames.length : 0} 
+              onTrim={(start, end) => setTrimRange({ start, end })}
+              disabled={!media}
+            />
+          </div>
+        </aside>
       </main>
 
-      {/* Export Modal */}
-      <ExportModal
-        isOpen={exportModalOpen}
-        onClose={() => setExportModalOpen(false)}
-        cppCode={cppCode}
-        frameCount={media ? media.frames.length : 0}
+      {/* Status Footer */}
+      <footer className="h-7 border-t border-oled-border px-4 flex items-center justify-between text-[10px] font-mono text-oled-muted bg-oled-surface shrink-0">
+        <div className="flex items-center space-x-4">
+          <span className="flex items-center gap-1.5">
+            <span className={`w-1.5 h-1.5 rounded-full ${serialConnected ? 'bg-emerald-500' : 'bg-slate-600'}`}></span>
+            {hardwareConfig.mcu.toUpperCase()} ({serialConnected ? 'Connected' : 'Offline'})
+          </span>
+          <span>{ditherConfig.algorithm.toUpperCase()}</span>
+          <span>{targetFps} FPS</span>
+        </div>
+        <div>
+          {media ? `${trimRange.end - trimRange.start + 1} frames selected` : 'No media'}
+        </div>
+      </footer>
+
+      {/* Modals */}
+      <SettingsModal 
+        isOpen={settingsOpen} 
+        onClose={() => setSettingsOpen(false)} 
+        config={hardwareConfig} 
+        onChange={setHardwareConfig} 
+      />
+      <ExportModal 
+        isOpen={exportModalOpen} 
+        onClose={() => setExportModalOpen(false)} 
+        cppCode={cppCode} 
+        frameCount={trimRange.end - trimRange.start + 1} 
       />
     </div>
   );

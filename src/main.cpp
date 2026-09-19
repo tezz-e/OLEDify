@@ -12,7 +12,8 @@ U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
 
 // WebSerial Live Stream Buffer (1024 bytes)
 uint8_t liveStreamBuffer[FRAME_SIZE_BYTES];
-bool hasReceivedStreamFrame = false;
+unsigned long lastSerialFrameTime = 0;
+bool isStreaming = false;
 
 // Serial Packet State Machine
 enum StreamState { SEARCH_SYNC1, SEARCH_SYNC2, READING_PAYLOAD };
@@ -60,8 +61,9 @@ void processSerialStream() {
         u8g2.drawXBMP(0, 0, FRAME_WIDTH, FRAME_HEIGHT, liveStreamBuffer);
         u8g2.sendBuffer();
 
-        // Lock live stream mode: permanently disable onboard PROGMEM loop
-        hasReceivedStreamFrame = true;
+        // Update stream state for watchdog
+        lastSerialFrameTime = millis();
+        isStreaming = true;
         streamState = SEARCH_SYNC1; // Reset for next frame
       }
     }
@@ -69,11 +71,16 @@ void processSerialStream() {
 }
 
 void loop() {
-  // 1. Process WebSerial live stream packets
+  // Watchdog: If no frame received for 2 seconds, revert to PROGMEM
+  if (isStreaming && (millis() - lastSerialFrameTime > 2000)) {
+    isStreaming = false;
+  }
+
+  // Always process incoming serial to catch new streams
   processSerialStream();
 
-  // 2. ONLY run PROGMEM fallback animation if no WebSerial stream has been received yet
-  if (!hasReceivedStreamFrame) {
+  // If not actively streaming, play PROGMEM fallback animation
+  if (!isStreaming) {
     static unsigned long lastFrameTime = 0;
     static int currentFrame = 0;
     

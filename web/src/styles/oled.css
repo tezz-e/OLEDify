@@ -1,54 +1,53 @@
-/* Authentic OLED Pixel Grid and Phosphor Bloom Emulation */
+/* OLED Display Simulation Styles */
 
 .oled-bezel {
-  background: radial-gradient(circle at 50% 30%, #1a2332 0%, #0d1219 100%);
-  border: 2px solid #2d3748;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8), 0 8px 24px rgba(0, 0, 0, 0.6);
+  background: linear-gradient(145deg, #111820 0%, #0a0e14 100%);
+  border: 1.5px solid #1e293b;
+  box-shadow: 
+    inset 0 1px 3px rgba(0, 0, 0, 0.8),
+    0 4px 20px rgba(0, 0, 0, 0.5),
+    0 0 1px rgba(255, 255, 255, 0.05);
 }
 
-.oled-screen-glass {
-  background-color: #040608;
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.95);
-  position: relative;
+.oled-screen {
+  background: #020304;
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.95);
 }
 
-.oled-screen-glass::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.04) 0%,
-    rgba(255, 255, 255, 0.01) 40%,
-    transparent 60%
-  );
-  pointer-events: none;
+/* Phosphor glow effects */
+.glow-cyan { filter: drop-shadow(0 0 3px rgba(0, 240, 255, 0.5)); }
+.glow-white { filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.5)); }
+.glow-amber { filter: drop-shadow(0 0 3px rgba(255, 176, 0, 0.5)); }
+.glow-green { filter: drop-shadow(0 0 3px rgba(0, 255, 102, 0.5)); }
+.glow-yellow-blue { filter: drop-shadow(0 0 3px rgba(0, 229, 255, 0.5)); }
+
+/* Segmented control base */
+.seg-control {
+  display: inline-flex;
+  background: #141a22;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
 }
 
-/* Sub-pixel gap grid emulation */
-.oled-subpixel-grid {
-  background-size: 4px 4px;
-  background-image: 
-    linear-gradient(to right, rgba(0, 0, 0, 0.7) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.7) 1px, transparent 1px);
+.seg-control button {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  border-radius: 4px;
+  color: #64748b;
+  transition: all 0.15s;
+  cursor: pointer;
+  border: none;
+  background: transparent;
 }
 
-/* Phosphor Glow Drop Shadows */
-.glow-cyan {
-  filter: drop-shadow(0 0 4px rgba(0, 240, 255, 0.65)) drop-shadow(0 0 12px rgba(0, 240, 255, 0.3));
-}
+.seg-control button:hover { color: #94a3b8; }
 
-.glow-white {
-  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.7)) drop-shadow(0 0 12px rgba(255, 255, 255, 0.3));
-}
-
-.glow-amber {
-  filter: drop-shadow(0 0 4px rgba(255, 176, 0, 0.7)) drop-shadow(0 0 12px rgba(255, 176, 0, 0.3));
-}
-
-.glow-green {
-  filter: drop-shadow(0 0 4px rgba(0, 255, 102, 0.7)) drop-shadow(0 0 12px rgba(0, 255, 102, 0.3));
+.seg-control button.active {
+  background: rgba(0, 240, 255, 0.12);
+  color: #00f0ff;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.15);
 }

@@ -3,8 +3,72 @@
 @tailwind utilities;
 
 @layer base {
+  * { box-sizing: border-box; }
+  
   body {
-    @apply bg-oled-bg text-slate-200 overflow-x-hidden;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: #05070a;
+    color: #e2e8f0;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Custom scrollbars */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #484f58; }
+
+  /* Range slider styling */
+  input[type='range'] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    height: 20px;
+  }
+
+  input[type='range']::-webkit-slider-runnable-track {
+    height: 4px;
+    background: #1e293b;
+    border-radius: 2px;
+  }
+
+  input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #00f0ff;
+    border: 2px solid #0d1117;
+    margin-top: -5px;
+    box-shadow: 0 0 6px rgba(0, 240, 255, 0.4);
+    transition: box-shadow 0.15s;
+  }
+
+  input[type='range']::-webkit-slider-thumb:hover {
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.7);
+  }
+
+  input[type='range']::-moz-range-track {
+    height: 4px;
+    background: #1e293b;
+    border-radius: 2px;
+  }
+
+  input[type='range']::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #00f0ff;
+    border: 2px solid #0d1117;
+    box-shadow: 0 0 6px rgba(0, 240, 255, 0.4);
+  }
+
+  /* Focus visible rings */
+  button:focus-visible, select:focus-visible, input:focus-visible {
+    outline: 2px solid #00f0ff;
+    outline-offset: 2px;
   }
 }

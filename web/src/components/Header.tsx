@@ -1,57 +1,60 @@
 import React from 'react';
-import { Cpu, Download, Sparkles, Zap } from 'lucide-react';
+import { Settings } from 'lucide-react';
 
 interface HeaderProps {
-  serialConnected?: boolean;
-  onSerialConnect?: () => void;
-  onExportClick?: () => void;
+  serialConnected: boolean;
+  onSerialToggle: () => void;
+  onExportClick: () => void;
+  onSettingsOpen: () => void;
+  hasMedia: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  serialConnected = false,
-  onSerialConnect,
+  serialConnected,
+  onSerialToggle,
   onExportClick,
+  onSettingsOpen,
+  hasMedia,
 }) => {
   return (
-    <header className="h-14 border-b border-oled-border bg-oled-surface px-4 flex items-center justify-between">
-      <div className="flex items-center space-x-3">
-        <div className="h-8 w-8 rounded bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-oled-cyan">
-          <Sparkles className="w-4 h-4 animate-pulse" />
-        </div>
-        <div>
-          <h1 className="text-sm font-bold tracking-wider text-slate-100 flex items-center gap-2">
-            OLED VISUAL STUDIO
-            <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-cyan-500/20 text-oled-cyan border border-cyan-500/30">
-              128×64 STUDIO
-            </span>
-          </h1>
-          <p className="text-[11px] text-oled-muted">ESP32-S3 SH1106 / SSD1306 Visual Engine</p>
-        </div>
+    <header className="h-[44px] flex items-center justify-between px-4 bg-oled-surface border-b border-oled-border shrink-0">
+      <div className="flex items-center">
+        <h1 className="text-base font-semibold tracking-tight text-slate-100">OLEDify</h1>
       </div>
-
+      
       <div className="flex items-center space-x-3">
-        {/* Connect USB Serial Button */}
-        <button
-          type="button"
-          onClick={onSerialConnect}
-          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded text-xs font-mono border transition-all cursor-pointer ${
-            serialConnected
-              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 animate-pulse'
-              : 'bg-oled-panel text-slate-300 border-oled-border hover:bg-slate-800'
-          }`}
+        <button 
+          onClick={onSettingsOpen}
+          className="text-slate-400 hover:text-slate-200 p-1 rounded hover:bg-oled-panel transition-colors"
+          title="Settings"
         >
-          {serialConnected ? <Zap className="w-3.5 h-3.5 text-emerald-400" /> : <Cpu className="w-3.5 h-3.5 text-cyan-400" />}
-          <span>{serialConnected ? 'ESP32 Connected (Live Stream)' : 'Connect USB Serial'}</span>
+          <Settings className="w-4 h-4" />
         </button>
 
-        {/* Export frames.h Button */}
         <button
-          type="button"
-          onClick={onExportClick}
-          className="flex items-center space-x-1.5 px-3 py-1.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-oled-cyan border border-cyan-500/40 text-xs font-medium transition-all cursor-pointer"
+          onClick={onSerialToggle}
+          className="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-oled-panel border border-oled-border hover:bg-oled-border-bright transition-colors text-xs font-medium text-slate-200"
         >
-          <Download className="w-3.5 h-3.5" />
-          <span>Export frames.h</span>
+          <span className="relative flex h-2 w-2">
+            {serialConnected && (
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            )}
+            <span className={`relative inline-flex rounded-full h-2 w-2 ${serialConnected ? 'bg-emerald-500' : 'bg-slate-600'}`}></span>
+          </span>
+          <span>{serialConnected ? 'Connected' : 'Connect USB'}</span>
+        </button>
+
+        <button
+          onClick={onExportClick}
+          disabled={!hasMedia}
+          title={!hasMedia ? "Upload media first" : "Export project"}
+          className={`px-4 py-1 rounded text-xs font-medium transition-colors ${
+            hasMedia 
+              ? 'bg-cyan-500/20 text-oled-cyan border border-cyan-500/40 hover:bg-cyan-500/30 cursor-pointer' 
+              : 'bg-oled-panel text-slate-500 border border-oled-border cursor-not-allowed'
+          }`}
+        >
+          Export
         </button>
       </div>
     </header>
