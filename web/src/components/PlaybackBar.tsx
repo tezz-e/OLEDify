@@ -10,6 +10,7 @@ interface PlaybackBarProps {
   onFpsChange: (fps: number) => void;
   onFrameSeek: (frame: number) => void;
   onReset: () => void;
+  trimRange?: { start: number; end: number };
 }
 
 export const PlaybackBar: React.FC<PlaybackBarProps> = ({
@@ -21,8 +22,14 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
   onFpsChange,
   onFrameSeek,
   onReset,
+  trimRange,
 }) => {
   const pad = (num: number) => num.toString().padStart(3, '0');
+
+  const min = trimRange ? trimRange.start : 0;
+  const max = trimRange ? trimRange.end : Math.max(0, totalFrames - 1);
+  const durationFrames = trimRange ? (trimRange.end - trimRange.start + 1) : totalFrames;
+  const displayFrame = currentFrame - min + 1;
 
   return (
     <div className="flex flex-col w-full max-w-sm mt-4 space-y-2 select-none">
@@ -37,7 +44,7 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
           </button>
           
           <button 
-            onClick={() => onFrameSeek(Math.max(0, currentFrame - 1))}
+            onClick={() => onFrameSeek(Math.max(min, currentFrame - 1))}
             className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-oled-panel rounded transition-colors"
           >
             <SkipBack className="w-4 h-4" />
@@ -52,7 +59,7 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
           </button>
           
           <button 
-            onClick={() => onFrameSeek(Math.min(totalFrames - 1, currentFrame + 1))}
+            onClick={() => onFrameSeek(Math.min(max, currentFrame + 1))}
             className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-oled-panel rounded transition-colors"
           >
             <SkipForward className="w-4 h-4" />
@@ -61,7 +68,7 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
 
         <div className="flex items-center space-x-3 text-xs font-mono">
           <span className="text-slate-400 w-[60px] text-right">
-            {totalFrames > 0 ? `${pad(currentFrame + 1)}/${pad(totalFrames)}` : '---/---'}
+            {durationFrames > 0 ? `${pad(displayFrame)}/${pad(durationFrames)}` : '---/---'}
           </span>
           <select 
             value={targetFps}
@@ -77,12 +84,12 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
       
       <input
         type="range"
-        min={0}
-        max={Math.max(0, totalFrames - 1)}
+        min={min}
+        max={max}
         value={currentFrame}
         onChange={(e) => onFrameSeek(parseInt(e.target.value))}
-        className="w-full"
-        disabled={totalFrames === 0}
+        className="w-full accent-cyan-500 cursor-pointer"
+        disabled={durationFrames === 0}
       />
     </div>
   );
