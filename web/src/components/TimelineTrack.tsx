@@ -140,6 +140,29 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
     window.addEventListener('mouseup', onUp);
   };
 
+  const handleMiddleMouseDown = (e: React.MouseEvent) => {
+    // 1 is the middle mouse button
+    if (e.button === 1) {
+      e.preventDefault();
+      const startX = e.clientX;
+      const startScrollLeft = scrollRef.current?.scrollLeft || 0;
+      
+      const onMove = (mv: MouseEvent) => {
+        if (!scrollRef.current) return;
+        const dx = mv.clientX - startX;
+        scrollRef.current.scrollLeft = startScrollLeft - dx;
+      };
+      
+      const onUp = () => {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+      };
+      
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    }
+  };
+
   // DnD
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -230,6 +253,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
         ref={scrollRef}
         className="flex-1 overflow-x-auto overflow-y-hidden relative"
         style={{ minHeight: RULER_H + CLIP_HEIGHT + 8 }}
+        onMouseDown={handleMiddleMouseDown}
       >
         <div
           className="relative"
