@@ -85,7 +85,10 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
   }, [activeGlobalFrame, clips, thumbPx]);
 
   // Zoom helpers
-  const ZOOM_LEVELS = [0.1, 0.25, 0.33, 0.5, 0.75, 1, 1.5, 2, 3, 4, 5, 8, 10];
+  const ZOOM_LEVELS = [0.05, 0.1, 0.15, 0.25, 0.33, 0.5, 0.75, 1, 1.5, 2, 3, 4];
+  const MIN_ZOOM = ZOOM_LEVELS[0];
+  const MAX_ZOOM = ZOOM_LEVELS[ZOOM_LEVELS.length - 1];
+  const ZOOM_RATIO = MAX_ZOOM / MIN_ZOOM;
   
   const zoomIn = useCallback(() => {
     const currentIdx = ZOOM_LEVELS.findIndex(z => z > zoomLevel - 0.01);
@@ -249,11 +252,11 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
             <ElasticSlider
               startingValue={0}
               maxValue={100}
-              defaultValue={Math.max(0, Math.min(100, 100 * Math.log(zoomLevel / 0.1) / Math.log(100)))}
+              defaultValue={Math.max(0, Math.min(100, 100 * Math.log(zoomLevel / MIN_ZOOM) / Math.log(ZOOM_RATIO)))}
               isStepped={false}
               onChange={(val) => {
                 startTransition(() => {
-                  onZoomChange(0.1 * Math.pow(100, val / 100));
+                  onZoomChange(MIN_ZOOM * Math.pow(ZOOM_RATIO, val / 100));
                 });
               }}
               formatValue={(val) => `${Math.round(val)}%`}
