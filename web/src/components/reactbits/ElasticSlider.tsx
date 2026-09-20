@@ -187,8 +187,8 @@ const Slider: React.FC<SliderProps> = ({
             }}
             className="flex flex-grow"
           >
-            <div className="relative h-full flex-grow overflow-hidden bg-[#FFFFFF] border-2 border-[#1A1A1A]">
-              <div className="absolute h-full bg-[#1A1A1A]" style={{ width: `${getRangePercentage()}%` }} />
+            <div className="relative h-full flex-grow overflow-hidden bg-[#E8E4DF] border-2 border-[#1A1A1A]">
+              <div className="absolute h-full bg-[#E85D2A] border-r-2 border-[#1A1A1A]" style={{ width: `${getRangePercentage()}%` }} />
             </div>
           </motion.div>
         </div>
