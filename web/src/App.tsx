@@ -377,7 +377,7 @@ export default function App() {
                         if (ctx) ctx.putImageData(rawSourceFrame, 0, 0);
                         return canvas.toDataURL();
                       })()}
-                      className="max-w-full max-h-full object-contain"
+                      className="w-full h-full object-contain"
                       alt="Source"
                     />
                   ) : (
