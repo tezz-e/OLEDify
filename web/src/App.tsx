@@ -412,9 +412,9 @@ export default function App() {
               <p className="font-mono text-[10px] text-[#6B6B6B]">Exact physical scale • 1:1 pixels • What will display on device</p>
             </div>
 
-            <div className="relative flex items-center justify-center w-full max-h-full flex-1 min-h-0">
+            <div className="relative flex items-center justify-center w-full max-h-full flex-1 min-h-0 gap-6 xl:gap-12">
               {/* Decorative Arrow & Text (Left) */}
-              <div className="absolute left-[5%] top-1/2 -translate-y-1/2 flex items-center gap-2 -translate-x-full pr-4 text-[#E85D2A] font-display font-medium text-xs leading-tight hidden lg:flex">
+              <div className="flex items-center gap-2 text-[#E85D2A] font-display font-medium text-xs leading-tight hidden lg:flex">
                 <div className="text-right">
                   Shows the exact<br/>128 × 64 output<br/>(1:1 pixel scale)
                 </div>
@@ -444,7 +444,7 @@ export default function App() {
               </div>
 
               {/* Decorative Sticky Note (Right) */}
-              <div className="absolute right-[5%] top-1/2 -translate-y-1/2 translate-x-full pl-6 hidden xl:block">
+              <div className="hidden xl:block">
                 <div className="bg-[#FFD485] text-[#1A1A1A] p-4 font-mono text-[10px] w-40 shadow-lg rotate-3">
                   <div className="flex justify-between items-start mb-2">
                     <div className="w-3 h-3 rounded-full bg-[#1A1A1A]/20" />
@@ -637,34 +637,6 @@ export default function App() {
 
         </aside>
       </main>
-
-      {/* Status Footer */}
-      <footer className="absolute bottom-[392px] left-4 h-7 bg-white border border-[#1A1A1A] px-4 flex items-center justify-between text-[10px] font-mono text-[#6B6B6B] z-20 gap-4">
-        <div className="flex items-center space-x-3">
-          <span className="flex items-center gap-1.5">
-            <span className={`w-1.5 h-1.5 ${serialConnected ? 'bg-[#E85D2A]' : 'bg-[#6B6B6B]'}`}></span>
-            {hardwareConfig.mcu.toUpperCase()} (
-            <DecryptedText
-              key={serialConnected ? 'connected' : 'offline'}
-              text={serialConnected ? 'CONNECTED' : 'OFFLINE'}
-              speed={30}
-              characters="0123456789ABCDEF"
-              animateOn="view"
-            />
-            )
-          </span>
-          <span>{ditherConfig.algorithm.toUpperCase()}</span>
-          <span>{targetFps} FPS</span>
-        </div>
-        <div className="flex items-center gap-1">
-          {media ? (
-            <>
-              <CountUp to={media.frames.length} duration={0.4} />
-              <span>FRAMES_TOTAL</span>
-            </>
-          ) : 'NO_MEDIA'}
-        </div>
-      </footer>
 
       {/* Modals */}
       <SettingsModal 
