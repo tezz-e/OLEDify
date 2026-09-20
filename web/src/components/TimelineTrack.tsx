@@ -248,12 +248,11 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
           <div className="w-48">
             <ElasticSlider
               startingValue={0}
-              maxValue={ZOOM_LEVELS.length - 1}
-              defaultValue={Math.max(0, ZOOM_LEVELS.findIndex(z => z >= zoomLevel - 0.01))}
-              isStepped={true}
-              stepSize={1}
-              onChange={(val) => onZoomChange(ZOOM_LEVELS[val])}
-              formatValue={(val) => `${Math.round(ZOOM_LEVELS[val] * 100)}%`}
+              maxValue={100}
+              defaultValue={Math.max(0, Math.min(100, 100 * Math.log(zoomLevel / 0.1) / Math.log(100)))}
+              isStepped={false}
+              onChange={(val) => onZoomChange(0.1 * Math.pow(100, val / 100))}
+              formatValue={(val) => `${Math.round(0.1 * Math.pow(100, val / 100) * 100)}%`}
             />
           </div>
           <button

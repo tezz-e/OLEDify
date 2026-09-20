@@ -140,7 +140,7 @@ const Slider: React.FC<SliderProps> = ({
           scale,
           opacity: useTransform(scale, [1, 1.1], [0.8, 1])
         }}
-        className="flex w-full touch-none select-none items-center justify-center gap-2"
+        className="flex w-full touch-none select-none items-center justify-center gap-3"
       >
         <motion.div
           animate={{
@@ -150,14 +150,14 @@ const Slider: React.FC<SliderProps> = ({
           style={{
             x: useTransform(() => (region === 'left' ? -overflow.get() / scale.get() : 0))
           }}
-          className="text-[#1A1A1A] font-bold font-mono text-lg shrink-0 w-6 text-center cursor-pointer"
+          className="text-[#1A1A1A] font-bold font-mono text-lg shrink-0 w-4 text-center cursor-pointer flex items-center justify-center"
         >
           {leftIcon}
         </motion.div>
 
         <div
           ref={sliderRef}
-          className="relative flex w-full flex-grow cursor-grab touch-none select-none items-center py-4 px-1"
+          className="relative flex w-full flex-grow cursor-grab touch-none select-none items-center py-4"
           onPointerMove={handlePointerMove}
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
@@ -181,13 +181,13 @@ const Slider: React.FC<SliderProps> = ({
                 }
                 return 'center';
               }),
-              height: useTransform(scale, [1, 1.1], [6, 12]),
-              marginTop: useTransform(scale, [1, 1.1], [0, -3]),
-              marginBottom: useTransform(scale, [1, 1.1], [0, -3])
+              height: useTransform(scale, [1, 1.1], [8, 12]),
+              marginTop: useTransform(scale, [1, 1.1], [0, -2]),
+              marginBottom: useTransform(scale, [1, 1.1], [0, -2])
             }}
-            className="flex flex-grow border-y border-[#1A1A1A]"
+            className="flex flex-grow"
           >
-            <div className="relative h-full flex-grow overflow-hidden bg-[#F5F0EB]">
+            <div className="relative h-full flex-grow overflow-hidden bg-[#FFFFFF] border-2 border-[#1A1A1A]">
               <div className="absolute h-full bg-[#1A1A1A]" style={{ width: `${getRangePercentage()}%` }} />
             </div>
           </motion.div>
@@ -201,12 +201,12 @@ const Slider: React.FC<SliderProps> = ({
           style={{
             x: useTransform(() => (region === 'right' ? overflow.get() / scale.get() : 0))
           }}
-          className="text-[#1A1A1A] font-bold font-mono text-lg shrink-0 w-6 text-center cursor-pointer"
+          className="text-[#1A1A1A] font-bold font-mono text-lg shrink-0 w-4 text-center cursor-pointer flex items-center justify-center"
         >
           {rightIcon}
         </motion.div>
       </motion.div>
-      <div className="text-[9px] font-mono font-bold tracking-widest text-[#6B6B6B] tabular-nums leading-none">
+      <div className="text-[9px] font-mono font-bold tracking-widest text-[#1A1A1A] tabular-nums mt-1 uppercase text-center w-full">
         {formatValue ? formatValue(value) : Math.round(value)}
       </div>
     </>
