@@ -358,49 +358,51 @@ export default function App() {
           `
         }}>
           {/* Column 1: Full Preview */}
-          <div className="flex-[1.3] p-6 lg:p-8 flex flex-col relative border-r border-[#1A1A1A]/20 min-w-0">
-            <div className="mb-4">
-              <h3 className="font-mono font-bold text-sm text-[#1A1A1A]">FULL PREVIEW</h3>
-              <p className="font-mono text-[10px] text-[#6B6B6B]">See the full video/animation here at normal scale</p>
-            </div>
-            
-            <div className="flex-1 bg-[#080808] border-2 border-[#1A1A1A] p-2 flex flex-col relative overflow-hidden rounded-md shadow-[4px_4px_0_0_#1A1A1A]">
-              <div className="flex-1 relative w-full h-full flex items-center justify-center">
-                {rawSourceFrame ? (
-                  <img 
-                    src={(() => {
-                      const canvas = document.createElement('canvas');
-                      canvas.width = rawSourceFrame.width;
-                      canvas.height = rawSourceFrame.height;
-                      const ctx = canvas.getContext('2d');
-                      if (ctx) ctx.putImageData(rawSourceFrame, 0, 0);
-                      return canvas.toDataURL();
-                    })()}
-                    className="max-w-full max-h-full object-contain"
-                    alt="Source"
-                  />
-                ) : (
-                  <span className="font-mono text-[#6B6B6B] text-xs">NO MEDIA</span>
-                )}
+          <div className="flex-1 p-6 lg:p-8 flex flex-col relative border-r border-[#1A1A1A]/20 min-w-0">
+            <div className="w-full max-w-[650px] ml-auto mr-0 xl:mr-8 flex flex-col h-full">
+              <div className="mb-4">
+                <h3 className="font-mono font-bold text-sm text-[#1A1A1A]">FULL PREVIEW</h3>
+                <p className="font-mono text-[10px] text-[#6B6B6B]">See the full video/animation here at normal scale</p>
               </div>
               
-              {/* Dummy Playbar for Aesthetics (The real one is below) */}
-              <div className="h-8 mt-2 flex items-center px-2 gap-3 text-white">
-                <button className="text-sm font-bold opacity-80 hover:opacity-100">▶</button>
-                <div className="text-[9px] font-mono whitespace-nowrap opacity-60">
-                  {(activeFrameIndex / targetFps).toFixed(2)} / {media ? (media.frames.length / targetFps).toFixed(2) : '0.00'}
+              <div className="flex-1 bg-[#080808] border-2 border-[#1A1A1A] p-2 flex flex-col relative overflow-hidden rounded-md shadow-[4px_4px_0_0_#1A1A1A]">
+                <div className="flex-1 relative w-full h-full flex items-center justify-center">
+                  {rawSourceFrame ? (
+                    <img 
+                      src={(() => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = rawSourceFrame.width;
+                        canvas.height = rawSourceFrame.height;
+                        const ctx = canvas.getContext('2d');
+                        if (ctx) ctx.putImageData(rawSourceFrame, 0, 0);
+                        return canvas.toDataURL();
+                      })()}
+                      className="max-w-full max-h-full object-contain"
+                      alt="Source"
+                    />
+                  ) : (
+                    <span className="font-mono text-[#6B6B6B] text-xs">NO MEDIA</span>
+                  )}
                 </div>
-                <div className="flex-1 h-1 bg-white/20 rounded-full relative">
-                  <div 
-                    className="absolute inset-y-0 left-0 bg-[#E85D2A] rounded-full" 
-                    style={{ width: media && media.frames.length ? `${(activeFrameIndex / media.frames.length) * 100}%` : '0%' }}
-                  />
-                  <div 
-                    className="absolute w-3 h-3 bg-[#E85D2A] rounded-full top-1/2 -translate-y-1/2"
-                    style={{ left: media && media.frames.length ? `calc(${(activeFrameIndex / media.frames.length) * 100}% - 6px)` : '0%' }}
-                  />
+                
+                {/* Dummy Playbar for Aesthetics (The real one is below) */}
+                <div className="h-8 mt-2 flex items-center px-2 gap-3 text-white">
+                  <button className="text-sm font-bold opacity-80 hover:opacity-100">▶</button>
+                  <div className="text-[9px] font-mono whitespace-nowrap opacity-60">
+                    {(activeFrameIndex / targetFps).toFixed(2)} / {media ? (media.frames.length / targetFps).toFixed(2) : '0.00'}
+                  </div>
+                  <div className="flex-1 h-1 bg-white/20 rounded-full relative">
+                    <div 
+                      className="absolute inset-y-0 left-0 bg-[#E85D2A] rounded-full" 
+                      style={{ width: media && media.frames.length ? `${(activeFrameIndex / media.frames.length) * 100}%` : '0%' }}
+                    />
+                    <div 
+                      className="absolute w-3 h-3 bg-[#E85D2A] rounded-full top-1/2 -translate-y-1/2"
+                      style={{ left: media && media.frames.length ? `calc(${(activeFrameIndex / media.frames.length) * 100}% - 6px)` : '0%' }}
+                    />
+                  </div>
+                  <div className="text-[9px] font-mono whitespace-nowrap opacity-60">30 FPS</div>
                 </div>
-                <div className="text-[9px] font-mono whitespace-nowrap opacity-60">30 FPS</div>
               </div>
             </div>
           </div>
