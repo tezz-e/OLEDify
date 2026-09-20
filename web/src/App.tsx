@@ -365,8 +365,8 @@ export default function App() {
                 <p className="font-mono text-[10px] text-[#6B6B6B]">See the full video/animation here at normal scale</p>
               </div>
               
-              <div className="w-full aspect-video bg-[#080808] border-2 border-[#1A1A1A] p-2 flex flex-col relative overflow-hidden rounded-md shadow-[4px_4px_0_0_#1A1A1A]">
-                <div className="flex-1 relative w-full min-h-0 flex items-center justify-center">
+              <div className="flex-1 bg-[#080808] border-2 border-[#1A1A1A] p-2 flex flex-col relative overflow-hidden rounded-md shadow-[4px_4px_0_0_#1A1A1A]">
+                <div className="flex-1 relative w-full h-full min-h-0 flex items-center justify-center">
                   {rawSourceFrame ? (
                     <img 
                       src={(() => {

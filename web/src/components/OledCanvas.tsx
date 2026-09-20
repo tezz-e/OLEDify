@@ -66,13 +66,21 @@ export const OledCanvas: React.FC<OledCanvasProps> = ({ frameData, theme, scale 
           [r, g, b] = [bgR, bgG, bgB];
         }
 
-        for (let sy = 0; sy < scale - 1; sy++) {
-          for (let sx = 0; sx < scale - 1; sx++) {
-            const destIdx = ((y * scale + sy) * canvasWidth + (x * scale + sx)) * 4;
-            bufData[destIdx] = r;
-            bufData[destIdx + 1] = g;
-            bufData[destIdx + 2] = b;
-            bufData[destIdx + 3] = 255;
+        if (scale === 1) {
+          const destIdx = (y * canvasWidth + x) * 4;
+          bufData[destIdx] = r;
+          bufData[destIdx + 1] = g;
+          bufData[destIdx + 2] = b;
+          bufData[destIdx + 3] = 255;
+        } else {
+          for (let sy = 0; sy < scale - 1; sy++) {
+            for (let sx = 0; sx < scale - 1; sx++) {
+              const destIdx = ((y * scale + sy) * canvasWidth + (x * scale + sx)) * 4;
+              bufData[destIdx] = r;
+              bufData[destIdx + 1] = g;
+              bufData[destIdx + 2] = b;
+              bufData[destIdx + 3] = 255;
+            }
           }
         }
       }
