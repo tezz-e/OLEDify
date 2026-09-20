@@ -438,7 +438,7 @@ export default function App() {
                 
                 <div className="bg-[#000] p-1 shadow-[inset_0_0_10px_#000] rounded max-w-full max-h-full shrink">
                   <div className="pointer-events-auto max-w-full max-h-full flex items-center justify-center">
-                    <OledCanvas frameData={processedFrame} theme={ditherConfig.theme} scale={1} />
+                    <OledCanvas frameData={processedFrame} theme={ditherConfig.theme} scale={2} />
                   </div>
                 </div>
 
