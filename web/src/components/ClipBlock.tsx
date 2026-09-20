@@ -153,12 +153,29 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
     window.addEventListener('mouseup', onUp);
   }, [clip.inFrame, clip.outFrame, clip.id, thumbPx, onUpdateBounds, frameCount]);
 
-  // ---- Ghost opacity ----
-  // During drag: 0.75. On release (fading): 0. CSS transition handles the animation.
-  const ghostOpacity = trimDrag?.fading ? 0 : 0.75;
+  // ---- Thumbnail slots ----
+  // Key insight: we never render one img per frame. Instead we compute how many
+  // thumbnail "slots" fit across the VISIBLE (trimmed) width at a fixed display size,
+  // then pick the corresponding source frame for each slot.
+  const SLOT_W = 48; // px — each thumbnail renders at this width, regardless of zoom
+  const activeFrames = clip.outFrame - clip.inFrame + 1;
+  const displayWidth = activeFrames * thumbPx; // pixel width of the active (visible) region
+  const numSlots = Math.max(1, Math.ceil(displayWidth / SLOT_W));
+  const thumbSlots: { src: string; slotWidth: number }[] = [];
 
-  // Show thumbnails only when wide enough to be useful
-  const showThumbs = thumbPx >= 4;
+  if (thumbs.length > 0) {
+    // Distribute slots evenly across the active region
+    for (let s = 0; s < numSlots; s++) {
+      const ratio = numSlots === 1 ? 0.5 : s / (numSlots - 1);
+      const frameIdx = clip.inFrame + Math.round(ratio * (activeFrames - 1));
+      const safeSrc = thumbs[Math.min(frameIdx, thumbs.length - 1)] ?? '';
+      const slotWidth = displayWidth / numSlots;
+      thumbSlots.push({ src: safeSrc, slotWidth });
+    }
+  }
+
+  // Ghost opacity: full while dragging, fades to 0 on release
+  const ghostOpacity = trimDrag?.fading ? 0 : 0.75;
 
   return (
     <div
@@ -168,25 +185,43 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
       onContextMenu={onContextMenu}
       className={`select-none ${isDragging ? 'opacity-40 z-50' : 'z-10'}`}
     >
-      {/* ---- Full thumbnail strip (always rendered from frame 0) ---- */}
+      {/* ---- Full thumbnail strip ---- */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none bg-[#1A1A1A]">
-        {showThumbs && (
-          <div className="absolute top-0 bottom-0 flex" style={{ left: 0 }}>
-            {thumbs.map((url, i) => (
-              <div key={i} className="flex-shrink-0 h-full" style={{ width: thumbPx }}>
-                {url && (
+        {/* Solid color fallback (always visible behind thumbs) */}
+        <div className="absolute inset-0" style={{ background: '#1e3040' }} />
+
+        {/* Thumbnail strip — starts at the in-point offset */}
+        {thumbSlots.length > 0 && (
+          <div
+            className="absolute top-0 bottom-0 flex"
+            style={{ left: isActiveDrag ? activeIn * thumbPx : 0 }}
+          >
+            {thumbSlots.map(({ src, slotWidth }, i) => (
+              <div
+                key={i}
+                className="flex-shrink-0 h-full overflow-hidden"
+                style={{ width: slotWidth }}
+              >
+                {src && (
                   <img
-                    src={url}
+                    src={src}
                     alt=""
                     draggable={false}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: 0.85 }}
+                    style={{
+                      // Always render the image at SLOT_W wide so it's never squished.
+                      // The parent div clips it to slotWidth.
+                      width: SLOT_W,
+                      height: '100%',
+                      objectFit: 'cover',
+                      display: 'block',
+                      opacity: 0.85,
+                    }}
                   />
                 )}
               </div>
             ))}
           </div>
         )}
-        {!showThumbs && <div className="absolute inset-0" style={{ background: '#2a4a5e' }} />}
       </div>
 
       {/* ---- Ghost: left gray (frames 0 → activeIn-1) ---- */}
