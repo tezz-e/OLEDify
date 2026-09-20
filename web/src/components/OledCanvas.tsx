@@ -33,9 +33,16 @@ export const OledCanvas: React.FC<OledCanvasProps> = ({ frameData, theme, scale 
       ctx.fillStyle = '#020304';
       ctx.fillRect(0, 0, canvasWidth, canvasHeight);
       ctx.fillStyle = `rgb(${phosphorColor[0]}, ${phosphorColor[1]}, ${phosphorColor[2]})`;
-      ctx.font = "14px 'IBM Plex Mono', monospace";
       ctx.textAlign = 'center';
-      ctx.fillText('DROP_MEDIA_TO_BEGIN', canvasWidth / 2, canvasHeight / 2);
+      ctx.textBaseline = 'middle';
+      if (scale <= 1) {
+        ctx.font = "8px 'IBM Plex Mono', monospace";
+        ctx.fillText('DROP MEDIA', canvasWidth / 2, canvasHeight / 2 - 5);
+        ctx.fillText('TO BEGIN', canvasWidth / 2, canvasHeight / 2 + 5);
+      } else {
+        ctx.font = `${Math.min(14 * scale, 24)}px 'IBM Plex Mono', monospace`;
+        ctx.fillText('DROP_MEDIA_TO_BEGIN', canvasWidth / 2, canvasHeight / 2);
+      }
       return;
     }
 
