@@ -242,7 +242,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
           {totalActiveFrames} frames
         </span>
 
-        <div className="flex items-center gap-4 mr-4">
+        <div className="flex items-center gap-4 mr-10">
           <div className="w-48">
             <ElasticSlider
               startingValue={0}
