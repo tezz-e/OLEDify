@@ -21,6 +21,7 @@ interface ClipBlockProps {
   isSelected?: boolean;
   onClick?: (e: React.MouseEvent) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
+  onPreviewAssetFrame?: (assetId: string | null, frameIndex?: number) => void;
 }
 
 type TrimDrag = {
@@ -42,6 +43,7 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
   isSelected = false,
   onClick,
   onContextMenu,
+  onPreviewAssetFrame,
 }) => {
   const [thumbs, setThumbs] = useState<string[]>([]);
   const [trimDrag, setTrimDrag] = useState<TrimDrag | null>(null);
@@ -113,12 +115,14 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
       const dx = mv.clientX - startX;
       latestIn = Math.max(0, Math.min(origIn + Math.round(dx / thumbPx), origOut - 1));
       setTrimDrag({ side: 'left', previewIn: latestIn, previewOut: origOut, fading: false });
+      if (onPreviewAssetFrame) onPreviewAssetFrame(asset.id, latestIn);
     };
     const onUp = (upEv: MouseEvent) => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
       // Commit to parent immediately
       onUpdateBounds(clip.id, latestIn, origOut);
+      if (onPreviewAssetFrame) onPreviewAssetFrame(null);
       // Start ghost fade
       setTrimDrag({ side: 'left', previewIn: latestIn, previewOut: origOut, fading: true });
       setTimeout(() => setTrimDrag(null), GHOST_FADE_MS);
@@ -140,11 +144,13 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
       const dx = mv.clientX - startX;
       latestOut = Math.max(origIn + 1, Math.min(origOut + Math.round(dx / thumbPx), frameCount - 1));
       setTrimDrag({ side: 'right', previewIn: origIn, previewOut: latestOut, fading: false });
+      if (onPreviewAssetFrame) onPreviewAssetFrame(asset.id, latestOut);
     };
     const onUp = () => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
       onUpdateBounds(clip.id, origIn, latestOut);
+      if (onPreviewAssetFrame) onPreviewAssetFrame(null);
       setTrimDrag({ side: 'right', previewIn: origIn, previewOut: latestOut, fading: true });
       setTimeout(() => setTrimDrag(null), GHOST_FADE_MS);
     };

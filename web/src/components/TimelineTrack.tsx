@@ -32,6 +32,7 @@ interface TimelineTrackProps {
   onZoomChange: (zoom: number) => void;
   selectedClipIds: string[];
   onSelectClips: (ids: string[]) => void;
+  onPreviewAssetFrame?: (assetId: string | null, frameIndex?: number) => void;
 }
 
 export const TimelineTrack: React.FC<TimelineTrackProps> = ({
@@ -44,6 +45,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
   onZoomChange,
   selectedClipIds,
   onSelectClips,
+  onPreviewAssetFrame,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; clipId: string } | null>(null);
@@ -298,6 +300,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
                           onSelectClips([clip.id]);
                           setContextMenu({ x: e.clientX, y: e.clientY, clipId: clip.id });
                         }}
+                        onPreviewAssetFrame={onPreviewAssetFrame}
                       />
                     );
                   })}
@@ -338,7 +341,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
 
 // ---- Sortable wrapper ----
 const SortableClipWrapper = ({
-  clip, asset, onUpdateBounds, thumbPx, isSelected, onSelect, onContextMenu,
+  clip, asset, onUpdateBounds, thumbPx, isSelected, onSelect, onContextMenu, onPreviewAssetFrame
 }: any) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: clip.id });
   return (
@@ -354,6 +357,7 @@ const SortableClipWrapper = ({
       isSelected={isSelected}
       onClick={onSelect}
       onContextMenu={onContextMenu}
+      onPreviewAssetFrame={onPreviewAssetFrame}
     />
   );
 };

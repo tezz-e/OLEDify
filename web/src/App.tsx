@@ -77,6 +77,7 @@ export default function App() {
   // Advanced Timeline State
   const [zoomLevel, setZoomLevel] = useState(1);
   const [selectedClipIds, setSelectedClipIds] = useState<string[]>([]);
+  const [previewOverride, setPreviewOverride] = useState<{assetId: string, frameIndex: number} | null>(null);
 
   const timelineMedia = useMemo(() => {
     if (clips.length === 0) return null;
@@ -276,11 +277,21 @@ export default function App() {
 
   // --- PROCESSING PIPELINE ---
   useEffect(() => {
-    if (!media || !media.frames[activeFrameIndex]) {
+    let sourceFrame;
+    if (previewOverride && assets[previewOverride.assetId]) {
+      sourceFrame = assets[previewOverride.assetId].media.frames[previewOverride.frameIndex]?.imageData;
+    } else {
+      if (!media || !media.frames[activeFrameIndex]) {
+        setProcessedFrame(null);
+        return;
+      }
+      sourceFrame = media.frames[activeFrameIndex].imageData;
+    }
+
+    if (!sourceFrame) {
       setProcessedFrame(null);
       return;
     }
-    const sourceFrame = media.frames[activeFrameIndex].imageData;
     
     const sourceCanvas = imageDataToCanvas(sourceFrame);
     const cropped128x64 = renderCropTo128x64(sourceCanvas, cropSettings);
@@ -293,7 +304,7 @@ export default function App() {
       lastStreamTime.current = now;
       serialStreamer.sendFrame(xbmpBytes);
     }
-  }, [media, activeFrameIndex, ditherConfig, cropSettings, serialConnected, targetFps]);
+  }, [media, activeFrameIndex, ditherConfig, cropSettings, serialConnected, targetFps, previewOverride, assets]);
 
   // --- ACTIONS ---
   const handleSerialToggle = async () => {
@@ -428,6 +439,13 @@ export default function App() {
                 onFrameSelect={(i) => {
                   setIsPlaying(false);
                   setActiveFrameIndex(i);
+                }}
+                onPreviewAssetFrame={(assetId, frameIndex) => {
+                  if (assetId && frameIndex !== undefined) {
+                    setPreviewOverride({ assetId, frameIndex });
+                  } else {
+                    setPreviewOverride(null);
+                  }
                 }}
                 zoomLevel={zoomLevel}
                 onZoomChange={setZoomLevel}
