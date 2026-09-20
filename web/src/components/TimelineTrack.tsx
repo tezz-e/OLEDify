@@ -147,6 +147,8 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
       const startX = e.clientX;
       const startScrollLeft = scrollRef.current?.scrollLeft || 0;
       
+      document.body.style.cursor = 'grabbing';
+      
       const onMove = (mv: MouseEvent) => {
         if (!scrollRef.current) return;
         const dx = mv.clientX - startX;
@@ -154,6 +156,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
       };
       
       const onUp = () => {
+        document.body.style.cursor = '';
         window.removeEventListener('mousemove', onMove);
         window.removeEventListener('mouseup', onUp);
       };
@@ -256,8 +259,8 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
         onMouseDown={handleMiddleMouseDown}
       >
         <div
-          className="relative"
-          style={{ width: Math.max(contentWidth, 100), height: RULER_H + CLIP_HEIGHT + 8 }}
+          className="relative min-h-full"
+          style={{ width: Math.max(contentWidth, 100), minHeight: RULER_H + CLIP_HEIGHT + 8 }}
         >
 
           {/* RULER */}
