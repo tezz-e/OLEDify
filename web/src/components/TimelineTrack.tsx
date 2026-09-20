@@ -17,6 +17,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { TimelineClip, MediaAsset } from '../types/media';
 import { ClipBlock, CLIP_HEIGHT } from './ClipBlock';
 import { ContextMenu } from './ContextMenu';
+import ElasticSlider from './reactbits/ElasticSlider';
 
 const THUMB_BASE = 12; // px per frame at zoom=1 — small so default view fits many frames
 const RULER_H = 28;
@@ -243,20 +244,18 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
           {totalActiveFrames} frames
         </span>
 
-        <div className="flex items-center gap-1">
-          <button
-            onClick={zoomOut}
-            className="w-6 h-6 flex items-center justify-center border border-[#1A1A1A] bg-white hover:bg-[#1A1A1A] hover:text-white text-[#1A1A1A] font-mono text-sm font-bold transition-colors leading-none"
-            title="Zoom out (Ctrl+Scroll)"
-          >−</button>
-          <span className="text-[9px] font-mono text-[#6B6B6B] w-9 text-center tabular-nums select-none">
-            {zoomPct}%
-          </span>
-          <button
-            onClick={zoomIn}
-            className="w-6 h-6 flex items-center justify-center border border-[#1A1A1A] bg-white hover:bg-[#1A1A1A] hover:text-white text-[#1A1A1A] font-mono text-sm font-bold transition-colors leading-none"
-            title="Zoom in (Ctrl+Scroll)"
-          >+</button>
+        <div className="flex items-center gap-4 mr-4">
+          <div className="w-48">
+            <ElasticSlider
+              startingValue={0}
+              maxValue={ZOOM_LEVELS.length - 1}
+              defaultValue={Math.max(0, ZOOM_LEVELS.findIndex(z => z >= zoomLevel - 0.01))}
+              isStepped={true}
+              stepSize={1}
+              onChange={(val) => onZoomChange(ZOOM_LEVELS[val])}
+              formatValue={(val) => `${Math.round(ZOOM_LEVELS[val] * 100)}%`}
+            />
+          </div>
           <button
             onClick={zoomTo1}
             className="h-6 px-2 border border-[#1A1A1A] bg-white hover:bg-[#1A1A1A] hover:text-white text-[#1A1A1A] font-mono text-[8px] font-bold tracking-widest transition-colors leading-none"
