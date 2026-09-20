@@ -83,6 +83,21 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
     return px;
   }, [activeGlobalFrame, clips, thumbPx]);
 
+  // Zoom helpers
+  const ZOOM_LEVELS = [0.1, 0.25, 0.33, 0.5, 0.75, 1, 1.5, 2, 3, 4, 5, 8, 10];
+  
+  const zoomIn = useCallback(() => {
+    const currentIdx = ZOOM_LEVELS.findIndex(z => z > zoomLevel - 0.01);
+    if (currentIdx < ZOOM_LEVELS.length - 1) onZoomChange(ZOOM_LEVELS[currentIdx + 1]);
+  }, [zoomLevel, onZoomChange]);
+  
+  const zoomOut = useCallback(() => {
+    const currentIdx = ZOOM_LEVELS.findIndex(z => z >= zoomLevel - 0.01);
+    if (currentIdx > 0) onZoomChange(ZOOM_LEVELS[currentIdx - 1]);
+  }, [zoomLevel, onZoomChange]);
+
+  const zoomTo1 = () => onZoomChange(1);
+
   // Ctrl + Scroll to zoom
   useEffect(() => {
     const el = scrollRef.current;
@@ -90,13 +105,13 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
     const onWheel = (e: WheelEvent) => {
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
-        const factor = e.deltaY > 0 ? -0.25 : 0.25;
-        onZoomChange(Math.max(0.1, Math.min(zoomLevel + factor, 10)));
+        if (e.deltaY > 0) zoomOut();
+        else zoomIn();
       }
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
-  }, [zoomLevel, onZoomChange]);
+  }, [zoomIn, zoomOut]);
 
   // Ruler scrub — maps pixel click to global active frame
   const isScrubbing = useRef(false);
@@ -207,8 +222,6 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
     return ticks;
   }, [clips, thumbPx]);
 
-  // Zoom helpers
-  const zoomTo = (next: number) => onZoomChange(Math.max(0.1, Math.min(next, 10)));
   const zoomPct = Math.round(zoomLevel * 100);
 
   if (clips.length === 0) {
@@ -232,7 +245,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
 
         <div className="flex items-center gap-1">
           <button
-            onClick={() => zoomTo(zoomLevel / 2)}
+            onClick={zoomOut}
             className="w-6 h-6 flex items-center justify-center border border-[#1A1A1A] bg-white hover:bg-[#1A1A1A] hover:text-white text-[#1A1A1A] font-mono text-sm font-bold transition-colors leading-none"
             title="Zoom out (Ctrl+Scroll)"
           >−</button>
@@ -240,12 +253,12 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
             {zoomPct}%
           </span>
           <button
-            onClick={() => zoomTo(zoomLevel * 2)}
+            onClick={zoomIn}
             className="w-6 h-6 flex items-center justify-center border border-[#1A1A1A] bg-white hover:bg-[#1A1A1A] hover:text-white text-[#1A1A1A] font-mono text-sm font-bold transition-colors leading-none"
             title="Zoom in (Ctrl+Scroll)"
           >+</button>
           <button
-            onClick={() => zoomTo(1)}
+            onClick={zoomTo1}
             className="h-6 px-2 border border-[#1A1A1A] bg-white hover:bg-[#1A1A1A] hover:text-white text-[#1A1A1A] font-mono text-[8px] font-bold tracking-widest transition-colors leading-none"
           >1:1</button>
         </div>
