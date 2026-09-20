@@ -97,8 +97,6 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
     if (currentIdx > 0) onZoomChange(ZOOM_LEVELS[currentIdx - 1]);
   }, [zoomLevel, onZoomChange]);
 
-  const zoomTo1 = () => onZoomChange(1);
-
   // Ctrl + Scroll to zoom
   useEffect(() => {
     const el = scrollRef.current;
@@ -255,10 +253,6 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
               formatValue={(val) => `${Math.round(val)}%`}
             />
           </div>
-          <button
-            onClick={zoomTo1}
-            className="h-6 px-2 border border-[#1A1A1A] bg-white hover:bg-[#1A1A1A] hover:text-white text-[#1A1A1A] font-mono text-[8px] font-bold tracking-widest transition-colors leading-none"
-          >1:1</button>
         </div>
       </div>
 
