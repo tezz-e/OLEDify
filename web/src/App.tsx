@@ -358,7 +358,7 @@ export default function App() {
           `
         }}>
           {/* Column 1: Full Preview */}
-          <div className="flex-1 p-8 flex flex-col relative border-r border-[#1A1A1A]/20">
+          <div className="flex-[1.3] p-6 lg:p-8 flex flex-col relative border-r border-[#1A1A1A]/20 min-w-0">
             <div className="mb-4">
               <h3 className="font-mono font-bold text-sm text-[#1A1A1A]">FULL PREVIEW</h3>
               <p className="font-mono text-[10px] text-[#6B6B6B]">See the full video/animation here at normal scale</p>
@@ -406,7 +406,7 @@ export default function App() {
           </div>
 
           {/* Column 2: True OLED Preview */}
-          <div className="flex-[1.5] p-8 flex flex-col items-center justify-center relative">
+          <div className="flex-1 p-6 lg:p-8 flex flex-col items-center justify-center relative min-w-0">
             <div className="text-center mb-8">
               <h3 className="font-mono font-bold text-sm text-[#1A1A1A]">TRUE OLED PREVIEW (128 × 64)</h3>
               <p className="font-mono text-[10px] text-[#6B6B6B]">Exact physical scale • 1:1 pixels • What will display on device</p>
@@ -457,8 +457,8 @@ export default function App() {
           </div>
 
           {/* Column 3: Display Info */}
-          <div className="w-[220px] shrink-0 p-8 border-l border-[#1A1A1A]/20 flex flex-col justify-center">
-            <div className="bg-white border-2 border-[#1A1A1A] shadow-[4px_4px_0_0_#1A1A1A] p-4 font-mono text-xs flex flex-col gap-6">
+          <div className="w-[200px] shrink-0 p-6 border-l border-[#1A1A1A]/20 flex flex-col justify-start overflow-y-auto">
+            <div className="bg-white border-2 border-[#1A1A1A] shadow-[4px_4px_0_0_#1A1A1A] p-4 font-mono text-xs flex flex-col gap-5 mt-4 lg:mt-8 mb-auto">
               
               <div>
                 <div className="bg-[#1A1A1A] text-white px-2 py-1 text-[10px] font-bold uppercase tracking-wider mb-3 flex justify-between items-center">
