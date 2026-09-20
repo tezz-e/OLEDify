@@ -359,14 +359,14 @@ export default function App() {
         }}>
           {/* Column 1: Full Preview */}
           <div className="flex-1 p-6 lg:p-8 flex flex-col relative border-r border-[#1A1A1A]/20 min-w-0">
-            <div className="w-full max-w-[650px] ml-auto mr-0 xl:mr-8 flex flex-col h-full">
-              <div className="mb-4">
+            <div className="w-full max-w-[420px] ml-auto mr-0 xl:mr-8 flex flex-col h-full justify-center">
+              <div className="mb-4 shrink-0">
                 <h3 className="font-mono font-bold text-sm text-[#1A1A1A]">FULL PREVIEW</h3>
                 <p className="font-mono text-[10px] text-[#6B6B6B]">See the full video/animation here at normal scale</p>
               </div>
               
-              <div className="flex-1 bg-[#080808] border-2 border-[#1A1A1A] p-2 flex flex-col relative overflow-hidden rounded-md shadow-[4px_4px_0_0_#1A1A1A]">
-                <div className="flex-1 relative w-full h-full flex items-center justify-center">
+              <div className="w-full aspect-video bg-[#080808] border-2 border-[#1A1A1A] p-2 flex flex-col relative overflow-hidden rounded-md shadow-[4px_4px_0_0_#1A1A1A]">
+                <div className="flex-1 relative w-full min-h-0 flex items-center justify-center">
                   {rawSourceFrame ? (
                     <img 
                       src={(() => {
