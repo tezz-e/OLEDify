@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { DecodedMedia } from '../types/media';
+import { CountUp } from './reactbits/CountUp';
 
 interface FrameStripProps {
   media: DecodedMedia | null;
@@ -54,16 +55,16 @@ export const FrameStrip: React.FC<FrameStripProps> = ({ media, activeFrameIndex,
       const containerRect = container.getBoundingClientRect();
       const elRect = activeEl.getBoundingClientRect();
 
-      if (elRect.top < containerRect.top || elRect.bottom > containerRect.bottom) {
-        activeEl.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+      if (elRect.left < containerRect.left || elRect.right > containerRect.right) {
+        activeEl.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
       }
     }
   }, [activeFrameIndex]);
 
   if (!media) {
     return (
-      <div className="flex-1 bg-oled-bg flex items-center justify-center text-[10px] font-mono text-oled-muted p-4 text-center">
-        No frames loaded
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-[#6B6B6B] bg-[#F5F0EB]">
+        <span className="text-[10px] font-mono uppercase tracking-widest">Awaiting Media</span>
       </div>
     );
   }
@@ -76,43 +77,49 @@ export const FrameStrip: React.FC<FrameStripProps> = ({ media, activeFrameIndex,
   const selectedCount = trimRange ? (trimRange.end - trimRange.start + 1) : media.frames.length;
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-oled-surface">
-      <div className="px-4 py-2 border-b border-oled-border flex justify-between items-center bg-oled-surface z-10 shrink-0">
-        <span className="text-xs font-semibold text-slate-300">Frames</span>
-        <span className="text-[10px] font-mono text-oled-cyan bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20">
-          {selectedCount} / {media.frames.length}
+    <div className="flex-1 flex flex-col min-h-0 bg-transparent">
+      <div className="px-6 py-4 border-b border-[#1A1A1A] flex justify-between items-center z-10 shrink-0">
+        <span className="text-xs font-mono font-bold tracking-widest text-[#1A1A1A] uppercase">Frames</span>
+        <span className="text-[10px] font-mono font-bold px-2 py-1 border border-[#1A1A1A] bg-white text-[#1A1A1A] flex items-center gap-1 tabular-nums">
+          <CountUp to={selectedCount} duration={0.4} />
+          <span>/</span>
+          <span>{media.frames.length}</span>
         </span>
       </div>
 
       <div 
         ref={containerRef}
-        className="flex-1 overflow-y-auto p-2 space-y-1.5 hide-scrollbar"
+        className="flex-1 overflow-x-auto flex flex-row items-center px-4 py-8 gap-0 custom-scrollbar bg-[#e5e5e5] shadow-inner"
       >
-        {thumbnails.map((thumb, index) => {
-          const excluded = isExcluded(index);
-          return (
-            <div
-              key={index}
-              onClick={() => onFrameSelect(index)}
-              className={`relative flex items-center p-1 rounded cursor-pointer transition-all ${
-                excluded ? 'opacity-30 grayscale hover:opacity-70' : ''
-              } ${
-                index === activeFrameIndex 
-                  ? 'bg-cyan-500/20 border border-oled-cyan' 
-                  : 'border border-transparent hover:bg-oled-panel'
-              }`}
-            >
-              <span className={`w-8 text-right text-[9px] font-mono pr-2 ${
-                index === activeFrameIndex ? 'text-oled-cyan font-bold' : excluded ? 'text-slate-600 line-through' : 'text-slate-500'
-              }`}>
-                {index}
-              </span>
-              <div className="w-[48px] h-[24px] bg-black rounded-sm border border-slate-800 overflow-hidden shrink-0">
-                <img src={thumb} alt={`Frame ${index}`} className="w-full h-full object-cover" />
+        <div className="bg-[#1A1A1A] p-1 flex gap-0.5 rounded-sm shadow-xl">
+          {thumbnails.map((thumb, index) => {
+            const excluded = isExcluded(index);
+            const isActive = index === activeFrameIndex;
+            return (
+              <div
+                key={index}
+                onClick={() => onFrameSelect(index)}
+                className={`relative flex flex-col shrink-0 cursor-pointer ${
+                  isActive ? 'z-10' : 'opacity-70 hover:opacity-100'
+                }`}
+              >
+                {isActive && (
+                  <>
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-transparent border-t-[#E85D2A] z-20" />
+                    <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-[#E85D2A] -translate-x-1/2 pointer-events-none z-20 shadow-[0_0_8px_rgba(232,93,42,0.8)]" />
+                    <div className="absolute inset-0 border-2 border-[#E85D2A] pointer-events-none z-20" />
+                  </>
+                )}
+                <div className="h-[64px] aspect-video bg-[#080808] overflow-hidden shrink-0 border border-white/5">
+                  <img src={thumb} alt={`Frame ${index}`} className="w-full h-full object-contain" />
+                </div>
+                <span className={`text-[8px] font-mono mt-1 text-center ${isActive ? 'text-[#E85D2A] font-bold' : 'text-[#6B6B6B]'}`}>
+                  {index.toString().padStart(3, '0')}
+                </span>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );

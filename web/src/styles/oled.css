@@ -1,53 +1,17 @@
-/* OLED Display Simulation Styles */
+/* OLED Display Simulation - Technical Blueprint Style */
 
 .oled-bezel {
-  background: linear-gradient(145deg, #111820 0%, #0a0e14 100%);
-  border: 1.5px solid #1e293b;
-  box-shadow: 
-    inset 0 1px 3px rgba(0, 0, 0, 0.8),
-    0 4px 20px rgba(0, 0, 0, 0.5),
-    0 0 1px rgba(255, 255, 255, 0.05);
+  background: #080808;
+  border: 2px solid #1A1A1A;
 }
 
 .oled-screen {
   background: #020304;
-  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.95);
 }
 
-/* Phosphor glow effects */
-.glow-cyan { filter: drop-shadow(0 0 3px rgba(0, 240, 255, 0.5)); }
-.glow-white { filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.5)); }
-.glow-amber { filter: drop-shadow(0 0 3px rgba(255, 176, 0, 0.5)); }
-.glow-green { filter: drop-shadow(0 0 3px rgba(0, 255, 102, 0.5)); }
-.glow-yellow-blue { filter: drop-shadow(0 0 3px rgba(0, 229, 255, 0.5)); }
-
-/* Segmented control base */
-.seg-control {
-  display: inline-flex;
-  background: #141a22;
-  border: 1px solid #1e293b;
-  border-radius: 6px;
-  padding: 2px;
-  gap: 2px;
-}
-
-.seg-control button {
-  padding: 4px 10px;
-  font-size: 11px;
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  border-radius: 4px;
-  color: #64748b;
-  transition: all 0.15s;
-  cursor: pointer;
-  border: none;
-  background: transparent;
-}
-
-.seg-control button:hover { color: #94a3b8; }
-
-.seg-control button.active {
-  background: rgba(0, 240, 255, 0.12);
-  color: #00f0ff;
-  box-shadow: 0 0 8px rgba(0, 240, 255, 0.15);
-}
+/* Phosphor glow effects - kept subtle */
+.glow-cyan { filter: drop-shadow(0 0 2px rgba(0, 240, 255, 0.3)); }
+.glow-white { filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.3)); }
+.glow-amber { filter: drop-shadow(0 0 2px rgba(255, 176, 0, 0.3)); }
+.glow-green { filter: drop-shadow(0 0 2px rgba(0, 255, 102, 0.3)); }
+.glow-yellow-blue { filter: drop-shadow(0 0 2px rgba(0, 229, 255, 0.3)); }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ClickSpark } from './reactbits/ClickSpark';
 
 interface TrimControlsProps {
   totalFrames: number;
@@ -41,11 +42,11 @@ export const TrimControls: React.FC<TrimControlsProps> = ({
   const isTrimmed = originalTotalFrames !== undefined && totalFrames < originalTotalFrames;
 
   return (
-    <div className={`space-y-4 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-      <div className="space-y-1">
-        <div className="flex justify-between text-xs font-mono text-slate-400">
-          <span>Start Frame</span>
-          <span>{startFrame}</span>
+    <div className={`space-y-6 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+      <div className="space-y-2">
+        <div className="flex justify-between items-center">
+          <span className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">Start Frame</span>
+          <span className="text-[#1A1A1A] font-mono text-xs">{startFrame}</span>
         </div>
         <input
           type="range"
@@ -57,14 +58,14 @@ export const TrimControls: React.FC<TrimControlsProps> = ({
             setStartFrame(val);
             onFrameSeek(val);
           }}
-          className="w-full cursor-pointer accent-cyan-500"
+          className="w-full accent-[#E85D2A] cursor-pointer"
         />
       </div>
 
-      <div className="space-y-1">
-        <div className="flex justify-between text-xs font-mono text-slate-400">
-          <span>End Frame</span>
-          <span>{endFrame}</span>
+      <div className="space-y-2">
+        <div className="flex justify-between items-center">
+          <span className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">End Frame</span>
+          <span className="text-[#1A1A1A] font-mono text-xs">{endFrame}</span>
         </div>
         <input
           type="range"
@@ -76,26 +77,35 @@ export const TrimControls: React.FC<TrimControlsProps> = ({
             setEndFrame(val);
             onFrameSeek(val);
           }}
-          className="w-full cursor-pointer accent-cyan-500"
+          className="w-full accent-[#E85D2A] cursor-pointer"
         />
       </div>
 
       <div className="flex gap-2">
-        <button
-          onClick={handleApply}
-          className={`flex-1 py-1.5 rounded text-xs font-medium transition-all ${
-            justApplied 
-              ? 'bg-emerald-600 text-white border border-emerald-500 shadow-sm shadow-emerald-900/50' 
-              : 'bg-oled-panel border border-oled-border text-slate-200 hover:bg-oled-border-bright hover:text-white'
-          }`}
+        <ClickSpark
+          sparkColor="#E85D2A"
+          sparkCount={10}
+          sparkSize={7}
+          sparkRadius={20}
+          duration={350}
+          className="flex-1"
         >
-          {justApplied ? '✓ Trimmed!' : 'Apply Trim'}
-        </button>
+          <button
+            onClick={handleApply}
+            className={`w-full ${
+              justApplied 
+                ? 'bg-[#1A1A1A] text-white border-2 border-[#1A1A1A] py-2 text-[10px] font-mono font-bold tracking-widest uppercase' 
+                : 'accent-btn'
+            }`}
+          >
+            {justApplied ? '✓ Applied' : 'Apply Trim'}
+          </button>
+        </ClickSpark>
 
         {isTrimmed && onResetTrim && (
           <button
             onClick={onResetTrim}
-            className="px-3 py-1.5 rounded text-xs font-medium bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+            className="tech-btn hover:text-[#E85D2A] hover:border-[#E85D2A]"
             title="Reset to original un-trimmed media"
           >
             Reset
@@ -103,7 +113,7 @@ export const TrimControls: React.FC<TrimControlsProps> = ({
         )}
       </div>
 
-      <div className="text-[10px] font-mono text-slate-500 text-center">
+      <div className="text-[10px] font-mono text-[#6B6B6B] text-center">
         {isTrimmed 
           ? `Active Trim: ${totalFrames} frames (Original: ${originalTotalFrames})` 
           : `Selected Range: ${endFrame - startFrame + 1} / ${totalFrames} frames`

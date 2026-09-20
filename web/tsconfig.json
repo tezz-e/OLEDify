@@ -15,6 +15,7 @@
     "jsx": "react-jsx",
 
     /* Interop & strictness */
+    "allowJs": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,

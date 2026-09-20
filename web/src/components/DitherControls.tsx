@@ -9,23 +9,28 @@ interface DitherControlsProps {
 
 export const DitherControls: React.FC<DitherControlsProps> = ({ config, onChange, disabled }) => {
   const algorithms: { id: DitherAlgorithm; label: string }[] = [
-    { id: 'atkinson', label: 'Atkinson' },
-    { id: 'floyd-steinberg', label: 'Floyd-S' },
-    { id: 'bayer-4', label: 'Bayer 4×4' },
-    { id: 'bayer-8', label: 'Bayer 8×8' },
-    { id: 'threshold', label: 'Threshold' }
+    { id: 'atkinson', label: 'ATKINSON' },
+    { id: 'floyd-steinberg', label: 'FLOYD-STEINBERG' },
+    { id: 'bayer-4', label: 'BAYER 4X4' },
+    { id: 'bayer-8', label: 'BAYER 8X8' },
+    { id: 'threshold', label: 'THRESHOLD' }
   ];
+
 
   return (
     <div className={`space-y-4 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-      <div className="space-y-1">
-        <label className="text-xs font-semibold text-slate-300">Algorithm</label>
-        <div className="seg-control w-full flex-wrap">
+      <div className="space-y-2">
+        <label className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">Algorithm</label>
+        <div className="bg-[#F5F0EB] border border-[#1A1A1A] p-1 flex flex-wrap gap-1">
           {algorithms.map((algo) => (
             <button
               key={algo.id}
               onClick={() => onChange({ ...config, algorithm: algo.id })}
-              className={`flex-1 ${config.algorithm === algo.id ? 'active' : ''}`}
+              className={`flex-1 min-w-[70px] text-[10px] font-mono font-bold tracking-wide py-1.5 transition-colors duration-150 border border-[#1A1A1A] ${
+                config.algorithm === algo.id 
+                  ? 'bg-[#1A1A1A] text-white' 
+                  : 'bg-white text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-white'
+              }`}
             >
               {algo.label}
             </button>
@@ -35,9 +40,9 @@ export const DitherControls: React.FC<DitherControlsProps> = ({ config, onChange
 
       {config.algorithm === 'threshold' && (
         <div className="space-y-1 pt-1">
-          <div className="flex justify-between text-xs font-mono text-slate-400">
-            <span>Threshold</span>
-            <span>{config.threshold}</span>
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">Threshold</span>
+            <span className="text-[#1A1A1A] font-mono text-xs">{config.threshold}</span>
           </div>
           <input
             type="range"
@@ -45,15 +50,15 @@ export const DitherControls: React.FC<DitherControlsProps> = ({ config, onChange
             max="255"
             value={config.threshold}
             onChange={(e) => onChange({ ...config, threshold: parseInt(e.target.value) })}
-            className="w-full"
+            className="w-full accent-[#E85D2A] cursor-pointer"
           />
         </div>
       )}
 
       <div className="space-y-1 pt-1">
-        <div className="flex justify-between text-xs font-mono text-slate-400">
-          <span>Brightness</span>
-          <span className={config.brightness > 0 ? 'text-emerald-400' : config.brightness < 0 ? 'text-amber-400' : ''}>
+        <div className="flex justify-between items-center">
+          <span className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">Brightness</span>
+          <span className={`text-xs font-mono ${config.brightness > 0 ? 'text-[#E85D2A]' : 'text-[#1A1A1A]'}`}>
             {config.brightness > 0 ? `+${config.brightness}` : config.brightness}
           </span>
         </div>
@@ -63,14 +68,14 @@ export const DitherControls: React.FC<DitherControlsProps> = ({ config, onChange
           max="100"
           value={config.brightness}
           onChange={(e) => onChange({ ...config, brightness: parseInt(e.target.value) })}
-          className="w-full"
+          className="w-full accent-[#E85D2A] cursor-pointer"
         />
       </div>
 
       <div className="space-y-1 pt-1">
-        <div className="flex justify-between text-xs font-mono text-slate-400">
-          <span>Contrast</span>
-          <span className={config.contrast > 0 ? 'text-emerald-400' : config.contrast < 0 ? 'text-amber-400' : ''}>
+        <div className="flex justify-between items-center">
+          <span className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">Contrast</span>
+          <span className={`text-xs font-mono ${config.contrast > 0 ? 'text-[#E85D2A]' : 'text-[#1A1A1A]'}`}>
             {config.contrast > 0 ? `+${config.contrast}` : config.contrast}
           </span>
         </div>
@@ -80,35 +85,32 @@ export const DitherControls: React.FC<DitherControlsProps> = ({ config, onChange
           max="100"
           value={config.contrast}
           onChange={(e) => onChange({ ...config, contrast: parseInt(e.target.value) })}
-          className="w-full"
+          className="w-full accent-[#E85D2A] cursor-pointer"
         />
       </div>
 
-      <div className="flex items-center justify-between pt-2">
-        <label className="text-xs font-semibold text-slate-300">Invert Colors</label>
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            className="sr-only peer"
-            checked={config.invert}
-            onChange={(e) => onChange({ ...config, invert: e.target.checked })}
-          />
-          <div className="w-8 h-4 bg-oled-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-oled-cyan"></div>
-        </label>
+      <div className="flex items-center justify-between pt-4">
+        <label className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">Invert Colors</label>
+        <input
+          type="checkbox"
+          checked={config.invert}
+          onChange={(e) => onChange({ ...config, invert: e.target.checked })}
+          className="w-4 h-4 accent-[#E85D2A] cursor-pointer"
+        />
       </div>
 
-      <div className="space-y-1 pt-2 border-t border-oled-border">
-        <label className="text-xs font-semibold text-slate-300">Phosphor Theme</label>
+      <div className="space-y-2 pt-4 border-t border-[#1A1A1A]">
+        <label className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">Phosphor Theme</label>
         <select
           value={config.theme}
           onChange={(e) => onChange({ ...config, theme: e.target.value as PhosphorTheme })}
-          className="w-full bg-oled-panel border border-oled-border rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-oled-cyan"
+          className="w-full bg-white border border-[#1A1A1A] text-[#1A1A1A] font-mono px-3 py-2 text-xs focus:border-[#E85D2A] cursor-pointer"
         >
-          <option value="cyan">Cyan</option>
-          <option value="white">White</option>
-          <option value="amber">Amber</option>
-          <option value="green">Green</option>
-          <option value="yellow-blue">Yellow/Blue</option>
+          <option value="cyan">CYAN</option>
+          <option value="white">WHITE</option>
+          <option value="amber">AMBER</option>
+          <option value="green">GREEN</option>
+          <option value="yellow-blue">YELLOW / BLUE</option>
         </select>
       </div>
     </div>

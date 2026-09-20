@@ -15,46 +15,40 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
     onChange({ ...settings, mode });
   };
 
+  const modes: FitMode[] = ['cover', 'contain', 'stretch'];
+
   return (
-    <div className={`space-y-3 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-      <div className="space-y-1">
-        <label className="text-xs font-semibold text-slate-300">Crop Mode</label>
-        <div className="seg-control w-full">
-          <button
-            onClick={() => handleModeChange('cover')}
-            className={`flex-1 ${settings.mode === 'cover' ? 'active' : ''}`}
-          >
-            Cover
-          </button>
-          <button
-            onClick={() => handleModeChange('contain')}
-            className={`flex-1 ${settings.mode === 'contain' ? 'active' : ''}`}
-          >
-            Contain
-          </button>
-          <button
-            onClick={() => handleModeChange('stretch')}
-            className={`flex-1 ${settings.mode === 'stretch' ? 'active' : ''}`}
-          >
-            Stretch
-          </button>
+    <div className={`space-y-6 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+      <div className="space-y-2">
+        <label className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">Crop Mode</label>
+        <div className="bg-[#F5F0EB] border border-[#1A1A1A] p-1 flex gap-1">
+          {modes.map((mode) => (
+            <button
+              key={mode}
+              onClick={() => handleModeChange(mode)}
+              className={`flex-1 text-[10px] font-mono font-bold tracking-wide py-1.5 transition-colors duration-150 border border-[#1A1A1A] uppercase ${
+                settings.mode === mode
+                  ? 'bg-[#1A1A1A] text-white'
+                  : 'bg-white text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-white'
+              }`}
+            >
+              {mode}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="flex items-center space-x-2 pt-1">
+      <div className="flex items-center justify-between pt-2">
+        <label className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">Bicubic Smoothing</label>
         <input
           type="checkbox"
-          id="smoothing"
           checked={settings.smoothing}
           onChange={(e) => onChange({ ...settings, smoothing: e.target.checked })}
-          className="rounded border-oled-border bg-oled-panel text-cyan-500 focus:ring-0 cursor-pointer"
+          className="w-4 h-4 accent-[#E85D2A] cursor-pointer"
         />
-        <label htmlFor="smoothing" className="text-xs text-slate-400 cursor-pointer select-none">
-          Bicubic Smoothing
-        </label>
       </div>
 
-      <div className="text-[10px] font-mono text-slate-500">
+      <div className="text-[10px] font-mono text-[#6B6B6B]">
         Source: {settings.sourceWidth}×{settings.sourceHeight} <br />
         Crop: {Math.round(settings.width)}×{Math.round(settings.height)}
       </div>

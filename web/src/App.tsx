@@ -7,8 +7,19 @@ import { OledCanvas } from './components/OledCanvas';
 import { PlaybackBar } from './components/PlaybackBar';
 import { DitherControls } from './components/DitherControls';
 import { CropControls } from './components/CropControls';
-import { TrimControls } from './components/TrimControls';
 import { ExportModal } from './components/ExportModal';
+import { DecryptedText } from './components/reactbits/DecryptedText';
+import { CountUp } from './components/reactbits/CountUp';
+import Particles from './components/reactbits/Particles';
+import { BlueprintHoverCard } from './components/reactbits/BlueprintHoverCard';
+
+const themePalettes: Record<PhosphorTheme, string[]> = {
+  cyan: ['#00F0FF', '#083B44', '#E0DBD5'],
+  white: ['#FFFFFF', '#4A4A4A', '#E0DBD5'],
+  amber: ['#FFB000', '#592B02', '#E0DBD5'],
+  green: ['#00FF66', '#023D18', '#E0DBD5'],
+  'yellow-blue': ['#00E5FF', '#FFCC00', '#1A1A1A']
+};
 
 import { DecodedMedia, CropSettings } from './types/media';
 import { DitherConfig, PhosphorTheme } from './types/dither';
@@ -158,15 +169,12 @@ export default function App() {
     }
     const sourceFrame = media.frames[activeFrameIndex].imageData;
     
-    // Crop & scale to 128x64
     const sourceCanvas = imageDataToCanvas(sourceFrame);
     const cropped128x64 = renderCropTo128x64(sourceCanvas, cropSettings);
     
-    // Apply dithering
     const { ditheredImageData, xbmpBytes } = applyDithering(cropped128x64, ditherConfig);
     setProcessedFrame(ditheredImageData);
 
-    // Hardware Stream (Throttled)
     const now = performance.now();
     if (serialStreamer.getConnected() && (now - lastStreamTime.current > 1000 / targetFps)) {
       lastStreamTime.current = now;
@@ -204,7 +212,7 @@ export default function App() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-oled-bg overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden text-[#1A1A1A] relative">
       <Header 
         serialConnected={serialConnected}
         onSerialToggle={handleSerialToggle}
@@ -213,95 +221,178 @@ export default function App() {
         hasMedia={!!media}
       />
 
-      <main className="flex-1 flex min-h-0">
-        {/* Left: Source Panel */}
-        <aside className="w-[220px] border-r border-oled-border flex flex-col shrink-0">
-          <DropZone onMediaLoaded={handleMediaLoaded} currentMedia={media} />
-          <FrameStrip 
-            media={media} 
-            activeFrameIndex={activeFrameIndex} 
-            onFrameSelect={(i) => {
-              setIsPlaying(false);
-              setActiveFrameIndex(i);
-            }} 
-          />
-        </aside>
-
-        {/* Center: Canvas + Playback */}
-        <section className="flex-1 flex flex-col items-center justify-center p-6 relative">
-          <OledCanvas frameData={processedFrame} theme={ditherConfig.theme} scale={4} />
-          <PlaybackBar 
-            isPlaying={isPlaying}
-            onTogglePlay={() => setIsPlaying(p => !p)}
-            currentFrame={activeFrameIndex}
-            totalFrames={media ? media.frames.length : 0}
-            targetFps={targetFps}
-            onFpsChange={setTargetFps}
-            onFrameSeek={(f) => {
-              setIsPlaying(false);
-              setActiveFrameIndex(f);
-            }}
-            onReset={() => {
-              setIsPlaying(false);
-              setActiveFrameIndex(0);
-            }}
-          />
+      <main className="flex-1 flex flex-col min-h-0 z-10">
+        {/* Top: Canvas Area on Graph Paper */}
+        <section className="flex-1 flex items-center justify-center p-8 relative min-h-0 overflow-hidden">
+          <div className="absolute inset-0 z-0">
+            <Particles
+              particleColors={['#1A1A1A', '#E85D2A']}
+              particleCount={150}
+              particleSpread={15}
+              speed={0.08}
+              particleBaseSize={80}
+              alphaParticles={true}
+            />
+          </div>
+          <div className="relative z-10 w-full flex items-center justify-center">
+            <div className="pointer-events-auto">
+              <OledCanvas frameData={processedFrame} theme={ditherConfig.theme} scale={6} />
+            </div>
+          </div>
         </section>
 
-        {/* Right: Inspector */}
-        <aside className="w-[260px] border-l border-oled-border overflow-y-auto p-4 space-y-6 shrink-0 custom-scrollbar">
-          <div>
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Dithering</h2>
-            <DitherControls 
-              config={ditherConfig} 
-              onChange={setDitherConfig} 
-              disabled={!media} 
-            />
-          </div>
-          <div>
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Crop / Scale</h2>
-            <CropControls 
-              settings={cropSettings} 
-              onChange={(newSettings) => {
-                if (newSettings.mode !== cropSettings.mode && newSettings.mode === 'cover' && media) {
-                  const cover = computeCoverCrop(media.sourceInfo.sourceWidth, media.sourceInfo.sourceHeight);
-                  setCropSettings({ ...newSettings, ...cover });
-                } else {
-                  setCropSettings(newSettings);
-                }
-              }} 
-              disabled={!media} 
-            />
-          </div>
-          <div>
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Trim Sequence</h2>
-            <TrimControls 
-              totalFrames={media ? media.frames.length : 0} 
-              originalTotalFrames={rawMedia ? rawMedia.frames.length : undefined}
-              onApplyTrim={handleApplyTrim}
-              onResetTrim={handleResetTrim}
-              onFrameSeek={(f) => {
-                setIsPlaying(false);
-                setActiveFrameIndex(f);
-              }}
-              disabled={!media}
-            />
-          </div>
+        {/* Bottom Console — Technical Control Panel */}
+        <aside className="h-[380px] shrink-0 bg-white flex z-20 p-6 gap-6 relative border-t-2 border-[#1A1A1A]">
+          
+          {/* Zone 1: Media Pool (Left) */}
+          <BlueprintHoverCard className="w-[280px] shrink-0 min-w-0">
+            <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6B6B6B] px-4 py-3 border-b-2 border-[#1A1A1A] font-mono z-[2] relative flex items-center gap-2">
+              <span className="w-2 h-2 bg-[#E85D2A]"></span>
+              <span className="text-[#1A1A1A]">MEDIA_POOL</span>
+            </h2>
+            
+            {/* Tabs */}
+            <div className="flex border-b border-[#1A1A1A]/20 bg-[#F5F0EB] shrink-0">
+              <button className="flex-1 py-2 text-[9px] font-bold font-mono tracking-widest text-[#1A1A1A] border-b-2 border-[#E85D2A]">+ IMPORT</button>
+              <button className="flex-1 py-2 text-[9px] font-bold font-mono tracking-widest text-[#6B6B6B] hover:text-[#1A1A1A]">SAMPLES</button>
+              <button className="flex-1 py-2 text-[9px] font-bold font-mono tracking-widest text-[#6B6B6B] hover:text-[#1A1A1A]">RECENT</button>
+            </div>
+
+            <div className="flex-1 flex flex-col min-h-0 overflow-y-auto z-[2] relative">
+              <DropZone onMediaLoaded={handleMediaLoaded} currentMedia={media} />
+              
+              {/* Sample Media Placeholders */}
+              <div className="p-3">
+                <div className="flex gap-2">
+                  <div className="w-1/3 aspect-[4/3] bg-[#080808] border-2 border-[#E85D2A] p-0.5 flex items-center justify-center cursor-pointer">
+                    <div className="w-full h-full border border-[#1A1A1A] bg-[url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=100')] bg-cover opacity-90" />
+                  </div>
+                  <div className="w-1/3 aspect-[4/3] bg-[#1A1A1A] border border-[#6B6B6B] p-0.5 flex items-center justify-center cursor-pointer hover:border-[#1A1A1A]">
+                    <div className="w-full h-full border border-[#1A1A1A] bg-[url('https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?auto=format&fit=crop&q=80&w=100')] bg-cover opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all" />
+                  </div>
+                  <div className="w-1/3 aspect-[4/3] bg-[#1A1A1A] border border-[#6B6B6B] p-0.5 flex items-center justify-center cursor-pointer hover:border-[#1A1A1A]">
+                    <div className="w-full h-full border border-[#1A1A1A] bg-[url('https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=100')] bg-cover opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </BlueprintHoverCard>
+
+          {/* Zone 2: Timeline & Trimming (Center) */}
+          <BlueprintHoverCard className="flex-1 min-w-0 shrink-0">
+            <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6B6B6B] px-6 py-3 border-b-2 border-[#1A1A1A] font-mono z-[2] relative flex justify-between items-center bg-[#F5F0EB]">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-[#E85D2A]"></span>
+                <span className="text-[#1A1A1A]">TIMELINE</span>
+              </div>
+              {media && <span>{media.frames.length} FRAMES | {targetFps} FPS | 00:00 - 00:08.00</span>}
+            </h2>
+            <div className="flex-1 flex flex-col overflow-y-auto z-[2] relative bg-[#F5F0EB]">
+              <FrameStrip 
+                media={media} 
+                activeFrameIndex={activeFrameIndex} 
+                onFrameSelect={(i) => {
+                  setIsPlaying(false);
+                  setActiveFrameIndex(i);
+                }} 
+              />
+              
+              <div className="px-6 py-4 flex flex-col w-full mx-auto space-y-6">
+                <PlaybackBar 
+                  isPlaying={isPlaying}
+                  onTogglePlay={() => setIsPlaying(p => !p)}
+                  currentFrame={activeFrameIndex}
+                  totalFrames={media ? media.frames.length : 0}
+                  targetFps={targetFps}
+                  onFpsChange={setTargetFps}
+                  onFrameSeek={(f) => {
+                    setIsPlaying(false);
+                    setActiveFrameIndex(f);
+                  }}
+                  onReset={() => {
+                    setIsPlaying(false);
+                    setActiveFrameIndex(0);
+                  }}
+                />
+
+                <div className="w-full h-20 bg-[#1A1A1A] border-2 border-[#1A1A1A] rounded-sm overflow-hidden relative">
+                   <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#F5F0EB_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                   <div className="w-full h-full flex items-end px-1 gap-0.5 opacity-60">
+                     {Array.from({length: 120}).map((_, i) => (
+                       <div key={i} className="flex-1 bg-[#6B6B6B]" style={{ height: `${Math.random() * 70 + 10}%` }}></div>
+                     ))}
+                   </div>
+                </div>
+                
+                <div className="text-[9px] font-mono tracking-widest text-[#6B6B6B] flex items-center justify-between uppercase border-t border-[#1A1A1A]/20 pt-4">
+                  <span>&gt; DRAG TO SCRUB</span>
+                  <span>|</span>
+                  <span>SCROLL TO ZOOM</span>
+                  <span>|</span>
+                  <span>SHIFT + DRAG TO SELECT</span>
+                  <span>|</span>
+                  <span>RIGHT CLICK FOR OPTIONS</span>
+                </div>
+              </div>
+            </div>
+          </BlueprintHoverCard>
+
+          {/* Zone 3: Inspector (Right) */}
+          <BlueprintHoverCard className="w-[340px] shrink-0 min-w-0">
+            <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#E85D2A] px-4 py-3 border-b-2 border-[#1A1A1A] font-mono z-[2] relative">INSPECTOR</h2>
+            <div className="flex-1 overflow-y-auto pr-4 px-4 py-4 space-y-6 z-[2] relative">
+              <div>
+                <DitherControls 
+                  config={ditherConfig} 
+                  onChange={setDitherConfig} 
+                  disabled={!media} 
+                />
+              </div>
+              <div className="border-t border-[#1A1A1A] pt-4">
+                <CropControls 
+                  settings={cropSettings} 
+                  onChange={(newSettings) => {
+                    if (newSettings.mode !== cropSettings.mode && newSettings.mode === 'cover' && media) {
+                      const cover = computeCoverCrop(media.sourceInfo.sourceWidth, media.sourceInfo.sourceHeight);
+                      setCropSettings({ ...newSettings, ...cover });
+                    } else {
+                      setCropSettings(newSettings);
+                    }
+                  }} 
+                  disabled={!media} 
+                />
+              </div>
+            </div>
+          </BlueprintHoverCard>
+
         </aside>
       </main>
 
       {/* Status Footer */}
-      <footer className="h-7 border-t border-oled-border px-4 flex items-center justify-between text-[10px] font-mono text-oled-muted bg-oled-surface shrink-0">
-        <div className="flex items-center space-x-4">
+      <footer className="absolute bottom-[392px] left-4 h-7 bg-white border border-[#1A1A1A] px-4 flex items-center justify-between text-[10px] font-mono text-[#6B6B6B] z-20 gap-4">
+        <div className="flex items-center space-x-3">
           <span className="flex items-center gap-1.5">
-            <span className={`w-1.5 h-1.5 rounded-full ${serialConnected ? 'bg-emerald-500' : 'bg-slate-600'}`}></span>
-            {hardwareConfig.mcu.toUpperCase()} ({serialConnected ? 'Connected' : 'Offline'})
+            <span className={`w-1.5 h-1.5 ${serialConnected ? 'bg-[#E85D2A]' : 'bg-[#6B6B6B]'}`}></span>
+            {hardwareConfig.mcu.toUpperCase()} (
+            <DecryptedText
+              key={serialConnected ? 'connected' : 'offline'}
+              text={serialConnected ? 'CONNECTED' : 'OFFLINE'}
+              speed={30}
+              characters="0123456789ABCDEF"
+              animateOn="view"
+            />
+            )
           </span>
           <span>{ditherConfig.algorithm.toUpperCase()}</span>
           <span>{targetFps} FPS</span>
         </div>
-        <div>
-          {media ? `${trimRange.end - trimRange.start + 1} frames selected` : 'No media'}
+        <div className="flex items-center gap-1">
+          {media ? (
+            <>
+              <CountUp to={trimRange.end - trimRange.start + 1} duration={0.4} />
+              <span>FRAMES_SELECTED</span>
+            </>
+          ) : 'NO_MEDIA'}
         </div>
       </footer>
 

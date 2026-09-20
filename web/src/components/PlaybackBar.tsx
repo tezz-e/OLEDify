@@ -1,5 +1,7 @@
 import React from 'react';
 import { Play, Pause, SkipBack, SkipForward, RotateCcw } from 'lucide-react';
+import { CountUp } from './reactbits/CountUp';
+import { GlassButton } from './reactbits/GlassButton';
 
 interface PlaybackBarProps {
   isPlaying: boolean;
@@ -32,52 +34,59 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
   const displayFrame = currentFrame - min + 1;
 
   return (
-    <div className="flex flex-col w-full max-w-sm mt-4 space-y-2 select-none">
+    <div className="flex flex-col w-full mt-4 space-y-4 select-none rounded-xl">
       <div className="flex items-center justify-between space-x-2">
-        <div className="flex items-center space-x-1">
-          <button 
+        <div className="flex items-center space-x-2">
+          <GlassButton 
             onClick={onReset}
-            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-oled-panel rounded transition-colors"
+            className="p-2 w-9 h-9 rounded-lg"
             title="Reset"
           >
             <RotateCcw className="w-4 h-4" />
-          </button>
+          </GlassButton>
           
-          <button 
+          <GlassButton 
             onClick={() => onFrameSeek(Math.max(min, currentFrame - 1))}
-            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-oled-panel rounded transition-colors"
+            className="p-2 w-9 h-9 rounded-lg"
+            title="Previous Frame"
           >
             <SkipBack className="w-4 h-4" />
-          </button>
+          </GlassButton>
           
-          <button 
+          <GlassButton 
             onClick={onTogglePlay}
-            className="p-2 bg-oled-panel border border-oled-border text-oled-cyan hover:bg-oled-border-bright rounded transition-colors"
+            className={`w-12 h-10 rounded-lg ${isPlaying ? 'bg-[#E85D2A]/10 border-[#E85D2A]/50 text-[#E85D2A]' : 'bg-[#E85D2A] border-[#1A1A1A] text-white hover:bg-[#E85D2A]/80'}`}
             title="Play/Pause (Space)"
           >
-            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
-          </button>
+            {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 ml-0.5 fill-current" />}
+          </GlassButton>
           
-          <button 
+          <GlassButton 
             onClick={() => onFrameSeek(Math.min(max, currentFrame + 1))}
-            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-oled-panel rounded transition-colors"
+            className="p-2 w-9 h-9 rounded-lg"
+            title="Next Frame"
           >
             <SkipForward className="w-4 h-4" />
-          </button>
+          </GlassButton>
         </div>
 
-        <div className="flex items-center space-x-3 text-xs font-mono">
-          <span className="text-slate-400 w-[60px] text-right">
-            {durationFrames > 0 ? `${pad(displayFrame)}/${pad(durationFrames)}` : '---/---'}
+        <div className="flex items-center space-x-4 text-xs font-mono">
+          <span className="text-[#1A1A1A] font-mono font-bold min-w-[70px] text-right tracking-widest tabular-nums flex items-center justify-end">
+            {durationFrames > 0 ? (
+              <>
+                <span>{pad(displayFrame)}/</span>
+                <CountUp to={durationFrames} duration={0.6} />
+              </>
+            ) : '---/---'}
           </span>
           <select 
             value={targetFps}
             onChange={(e) => onFpsChange(parseInt(e.target.value))}
-            className="bg-transparent border border-oled-border text-slate-300 rounded px-1 py-0.5 outline-none focus:border-oled-cyan cursor-pointer"
+            className="bg-white border border-[#1A1A1A] text-[#1A1A1A] font-mono px-2 py-1 outline-none focus:border-[#E85D2A] cursor-pointer"
           >
-            <option value="15">15fps</option>
-            <option value="24">24fps</option>
-            <option value="30">30fps</option>
+            <option value="15">15 FPS</option>
+            <option value="24">24 FPS</option>
+            <option value="30">30 FPS</option>
           </select>
         </div>
       </div>
@@ -88,7 +97,7 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
         max={max}
         value={currentFrame}
         onChange={(e) => onFrameSeek(parseInt(e.target.value))}
-        className="w-full accent-cyan-500 cursor-pointer"
+        className="w-full accent-[#E85D2A] cursor-pointer bg-transparent"
         disabled={durationFrames === 0}
       />
     </div>

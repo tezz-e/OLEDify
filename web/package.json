@@ -11,18 +11,26 @@
     "test": "npx tsx test/verify-m1.ts"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
     "esptool-js": "^0.6.1",
+    "framer-motion": "^13.4.0",
+    "gsap": "^3.15.0",
     "lucide-react": "^0.475.0",
+    "motion": "^13.4.0",
     "mp4box": "^2.4.1",
+    "ogl": "^1.0.11",
     "omggif": "^1.0.10",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^3.7.0",
+    "three": "^0.186.0"
   },
   "devDependencies": {
     "@types/node": "^20.16.5",
     "@types/omggif": "^1.0.5",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.186.0",
     "@types/w3c-web-serial": "^1.0.8",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.20",

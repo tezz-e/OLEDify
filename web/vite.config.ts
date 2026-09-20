@@ -13,5 +13,14 @@ export default defineConfig({
     target: 'es2020',
     outDir: 'dist',
     sourcemap: true,
+    chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          three: ['three'],
+          motion: ['motion', 'framer-motion'],
+        },
+      },
+    },
   },
 });

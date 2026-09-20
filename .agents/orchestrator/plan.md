@@ -20,3 +20,18 @@ Deliver a production-ready, fully verified web-based OLED Visual Animation Engin
    - Adversarial coverage hardening (Tier 5).
    - Forensic integrity audit.
    - Sentinel handoff.
+
+## Milestone 6: React Bits Dynamic & Tactile UI Enhancement (Follow-up)
+1. **Survey & Spec Mining**:
+   - `explorer_m6_1`: Inspect & clean React Bits source files; fix brain truncation via upstream fetch; adapted TypeScript components.
+   - `explorer_m6_2`: UI component mapping for OptionWheel, ClickSpark, DecryptedText, CountUp, LiquidEther, GlassSurface.
+   - `spec_miner_m6_3`: Dependencies (`three`, `motion`, `framer-motion`, `@types/three`), Vite/TS config, build validation.
+2. **Implementation**:
+   - `worker_m6_1`: Install dependencies, deploy components to `web/src/components/reactbits/`, integrate into UI controls & canvas, verify build via `cmd.exe /c npm run build`.
+3. **Verification**:
+   - Reviewers (2) independently inspect code quality, blueprint aesthetic preservation, and build.
+   - Challengers (2) stress-test performance, edge cases, responsive layout, and interaction safety.
+   - Forensic Auditor (`teamwork_preview_auditor`) performs binary integrity audit.
+   - Evaluate Gate in `GATE_STATUS.md`.
+4. **Sentinel Victory Claim**:
+   - When Gate passes with all criteria satisfied, report completion to Sentinel.

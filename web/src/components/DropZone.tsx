@@ -39,7 +39,6 @@ export const DropZone: React.FC<DropZoneProps> = ({ onMediaLoaded, currentMedia 
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       processFile(e.dataTransfer.files[0]);
     }
@@ -51,46 +50,46 @@ export const DropZone: React.FC<DropZoneProps> = ({ onMediaLoaded, currentMedia 
     }
   };
 
-  // State: Loaded
+  // Loaded state
   if (currentMedia && !progress) {
     return (
-      <div className="p-4 border-b border-oled-border bg-oled-surface shrink-0">
-        <div className="flex items-center space-x-3 mb-3">
-          <div className="p-2 bg-emerald-500/10 rounded border border-emerald-500/20">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+      <div className="p-3 border-b-2 border-[#1A1A1A] shrink-0">
+        <div className="flex items-center space-x-3 mb-2">
+          <div className="p-1.5 border border-[#1A1A1A] bg-white">
+            <CheckCircle2 className="w-5 h-5 text-[#E85D2A]" />
           </div>
           <div className="overflow-hidden">
-            <p className="text-xs font-semibold text-slate-200 truncate" title={currentMedia.sourceInfo.filename}>
+            <p className="text-xs font-bold text-[#1A1A1A] truncate font-mono" title={currentMedia.sourceInfo.filename}>
               {currentMedia.sourceInfo.filename}
             </p>
-            <p className="text-[10px] font-mono text-slate-500">
+            <p className="text-[10px] font-mono text-[#6B6B6B] mt-0.5">
               {currentMedia.frames.length} frames • {currentMedia.sourceInfo.sourceWidth}×{currentMedia.sourceInfo.sourceHeight}
             </p>
           </div>
         </div>
-        <label className="block w-full py-1.5 text-center bg-oled-panel hover:bg-oled-border-bright border border-oled-border rounded text-xs font-medium text-slate-300 transition-colors cursor-pointer">
-          Replace Media
+        <label className="block w-full py-2 text-center tech-btn cursor-pointer">
+          REPLACE_MEDIA
           <input type="file" className="hidden" accept="video/mp4,video/webm,image/gif" onChange={handleChange} />
         </label>
       </div>
     );
   }
 
-  // State: Processing
+  // Processing state
   if (progress) {
     return (
-      <div className="p-4 border-b border-oled-border bg-oled-surface shrink-0">
+      <div className="p-4 border-b-2 border-[#1A1A1A] shrink-0">
         <div className="flex flex-col items-center justify-center py-4 space-y-3">
-          <FileVideo className="w-8 h-8 text-oled-cyan animate-pulse" />
+          <FileVideo className="w-8 h-8 text-[#E85D2A]" />
           <div className="text-center">
-            <p className="text-xs font-semibold text-slate-200 mb-1 capitalize">{progress.stage}...</p>
-            <p className="text-[10px] font-mono text-slate-500">
+            <p className="text-xs font-bold text-[#1A1A1A] mb-1 uppercase tracking-widest font-mono">{progress.stage}...</p>
+            <p className="text-[10px] font-mono text-[#6B6B6B]">
               {progress.currentFrame} / {progress.totalFrames || '?'} frames
             </p>
           </div>
-          <div className="w-full h-1.5 bg-oled-bg rounded-full overflow-hidden border border-oled-border">
+          <div className="w-full h-2 bg-[#F5F0EB] border border-[#1A1A1A]">
             <div 
-              className="h-full bg-oled-cyan transition-all duration-200" 
+              className="h-full bg-[#E85D2A] transition-all duration-200" 
               style={{ width: `${progress.percent}%` }}
             />
           </div>
@@ -99,23 +98,23 @@ export const DropZone: React.FC<DropZoneProps> = ({ onMediaLoaded, currentMedia 
     );
   }
 
-  // State: Idle Dropzone
+  // Idle dropzone
   return (
-    <div className="p-4 border-b border-oled-border bg-oled-surface shrink-0">
+    <div className="p-3 border-b-2 border-[#1A1A1A] shrink-0">
       <label
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
-        className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+        className={`flex flex-col items-center justify-center p-4 border-2 border-dashed cursor-pointer transition-colors duration-150 ${
           isDragging 
-            ? 'border-oled-cyan bg-cyan-500/10' 
-            : 'border-oled-border hover:border-slate-500 hover:bg-oled-panel'
+            ? 'border-[#E85D2A] bg-[#E85D2A]/5' 
+            : 'border-[#1A1A1A] hover:border-[#E85D2A] hover:bg-[#F5F0EB]'
         }`}
       >
-        <UploadCloud className={`w-8 h-8 mb-2 ${isDragging ? 'text-oled-cyan' : 'text-slate-400'}`} />
-        <span className="text-xs font-medium text-slate-300 mb-1">Drop video or GIF</span>
-        <span className="text-[10px] text-slate-500 text-center">MP4, WebM, GIF</span>
+        <UploadCloud className={`w-8 h-8 mb-2 ${isDragging ? 'text-[#E85D2A]' : 'text-[#6B6B6B]'}`} />
+        <span className="text-xs font-bold tracking-widest text-[#1A1A1A] mb-1 font-mono uppercase">DROP_MEDIA</span>
+        <span className="text-[10px] text-[#6B6B6B] text-center uppercase tracking-widest font-mono">MP4, WEBM, GIF</span>
         <input type="file" className="hidden" accept="video/mp4,video/webm,image/gif" onChange={handleChange} />
       </label>
     </div>

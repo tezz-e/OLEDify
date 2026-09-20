@@ -1,6 +1,7 @@
 import React from 'react';
 import { Settings, Cpu, Monitor, X } from 'lucide-react';
 import { HardwareConfig, Microcontroller, DisplayController } from '../types/oled';
+import { GlassSurface } from './reactbits/GlassSurface';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -11,6 +12,22 @@ interface SettingsModalProps {
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, onChange }) => {
   if (!isOpen) return null;
+
+  const mcuOptions: { value: Microcontroller; label: string }[] = [
+    { value: 'esp32-s3', label: 'ESP32-S3' },
+    { value: 'esp32', label: 'ESP32' },
+    { value: 'esp32-c3', label: 'ESP32-C3' },
+    { value: 'arduino-uno', label: 'ARDUINO UNO' },
+    { value: 'pi-pico', label: 'PI PICO' }
+  ];
+
+  const displayOptions: { value: DisplayController; label: string }[] = [
+    { value: 'sh1106', label: 'SH1106' },
+    { value: 'ssd1306', label: 'SSD1306' },
+    { value: 'ssd1315', label: 'SSD1315' }
+  ];
+
+
 
   const handleMcuChange = (mcu: Microcontroller) => {
     let sda = config.sdaPin;
@@ -39,17 +56,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-fade-in"
       onClick={handleBackdropClick}
     >
-      <div className="bg-oled-surface border border-oled-border rounded-xl max-w-md w-full shadow-2xl animate-slide-up">
+      <GlassSurface borderRadius={0} className="max-w-md w-full animate-slide-up bg-white">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-oled-border">
+        <div className="flex items-center justify-between p-4 border-b-2 border-[#1A1A1A]">
           <div className="flex items-center space-x-2">
-            <Settings className="w-4 h-4 text-oled-cyan" />
-            <h3 className="text-sm font-semibold text-slate-100">Settings</h3>
+            <Settings className="w-4 h-4 text-[#1A1A1A]" />
+            <h3 className="text-xs font-bold tracking-widest text-[#1A1A1A] uppercase font-mono">SETTINGS</h3>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-200 transition-colors">
+          <button onClick={onClose} className="text-[#6B6B6B] hover:text-[#1A1A1A] transition-colors p-1 border border-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -57,58 +74,56 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
         {/* Content Grid */}
         <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1">
-            <label className="text-xs text-slate-400 flex items-center gap-1">
-              <Cpu className="w-3 h-3 text-cyan-400" /> Target Board
+            <label className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono flex items-center gap-1">
+              <Cpu className="w-3 h-3 text-[#1A1A1A]" /> TARGET_BOARD
             </label>
             <select
               value={config.mcu}
               onChange={(e) => handleMcuChange(e.target.value as Microcontroller)}
-              className="w-full bg-oled-panel border border-oled-border rounded px-2.5 py-1.5 text-xs text-slate-200 font-mono"
+              className="w-full bg-white border border-[#1A1A1A] px-2.5 py-1.5 text-xs text-[#1A1A1A] font-mono focus:border-[#E85D2A] outline-none rounded-none cursor-pointer"
             >
-              <option value="esp32-s3">ESP32-S3</option>
-              <option value="esp32">ESP32 (Standard)</option>
-              <option value="esp32-c3">ESP32-C3</option>
-              <option value="arduino-uno">Arduino Uno</option>
-              <option value="pi-pico">Pi Pico</option>
+              {mcuOptions.map(m => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
             </select>
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs text-slate-400 flex items-center gap-1">
-              <Monitor className="w-3 h-3 text-cyan-400" /> Display Driver
+            <label className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono flex items-center gap-1">
+              <Monitor className="w-3 h-3 text-[#1A1A1A]" /> DISPLAY_DRIVER
             </label>
             <select
               value={config.display}
               onChange={(e) => onChange({ ...config, display: e.target.value as DisplayController })}
-              className="w-full bg-oled-panel border border-oled-border rounded px-2.5 py-1.5 text-xs text-slate-200 font-mono"
+              className="w-full bg-white border border-[#1A1A1A] px-2.5 py-1.5 text-xs text-[#1A1A1A] font-mono focus:border-[#E85D2A] outline-none rounded-none cursor-pointer"
             >
-              <option value="sh1106">SH1106</option>
-              <option value="ssd1306">SSD1306</option>
-              <option value="ssd1315">SSD1315</option>
+              {displayOptions.map(d => (
+                <option key={d.value} value={d.value}>{d.label}</option>
+              ))}
             </select>
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs text-slate-400">SDA Pin (GPIO)</label>
+            <label className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">SDA_PIN_(GPIO)</label>
             <input
               type="number"
               value={config.sdaPin}
               onChange={(e) => onChange({ ...config, sdaPin: parseInt(e.target.value, 10) || 0 })}
-              className="w-full bg-oled-panel border border-oled-border rounded px-2.5 py-1 text-xs text-slate-200 font-mono"
+              className="w-full bg-white border border-[#1A1A1A] px-2.5 py-1 text-xs text-[#1A1A1A] font-mono focus:border-[#E85D2A] outline-none rounded-none"
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs text-slate-400">SCL Pin (GPIO)</label>
+            <label className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">SCL_PIN_(GPIO)</label>
             <input
               type="number"
               value={config.sclPin}
               onChange={(e) => onChange({ ...config, sclPin: parseInt(e.target.value, 10) || 0 })}
-              className="w-full bg-oled-panel border border-oled-border rounded px-2.5 py-1 text-xs text-slate-200 font-mono"
+              className="w-full bg-white border border-[#1A1A1A] px-2.5 py-1 text-xs text-[#1A1A1A] font-mono focus:border-[#E85D2A] outline-none rounded-none"
             />
           </div>
         </div>
-      </div>
+      </GlassSurface>
     </div>
   );
 };
