@@ -134,6 +134,7 @@ export default function App() {
   const [serialConnected, setSerialConnected] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [rawSourceFrame, setRawSourceFrame] = useState<ImageData | null>(null);
   const [cppCode, setCppCode] = useState('');
   const [exportXbmpFrames, setExportXbmpFrames] = useState<Uint8Array[]>([]);
 
@@ -283,10 +284,13 @@ export default function App() {
     } else {
       if (!media || !media.frames[activeFrameIndex]) {
         setProcessedFrame(null);
+        setRawSourceFrame(null);
         return;
       }
       sourceFrame = media.frames[activeFrameIndex].imageData;
     }
+
+    setRawSourceFrame(sourceFrame);
 
     if (!sourceFrame) {
       setProcessedFrame(null);
@@ -346,21 +350,149 @@ export default function App() {
       />
 
       <main className="flex-1 flex flex-col min-h-0 z-10">
-        {/* Top: Canvas Area on Graph Paper */}
-        <section className="flex-1 flex items-center justify-center p-8 relative min-h-0 overflow-hidden">
-          <div className="absolute inset-0 z-0">
-            <Particles
-              particleColors={['#1A1A1A', '#E85D2A']}
-              particleCount={150}
-              particleSpread={15}
-              speed={0.08}
-              particleBaseSize={80}
-              alphaParticles={true}
-            />
+        {/* Top: New 3-Column Preview Section */}
+        <section className="flex-1 flex items-stretch bg-[#F5F0EB] relative min-h-0 border-b border-[#1A1A1A]/20" style={{
+          backgroundImage: `
+            repeating-linear-gradient(0deg, #e0dbd5 0 1px, transparent 1px 40px),
+            repeating-linear-gradient(90deg, #e0dbd5 0 1px, transparent 1px 40px)
+          `
+        }}>
+          {/* Column 1: Full Preview */}
+          <div className="flex-1 p-8 flex flex-col relative border-r border-[#1A1A1A]/20">
+            <div className="mb-4">
+              <h3 className="font-mono font-bold text-sm text-[#1A1A1A]">FULL PREVIEW</h3>
+              <p className="font-mono text-[10px] text-[#6B6B6B]">See the full video/animation here at normal scale</p>
+            </div>
+            
+            <div className="flex-1 bg-[#080808] border-2 border-[#1A1A1A] p-2 flex flex-col relative overflow-hidden rounded-md shadow-[4px_4px_0_0_#1A1A1A]">
+              <div className="flex-1 relative w-full h-full flex items-center justify-center">
+                {rawSourceFrame ? (
+                  <img 
+                    src={(() => {
+                      const canvas = document.createElement('canvas');
+                      canvas.width = rawSourceFrame.width;
+                      canvas.height = rawSourceFrame.height;
+                      const ctx = canvas.getContext('2d');
+                      if (ctx) ctx.putImageData(rawSourceFrame, 0, 0);
+                      return canvas.toDataURL();
+                    })()}
+                    className="max-w-full max-h-full object-contain"
+                    alt="Source"
+                  />
+                ) : (
+                  <span className="font-mono text-[#6B6B6B] text-xs">NO MEDIA</span>
+                )}
+              </div>
+              
+              {/* Dummy Playbar for Aesthetics (The real one is below) */}
+              <div className="h-8 mt-2 flex items-center px-2 gap-3 text-white">
+                <button className="text-sm font-bold opacity-80 hover:opacity-100">▶</button>
+                <div className="text-[9px] font-mono whitespace-nowrap opacity-60">
+                  {(activeFrameIndex / targetFps).toFixed(2)} / {media ? (media.frames.length / targetFps).toFixed(2) : '0.00'}
+                </div>
+                <div className="flex-1 h-1 bg-white/20 rounded-full relative">
+                  <div 
+                    className="absolute inset-y-0 left-0 bg-[#E85D2A] rounded-full" 
+                    style={{ width: media && media.frames.length ? `${(activeFrameIndex / media.frames.length) * 100}%` : '0%' }}
+                  />
+                  <div 
+                    className="absolute w-3 h-3 bg-[#E85D2A] rounded-full top-1/2 -translate-y-1/2"
+                    style={{ left: media && media.frames.length ? `calc(${(activeFrameIndex / media.frames.length) * 100}% - 6px)` : '0%' }}
+                  />
+                </div>
+                <div className="text-[9px] font-mono whitespace-nowrap opacity-60">30 FPS</div>
+              </div>
+            </div>
           </div>
-          <div className="relative z-10 w-full h-full flex items-center justify-center">
-            <div className="pointer-events-auto w-full h-full flex items-center justify-center">
-              <OledCanvas frameData={processedFrame} theme={ditherConfig.theme} scale={6} />
+
+          {/* Column 2: True OLED Preview */}
+          <div className="flex-[1.5] p-8 flex flex-col items-center justify-center relative">
+            <div className="text-center mb-8">
+              <h3 className="font-mono font-bold text-sm text-[#1A1A1A]">TRUE OLED PREVIEW (128 × 64)</h3>
+              <p className="font-mono text-[10px] text-[#6B6B6B]">Exact physical scale • 1:1 pixels • What will display on device</p>
+            </div>
+
+            <div className="relative flex items-center justify-center w-full max-h-full flex-1 min-h-0">
+              {/* Decorative Arrow & Text (Left) */}
+              <div className="absolute left-[5%] top-1/2 -translate-y-1/2 flex items-center gap-2 -translate-x-full pr-4 text-[#E85D2A] font-display font-medium text-xs leading-tight hidden lg:flex">
+                <div className="text-right">
+                  Shows the exact<br/>128 × 64 output<br/>(1:1 pixel scale)
+                </div>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="rotate-[15deg]">
+                  <path d="M4 12C9 12 15 10 20 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M16 8L20 12L16 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+
+              {/* Hardware Bezel */}
+              <div className="bg-[#2A2A2A] rounded-xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.5),inset_0_2px_1px_rgba(255,255,255,0.1),inset_0_-2px_1px_rgba(0,0,0,0.5)] border border-[#111] relative z-10 shrink max-w-full max-h-full flex flex-col justify-center">
+                {/* Screws */}
+                <div className="absolute top-2 left-2 w-3 h-3 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-45"><div className="w-full h-[1px] bg-[#333]" /></div>
+                <div className="absolute top-2 right-2 w-3 h-3 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-12"><div className="w-full h-[1px] bg-[#333]" /></div>
+                <div className="absolute bottom-2 left-2 w-3 h-3 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center -rotate-12"><div className="w-full h-[1px] bg-[#333]" /></div>
+                <div className="absolute bottom-2 right-2 w-3 h-3 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-90"><div className="w-full h-[1px] bg-[#333]" /></div>
+                
+                <div className="text-[#555] font-mono text-[8px] text-center mb-1">SSD1306 128x64</div>
+                
+                <div className="bg-[#000] p-1 shadow-[inset_0_0_10px_#000] rounded max-w-full max-h-full shrink">
+                  <div className="pointer-events-auto max-w-full max-h-full flex items-center justify-center">
+                    <OledCanvas frameData={processedFrame} theme={ditherConfig.theme} scale={2} />
+                  </div>
+                </div>
+
+                <div className="text-[#555] font-mono text-[8px] text-center mt-1">I²C 0x3C</div>
+              </div>
+
+              {/* Decorative Sticky Note (Right) */}
+              <div className="absolute right-[5%] top-1/2 -translate-y-1/2 translate-x-full pl-6 hidden xl:block">
+                <div className="bg-[#FFD485] text-[#1A1A1A] p-4 font-mono text-[10px] w-40 shadow-lg rotate-3">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="w-3 h-3 rounded-full bg-[#1A1A1A]/20" />
+                    <span>💡</span>
+                  </div>
+                  The full preview shows the entire video. The small OLED shows exactly what will be displayed on your device.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Column 3: Display Info */}
+          <div className="w-[220px] shrink-0 p-8 border-l border-[#1A1A1A]/20 flex flex-col justify-center">
+            <div className="bg-white border-2 border-[#1A1A1A] shadow-[4px_4px_0_0_#1A1A1A] p-4 font-mono text-xs flex flex-col gap-6">
+              
+              <div>
+                <div className="bg-[#1A1A1A] text-white px-2 py-1 text-[10px] font-bold uppercase tracking-wider mb-3 flex justify-between items-center">
+                  <span>DISPLAY INFO</span>
+                  <span className="w-2 h-2 rounded-full bg-[#E85D2A]"></span>
+                </div>
+                <div className="flex flex-col gap-1 text-[#6B6B6B]">
+                  <div>128 × 64</div>
+                  <div>1-BIT (MONO)</div>
+                  <div>I²C 0x3C</div>
+                  <div>{targetFps} FPS</div>
+                </div>
+              </div>
+
+              <div className="h-px bg-[#1A1A1A]/20" />
+
+              <div>
+                <div className="text-[9px] font-bold uppercase tracking-wider text-[#1A1A1A] mb-2">CURRENT FRAME</div>
+                <div className="text-[#6B6B6B]">{activeFrameIndex.toString().padStart(3, '0')} / {media ? media.frames.length.toString().padStart(3, '0') : '000'}</div>
+                <div className="text-[#6B6B6B]">{(activeFrameIndex / targetFps).toFixed(2)}s</div>
+              </div>
+
+              <div className="h-px bg-[#1A1A1A]/20" />
+
+              <div>
+                <div className="text-[9px] font-bold uppercase tracking-wider text-[#1A1A1A] mb-2">OUTPUT SIZE</div>
+                <div className="text-[#6B6B6B] mb-2">1024 bytes/frame</div>
+                <div className="h-2 w-full flex">
+                  {Array.from({length: 10}).map((_, i) => (
+                    <div key={i} className="h-full flex-1 border-r border-white/20 last:border-0" style={{ backgroundColor: `rgba(26,26,26,${0.1 + (i*0.1)})` }} />
+                  ))}
+                </div>
+              </div>
+
             </div>
           </div>
         </section>
