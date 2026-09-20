@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useEffect, useCallback, useState } from 'react';
+import React, { useMemo, useRef, useEffect, useCallback, useState, startTransition } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -104,8 +104,10 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
     const onWheel = (e: WheelEvent) => {
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
-        if (e.deltaY > 0) zoomOut();
-        else zoomIn();
+        startTransition(() => {
+          if (e.deltaY > 0) zoomOut();
+          else zoomIn();
+        });
       }
     };
     el.addEventListener('wheel', onWheel, { passive: false });
@@ -249,7 +251,11 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
               maxValue={100}
               defaultValue={Math.max(0, Math.min(100, 100 * Math.log(zoomLevel / 0.1) / Math.log(100)))}
               isStepped={false}
-              onChange={(val) => onZoomChange(0.1 * Math.pow(100, val / 100))}
+              onChange={(val) => {
+                startTransition(() => {
+                  onZoomChange(0.1 * Math.pow(100, val / 100));
+                });
+              }}
               formatValue={(val) => `${Math.round(val)}%`}
             />
           </div>
