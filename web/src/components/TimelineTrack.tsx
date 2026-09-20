@@ -252,7 +252,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
               defaultValue={Math.max(0, Math.min(100, 100 * Math.log(zoomLevel / 0.1) / Math.log(100)))}
               isStepped={false}
               onChange={(val) => onZoomChange(0.1 * Math.pow(100, val / 100))}
-              formatValue={(val) => `${(0.1 * Math.pow(100, val / 100)).toFixed(1)}x`}
+              formatValue={(val) => `${Math.round(val)}%`}
             />
           </div>
           <button
