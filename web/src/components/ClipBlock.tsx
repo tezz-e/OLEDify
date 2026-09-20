@@ -1,13 +1,12 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { TimelineClip, MediaAsset } from '../types/media';
-import { ClickSpark } from './reactbits/ClickSpark';
 
 // ---------- Cache ----------
 const thumbCache = new Map<string, string[]>();
 
 // ---------- Constants ----------
 export const CLIP_HEIGHT = 56;
-const HANDLE_W = 14;
+const HANDLE_W = 16;
 const GHOST_FADE_MS = 280;
 
 interface ClipBlockProps {
@@ -297,38 +296,34 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
       </div>
 
       {/* ---- Left trim handle ---- */}
-      <ClickSpark sparkColor="#E85D2A" sparkCount={6} sparkRadius={14} duration={300}>
-        <div
-          onMouseDown={handleLeftDrag}
-          className="absolute top-0 bottom-0 z-30 flex items-center justify-center cursor-col-resize hover:brightness-110 group transition-colors"
-          style={{
-            left: isActiveDrag ? activeIn * thumbPx : 0,
-            width: HANDLE_W,
-            background: '#E85D2A',
-          }}
-          title="Trim in-point"
-        >
-          <div className="w-[3px] h-6 bg-white/90 rounded-full group-hover:bg-white" />
-        </div>
-      </ClickSpark>
+      <div
+        onMouseDown={handleLeftDrag}
+        className="absolute top-0 bottom-0 z-30 flex items-center justify-center cursor-col-resize hover:brightness-110 group transition-colors"
+        style={{
+          left: isActiveDrag ? activeIn * thumbPx : 0,
+          width: HANDLE_W,
+          background: '#E85D2A',
+        }}
+        title="Trim in-point"
+      >
+        <div className="w-[3px] h-6 bg-white/90 rounded-full group-hover:bg-white group-active:scale-y-110 transition-transform" />
+      </div>
 
       {/* ---- Right trim handle ---- */}
-      <ClickSpark sparkColor="#E85D2A" sparkCount={6} sparkRadius={14} duration={300}>
-        <div
-          onMouseDown={handleRightDrag}
-          className="absolute top-0 bottom-0 z-30 flex items-center justify-center cursor-col-resize hover:brightness-110 group transition-colors"
-          style={{
-            left: isActiveDrag
-              ? (activeOut + 1) * thumbPx - HANDLE_W
-              : clipWidth - HANDLE_W,
-            width: HANDLE_W,
-            background: '#E85D2A',
-          }}
-          title="Trim out-point"
-        >
-          <div className="w-[3px] h-6 bg-white/90 rounded-full group-hover:bg-white" />
-        </div>
-      </ClickSpark>
+      <div
+        onMouseDown={handleRightDrag}
+        className="absolute top-0 bottom-0 z-30 flex items-center justify-center cursor-col-resize hover:brightness-110 group transition-colors"
+        style={{
+          left: isActiveDrag
+            ? (activeOut + 1) * thumbPx - HANDLE_W
+            : clipWidth - HANDLE_W,
+          width: HANDLE_W,
+          background: '#E85D2A',
+        }}
+        title="Trim out-point"
+      >
+        <div className="w-[3px] h-6 bg-white/90 rounded-full group-hover:bg-white group-active:scale-y-110 transition-transform" />
+      </div>
     </div>
   );
 };
