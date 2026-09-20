@@ -15,13 +15,12 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { TimelineClip, MediaAsset } from '../types/media';
-import { ClipBlock } from './ClipBlock';
+import { ClipBlock, CLIP_HEIGHT } from './ClipBlock';
 import { ContextMenu } from './ContextMenu';
 
-// ---- Constants ----
-const THUMB_BASE = 16;  // px per frame at zoomLevel=1. Keep small so default view shows many frames.
+const THUMB_BASE = 12; // px per frame at zoom=1 — small so default view fits many frames
 const RULER_H = 28;
-const TRACK_H = 56;     // must match ClipBlock CLIP_HEIGHT
+const GAP_PX = 2; // gap between clips
 
 interface TimelineTrackProps {
   clips: TimelineClip[];
@@ -49,102 +48,81 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; clipId: string } | null>(null);
 
-  const thumbPx = THUMB_BASE * zoomLevel; // actual px per frame
+  const thumbPx = THUMB_BASE * zoomLevel;
 
-  // ---- Total timeline frames (sum of active frames per clip) ----
+  // Content width = sum of TRIMMED clip widths + gaps (matches ClipBlock normal render)
   const totalActiveFrames = useMemo(
     () => clips.reduce((acc, c) => acc + (c.outFrame - c.inFrame + 1), 0),
     [clips]
   );
 
-  // Content width uses FULL asset duration (Premiere style — clips show full width)
   const contentWidth = useMemo(() => {
-    return clips.reduce((acc, c) => {
-      const asset = assets[c.assetId];
-      if (!asset) return acc;
-      return acc + asset.media.frames.length * thumbPx;
-    }, 0);
-  }, [clips, assets, thumbPx]);
+    const clipsWidth = clips.reduce((acc, c) => acc + (c.outFrame - c.inFrame + 1) * thumbPx, 0);
+    const gapsWidth = Math.max(0, clips.length - 1) * GAP_PX;
+    return clipsWidth + gapsWidth;
+  }, [clips, thumbPx]);
 
-  // ---- Playhead pixel position ----
-  // activeGlobalFrame is a 0-based index into the active (trimmed) frame sequence.
-  // We need to map it back to a pixel position in the FULL-width layout.
+  // Playhead pixel position — simple: activeGlobalFrame * thumbPx + gap offsets
   const playheadPx = useMemo(() => {
-    let globalIdx = 0;
     let px = 0;
-    for (const clip of clips) {
-      const asset = assets[clip.assetId];
-      if (!asset) continue;
-      const assetFullPx = asset.media.frames.length * thumbPx;
-      const activeLen = clip.outFrame - clip.inFrame + 1;
-
-      if (activeGlobalFrame < globalIdx + activeLen) {
-        // The playhead is within this clip
-        const localActive = activeGlobalFrame - globalIdx;
-        // position = start of clip's px region + in-point offset + local offset
-        px += clip.inFrame * thumbPx + localActive * thumbPx;
+    let globalIdx = 0;
+    for (let i = 0; i < clips.length; i++) {
+      const c = clips[i];
+      const len = c.outFrame - c.inFrame + 1;
+      if (activeGlobalFrame < globalIdx + len) {
+        // Within this clip
+        const localFrame = activeGlobalFrame - globalIdx;
+        px += localFrame * thumbPx;
         return px;
       }
-      globalIdx += activeLen;
-      px += assetFullPx;
+      globalIdx += len;
+      px += len * thumbPx + GAP_PX;
     }
-    return px; // past all clips
-  }, [activeGlobalFrame, clips, assets, thumbPx]);
+    return px;
+  }, [activeGlobalFrame, clips, thumbPx]);
 
-  // ---- Ctrl+Scroll to zoom ----
+  // Ctrl + Scroll to zoom
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
-        const factor = e.deltaY > 0 ? -0.2 : 0.2;
-        onZoomChange(Math.max(0.1, Math.min(zoomLevel + factor, 8)));
+        const factor = e.deltaY > 0 ? -0.25 : 0.25;
+        onZoomChange(Math.max(0.1, Math.min(zoomLevel + factor, 10)));
       }
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
   }, [zoomLevel, onZoomChange]);
 
-  // ---- Ruler scrubbing ----
+  // Ruler scrub — maps pixel click to global active frame
   const isScrubbing = useRef(false);
 
   const scrubAt = useCallback((clientX: number) => {
     const el = scrollRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const px = clientX - rect.left + el.scrollLeft;
+    const clickPx = clientX - rect.left + el.scrollLeft;
 
-    // Map pixel position back to global active frame index
-    let globalIdx = 0;
+    // Walk clips to find which clip and frame was clicked
     let accumulated = 0;
-    for (const clip of clips) {
-      const asset = assets[clip.assetId];
-      if (!asset) continue;
-      const fullPx = asset.media.frames.length * thumbPx;
-      const inPx = clip.inFrame * thumbPx;
-      const outPx = (clip.outFrame + 1) * thumbPx;
+    let globalIdx = 0;
+    for (let i = 0; i < clips.length; i++) {
+      const c = clips[i];
+      const len = c.outFrame - c.inFrame + 1;
+      const clipEndPx = accumulated + len * thumbPx;
 
-      if (px >= accumulated && px < accumulated + fullPx) {
-        // inside this clip's region
-        const localPx = px - accumulated;
-        if (localPx >= inPx && localPx < outPx) {
-          // inside active region
-          const localActive = Math.floor((localPx - inPx) / thumbPx);
-          onFrameSelect(Math.min(globalIdx + localActive, totalActiveFrames - 1));
-        } else if (localPx < inPx) {
-          onFrameSelect(globalIdx);
-        } else {
-          onFrameSelect(globalIdx + (clip.outFrame - clip.inFrame));
-        }
+      if (clickPx <= clipEndPx) {
+        const localFrame = Math.max(0, Math.floor((clickPx - accumulated) / thumbPx));
+        onFrameSelect(Math.min(globalIdx + localFrame, totalActiveFrames - 1));
         return;
       }
-      globalIdx += clip.outFrame - clip.inFrame + 1;
-      accumulated += fullPx;
+      accumulated += len * thumbPx + GAP_PX;
+      globalIdx += len;
     }
-    // clicked past all clips
     onFrameSelect(Math.max(0, totalActiveFrames - 1));
-  }, [clips, assets, thumbPx, totalActiveFrames, onFrameSelect]);
+  }, [clips, thumbPx, totalActiveFrames, onFrameSelect]);
 
   const handleRulerMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -160,62 +138,57 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
     window.addEventListener('mouseup', onUp);
   };
 
-  // ---- DnD reorder ----
+  // DnD
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
-
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
-      const oldIdx = clips.findIndex(c => c.id === active.id);
-      const newIdx = clips.findIndex(c => c.id === over.id);
-      onClipsChange(arrayMove(clips, oldIdx, newIdx));
+      const oi = clips.findIndex(c => c.id === active.id);
+      const ni = clips.findIndex(c => c.id === over.id);
+      onClipsChange(arrayMove(clips, oi, ni));
     }
   };
-
   const handleUpdateBounds = (id: string, inFrame: number, outFrame: number) => {
     onClipsChange(clips.map(c => c.id === id ? { ...c, inFrame, outFrame } : c));
   };
 
-  // ---- Ruler ticks ----
-  // We build ticks over the full content width at an interval that looks good at current zoom
+  // Ruler ticks — only in active regions, no negative labels
   const rulerTicks = useMemo(() => {
-    const minTickPx = 60; // minimum px between labeled ticks
+    const minTickPx = 55;
     const framesPerTick = Math.max(1, Math.ceil(minTickPx / thumbPx));
-    // Snap to nice intervals
-    const nice = [1,2,5,10,15,20,25,30,60,90,120,150,300,600];
+    const nice = [1, 2, 5, 10, 15, 20, 30, 60, 90, 120, 180, 300, 600];
     const interval = nice.find(n => n >= framesPerTick) ?? framesPerTick;
 
-    const ticks: { frame: number; px: number }[] = [];
-    // Walk through clips building cumulative pixel offset
-    let px = 0;
-    let globalFrame = 0;
-    for (const clip of clips) {
-      const asset = assets[clip.assetId];
-      if (!asset) continue;
-      const assetFrames = asset.media.frames.length;
-      // Snap first tick to nearest interval boundary
-      const firstTick = Math.ceil(0 / interval) * interval;
-      for (let f = firstTick; f < assetFrames; f += interval) {
-        ticks.push({ frame: globalFrame + (f - clip.inFrame), px: px + f * thumbPx });
+    const ticks: { label: number; px: number }[] = [];
+    let accumulated = 0;
+    let globalIdx = 0;
+
+    for (const c of clips) {
+      const len = c.outFrame - c.inFrame + 1;
+      // Generate ticks aligned to interval, starting from nearest interval boundary ≥ 0
+      const firstTick = Math.ceil(globalIdx / interval) * interval;
+      for (let f = firstTick; f < globalIdx + len; f += interval) {
+        const localFrame = f - globalIdx;
+        ticks.push({ label: f, px: accumulated + localFrame * thumbPx });
       }
-      globalFrame += clip.outFrame - clip.inFrame + 1;
-      px += assetFrames * thumbPx;
+      accumulated += len * thumbPx + GAP_PX;
+      globalIdx += len;
     }
     return ticks;
-  }, [clips, assets, thumbPx]);
+  }, [clips, thumbPx]);
 
-  // ---- Zoom controls ----
-  const zoom = (factor: number) => {
-    onZoomChange(Math.max(0.1, Math.min(zoomLevel * factor, 8)));
-  };
+  // Zoom helpers
+  const zoomTo = (next: number) => onZoomChange(Math.max(0.1, Math.min(next, 10)));
   const zoomPct = Math.round(zoomLevel * 100);
 
   if (clips.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center bg-[#F5F0EB]">
-        <span className="text-[10px] font-mono uppercase tracking-widest text-[#6B6B6B]">Drop media to get started</span>
+        <span className="text-[10px] font-mono uppercase tracking-widest text-[#6B6B6B]">
+          Drop media to start
+        </span>
       </div>
     );
   }
@@ -223,66 +196,58 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[#F5F0EB]">
 
-      {/* ---- Header with clip info + zoom controls ---- */}
-      <div className="px-4 py-1.5 border-b border-[#1A1A1A]/20 flex items-center justify-between shrink-0 bg-[#F5F0EB] gap-4">
+      {/* Header bar */}
+      <div className="px-3 py-1 border-b border-[#1A1A1A]/20 flex items-center justify-between shrink-0 bg-[#EDEAE5] gap-4">
         <span className="text-[9px] font-mono font-bold tracking-widest text-[#1A1A1A] uppercase">
-          {totalActiveFrames} active frames
+          {totalActiveFrames} frames
         </span>
 
-        {/* Zoom controls */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           <button
-            onClick={() => zoom(0.5)}
-            className="w-6 h-6 flex items-center justify-center border border-[#1A1A1A] bg-white hover:bg-[#1A1A1A] hover:text-white text-[#1A1A1A] font-mono text-xs font-bold transition-colors"
+            onClick={() => zoomTo(zoomLevel / 2)}
+            className="w-6 h-6 flex items-center justify-center border border-[#1A1A1A] bg-white hover:bg-[#1A1A1A] hover:text-white text-[#1A1A1A] font-mono text-sm font-bold transition-colors leading-none"
             title="Zoom out (Ctrl+Scroll)"
           >−</button>
-          <span className="text-[9px] font-mono text-[#6B6B6B] w-10 text-center tabular-nums">{zoomPct}%</span>
+          <span className="text-[9px] font-mono text-[#6B6B6B] w-9 text-center tabular-nums select-none">
+            {zoomPct}%
+          </span>
           <button
-            onClick={() => zoom(2)}
-            className="w-6 h-6 flex items-center justify-center border border-[#1A1A1A] bg-white hover:bg-[#1A1A1A] hover:text-white text-[#1A1A1A] font-mono text-xs font-bold transition-colors"
+            onClick={() => zoomTo(zoomLevel * 2)}
+            className="w-6 h-6 flex items-center justify-center border border-[#1A1A1A] bg-white hover:bg-[#1A1A1A] hover:text-white text-[#1A1A1A] font-mono text-sm font-bold transition-colors leading-none"
             title="Zoom in (Ctrl+Scroll)"
           >+</button>
           <button
-            onClick={() => onZoomChange(1)}
-            className="h-6 px-2 flex items-center justify-center border border-[#1A1A1A] bg-white hover:bg-[#1A1A1A] hover:text-white text-[#1A1A1A] font-mono text-[8px] font-bold transition-colors tracking-widest"
-            title="Reset zoom"
-          >FIT</button>
+            onClick={() => zoomTo(1)}
+            className="h-6 px-2 border border-[#1A1A1A] bg-white hover:bg-[#1A1A1A] hover:text-white text-[#1A1A1A] font-mono text-[8px] font-bold tracking-widest transition-colors leading-none"
+          >1:1</button>
         </div>
       </div>
 
-      {/* ---- Scrollable track area ---- */}
+      {/* Scrollable track area */}
       <div
         ref={scrollRef}
         className="flex-1 overflow-x-auto overflow-y-hidden relative"
-        style={{ minHeight: RULER_H + TRACK_H + 4 }}
+        style={{ minHeight: RULER_H + CLIP_HEIGHT + 8 }}
       >
         <div
           className="relative"
-          style={{ width: Math.max(contentWidth, 200), height: RULER_H + TRACK_H + 4 }}
+          style={{ width: Math.max(contentWidth, 100), height: RULER_H + CLIP_HEIGHT + 8 }}
         >
 
           {/* RULER */}
           <div
             className="absolute top-0 left-0 right-0 select-none cursor-crosshair"
-            style={{
-              height: RULER_H,
-              background: '#EDEAE5',
-              borderBottom: '1px solid rgba(26,26,26,0.2)',
-            }}
+            style={{ height: RULER_H, background: '#E8E4DF', borderBottom: '1px solid rgba(26,26,26,0.2)' }}
             onMouseDown={handleRulerMouseDown}
           >
-            {rulerTicks.map(({ frame, px }) => (
-              <div
-                key={px}
-                className="absolute bottom-0"
-                style={{ left: px }}
-              >
-                <div style={{ width: 1, height: 8, background: 'rgba(26,26,26,0.4)' }} />
+            {rulerTicks.map(({ label, px }) => (
+              <div key={px} className="absolute bottom-0 pointer-events-none" style={{ left: px }}>
+                <div style={{ width: 1, height: 7, background: 'rgba(26,26,26,0.35)' }} />
                 <span
-                  className="absolute text-[7px] font-mono text-[#6B6B6B] select-none pointer-events-none"
-                  style={{ bottom: 10, left: 2, whiteSpace: 'nowrap' }}
+                  className="absolute text-[7px] font-mono text-[#6B6B6B] select-none"
+                  style={{ bottom: 9, left: 2, whiteSpace: 'nowrap' }}
                 >
-                  {frame}
+                  {label}
                 </span>
               </div>
             ))}
@@ -290,13 +255,13 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
             {/* Playhead triangle on ruler */}
             <div
               className="absolute top-0 pointer-events-none z-20"
-              style={{ left: playheadPx, transform: 'translateX(-5px)' }}
+              style={{ left: playheadPx, transform: 'translateX(-50%)' }}
             >
               <div style={{
                 width: 0, height: 0,
                 borderLeft: '5px solid transparent',
                 borderRight: '5px solid transparent',
-                borderTop: `${RULER_H * 0.5}px solid #E85D2A`,
+                borderTop: `${RULER_H}px solid #E85D2A`,
               }} />
             </div>
           </div>
@@ -304,15 +269,11 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
           {/* CLIP TRACK */}
           <div
             className="absolute left-0"
-            style={{ top: RULER_H + 2, height: TRACK_H }}
+            style={{ top: RULER_H + 2, height: CLIP_HEIGHT }}
           >
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={clips.map(c => c.id)} strategy={horizontalListSortingStrategy}>
-                <div className="flex h-full" style={{ gap: 2 }}>
+                <div className="flex h-full" style={{ gap: GAP_PX }}>
                   {clips.map(clip => {
                     const asset = assets[clip.assetId];
                     if (!asset) return null;
@@ -345,22 +306,22 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
             </DndContext>
           </div>
 
-          {/* PLAYHEAD line — spans ruler + track */}
+          {/* PLAYHEAD line */}
           <div
             className="absolute top-0 pointer-events-none z-50"
             style={{
               left: playheadPx,
               width: 1,
-              height: RULER_H + TRACK_H + 4,
+              height: RULER_H + CLIP_HEIGHT + 8,
               background: '#E85D2A',
-              boxShadow: '0 0 3px rgba(232,93,42,0.5)',
+              boxShadow: '0 0 4px rgba(232,93,42,0.5)',
+              transform: 'translateX(-0.5px)',
             }}
           />
 
         </div>
       </div>
 
-      {/* Context Menu */}
       {contextMenu && (
         <ContextMenu
           x={contextMenu.x}
@@ -379,27 +340,14 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
 const SortableClipWrapper = ({
   clip, asset, onUpdateBounds, thumbPx, isSelected, onSelect, onContextMenu,
 }: any) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: clip.id });
-
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: clip.id });
   return (
     <ClipBlock
       clip={clip}
       asset={asset}
       onUpdateBounds={onUpdateBounds}
       setNodeRef={setNodeRef}
-      style={style}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
       dragHandleProps={{ ...attributes, ...listeners }}
       isDragging={isDragging}
       thumbPx={thumbPx}

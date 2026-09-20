@@ -39,6 +39,41 @@ export default function App() {
   const [targetFps, setTargetFps] = useState(30);
   const [processedFrame, setProcessedFrame] = useState<ImageData | null>(null);
 
+  // Undo / Redo
+  const [clipHistory, setClipHistory] = useState<TimelineClip[][]>([[]]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+
+  const setClipsWithHistory = useCallback((next: TimelineClip[] | ((prev: TimelineClip[]) => TimelineClip[])) => {
+    setClips(prev => {
+      const resolved = typeof next === 'function' ? next(prev) : next;
+      setClipHistory(h => {
+        const trimmed = h.slice(0, historyIndex + 1);
+        return [...trimmed, resolved].slice(-50); // cap at 50 entries
+      });
+      setHistoryIndex(i => Math.min(i + 1, 49));
+      return resolved;
+    });
+  }, [historyIndex]);
+
+  const handleUndo = useCallback(() => {
+    setHistoryIndex(i => {
+      const next = Math.max(0, i - 1);
+      setClipHistory(h => { setClips(h[next] ?? []); return h; });
+      return next;
+    });
+  }, []);
+
+  const handleRedo = useCallback(() => {
+    setHistoryIndex(i => {
+      setClipHistory(h => {
+        const next = Math.min(h.length - 1, i + 1);
+        setClips(h[next] ?? []); 
+        return h;
+      });
+      return Math.min(clipHistory.length - 1, i + 1);
+    });
+  }, [clipHistory.length]);
+
   // Advanced Timeline State
   const [zoomLevel, setZoomLevel] = useState(1);
   const [selectedClipIds, setSelectedClipIds] = useState<string[]>([]);
@@ -109,7 +144,7 @@ export default function App() {
     const clipId = "clip_" + Date.now();
     
     setAssets(prev => ({ ...prev, [assetId]: { id: assetId, media: newMedia } }));
-    setClips(prev => [...prev, { id: clipId, assetId, inFrame: 0, outFrame: newMedia.frames.length - 1 }]);
+    setClipsWithHistory(prev => [...prev, { id: clipId, assetId, inFrame: 0, outFrame: newMedia.frames.length - 1 }]);
     setActiveFrameIndex(0);
     
     setCropSettings(prev => {
@@ -179,10 +214,19 @@ export default function App() {
       if (e.key === 's' || e.key === 'S') {
         handleSplitClip();
       }
+      // Undo / Redo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        handleRedo();
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSplitClip]);
+  }, [handleSplitClip, handleUndo, handleRedo]);
   useEffect(() => {
     if (!isPlaying || !media || media.frames.length === 0) return;
     let lastTime = 0;
@@ -379,7 +423,7 @@ export default function App() {
               <TimelineTrack 
                 clips={clips}
                 assets={assets}
-                onClipsChange={setClips}
+                onClipsChange={setClipsWithHistory}
                 activeGlobalFrame={activeFrameIndex} 
                 onFrameSelect={(i) => {
                   setIsPlaying(false);

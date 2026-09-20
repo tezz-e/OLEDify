@@ -1,14 +1,15 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { TimelineClip, MediaAsset } from '../types/media';
+import { ClickSpark } from './reactbits/ClickSpark';
 
-// ---------- Thumbnail cache ----------
+// ---------- Cache ----------
 const thumbCache = new Map<string, string[]>();
 
 // ---------- Constants ----------
-const CLIP_HEIGHT = 56; // px, must match TimelineTrack TRACK_H
-const HANDLE_W = 8;     // px for trim handle width
+export const CLIP_HEIGHT = 56;
+const HANDLE_W = 8;
+const GHOST_FADE_MS = 280;
 
-// ---------- Types ----------
 interface ClipBlockProps {
   clip: TimelineClip;
   asset: MediaAsset;
@@ -17,13 +18,19 @@ interface ClipBlockProps {
   style?: React.CSSProperties;
   dragHandleProps?: any;
   isDragging?: boolean;
-  thumbPx: number; // px per frame — passed in so parent controls zoom
+  thumbPx: number;
   isSelected?: boolean;
   onClick?: (e: React.MouseEvent) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
 }
 
-// ---------- ClipBlock ----------
+type TrimDrag = {
+  side: 'left' | 'right';
+  previewIn: number;
+  previewOut: number;
+  fading: boolean; // true = released, fading out
+};
+
 export const ClipBlock: React.FC<ClipBlockProps> = ({
   clip,
   asset,
@@ -38,17 +45,10 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
   onContextMenu,
 }) => {
   const [thumbs, setThumbs] = useState<string[]>([]);
+  const [trimDrag, setTrimDrag] = useState<TrimDrag | null>(null);
+  const sparkRef = useRef<{ trigger: (x: number, y: number) => void } | null>(null);
 
-  // Live preview while dragging trim handles (Premiere-style ghost)
-  const [trimPreview, setTrimPreview] = useState<{
-    side: 'left' | 'right';
-    previewIn: number;
-    previewOut: number;
-  } | null>(null);
-
-  const isTrimming = trimPreview !== null;
-
-  // ---------- Thumbnail generation ----------
+  // ---- Thumbnail generation ----
   useEffect(() => {
     if (thumbCache.has(asset.id)) {
       setThumbs(thumbCache.get(asset.id)!);
@@ -56,243 +56,245 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
     }
     const sourceFrames = asset.media.frames;
     const total = sourceFrames.length;
-    // Generate a thumb every ~5 frames to avoid freezing
-    const step = Math.max(1, Math.round(total / Math.min(total, 80)));
-
+    // Sample every ~step frames — aim for ~60 unique thumbnails max
+    const step = Math.max(1, Math.ceil(total / 60));
     const srcW = asset.media.sourceInfo.sourceWidth;
     const srcH = asset.media.sourceInfo.sourceHeight;
-    const RENDER_W = 128;
-    const RENDER_H = Math.round((RENDER_W * srcH) / srcW);
+    const RW = 128, RH = Math.round((128 * srcH) / srcW);
 
     const src = document.createElement('canvas');
     src.width = srcW; src.height = srcH;
-    const srcCtx = src.getContext('2d')!;
-
+    const sCtx = src.getContext('2d')!;
     const dst = document.createElement('canvas');
-    dst.width = RENDER_W; dst.height = RENDER_H;
-    const dstCtx = dst.getContext('2d')!;
-    dstCtx.imageSmoothingEnabled = true;
-    dstCtx.imageSmoothingQuality = 'high';
+    dst.width = RW; dst.height = RH;
+    const dCtx = dst.getContext('2d')!;
+    dCtx.imageSmoothingEnabled = true;
+    dCtx.imageSmoothingQuality = 'high';
 
     const generated: string[] = new Array(total).fill('');
     let i = 0;
 
-    const runBatch = () => {
-      const end = Math.min(i + step * 5, total);
+    const batch = () => {
+      const end = Math.min(i + step * 8, total);
       for (; i < end; i += step) {
-        srcCtx.putImageData(sourceFrames[i].imageData, 0, 0);
-        dstCtx.clearRect(0, 0, RENDER_W, RENDER_H);
-        dstCtx.drawImage(src, 0, 0, RENDER_W, RENDER_H);
+        sCtx.putImageData(sourceFrames[i].imageData, 0, 0);
+        dCtx.clearRect(0, 0, RW, RH);
+        dCtx.drawImage(src, 0, 0, RW, RH);
         const url = dst.toDataURL('image/jpeg', 0.85);
-        for (let j = i; j < Math.min(i + step, total); j++) {
-          generated[j] = url;
-        }
+        for (let j = i; j < Math.min(i + step, total); j++) generated[j] = url;
       }
-      if (i < total) {
-        setTimeout(runBatch, 0);
-      } else {
-        thumbCache.set(asset.id, generated);
-        setThumbs([...generated]);
-      }
+      if (i < total) setTimeout(batch, 0);
+      else { thumbCache.set(asset.id, generated); setThumbs([...generated]); }
     };
-    runBatch();
+    batch();
   }, [asset]);
 
-  // ---------- Derived values ----------
   const frameCount = asset.media.frames.length;
 
-  // The clip ALWAYS occupies its FULL asset width visually (Premiere style).
-  // Trimmed regions are shown with a gray hatched overlay.
-  const fullWidth = frameCount * thumbPx;
-  const displayIn = trimPreview?.previewIn ?? clip.inFrame;
-  const displayOut = trimPreview?.previewOut ?? clip.outFrame;
+  // ---- Layout ----
+  // Normally: trimmed width. During drag: full asset width.
+  const isActiveDrag = trimDrag !== null;
+  const activeIn  = trimDrag?.previewIn  ?? clip.inFrame;
+  const activeOut = trimDrag?.previewOut ?? clip.outFrame;
 
-  // ---------- Left trim drag ----------
+  const clipWidth = isActiveDrag
+    ? frameCount * thumbPx          // expand to full during drag/fade
+    : (clip.outFrame - clip.inFrame + 1) * thumbPx; // normal trimmed width
+
+  // ---- Left trim ----
   const handleLeftDrag = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
+    e.stopPropagation(); e.preventDefault();
     const startX = e.clientX;
-    const origIn = clip.inFrame;
-    const origOut = clip.outFrame;
-
+    const origIn = clip.inFrame, origOut = clip.outFrame;
     let latestIn = origIn;
 
-    setTrimPreview({ side: 'left', previewIn: origIn, previewOut: origOut });
+    setTrimDrag({ side: 'left', previewIn: origIn, previewOut: origOut, fading: false });
 
     const onMove = (mv: MouseEvent) => {
       const dx = mv.clientX - startX;
-      const frameDelta = Math.round(dx / thumbPx);
-      latestIn = Math.max(0, Math.min(origIn + frameDelta, origOut - 1));
-      setTrimPreview({ side: 'left', previewIn: latestIn, previewOut: origOut });
+      latestIn = Math.max(0, Math.min(origIn + Math.round(dx / thumbPx), origOut - 1));
+      setTrimDrag({ side: 'left', previewIn: latestIn, previewOut: origOut, fading: false });
     };
-    const onUp = () => {
+    const onUp = (upEv: MouseEvent) => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
-      setTrimPreview(null);
+      // Commit to parent immediately
       onUpdateBounds(clip.id, latestIn, origOut);
+      // Start ghost fade
+      setTrimDrag({ side: 'left', previewIn: latestIn, previewOut: origOut, fading: true });
+      setTimeout(() => setTrimDrag(null), GHOST_FADE_MS);
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
   }, [clip.inFrame, clip.outFrame, clip.id, thumbPx, onUpdateBounds]);
 
-  // ---------- Right trim drag ----------
+  // ---- Right trim ----
   const handleRightDrag = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
+    e.stopPropagation(); e.preventDefault();
     const startX = e.clientX;
-    const origIn = clip.inFrame;
-    const origOut = clip.outFrame;
-
+    const origIn = clip.inFrame, origOut = clip.outFrame;
     let latestOut = origOut;
 
-    setTrimPreview({ side: 'right', previewIn: origIn, previewOut: origOut });
+    setTrimDrag({ side: 'right', previewIn: origIn, previewOut: origOut, fading: false });
 
     const onMove = (mv: MouseEvent) => {
       const dx = mv.clientX - startX;
-      const frameDelta = Math.round(dx / thumbPx);
-      latestOut = Math.max(origIn + 1, Math.min(origOut + frameDelta, frameCount - 1));
-      setTrimPreview({ side: 'right', previewIn: origIn, previewOut: latestOut });
+      latestOut = Math.max(origIn + 1, Math.min(origOut + Math.round(dx / thumbPx), frameCount - 1));
+      setTrimDrag({ side: 'right', previewIn: origIn, previewOut: latestOut, fading: false });
     };
     const onUp = () => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
-      setTrimPreview(null);
       onUpdateBounds(clip.id, origIn, latestOut);
+      setTrimDrag({ side: 'right', previewIn: origIn, previewOut: latestOut, fading: true });
+      setTimeout(() => setTrimDrag(null), GHOST_FADE_MS);
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
   }, [clip.inFrame, clip.outFrame, clip.id, thumbPx, onUpdateBounds, frameCount]);
 
-  // ---------- Render ----------
+  // ---- Ghost opacity ----
+  // During drag: 0.75. On release (fading): 0. CSS transition handles the animation.
+  const ghostOpacity = trimDrag?.fading ? 0 : 0.75;
+
+  // Show thumbnails only when wide enough to be useful
+  const showThumbs = thumbPx >= 4;
+
   return (
     <div
       ref={setNodeRef}
-      style={{ ...style, width: fullWidth, height: CLIP_HEIGHT, flexShrink: 0 }}
+      style={{ ...style, width: clipWidth, height: CLIP_HEIGHT, flexShrink: 0, position: 'relative' }}
       onClick={onClick}
       onContextMenu={onContextMenu}
-      className={`relative select-none ${isDragging ? 'opacity-50 z-50' : 'z-10'}`}
+      className={`select-none ${isDragging ? 'opacity-40 z-50' : 'z-10'}`}
     >
-      {/* ---- Background: full thumbnail strip ---- */}
+      {/* ---- Full thumbnail strip (always rendered from frame 0) ---- */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none bg-[#1A1A1A]">
-        <div className="absolute top-0 bottom-0 flex" style={{ left: 0 }}>
-          {thumbs.map((url, i) => (
-            <div
-              key={i}
-              className="flex-shrink-0 h-full"
-              style={{ width: thumbPx }}
-            >
-              {url && (
-                <img
-                  src={url}
-                  alt=""
-                  draggable={false}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: 0.8 }}
-                />
-              )}
-            </div>
-          ))}
-        </div>
+        {showThumbs && (
+          <div className="absolute top-0 bottom-0 flex" style={{ left: 0 }}>
+            {thumbs.map((url, i) => (
+              <div key={i} className="flex-shrink-0 h-full" style={{ width: thumbPx }}>
+                {url && (
+                  <img
+                    src={url}
+                    alt=""
+                    draggable={false}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: 0.85 }}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        {!showThumbs && <div className="absolute inset-0" style={{ background: '#2a4a5e' }} />}
       </div>
 
-      {/* ---- Gray overlay: trimmed from LEFT (frames 0..displayIn-1) ---- */}
-      {displayIn > 0 && (
+      {/* ---- Ghost: left gray (frames 0 → activeIn-1) ---- */}
+      {isActiveDrag && activeIn > 0 && (
         <div
           className="absolute top-0 bottom-0 pointer-events-none z-10"
           style={{
             left: 0,
-            width: displayIn * thumbPx,
-            background: 'rgba(26,26,26,0.72)',
-            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.06) 4px, rgba(255,255,255,0.06) 6px)',
+            width: activeIn * thumbPx,
+            background: 'rgba(10,10,10,0.8)',
+            backgroundImage: 'repeating-linear-gradient(-45deg, transparent, transparent 5px, rgba(255,255,255,0.04) 5px, rgba(255,255,255,0.04) 7px)',
+            opacity: ghostOpacity,
+            transition: `opacity ${GHOST_FADE_MS}ms ease-out`,
           }}
         />
       )}
 
-      {/* ---- Gray overlay: trimmed from RIGHT (frames displayOut+1..end) ---- */}
-      {displayOut < frameCount - 1 && (
+      {/* ---- Ghost: right gray (frames activeOut+1 → end) ---- */}
+      {isActiveDrag && activeOut < frameCount - 1 && (
         <div
           className="absolute top-0 bottom-0 pointer-events-none z-10"
           style={{
-            left: (displayOut + 1) * thumbPx,
+            left: (activeOut + 1) * thumbPx,
             right: 0,
-            background: 'rgba(26,26,26,0.72)',
-            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.06) 4px, rgba(255,255,255,0.06) 6px)',
+            background: 'rgba(10,10,10,0.8)',
+            backgroundImage: 'repeating-linear-gradient(-45deg, transparent, transparent 5px, rgba(255,255,255,0.04) 5px, rgba(255,255,255,0.04) 7px)',
+            opacity: ghostOpacity,
+            transition: `opacity ${GHOST_FADE_MS}ms ease-out`,
           }}
         />
       )}
 
-      {/* ---- Active region border highlight ---- */}
-      <div
-        className="absolute top-0 bottom-0 pointer-events-none z-20"
-        style={{
-          left: displayIn * thumbPx,
-          width: (displayOut - displayIn + 1) * thumbPx,
-          outline: `2px solid ${isSelected ? '#E85D2A' : 'rgba(255,255,255,0.25)'}`,
-          outlineOffset: '-2px',
-        }}
-      />
+      {/* ---- Active region border ---- */}
+      {isActiveDrag && (
+        <div
+          className="absolute top-0 bottom-0 pointer-events-none z-20"
+          style={{
+            left: activeIn * thumbPx,
+            width: (activeOut - activeIn + 1) * thumbPx,
+            boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.25)',
+          }}
+        />
+      )}
 
-      {/* ---- Drag handle bar (top center of active region) ---- */}
+      {/* ---- Selected border (always) ---- */}
+      {isSelected && (
+        <div
+          className="absolute inset-0 pointer-events-none z-20"
+          style={{ boxShadow: 'inset 0 0 0 2px #E85D2A' }}
+        />
+      )}
+
+      {/* ---- Drag handle ---- */}
       <div
         {...dragHandleProps}
-        className="absolute top-0 flex items-center justify-center cursor-grab active:cursor-grabbing z-30"
-        style={{
-          left: displayIn * thumbPx,
-          width: (displayOut - displayIn + 1) * thumbPx,
-          height: 12,
-          background: 'rgba(0,0,0,0.5)',
-        }}
+        className="absolute top-0 left-0 right-0 flex items-center justify-center cursor-grab active:cursor-grabbing z-30"
+        style={{ height: 12, background: 'rgba(0,0,0,0.45)' }}
         title="Drag to reorder"
       >
-        <div className="w-8 h-[2px] rounded-full bg-white/40" />
+        <div className="w-8 h-[2px] rounded-full bg-white/35" />
       </div>
 
-      {/* ---- Clip label (bottom of active region) ---- */}
+      {/* ---- Clip label ---- */}
       <div
-        className="absolute bottom-0 flex items-center px-2 pointer-events-none z-20 overflow-hidden"
-        style={{
-          left: displayIn * thumbPx,
-          width: (displayOut - displayIn + 1) * thumbPx,
-          height: 16,
-          background: 'rgba(0,0,0,0.55)',
-        }}
+        className="absolute bottom-0 left-0 right-0 flex items-center px-2 pointer-events-none z-20 overflow-hidden"
+        style={{ height: 16, background: 'rgba(0,0,0,0.5)' }}
       >
         <span className="text-[7px] text-white/60 font-mono truncate tracking-wide">
           {asset.media.sourceInfo.filename}
-          {isTrimming && (
-            <span className="text-[#E85D2A] ml-1">
-              [{displayIn}–{displayOut}]
-            </span>
+          {isActiveDrag && !trimDrag?.fading && (
+            <span className="text-[#E85D2A] ml-1">[{activeIn}–{activeOut}]</span>
           )}
         </span>
       </div>
 
-      {/* ---- Left trim handle (at in-point) ---- */}
-      <div
-        onMouseDown={handleLeftDrag}
-        className="absolute top-0 bottom-0 z-30 flex items-center justify-center cursor-col-resize hover:brightness-110 transition-all"
-        style={{
-          left: displayIn * thumbPx,
-          width: HANDLE_W,
-          background: '#E85D2A',
-        }}
-        title="Trim in-point"
-      >
-        <div className="w-px h-6 bg-white/80" />
-      </div>
+      {/* ---- Left trim handle ---- */}
+      <ClickSpark sparkColor="#E85D2A" sparkCount={6} sparkRadius={14} duration={300}>
+        <div
+          onMouseDown={handleLeftDrag}
+          className="absolute top-0 bottom-0 z-30 flex items-center justify-center cursor-col-resize"
+          style={{
+            left: isActiveDrag ? activeIn * thumbPx : 0,
+            width: HANDLE_W,
+            background: '#E85D2A',
+          }}
+          title="Trim in-point"
+        >
+          <div className="w-px h-5 bg-white/80 rounded-full" />
+        </div>
+      </ClickSpark>
 
-      {/* ---- Right trim handle (at out-point) ---- */}
-      <div
-        onMouseDown={handleRightDrag}
-        className="absolute top-0 bottom-0 z-30 flex items-center justify-center cursor-col-resize hover:brightness-110 transition-all"
-        style={{
-          left: (displayOut + 1) * thumbPx - HANDLE_W,
-          width: HANDLE_W,
-          background: '#E85D2A',
-        }}
-        title="Trim out-point"
-      >
-        <div className="w-px h-6 bg-white/80" />
-      </div>
+      {/* ---- Right trim handle ---- */}
+      <ClickSpark sparkColor="#E85D2A" sparkCount={6} sparkRadius={14} duration={300}>
+        <div
+          onMouseDown={handleRightDrag}
+          className="absolute top-0 bottom-0 z-30 flex items-center justify-center cursor-col-resize"
+          style={{
+            left: isActiveDrag
+              ? (activeOut + 1) * thumbPx - HANDLE_W
+              : clipWidth - HANDLE_W,
+            width: HANDLE_W,
+            background: '#E85D2A',
+          }}
+          title="Trim out-point"
+        >
+          <div className="w-px h-5 bg-white/80 rounded-full" />
+        </div>
+      </ClickSpark>
     </div>
   );
 };
