@@ -358,8 +358,8 @@ export default function App() {
               alphaParticles={true}
             />
           </div>
-          <div className="relative z-10 w-full flex items-center justify-center">
-            <div className="pointer-events-auto">
+          <div className="relative z-10 w-full h-full flex items-center justify-center">
+            <div className="pointer-events-auto w-full h-full flex items-center justify-center">
               <OledCanvas frameData={processedFrame} theme={ditherConfig.theme} scale={6} />
             </div>
           </div>

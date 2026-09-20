@@ -75,13 +75,14 @@ export const OledCanvas: React.FC<OledCanvasProps> = ({ frameData, theme, scale 
   }, [frameData, theme, scale, canvasWidth, canvasHeight, phosphorColor]);
 
   return (
-    <div className="flex flex-col items-center select-none">
-      <div className="oled-bezel p-3 relative">
+    <div className="flex flex-col items-center justify-center select-none max-w-full max-h-full w-full h-full">
+      <div className="oled-bezel p-2 md:p-3 relative max-w-full max-h-full flex flex-col justify-center shrink">
         <canvas
           ref={canvasRef}
           width={canvasWidth}
           height={canvasHeight}
-          className={`oled-screen block glow-${theme}`}
+          className={`oled-screen block glow-${theme} max-w-full max-h-full object-contain`}
+          style={{ aspectRatio: '128/64' }}
         />
         <span className="absolute bottom-1 left-3 text-[9px] font-mono text-[#6B6B6B]">
           SH1106
