@@ -458,7 +458,7 @@ export default function App() {
 
           {/* Column 3: Display Info */}
           <div className="w-[200px] shrink-0 p-6 border-l border-[#1A1A1A]/20 flex flex-col justify-start overflow-y-auto">
-            <div className="bg-white border-2 border-[#1A1A1A] shadow-[4px_4px_0_0_#1A1A1A] p-4 font-mono text-xs flex flex-col gap-5 mt-4 lg:mt-8 mb-auto">
+            <div className="bg-white border-2 border-[#1A1A1A] shadow-[4px_4px_0_0_#1A1A1A] p-4 font-mono text-xs flex flex-col gap-5 mb-auto">
               
               <div>
                 <div className="bg-[#1A1A1A] text-white px-2 py-1 text-[10px] font-bold uppercase tracking-wider mb-3 flex justify-between items-center">
