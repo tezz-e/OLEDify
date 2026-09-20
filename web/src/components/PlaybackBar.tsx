@@ -1,6 +1,5 @@
 import React from 'react';
 import { Play, Pause, SkipBack, SkipForward, RotateCcw } from 'lucide-react';
-import { CountUp } from './reactbits/CountUp';
 import { GlassButton } from './reactbits/GlassButton';
 
 interface PlaybackBarProps {
@@ -12,7 +11,6 @@ interface PlaybackBarProps {
   onFpsChange: (fps: number) => void;
   onFrameSeek: (frame: number) => void;
   onReset: () => void;
-  trimRange?: { start: number; end: number };
 }
 
 export const PlaybackBar: React.FC<PlaybackBarProps> = ({
@@ -24,65 +22,78 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
   onFpsChange,
   onFrameSeek,
   onReset,
-  trimRange,
 }) => {
-  const pad = (num: number) => num.toString().padStart(3, '0');
-
-  const min = trimRange ? trimRange.start : 0;
-  const max = trimRange ? trimRange.end : Math.max(0, totalFrames - 1);
-  const durationFrames = trimRange ? (trimRange.end - trimRange.start + 1) : totalFrames;
-  const displayFrame = currentFrame - min + 1;
+  const pad = (n: number) => String(n).padStart(3, '0');
+  const max = Math.max(0, totalFrames - 1);
+  const safeFrame = Math.min(currentFrame, max);
 
   return (
-    <div className="flex flex-col w-full mt-4 space-y-4 select-none rounded-xl">
-      <div className="flex items-center justify-between space-x-2">
-        <div className="flex items-center space-x-2">
-          <GlassButton 
+    <div className="flex flex-col w-full gap-2 select-none">
+      {/* Seek slider */}
+      <input
+        type="range"
+        min={0}
+        max={max}
+        value={safeFrame}
+        onChange={e => onFrameSeek(parseInt(e.target.value))}
+        className="w-full cursor-pointer accent-[#E85D2A] h-1"
+        disabled={totalFrames === 0}
+        style={{ accentColor: '#E85D2A' }}
+      />
+
+      {/* Controls row */}
+      <div className="flex items-center w-full relative">
+        {/* Center: transport buttons */}
+        <div className="flex items-center gap-1.5 mx-auto">
+          <GlassButton
             onClick={onReset}
-            className="p-2 w-9 h-9 rounded-lg"
-            title="Reset"
+            className="p-2 w-8 h-8 rounded-md"
+            title="Go to start"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-3.5 h-3.5" />
           </GlassButton>
-          
-          <GlassButton 
-            onClick={() => onFrameSeek(Math.max(min, currentFrame - 1))}
-            className="p-2 w-9 h-9 rounded-lg"
-            title="Previous Frame"
+
+          <GlassButton
+            onClick={() => onFrameSeek(Math.max(0, safeFrame - 1))}
+            className="p-2 w-8 h-8 rounded-md"
+            title="Previous frame (←)"
           >
-            <SkipBack className="w-4 h-4" />
+            <SkipBack className="w-3.5 h-3.5" />
           </GlassButton>
-          
-          <GlassButton 
+
+          <GlassButton
             onClick={onTogglePlay}
-            className={`w-12 h-10 rounded-lg ${isPlaying ? 'bg-[#E85D2A]/10 border-[#E85D2A]/50 text-[#E85D2A]' : 'bg-[#E85D2A] border-[#1A1A1A] text-white hover:bg-[#E85D2A]/80'}`}
+            className={`w-11 h-9 rounded-md font-bold ${
+              isPlaying
+                ? 'bg-[#E85D2A]/10 border-[#E85D2A]/50 text-[#E85D2A]'
+                : 'bg-[#E85D2A] border-[#1A1A1A] text-white hover:bg-[#C94E22]'
+            }`}
             title="Play/Pause (Space)"
           >
-            {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 ml-0.5 fill-current" />}
+            {isPlaying
+              ? <Pause className="w-4 h-4 fill-current" />
+              : <Play className="w-4 h-4 ml-0.5 fill-current" />
+            }
           </GlassButton>
-          
-          <GlassButton 
-            onClick={() => onFrameSeek(Math.min(max, currentFrame + 1))}
-            className="p-2 w-9 h-9 rounded-lg"
-            title="Next Frame"
+
+          <GlassButton
+            onClick={() => onFrameSeek(Math.min(max, safeFrame + 1))}
+            className="p-2 w-8 h-8 rounded-md"
+            title="Next frame (→)"
           >
-            <SkipForward className="w-4 h-4" />
+            <SkipForward className="w-3.5 h-3.5" />
           </GlassButton>
         </div>
 
-        <div className="flex items-center space-x-4 text-xs font-mono">
-          <span className="text-[#1A1A1A] font-mono font-bold min-w-[70px] text-right tracking-widest tabular-nums flex items-center justify-end">
-            {durationFrames > 0 ? (
-              <>
-                <span>{pad(displayFrame)}/</span>
-                <CountUp to={durationFrames} duration={0.6} />
-              </>
-            ) : '---/---'}
+        {/* Right: frame counter + FPS */}
+        <div className="absolute right-0 flex items-center gap-2">
+          <span className="text-[10px] font-mono font-bold text-[#1A1A1A] tabular-nums tracking-widest">
+            {pad(safeFrame + 1)}/{pad(totalFrames)}
           </span>
-          <select 
+          <select
             value={targetFps}
-            onChange={(e) => onFpsChange(parseInt(e.target.value))}
-            className="bg-white border border-[#1A1A1A] text-[#1A1A1A] font-mono px-2 py-1 outline-none focus:border-[#E85D2A] cursor-pointer"
+            onChange={e => onFpsChange(parseInt(e.target.value))}
+            className="bg-white border border-[#1A1A1A] text-[#1A1A1A] font-mono text-[10px] px-1.5 py-1 outline-none focus:border-[#E85D2A] cursor-pointer"
           >
             <option value="15">15 FPS</option>
             <option value="24">24 FPS</option>
@@ -90,16 +101,6 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
           </select>
         </div>
       </div>
-      
-      <input
-        type="range"
-        min={min}
-        max={max}
-        value={currentFrame}
-        onChange={(e) => onFrameSeek(parseInt(e.target.value))}
-        className="w-full accent-[#E85D2A] cursor-pointer bg-transparent"
-        disabled={durationFrames === 0}
-      />
     </div>
   );
 };

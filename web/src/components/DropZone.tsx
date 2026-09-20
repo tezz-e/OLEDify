@@ -50,31 +50,6 @@ export const DropZone: React.FC<DropZoneProps> = ({ onMediaLoaded, currentMedia 
     }
   };
 
-  // Loaded state
-  if (currentMedia && !progress) {
-    return (
-      <div className="p-3 border-b-2 border-[#1A1A1A] shrink-0">
-        <div className="flex items-center space-x-3 mb-2">
-          <div className="p-1.5 border border-[#1A1A1A] bg-white">
-            <CheckCircle2 className="w-5 h-5 text-[#E85D2A]" />
-          </div>
-          <div className="overflow-hidden">
-            <p className="text-xs font-bold text-[#1A1A1A] truncate font-mono" title={currentMedia.sourceInfo.filename}>
-              {currentMedia.sourceInfo.filename}
-            </p>
-            <p className="text-[10px] font-mono text-[#6B6B6B] mt-0.5">
-              {currentMedia.frames.length} frames • {currentMedia.sourceInfo.sourceWidth}×{currentMedia.sourceInfo.sourceHeight}
-            </p>
-          </div>
-        </div>
-        <label className="block w-full py-2 text-center tech-btn cursor-pointer">
-          REPLACE_MEDIA
-          <input type="file" className="hidden" accept="video/mp4,video/webm,image/gif" onChange={handleChange} />
-        </label>
-      </div>
-    );
-  }
-
   // Processing state
   if (progress) {
     return (
@@ -98,7 +73,7 @@ export const DropZone: React.FC<DropZoneProps> = ({ onMediaLoaded, currentMedia 
     );
   }
 
-  // Idle dropzone
+  // Idle dropzone (Always available to add more media)
   return (
     <div className="p-3 border-b-2 border-[#1A1A1A] shrink-0">
       <label
@@ -113,7 +88,7 @@ export const DropZone: React.FC<DropZoneProps> = ({ onMediaLoaded, currentMedia 
         }`}
       >
         <UploadCloud className={`w-8 h-8 mb-2 ${isDragging ? 'text-[#E85D2A]' : 'text-[#6B6B6B]'}`} />
-        <span className="text-xs font-bold tracking-widest text-[#1A1A1A] mb-1 font-mono uppercase">DROP_MEDIA</span>
+        <span className="text-xs font-bold tracking-widest text-[#1A1A1A] mb-1 font-mono uppercase">IMPORT_MEDIA</span>
         <span className="text-[10px] text-[#6B6B6B] text-center uppercase tracking-widest font-mono">MP4, WEBM, GIF</span>
         <input type="file" className="hidden" accept="video/mp4,video/webm,image/gif" onChange={handleChange} />
       </label>

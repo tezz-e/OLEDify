@@ -54,3 +54,26 @@ export interface DecoderOptions {
   signal?: AbortSignal;         // Cancellation signal
   onProgress?: (progress: DecodeProgress) => void;
 }
+
+// ---------------------------------------------------------
+// NLE Timeline Models
+// ---------------------------------------------------------
+
+export interface MediaAsset {
+  id: string; // Unique asset ID
+  media: DecodedMedia;
+}
+
+export interface TimelineClip {
+  id: string; // Unique clip ID
+  assetId: string; // Reference to MediaAsset
+  inFrame: number; // The start index in the source media's frames array
+  outFrame: number; // The end index (inclusive) in the source media's frames array
+}
+
+export interface TimelineProject {
+  assets: Record<string, MediaAsset>; // Dictionary of all imported assets
+  clips: TimelineClip[]; // Ordered sequence of clips in the timeline
+  targetFps: number;
+}
+

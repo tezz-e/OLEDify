@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Header } from './components/Header';
 import { SettingsModal } from './components/SettingsModal';
 import { DropZone } from './components/DropZone';
-import { FrameStrip } from './components/FrameStrip';
+import { TimelineTrack } from './components/TimelineTrack';
 import { OledCanvas } from './components/OledCanvas';
 import { PlaybackBar } from './components/PlaybackBar';
 import { DitherControls } from './components/DitherControls';
@@ -21,7 +21,7 @@ const themePalettes: Record<PhosphorTheme, string[]> = {
   'yellow-blue': ['#00E5FF', '#FFCC00', '#1A1A1A']
 };
 
-import { DecodedMedia, CropSettings } from './types/media';
+import { DecodedMedia, CropSettings, TimelineClip, MediaAsset, ExtractedFrame } from './types/media';
 import { DitherConfig, PhosphorTheme } from './types/dither';
 import { HardwareConfig } from './types/oled';
 
@@ -32,13 +32,50 @@ import { renderCropTo128x64, imageDataToCanvas, computeCoverCrop } from './engin
 export default function App() {
   // --- STATE ---
   // Media & Playback
-  const [media, setMedia] = useState<DecodedMedia | null>(null);
-  const [rawMedia, setRawMedia] = useState<DecodedMedia | null>(null);
+  const [assets, setAssets] = useState<Record<string, MediaAsset>>({});
+  const [clips, setClips] = useState<TimelineClip[]>([]);
   const [activeFrameIndex, setActiveFrameIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [targetFps, setTargetFps] = useState(30);
-  const [trimRange, setTrimRange] = useState({ start: 0, end: 0 });
   const [processedFrame, setProcessedFrame] = useState<ImageData | null>(null);
+
+  // Advanced Timeline State
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [selectedClipIds, setSelectedClipIds] = useState<string[]>([]);
+
+  const timelineMedia = useMemo(() => {
+    if (clips.length === 0) return null;
+    const frames: ExtractedFrame[] = [];
+    let frameIndex = 0;
+    
+    clips.forEach(clip => {
+      const asset = assets[clip.assetId];
+      if (asset && asset.media) {
+        for (let i = clip.inFrame; i <= clip.outFrame; i++) {
+          if (asset.media.frames[i]) {
+            frames.push({
+               ...asset.media.frames[i],
+               index: frameIndex++
+            });
+          }
+        }
+      }
+    });
+
+    if (frames.length === 0) return null;
+
+    const firstAsset = assets[clips[0].assetId];
+    return {
+       sourceInfo: {
+          ...firstAsset.media.sourceInfo,
+          frameCount: frames.length
+       },
+       frames
+    } as DecodedMedia;
+  }, [clips, assets]);
+
+  // Derived state to retain compatibility
+  const media = timelineMedia;
 
   // Configuration
   const [ditherConfig, setDitherConfig] = useState<DitherConfig>({
@@ -68,10 +105,13 @@ export default function App() {
 
   // --- INITIALIZATION ---
   const handleMediaLoaded = (newMedia: DecodedMedia) => {
-    setRawMedia(newMedia);
-    setMedia(newMedia);
-    setTrimRange({ start: 0, end: newMedia.frames.length - 1 });
+    const assetId = "asset_" + Date.now();
+    const clipId = "clip_" + Date.now();
+    
+    setAssets(prev => ({ ...prev, [assetId]: { id: assetId, media: newMedia } }));
+    setClips(prev => [...prev, { id: clipId, assetId, inFrame: 0, outFrame: newMedia.frames.length - 1 }]);
     setActiveFrameIndex(0);
+    
     setCropSettings(prev => {
       const cover = computeCoverCrop(newMedia.sourceInfo.sourceWidth, newMedia.sourceInfo.sourceHeight);
       return {
@@ -86,34 +126,63 @@ export default function App() {
     });
   };
 
-  const handleApplyTrim = (start: number, end: number) => {
-    if (!media) return;
-    setIsPlaying(false);
-    const slicedFrames = media.frames.slice(start, end + 1).map((f, i) => ({
-      ...f,
-      index: i
-    }));
-    setMedia({
-      ...media,
-      frames: slicedFrames,
-      sourceInfo: {
-        ...media.sourceInfo,
-        frameCount: slicedFrames.length
+  // Trimming is now handled at the clip level
+
+  // --- PLAYBACK ENGINE & HOTKEYS ---
+  const handleSplitClip = useCallback(() => {
+    if (!timelineMedia || clips.length === 0) return;
+    
+    let framesBefore = 0;
+    let targetClipIndex = -1;
+    let localFrameIndex = -1;
+
+    for (let i = 0; i < clips.length; i++) {
+      const clip = clips[i];
+      const clipLength = clip.outFrame - clip.inFrame + 1;
+      
+      if (activeFrameIndex >= framesBefore && activeFrameIndex < framesBefore + clipLength) {
+        targetClipIndex = i;
+        localFrameIndex = activeFrameIndex - framesBefore;
+        break;
       }
-    });
-    setActiveFrameIndex(0);
-    setTrimRange({ start: 0, end: slicedFrames.length - 1 });
-  };
+      framesBefore += clipLength;
+    }
 
-  const handleResetTrim = () => {
-    if (!rawMedia) return;
-    setIsPlaying(false);
-    setMedia(rawMedia);
-    setActiveFrameIndex(0);
-    setTrimRange({ start: 0, end: rawMedia.frames.length - 1 });
-  };
+    // Only split if we are not at the very start of the clip
+    if (targetClipIndex !== -1 && localFrameIndex > 0) {
+      const clipToSplit = clips[targetClipIndex];
+      const splitPointInAsset = clipToSplit.inFrame + localFrameIndex;
 
-  // --- PLAYBACK ENGINE ---
+      const newClip1 = {
+        ...clipToSplit,
+        outFrame: splitPointInAsset - 1
+      };
+
+      const newClip2 = {
+        id: "clip_" + Date.now(),
+        assetId: clipToSplit.assetId,
+        inFrame: splitPointInAsset,
+        outFrame: clipToSplit.outFrame
+      };
+
+      const newClips = [...clips];
+      newClips.splice(targetClipIndex, 1, newClip1, newClip2);
+      setClips(newClips);
+    }
+  }, [clips, activeFrameIndex, timelineMedia]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in an input
+      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
+      
+      if (e.key === 's' || e.key === 'S') {
+        handleSplitClip();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleSplitClip]);
   useEffect(() => {
     if (!isPlaying || !media || media.frames.length === 0) return;
     let lastTime = 0;
@@ -197,13 +266,13 @@ export default function App() {
 
   const handleExport = () => {
     if (!media) return;
-    const croppedAndDithered = media.frames.map(f => {
+    const croppedAndDithered = media.frames.map((f: ExtractedFrame) => {
       const sourceCanvas = imageDataToCanvas(f.imageData);
       const cropped128x64 = renderCropTo128x64(sourceCanvas, cropSettings);
       return applyDithering(cropped128x64, ditherConfig);
     });
 
-    const xbmpFrames = croppedAndDithered.map(res => res.xbmpBytes);
+    const xbmpFrames = croppedAndDithered.map((res: { ditheredImageData: ImageData, xbmpBytes: Uint8Array }) => res.xbmpBytes);
 
     const code = generateCppHeader(xbmpFrames, targetFps, hardwareConfig);
     setCppCode(code);
@@ -259,81 +328,88 @@ export default function App() {
             </div>
 
             <div className="flex-1 flex flex-col min-h-0 overflow-y-auto z-[2] relative">
-              <DropZone onMediaLoaded={handleMediaLoaded} currentMedia={media} />
+              <DropZone onMediaLoaded={handleMediaLoaded} currentMedia={null} />
               
-              {/* Sample Media Placeholders */}
+              {/* Asset Pool */}
               <div className="p-3">
-                <div className="flex gap-2">
-                  <div className="w-1/3 aspect-[4/3] bg-[#080808] border-2 border-[#E85D2A] p-0.5 flex items-center justify-center cursor-pointer">
-                    <div className="w-full h-full border border-[#1A1A1A] bg-[url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=100')] bg-cover opacity-90" />
-                  </div>
-                  <div className="w-1/3 aspect-[4/3] bg-[#1A1A1A] border border-[#6B6B6B] p-0.5 flex items-center justify-center cursor-pointer hover:border-[#1A1A1A]">
-                    <div className="w-full h-full border border-[#1A1A1A] bg-[url('https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?auto=format&fit=crop&q=80&w=100')] bg-cover opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all" />
-                  </div>
-                  <div className="w-1/3 aspect-[4/3] bg-[#1A1A1A] border border-[#6B6B6B] p-0.5 flex items-center justify-center cursor-pointer hover:border-[#1A1A1A]">
-                    <div className="w-full h-full border border-[#1A1A1A] bg-[url('https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=100')] bg-cover opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all" />
-                  </div>
+                <div className="flex flex-wrap gap-2">
+                  {Object.values(assets).map(asset => {
+                    const firstFrame = asset.media.frames[0];
+                    return (
+                      <div key={asset.id} className="w-[calc(33.333%-0.34rem)] aspect-[4/3] bg-[#080808] border-2 border-[#1A1A1A] hover:border-[#E85D2A] p-0.5 flex items-center justify-center cursor-pointer transition-colors relative group">
+                        {firstFrame && (
+                          <div className="w-full h-full border border-[#1A1A1A] overflow-hidden">
+                            <img 
+                              src={(() => {
+                                const canvas = document.createElement('canvas');
+                                canvas.width = firstFrame.imageData.width;
+                                canvas.height = firstFrame.imageData.height;
+                                const ctx = canvas.getContext('2d');
+                                if (ctx) ctx.putImageData(firstFrame.imageData, 0, 0);
+                                return canvas.toDataURL();
+                              })()} 
+                              className="w-full h-full object-cover opacity-80 group-hover:opacity-100" 
+                              alt={asset.id} 
+                            />
+                          </div>
+                        )}
+                        <div className="absolute bottom-0 left-0 right-0 bg-[#1A1A1A]/80 p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <p className="text-[7px] text-[#F5F0EB] font-mono truncate text-center">{asset.media.sourceInfo.filename}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
           </BlueprintHoverCard>
 
           {/* Zone 2: Timeline & Trimming (Center) */}
-          <BlueprintHoverCard className="flex-1 min-w-0 shrink-0">
-            <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6B6B6B] px-6 py-3 border-b-2 border-[#1A1A1A] font-mono z-[2] relative flex justify-between items-center bg-[#F5F0EB]">
+          <BlueprintHoverCard className="flex-1 min-w-0 flex flex-col overflow-hidden">
+            <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6B6B6B] px-6 py-3 border-b-2 border-[#1A1A1A] font-mono z-[2] relative flex justify-between items-center bg-[#F5F0EB] shrink-0">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-[#E85D2A]"></span>
                 <span className="text-[#1A1A1A]">TIMELINE</span>
               </div>
-              {media && <span>{media.frames.length} FRAMES | {targetFps} FPS | 00:00 - 00:08.00</span>}
+              {media && <span>{media.frames.length} FRAMES | {targetFps} FPS</span>}
             </h2>
-            <div className="flex-1 flex flex-col overflow-y-auto z-[2] relative bg-[#F5F0EB]">
-              <FrameStrip 
-                media={media} 
-                activeFrameIndex={activeFrameIndex} 
+
+            {/* Timeline track — fills remaining space */}
+            <div className="flex-1 min-h-0 overflow-hidden z-[2] relative">
+              <TimelineTrack 
+                clips={clips}
+                assets={assets}
+                onClipsChange={setClips}
+                activeGlobalFrame={activeFrameIndex} 
                 onFrameSelect={(i) => {
                   setIsPlaying(false);
                   setActiveFrameIndex(i);
-                }} 
+                }}
+                zoomLevel={zoomLevel}
+                onZoomChange={setZoomLevel}
+                selectedClipIds={selectedClipIds}
+                onSelectClips={setSelectedClipIds}
               />
-              
-              <div className="px-6 py-4 flex flex-col w-full mx-auto space-y-6">
-                <PlaybackBar 
-                  isPlaying={isPlaying}
-                  onTogglePlay={() => setIsPlaying(p => !p)}
-                  currentFrame={activeFrameIndex}
-                  totalFrames={media ? media.frames.length : 0}
-                  targetFps={targetFps}
-                  onFpsChange={setTargetFps}
-                  onFrameSeek={(f) => {
-                    setIsPlaying(false);
-                    setActiveFrameIndex(f);
-                  }}
-                  onReset={() => {
-                    setIsPlaying(false);
-                    setActiveFrameIndex(0);
-                  }}
-                />
+            </div>
 
-                <div className="w-full h-20 bg-[#1A1A1A] border-2 border-[#1A1A1A] rounded-sm overflow-hidden relative">
-                   <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#F5F0EB_1px,transparent_1px)] [background-size:16px_16px]"></div>
-                   <div className="w-full h-full flex items-end px-1 gap-0.5 opacity-60">
-                     {Array.from({length: 120}).map((_, i) => (
-                       <div key={i} className="flex-1 bg-[#6B6B6B]" style={{ height: `${Math.random() * 70 + 10}%` }}></div>
-                     ))}
-                   </div>
-                </div>
-                
-                <div className="text-[9px] font-mono tracking-widest text-[#6B6B6B] flex items-center justify-between uppercase border-t border-[#1A1A1A]/20 pt-4">
-                  <span>&gt; DRAG TO SCRUB</span>
-                  <span>|</span>
-                  <span>SCROLL TO ZOOM</span>
-                  <span>|</span>
-                  <span>SHIFT + DRAG TO SELECT</span>
-                  <span>|</span>
-                  <span>RIGHT CLICK FOR OPTIONS</span>
-                </div>
-              </div>
+            {/* Playback bar — always at the bottom, never scrolled away */}
+            <div className="shrink-0 px-6 py-3 border-t border-[#1A1A1A]/20 bg-[#F5F0EB] z-[2]">
+              <PlaybackBar 
+                isPlaying={isPlaying}
+                onTogglePlay={() => setIsPlaying(p => !p)}
+                currentFrame={activeFrameIndex}
+                totalFrames={timelineMedia ? timelineMedia.frames.length : 0}
+                targetFps={targetFps}
+                onFpsChange={setTargetFps}
+                onFrameSeek={(f) => {
+                  setIsPlaying(false);
+                  setActiveFrameIndex(f);
+                }}
+                onReset={() => {
+                  setIsPlaying(false);
+                  setActiveFrameIndex(0);
+                }}
+              />
             </div>
           </BlueprintHoverCard>
 
@@ -389,8 +465,8 @@ export default function App() {
         <div className="flex items-center gap-1">
           {media ? (
             <>
-              <CountUp to={trimRange.end - trimRange.start + 1} duration={0.4} />
-              <span>FRAMES_SELECTED</span>
+              <CountUp to={media.frames.length} duration={0.4} />
+              <span>FRAMES_TOTAL</span>
             </>
           ) : 'NO_MEDIA'}
         </div>
@@ -407,7 +483,7 @@ export default function App() {
         isOpen={exportModalOpen} 
         onClose={() => setExportModalOpen(false)} 
         cppCode={cppCode} 
-        frameCount={trimRange.end - trimRange.start + 1}
+        frameCount={media ? media.frames.length : 0}
         targetFps={targetFps}
         xbmpFrames={exportXbmpFrames}
       />
