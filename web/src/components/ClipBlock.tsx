@@ -7,7 +7,7 @@ const thumbCache = new Map<string, string[]>();
 
 // ---------- Constants ----------
 export const CLIP_HEIGHT = 56;
-const HANDLE_W = 8;
+const HANDLE_W = 14;
 const GHOST_FADE_MS = 280;
 
 interface ClipBlockProps {
@@ -154,22 +154,18 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
   }, [clip.inFrame, clip.outFrame, clip.id, thumbPx, onUpdateBounds, frameCount]);
 
   // ---- Thumbnail slots ----
-  // Key insight: we never render one img per frame. Instead we compute how many
-  // thumbnail "slots" fit across the VISIBLE (trimmed) width at a fixed display size,
-  // then pick the corresponding source frame for each slot.
-  const SLOT_W = 48; // px — each thumbnail renders at this width, regardless of zoom
-  const activeFrames = clip.outFrame - clip.inFrame + 1;
-  const displayWidth = activeFrames * thumbPx; // pixel width of the active (visible) region
-  const numSlots = Math.max(1, Math.ceil(displayWidth / SLOT_W));
+  // Compute slots over the FULL asset duration so ghost regions show frames during trim.
+  const SLOT_W = 48; // px
+  const fullWidth = frameCount * thumbPx;
+  const numSlots = Math.max(1, Math.ceil(fullWidth / SLOT_W));
   const thumbSlots: { src: string; slotWidth: number }[] = [];
 
   if (thumbs.length > 0) {
-    // Distribute slots evenly across the active region
     for (let s = 0; s < numSlots; s++) {
       const ratio = numSlots === 1 ? 0.5 : s / (numSlots - 1);
-      const frameIdx = clip.inFrame + Math.round(ratio * (activeFrames - 1));
+      const frameIdx = Math.round(ratio * (frameCount - 1));
       const safeSrc = thumbs[Math.min(frameIdx, thumbs.length - 1)] ?? '';
-      const slotWidth = displayWidth / numSlots;
+      const slotWidth = fullWidth / numSlots;
       thumbSlots.push({ src: safeSrc, slotWidth });
     }
   }
@@ -190,11 +186,14 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
         {/* Solid color fallback (always visible behind thumbs) */}
         <div className="absolute inset-0" style={{ background: '#1e3040' }} />
 
-        {/* Thumbnail strip — starts at the in-point offset */}
+        {/* Thumbnail strip — represents the FULL asset */}
         {thumbSlots.length > 0 && (
           <div
             className="absolute top-0 bottom-0 flex"
-            style={{ left: isActiveDrag ? activeIn * thumbPx : 0 }}
+            style={{ 
+              left: isActiveDrag ? 0 : -clip.inFrame * thumbPx,
+              width: fullWidth 
+            }}
           >
             {thumbSlots.map(({ src, slotWidth }, i) => (
               <div
@@ -301,7 +300,7 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
       <ClickSpark sparkColor="#E85D2A" sparkCount={6} sparkRadius={14} duration={300}>
         <div
           onMouseDown={handleLeftDrag}
-          className="absolute top-0 bottom-0 z-30 flex items-center justify-center cursor-col-resize"
+          className="absolute top-0 bottom-0 z-30 flex items-center justify-center cursor-col-resize hover:brightness-110 group transition-colors"
           style={{
             left: isActiveDrag ? activeIn * thumbPx : 0,
             width: HANDLE_W,
@@ -309,7 +308,7 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
           }}
           title="Trim in-point"
         >
-          <div className="w-px h-5 bg-white/80 rounded-full" />
+          <div className="w-[3px] h-6 bg-white/90 rounded-full group-hover:bg-white" />
         </div>
       </ClickSpark>
 
@@ -317,7 +316,7 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
       <ClickSpark sparkColor="#E85D2A" sparkCount={6} sparkRadius={14} duration={300}>
         <div
           onMouseDown={handleRightDrag}
-          className="absolute top-0 bottom-0 z-30 flex items-center justify-center cursor-col-resize"
+          className="absolute top-0 bottom-0 z-30 flex items-center justify-center cursor-col-resize hover:brightness-110 group transition-colors"
           style={{
             left: isActiveDrag
               ? (activeOut + 1) * thumbPx - HANDLE_W
@@ -327,7 +326,7 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
           }}
           title="Trim out-point"
         >
-          <div className="w-px h-5 bg-white/80 rounded-full" />
+          <div className="w-[3px] h-6 bg-white/90 rounded-full group-hover:bg-white" />
         </div>
       </ClickSpark>
     </div>
