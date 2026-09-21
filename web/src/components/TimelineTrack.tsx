@@ -64,6 +64,9 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
     }
     if (e.button !== 0) return; // Left-click only for marquee box
 
+    e.preventDefault();
+    document.body.style.userSelect = 'none';
+
     const rect = scrollRef.current?.getBoundingClientRect();
     if (!rect) return;
 
@@ -100,6 +103,8 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
 
     const onUp = () => {
       setMarqueeBox(null);
+      document.body.style.userSelect = '';
+      window.getSelection()?.removeAllRanges();
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
     };
@@ -285,44 +290,8 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
 
   const zoomPct = Math.round(zoomLevel * 100);
 
-  if (clips.length === 0) {
-    return (
-      <div 
-        onDragOver={(e) => {
-          e.preventDefault();
-          e.dataTransfer.dropEffect = 'copy';
-          setIsDropTargetOver(true);
-        }}
-        onDragLeave={() => setIsDropTargetOver(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setIsDropTargetOver(false);
-          const data = e.dataTransfer.getData('application/x-oled-asset') || e.dataTransfer.getData('text/plain');
-          if (data && onAssetDrop) {
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed && parsed.assetId) onAssetDrop(parsed.assetId);
-            } catch {
-              onAssetDrop(data);
-            }
-          }
-        }}
-        className={`flex-1 flex flex-col items-center justify-center bg-[#F5F0EB] transition-colors ${
-          isDropTargetOver ? 'bg-[#E85D2A]/10 border-2 border-dashed border-[#E85D2A]' : ''
-        }`}
-      >
-        <span className="text-[10px] font-mono uppercase tracking-widest text-[#6B6B6B] font-bold mb-1">
-          {isDropTargetOver ? '+ DROP ASSET TO START TIMELINE' : 'DRAG & DROP MEDIA FROM POOL HERE'}
-        </span>
-        <span className="text-[8px] font-mono text-[#888] uppercase tracking-wider">
-          or click + ADD on any media asset card
-        </span>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[#F5F0EB] relative">
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[#F5F0EB] relative select-none">
 
       {/* Header bar */}
       <div className="px-3 py-1 border-b border-[#1A1A1A]/20 flex items-center justify-between shrink-0 bg-[#EDEAE5] gap-4">
@@ -448,6 +417,17 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
           </div>
 
           {/* CLIP TRACK */}
+          {clips.length === 0 && (
+            <div className="absolute inset-x-0 top-10 bottom-0 flex flex-col items-center justify-center pointer-events-none z-10 opacity-75">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#6B6B6B] font-bold mb-1">
+                {isDropTargetOver ? '+ DROP ASSET TO START TIMELINE' : 'DRAG & DROP MEDIA FROM POOL HERE'}
+              </span>
+              <span className="text-[8px] font-mono text-[#888] uppercase tracking-wider">
+                or click + ADD on any sample or imported card
+              </span>
+            </div>
+          )}
+
           <div
             className="absolute left-0"
             style={{ top: RULER_H + 4, height: CLIP_HEIGHT }}
