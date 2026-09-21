@@ -19,7 +19,7 @@ import { ClipBlock, CLIP_HEIGHT } from './ClipBlock';
 import { ContextMenu } from './ContextMenu';
 import ElasticSlider from './reactbits/ElasticSlider';
 
-const THUMB_BASE = 12; // px per frame at zoom=1 — small so default view fits many frames
+const THUMB_BASE = 16; // px per frame at zoom=1 — clear default view
 const RULER_H = 28;
 const GAP_PX = 2; // gap between clips
 

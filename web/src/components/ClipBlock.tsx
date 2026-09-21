@@ -5,7 +5,7 @@ import { TimelineClip, MediaAsset } from '../types/media';
 const thumbCache = new Map<string, string[]>();
 
 // ---------- Constants ----------
-export const CLIP_HEIGHT = 56;
+export const CLIP_HEIGHT = 64;
 const HANDLE_W = 16;
 const GHOST_FADE_MS = 280;
 

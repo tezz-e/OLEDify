@@ -706,7 +706,7 @@ export default function App() {
         </section>
 
         {/* Bottom Console — Technical Control Panel */}
-        <aside className="h-[310px] shrink-0 bg-white flex z-20 p-4 gap-4 relative border-t-2 border-[#1A1A1A]">
+        <aside className="h-[340px] shrink-0 bg-white flex z-20 p-4 gap-4 relative border-t-2 border-[#1A1A1A]">
           
           {/* Zone 1: Media Pool (Left) */}
           <BlueprintHoverCard className="w-[280px] shrink-0 min-w-0">
