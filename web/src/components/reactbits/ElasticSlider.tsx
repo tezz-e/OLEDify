@@ -29,7 +29,7 @@ const ElasticSlider: React.FC<ElasticSliderProps> = ({
   formatValue
 }) => {
   return (
-    <div className={`flex flex-col items-center justify-center gap-4 ${className}`}>
+    <div className={`flex items-center justify-center ${className}`}>
       <Slider
         defaultValue={defaultValue}
         startingValue={startingValue}
@@ -157,7 +157,7 @@ const Slider: React.FC<SliderProps> = ({
 
         <div
           ref={sliderRef}
-          className="relative flex w-full flex-grow cursor-grab touch-none select-none items-center py-4"
+          className="relative flex w-full flex-grow cursor-grab touch-none select-none items-center py-0.5"
           onPointerMove={handlePointerMove}
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
@@ -181,14 +181,14 @@ const Slider: React.FC<SliderProps> = ({
                 }
                 return 'center';
               }),
-              height: useTransform(scale, [1, 1.1], [8, 12]),
-              marginTop: useTransform(scale, [1, 1.1], [0, -2]),
-              marginBottom: useTransform(scale, [1, 1.1], [0, -2])
+              height: useTransform(scale, [1, 1.1], [6, 8]),
+              marginTop: useTransform(scale, [1, 1.1], [0, -1]),
+              marginBottom: useTransform(scale, [1, 1.1], [0, -1])
             }}
             className="flex flex-grow"
           >
-            <div className="relative h-full flex-grow overflow-hidden bg-[#E8E4DF] border-2 border-[#1A1A1A]">
-              <div className="absolute h-full bg-[#E85D2A] border-r-2 border-[#1A1A1A]" style={{ width: `${getRangePercentage()}%` }} />
+            <div className="relative h-full flex-grow overflow-hidden bg-[#E8E4DF] border border-[#1A1A1A]">
+              <div className="absolute h-full bg-[#E85D2A] border-r border-[#1A1A1A]" style={{ width: `${getRangePercentage()}%` }} />
             </div>
           </motion.div>
         </div>
@@ -201,14 +201,11 @@ const Slider: React.FC<SliderProps> = ({
           style={{
             x: useTransform(() => (region === 'right' ? overflow.get() / scale.get() : 0))
           }}
-          className="text-[#1A1A1A] font-bold font-mono text-lg shrink-0 w-4 text-center cursor-pointer flex items-center justify-center"
+          className="text-[#1A1A1A] font-bold font-mono text-xs shrink-0 w-3 text-center cursor-pointer flex items-center justify-center"
         >
           {rightIcon}
         </motion.div>
       </motion.div>
-      <div className="text-[9px] font-mono font-bold tracking-widest text-[#1A1A1A] tabular-nums mt-1 uppercase text-center w-full">
-        {formatValue ? formatValue(value) : Math.round(value)}
-      </div>
     </>
   );
 };
