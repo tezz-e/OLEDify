@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TimelineClip } from '../types/media';
 
@@ -22,46 +23,34 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   onClose 
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
-  const [activeItem, setActiveItem] = useState<string | null>(null);
 
   useEffect(() => {
-    const preventNative = (e: MouseEvent) => {
-      e.preventDefault();
+    const handlePointerDownOutside = (e: PointerEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        onClose();
+      }
     };
-    window.addEventListener('contextmenu', preventNative, { capture: true });
 
-    const handleClickOutside = (e: MouseEvent) => {
-      if (e.button !== 0 && e.type === 'mousedown') return;
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    };
-    const handleContextMenuOutside = (e: MouseEvent) => {
-      e.preventDefault();
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    };
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
 
-    const timer = setTimeout(() => {
-      window.addEventListener('mousedown', handleClickOutside);
-      window.addEventListener('contextmenu', handleContextMenuOutside);
-      window.addEventListener('keydown', handleKeyDown);
-    }, 50);
+    const handleScrollOrBlur = () => onClose();
+
+    window.addEventListener('pointerdown', handlePointerDownOutside, { capture: true });
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('resize', handleScrollOrBlur);
+    window.addEventListener('blur', handleScrollOrBlur);
 
     return () => {
-      clearTimeout(timer);
-      window.removeEventListener('contextmenu', preventNative, { capture: true });
-      window.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('contextmenu', handleContextMenuOutside);
+      window.removeEventListener('pointerdown', handlePointerDownOutside, { capture: true });
       window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('resize', handleScrollOrBlur);
+      window.removeEventListener('blur', handleScrollOrBlur);
     };
   }, [onClose]);
 
-  const hasSpecificClip = clipId && clips.some(c => c.id === clipId);
+  const hasSpecificClip = Boolean(clipId && clips.some(c => c.id === clipId));
 
   const handleDelete = () => {
     if (clipId) {
@@ -108,7 +97,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const safeX = Math.max(12, Math.min(x, window.innerWidth - menuWidth - 12));
   const safeY = Math.max(12, Math.min(y, window.innerHeight - menuHeight - 12));
 
-  return (
+  return createPortal(
     <AnimatePresence>
       <motion.div 
         ref={menuRef}
@@ -116,7 +105,11 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         animate={{ opacity: 1, scale: 1, filter: 'blur(0px)', y: 0 }}
         exit={{ opacity: 0, scale: 0.85, filter: 'blur(8px)', y: -4 }}
         transition={{ type: 'spring', damping: 22, stiffness: 480, mass: 0.55 }}
-        className="fixed z-[9999] w-[220px] backdrop-blur-xl bg-[#121214]/92 text-white border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.65),inset_0_1px_1px_rgba(255,255,255,0.2)] rounded-2xl p-1.5 select-none font-mono text-xs overflow-hidden"
+        onContextMenu={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        className="fixed z-[99999] w-[220px] backdrop-blur-xl bg-[#121214]/94 text-white border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.65),inset_0_1px_1px_rgba(255,255,255,0.2)] rounded-2xl p-1.5 select-none font-mono text-xs overflow-hidden pointer-events-auto"
         style={{ left: safeX, top: safeY, transformOrigin: 'top left' }}
       >
         {/* Apple Header */}
@@ -133,7 +126,11 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             <motion.button 
               whileHover={{ scale: 1.025, x: 2 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => { onSplitClip(); onClose(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSplitClip();
+                onClose();
+              }}
               className="w-full text-left px-2.5 py-1.5 rounded-xl flex justify-between items-center transition-colors cursor-pointer group hover:bg-[#E85D2A] hover:text-white"
             >
               <span className="flex items-center gap-2 font-medium">
@@ -148,7 +145,10 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
               <motion.button 
                 whileHover={{ scale: 1.025, x: 2 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={handleDuplicate}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDuplicate();
+                }}
                 className="w-full text-left px-2.5 py-1.5 rounded-xl flex justify-between items-center transition-colors cursor-pointer group hover:bg-[#E85D2A] hover:text-white"
               >
                 <span className="flex items-center gap-2 font-medium">
@@ -160,7 +160,10 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
               <motion.button 
                 whileHover={{ scale: 1.025, x: 2 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={handleResetTrim}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleResetTrim();
+                }}
                 className="w-full text-left px-2.5 py-1.5 rounded-xl flex justify-between items-center transition-colors cursor-pointer group hover:bg-[#E85D2A] hover:text-white"
               >
                 <span className="flex items-center gap-2 font-medium">
@@ -173,7 +176,10 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
               <motion.button 
                 whileHover={{ scale: 1.025, x: 2 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={handleDelete}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete();
+                }}
                 className="w-full text-left px-2.5 py-1.5 rounded-xl flex justify-between items-center text-[#FF5555] hover:bg-[#FF3B30] hover:text-white transition-colors cursor-pointer group"
               >
                 <span className="flex items-center gap-2 font-medium">
@@ -189,7 +195,10 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
               <motion.button 
                 whileHover={{ scale: 1.025, x: 2 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={handleClearAll}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleClearAll();
+                }}
                 className="w-full text-left px-2.5 py-1.5 rounded-xl flex justify-between items-center text-[#FF5555] hover:bg-[#FF3B30] hover:text-white transition-colors cursor-pointer group"
               >
                 <span className="flex items-center gap-2 font-medium">
@@ -200,6 +209,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
           )}
         </div>
       </motion.div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };

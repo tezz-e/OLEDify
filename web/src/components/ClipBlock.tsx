@@ -182,8 +182,14 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
     <div
       ref={setNodeRef}
       style={{ ...style, width: clipWidth, height: CLIP_HEIGHT, flexShrink: 0, position: 'relative' }}
-      onClick={onClick}
-      onContextMenu={onContextMenu}
+      onClick={(e) => {
+        if (e.button === 0 && onClick) onClick(e);
+      }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (onContextMenu) onContextMenu(e);
+      }}
       className={`select-none ${isDragging ? 'opacity-40 z-50' : 'z-10'}`}
     >
       {/* ---- Full thumbnail strip ---- */}
