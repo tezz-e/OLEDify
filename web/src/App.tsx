@@ -291,6 +291,15 @@ export default function App() {
     }
   }, [clips, activeFrameIndex, timelineMedia]);
 
+  // Global native right-click prevention
+  useEffect(() => {
+    const suppressNativeContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener('contextmenu', suppressNativeContextMenu, { capture: true });
+    return () => window.removeEventListener('contextmenu', suppressNativeContextMenu, { capture: true });
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ignore if typing in an input or textarea
@@ -324,7 +333,8 @@ export default function App() {
       if (e.key === 'ArrowRight') {
         e.preventDefault();
         setIsPlaying(false);
-        setActiveFrameIndex(prev => Math.min((media?.frames.length ?? 1) - 1, prev + 1));
+        const maxLen = (timelineMedia?.frames.length ?? media?.frames.length ?? 1) - 1;
+        setActiveFrameIndex(prev => Math.min(maxLen, prev + 1));
         return;
       }
 
@@ -338,7 +348,8 @@ export default function App() {
       if (e.key === 'End') {
         e.preventDefault();
         setIsPlaying(false);
-        if (media) setActiveFrameIndex(media.frames.length - 1);
+        const maxLen = (timelineMedia?.frames.length ?? media?.frames.length ?? 1) - 1;
+        setActiveFrameIndex(maxLen);
         return;
       }
 
@@ -397,11 +408,26 @@ export default function App() {
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSplitClip, handleUndo, handleRedo, media, selectedClipIds, clips, setClipsWithHistory]);
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
+        if (document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+    window.addEventListener('keyup', handleKeyUp, { capture: true });
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, { capture: true });
+      window.removeEventListener('keyup', handleKeyUp, { capture: true });
+    };
+  }, [handleSplitClip, handleUndo, handleRedo, media, timelineMedia, selectedClipIds, clips, setClipsWithHistory]);
+
   useEffect(() => {
-    if (!isPlaying || !media || media.frames.length === 0) return;
+    const activeMedia = timelineMedia || media;
+    if (!isPlaying || !activeMedia || activeMedia.frames.length === 0) return;
     let lastTime = 0;
     let accumulator = 0;
     const frameInterval = 1000 / targetFps;
@@ -419,33 +445,14 @@ export default function App() {
       }
 
       if (framesToAdvance > 0) {
-        setActiveFrameIndex(prev => (prev + framesToAdvance) % media.frames.length);
+        setActiveFrameIndex(prev => (prev + framesToAdvance) % activeMedia.frames.length);
       }
       rafId = requestAnimationFrame(tick);
     };
 
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
-  }, [isPlaying, media, targetFps]);
-
-  // --- KEYBOARD SHORTCUTS ---
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!media) return;
-      if (e.code === 'Space') {
-        e.preventDefault();
-        setIsPlaying(p => !p);
-      } else if (e.code === 'ArrowLeft') {
-        setIsPlaying(false);
-        setActiveFrameIndex(p => Math.max(0, p - 1));
-      } else if (e.code === 'ArrowRight') {
-        setIsPlaying(false);
-        setActiveFrameIndex(p => Math.min(media.frames.length - 1, p + 1));
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [media]);
+  }, [isPlaying, media, timelineMedia, targetFps]);
 
   // --- PROCESSING PIPELINE ---
   useEffect(() => {

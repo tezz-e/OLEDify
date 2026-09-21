@@ -115,6 +115,36 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
 
   const thumbPx = THUMB_BASE * zoomLevel;
 
+  // Native capture-phase context menu handler — 100% blocks browser native menu
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const handleNativeContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const target = e.target as HTMLElement;
+      const clipElement = target.closest('[data-clip-id]');
+      const clipId = clipElement ? clipElement.getAttribute('data-clip-id') || '' : '';
+
+      if (clipId) {
+        onSelectClips([clipId]);
+      }
+
+      setContextMenu({
+        x: e.clientX,
+        y: e.clientY,
+        clipId
+      });
+    };
+
+    el.addEventListener('contextmenu', handleNativeContextMenu, { capture: true });
+    return () => {
+      el.removeEventListener('contextmenu', handleNativeContextMenu, { capture: true });
+    };
+  }, [onSelectClips]);
+
   // Content width = sum of TRIMMED clip widths + gaps (matches ClipBlock normal render)
   const totalActiveFrames = useMemo(
     () => clips.reduce((acc, c) => acc + (c.outFrame - c.inFrame + 1), 0),
@@ -536,6 +566,7 @@ const SortableClipWrapper = ({
     <ClipBlock
       clip={clip}
       asset={asset}
+      data-clip-id={clip.id}
       onUpdateBounds={onUpdateBounds}
       setNodeRef={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
