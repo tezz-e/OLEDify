@@ -65,15 +65,19 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     }
   };
 
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const handleFlash = async () => {
     try {
+      setErrorMessage(null);
       setFlashStatus('flashing');
       await flashAnimationToDevice(xbmpFrames, targetFps);
       setFlashStatus('flashed');
       setTimeout(() => setFlashStatus('idle'), 3000);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       setFlashStatus('error');
+      setErrorMessage(err.message || 'Flashing failed. Ensure WebSerial is supported and device is connected.');
     }
   };
 

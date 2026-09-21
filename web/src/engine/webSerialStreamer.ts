@@ -6,9 +6,30 @@
 export class WebSerialStreamer {
   private port: any = null;
   private writer: any = null;
+  private onDisconnectCallback: (() => void) | null = null;
   private isConnected: boolean = false;
   private isWriting: boolean = false;
   private pendingFrame: Uint8Array | null = null;
+
+  constructor() {
+    if ('serial' in navigator) {
+      (navigator as any).serial.addEventListener('disconnect', (e: any) => {
+        if (e.target === this.port) {
+          console.log('WebSerial: Device unplugged physically.');
+          this.disconnect();
+          if (this.onDisconnectCallback) this.onDisconnectCallback();
+        }
+      });
+    }
+  }
+
+  public getConnected(): boolean {
+    return this.isConnected;
+  }
+
+  public setOnDisconnect(callback: () => void) {
+    this.onDisconnectCallback = callback;
+  }
 
   public async connect(): Promise<boolean> {
     if (!('serial' in navigator)) {
@@ -97,10 +118,6 @@ export class WebSerialStreamer {
         this.flushQueue();
       }
     }
-  }
-
-  public getConnected(): boolean {
-    return this.isConnected;
   }
 }
 

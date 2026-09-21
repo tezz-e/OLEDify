@@ -34,6 +34,8 @@ interface TimelineTrackProps {
   selectedClipIds: string[];
   onSelectClips: (ids: string[]) => void;
   onPreviewAssetFrame?: (assetId: string | null, frameIndex?: number) => void;
+  onAssetDrop?: (assetId: string) => void;
+  onSplitClip?: () => void;
 }
 
 export const TimelineTrack: React.FC<TimelineTrackProps> = ({
@@ -47,9 +49,12 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
   selectedClipIds,
   onSelectClips,
   onPreviewAssetFrame,
+  onAssetDrop,
+  onSplitClip,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; clipId: string } | null>(null);
+  const [isDropTargetOver, setIsDropTargetOver] = useState(false);
 
   const thumbPx = THUMB_BASE * zoomLevel;
 
@@ -230,21 +235,47 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
 
   if (clips.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#F5F0EB]">
-        <span className="text-[10px] font-mono uppercase tracking-widest text-[#6B6B6B]">
-          Drop media to start
+      <div 
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'copy';
+          setIsDropTargetOver(true);
+        }}
+        onDragLeave={() => setIsDropTargetOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setIsDropTargetOver(false);
+          const data = e.dataTransfer.getData('application/x-oled-asset') || e.dataTransfer.getData('text/plain');
+          if (data && onAssetDrop) {
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed && parsed.assetId) onAssetDrop(parsed.assetId);
+            } catch {
+              onAssetDrop(data);
+            }
+          }
+        }}
+        className={`flex-1 flex flex-col items-center justify-center bg-[#F5F0EB] transition-colors ${
+          isDropTargetOver ? 'bg-[#E85D2A]/10 border-2 border-dashed border-[#E85D2A]' : ''
+        }`}
+      >
+        <span className="text-[10px] font-mono uppercase tracking-widest text-[#6B6B6B] font-bold mb-1">
+          {isDropTargetOver ? '+ DROP ASSET TO START TIMELINE' : 'DRAG & DROP MEDIA FROM POOL HERE'}
+        </span>
+        <span className="text-[8px] font-mono text-[#888] uppercase tracking-wider">
+          or click + ADD on any media asset card
         </span>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[#F5F0EB]">
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[#F5F0EB] relative">
 
       {/* Header bar */}
       <div className="px-3 py-1 border-b border-[#1A1A1A]/20 flex items-center justify-between shrink-0 bg-[#EDEAE5] gap-4">
         <span className="text-[9px] font-mono font-bold tracking-widest text-[#1A1A1A] uppercase">
-          {totalActiveFrames} frames
+          {totalActiveFrames} frames ({clips.length} clips)
         </span>
 
         <div className="flex items-center gap-4 mr-10">
@@ -268,7 +299,32 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
       {/* Scrollable track area */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-x-auto overflow-y-hidden relative"
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setContextMenu({ x: e.clientX, y: e.clientY, clipId: '' });
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'copy';
+          if (!isDropTargetOver) setIsDropTargetOver(true);
+        }}
+        onDragLeave={() => setIsDropTargetOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setIsDropTargetOver(false);
+          const data = e.dataTransfer.getData('application/x-oled-asset') || e.dataTransfer.getData('text/plain');
+          if (data && onAssetDrop) {
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed && parsed.assetId) onAssetDrop(parsed.assetId);
+            } catch {
+              onAssetDrop(data);
+            }
+          }
+        }}
+        className={`flex-1 overflow-x-auto overflow-y-hidden relative transition-colors ${
+          isDropTargetOver ? 'bg-[#E85D2A]/10' : ''
+        }`}
         style={{ minHeight: RULER_H + CLIP_HEIGHT + 8 }}
         onMouseDown={handleMiddleMouseDown}
       >
@@ -338,6 +394,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
                         }}
                         onContextMenu={(e: React.MouseEvent) => {
                           e.preventDefault();
+                          e.stopPropagation();
                           onSelectClips([clip.id]);
                           setContextMenu({ x: e.clientX, y: e.clientY, clipId: clip.id });
                         }}
@@ -366,6 +423,14 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
         </div>
       </div>
 
+      {isDropTargetOver && (
+        <div className="absolute inset-0 bg-[#E85D2A]/15 border-2 border-dashed border-[#E85D2A] pointer-events-none flex items-center justify-center z-50">
+          <div className="bg-[#1A1A1A] text-white text-[10px] font-mono px-3 py-1.5 font-bold tracking-widest uppercase shadow-lg">
+            + RELEASE TO APPEND CLIP TO TIMELINE
+          </div>
+        </div>
+      )}
+
       {contextMenu && (
         <ContextMenu
           x={contextMenu.x}
@@ -374,6 +439,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
           clipId={contextMenu.clipId}
           clips={clips}
           onClipsChange={onClipsChange}
+          onSplitClip={onSplitClip}
         />
       )}
     </div>

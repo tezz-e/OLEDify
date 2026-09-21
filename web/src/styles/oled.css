@@ -9,9 +9,9 @@
   background: #020304;
 }
 
-/* Phosphor glow effects - kept subtle */
-.glow-cyan { filter: drop-shadow(0 0 2px rgba(0, 240, 255, 0.3)); }
-.glow-white { filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.3)); }
-.glow-amber { filter: drop-shadow(0 0 2px rgba(255, 176, 0, 0.3)); }
-.glow-green { filter: drop-shadow(0 0 2px rgba(0, 255, 102, 0.3)); }
-.glow-yellow-blue { filter: drop-shadow(0 0 2px rgba(0, 229, 255, 0.3)); }
+/* Phosphor glow effects - rich OLED bloom */
+.glow-cyan { filter: drop-shadow(0 0 4px rgba(0, 240, 255, 0.45)); }
+.glow-white { filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.45)); }
+.glow-amber { filter: drop-shadow(0 0 4px rgba(255, 176, 0, 0.45)); }
+.glow-green { filter: drop-shadow(0 0 4px rgba(0, 255, 102, 0.45)); }
+.glow-yellow-blue { filter: drop-shadow(0 0 4px rgba(0, 229, 255, 0.45)); }

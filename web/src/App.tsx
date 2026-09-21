@@ -28,6 +28,7 @@ import { HardwareConfig } from './types/oled';
 import { applyDithering, generateCppHeader } from './engine/ditherEngine';
 import { serialStreamer } from './engine/webSerialStreamer';
 import { renderCropTo128x64, imageDataToCanvas, computeCoverCrop } from './engine/cropEngine';
+import { generateSampleMedia, SamplePresetType } from './engine/sampleGenerator';
 
 export default function App() {
   // --- STATE ---
@@ -42,6 +43,24 @@ export default function App() {
   // Undo / Redo
   const [clipHistory, setClipHistory] = useState<TimelineClip[][]>([[]]);
   const [historyIndex, setHistoryIndex] = useState(0);
+
+  // UI State
+  const [mediaPoolTab, setMediaPoolTab] = useState<'import' | 'samples' | 'recent'>('import');
+  const [serialConnected, setSerialConnected] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [rawSourceFrame, setRawSourceFrame] = useState<ImageData | null>(null);
+  const [previewFitMode, setPreviewFitMode] = useState<'contain' | 'cover'>('cover');
+  const [cppCode, setCppCode] = useState('');
+  const [exportXbmpFrames, setExportXbmpFrames] = useState<Uint8Array[]>([]);
+
+  const fullPreviewCanvasRef = useRef<HTMLCanvasElement>(null);
+  const lastStreamTime = useRef(0);
+
+  // WebSerial Auto Disconnect Handler
+  useEffect(() => {
+    serialStreamer.setOnDisconnect(() => setSerialConnected(false));
+  }, []);
 
   const setClipsWithHistory = useCallback((next: TimelineClip[] | ((prev: TimelineClip[]) => TimelineClip[])) => {
     setClips(prev => {
@@ -130,16 +149,6 @@ export default function App() {
     mcu: 'esp32-s3', display: 'sh1106', sdaPin: 8, sclPin: 9, i2cAddress: '0x3C'
   });
 
-  // UI State
-  const [serialConnected, setSerialConnected] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [exportModalOpen, setExportModalOpen] = useState(false);
-  const [rawSourceFrame, setRawSourceFrame] = useState<ImageData | null>(null);
-  const [cppCode, setCppCode] = useState('');
-  const [exportXbmpFrames, setExportXbmpFrames] = useState<Uint8Array[]>([]);
-
-  const lastStreamTime = useRef(0);
-
   // --- INITIALIZATION ---
   const handleMediaLoaded = (newMedia: DecodedMedia) => {
     const assetId = "asset_" + Date.now();
@@ -162,6 +171,80 @@ export default function App() {
       };
     });
   };
+
+  const handleLoadSample = useCallback((sampleType: SamplePresetType, mode: 'append' | 'replace' = 'append') => {
+    const newMedia = generateSampleMedia(sampleType);
+    const assetId = "asset_" + sampleType + "_" + Date.now();
+    const clipId = "clip_" + Date.now();
+    
+    setAssets(prev => ({ ...prev, [assetId]: { id: assetId, media: newMedia } }));
+    
+    if (mode === 'replace') {
+      setClipsWithHistory([{ id: clipId, assetId, inFrame: 0, outFrame: newMedia.frames.length - 1 }]);
+      setActiveFrameIndex(0);
+      setIsPlaying(false);
+    } else {
+      setClipsWithHistory(prev => [...prev, { id: clipId, assetId, inFrame: 0, outFrame: newMedia.frames.length - 1 }]);
+    }
+    
+    setCropSettings(prev => {
+      const cover = computeCoverCrop(newMedia.sourceInfo.sourceWidth, newMedia.sourceInfo.sourceHeight);
+      return {
+        ...prev,
+        sourceWidth: newMedia.sourceInfo.sourceWidth,
+        sourceHeight: newMedia.sourceInfo.sourceHeight,
+        x: cover.x,
+        y: cover.y,
+        width: cover.width,
+        height: cover.height
+      };
+    });
+  }, [setClipsWithHistory]);
+
+  const handleAddAssetToTimeline = useCallback((assetId: string) => {
+    const sampleIds = ['dino', 'heartbeat', 'spinner', 'wificonnect', 'bouncing', 'pacman', 'battery', 'sinewave', 'ripple', 'analogclock', 'starfield', 'matrix', 'rain', 'badapple'];
+    if (sampleIds.includes(assetId)) {
+      handleLoadSample(assetId as any, 'append');
+      return;
+    }
+    const asset = assets[assetId];
+    if (!asset) return;
+    const clipId = "clip_" + Date.now();
+    setClipsWithHistory(prev => [...prev, { id: clipId, assetId, inFrame: 0, outFrame: asset.media.frames.length - 1 }]);
+  }, [assets, setClipsWithHistory, handleLoadSample]);
+
+  const handleReplaceTimelineWithAsset = useCallback((assetId: string) => {
+    const sampleIds = ['dino', 'heartbeat', 'spinner', 'wificonnect', 'bouncing', 'pacman', 'battery', 'sinewave', 'ripple', 'analogclock', 'starfield', 'matrix', 'rain', 'badapple'];
+    if (sampleIds.includes(assetId)) {
+      handleLoadSample(assetId as any, 'replace');
+      return;
+    }
+    const asset = assets[assetId];
+    if (!asset) return;
+    const clipId = "clip_" + Date.now();
+    setClipsWithHistory([{ id: clipId, assetId, inFrame: 0, outFrame: asset.media.frames.length - 1 }]);
+    setActiveFrameIndex(0);
+    setIsPlaying(false);
+  }, [assets, setClipsWithHistory, handleLoadSample]);
+
+  // Sample Thumbnails cache for NLE Grid Bin
+  const sampleThumbnails = useMemo(() => {
+    const samples = ['dino', 'heartbeat', 'spinner', 'wificonnect', 'bouncing', 'pacman', 'battery', 'sinewave', 'ripple', 'analogclock', 'starfield', 'matrix', 'rain', 'badapple'] as const;
+    const map: Record<string, string> = {};
+    samples.forEach(id => {
+      const media = generateSampleMedia(id as any);
+      const frame = media.frames[Math.min(10, media.frames.length - 1)];
+      if (frame) {
+        const canvas = document.createElement('canvas');
+        canvas.width = frame.imageData.width;
+        canvas.height = frame.imageData.height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) ctx.putImageData(frame.imageData, 0, 0);
+        map[id] = canvas.toDataURL();
+      }
+    });
+    return map;
+  }, []);
 
   // Trimming is now handled at the clip level
 
@@ -210,25 +293,111 @@ export default function App() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if typing in an input
+      // Ignore if typing in an input or textarea
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
       
-      if (e.key === 's' || e.key === 'S') {
+      const isCmdOrCtrl = e.ctrlKey || e.metaKey;
+
+      // 1. Split Clip: Ctrl+B, Cmd+B, Ctrl+K, Cmd+K, or 'S'
+      if ((isCmdOrCtrl && (e.key === 'b' || e.key === 'B' || e.key === 'k' || e.key === 'K')) || e.key === 's' || e.key === 'S') {
+        e.preventDefault();
         handleSplitClip();
+        return;
       }
-      // Undo / Redo
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+
+      // 2. Play / Pause: Spacebar
+      if (e.code === 'Space') {
+        e.preventDefault();
+        setIsPlaying(p => !p);
+        return;
+      }
+
+      // 3. Step 1 Frame Left / Right Arrow
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setIsPlaying(false);
+        setActiveFrameIndex(prev => Math.max(0, prev - 1));
+        return;
+      }
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        setIsPlaying(false);
+        setActiveFrameIndex(prev => Math.min((media?.frames.length ?? 1) - 1, prev + 1));
+        return;
+      }
+
+      // 4. Jump to Start / End: Home / End
+      if (e.key === 'Home') {
+        e.preventDefault();
+        setIsPlaying(false);
+        setActiveFrameIndex(0);
+        return;
+      }
+      if (e.key === 'End') {
+        e.preventDefault();
+        setIsPlaying(false);
+        if (media) setActiveFrameIndex(media.frames.length - 1);
+        return;
+      }
+
+      // 5. Delete Selected Clips: Delete or Backspace
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedClipIds.length > 0) {
+          e.preventDefault();
+          setClipsWithHistory(prev => prev.filter(c => !selectedClipIds.includes(c.id)));
+          setSelectedClipIds([]);
+        }
+        return;
+      }
+
+      // 6. Duplicate Selected Clip: Ctrl+D / Cmd+D
+      if (isCmdOrCtrl && (e.key === 'd' || e.key === 'D')) {
+        e.preventDefault();
+        if (selectedClipIds.length > 0) {
+          setClipsWithHistory(prev => {
+            const newClips = [...prev];
+            selectedClipIds.forEach(id => {
+              const idx = newClips.findIndex(c => c.id === id);
+              if (idx !== -1) {
+                const dup = { ...newClips[idx], id: "clip_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5) };
+                newClips.splice(idx + 1, 0, dup);
+              }
+            });
+            return newClips;
+          });
+        }
+        return;
+      }
+
+      // 7. Select All: Ctrl+A / Cmd+A
+      if (isCmdOrCtrl && (e.key === 'a' || e.key === 'A')) {
+        e.preventDefault();
+        setSelectedClipIds(clips.map(c => c.id));
+        return;
+      }
+
+      // 8. Deselect All: Escape
+      if (e.key === 'Escape') {
+        setSelectedClipIds([]);
+        return;
+      }
+
+      // 9. Undo / Redo
+      if (isCmdOrCtrl && (e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
         e.preventDefault();
         handleUndo();
+        return;
       }
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+      if (isCmdOrCtrl && (e.key === 'y' || e.key === 'Y' || ((e.key === 'z' || e.key === 'Z') && e.shiftKey))) {
         e.preventDefault();
         handleRedo();
+        return;
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSplitClip, handleUndo, handleRedo]);
+  }, [handleSplitClip, handleUndo, handleRedo, media, selectedClipIds, clips, setClipsWithHistory]);
   useEffect(() => {
     if (!isPlaying || !media || media.frames.length === 0) return;
     let lastTime = 0;
@@ -310,6 +479,18 @@ export default function App() {
     }
   }, [media, activeFrameIndex, ditherConfig, cropSettings, serialConnected, targetFps, previewOverride, assets]);
 
+  // Fast direct canvas rendering for Full Preview (no base64 allocation per frame)
+  useEffect(() => {
+    if (!rawSourceFrame || !fullPreviewCanvasRef.current) return;
+    const canvas = fullPreviewCanvasRef.current;
+    if (canvas.width !== rawSourceFrame.width) canvas.width = rawSourceFrame.width;
+    if (canvas.height !== rawSourceFrame.height) canvas.height = rawSourceFrame.height;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.putImageData(rawSourceFrame, 0, 0);
+    }
+  }, [rawSourceFrame]);
+
   // --- ACTIONS ---
   const handleSerialToggle = async () => {
     if (serialConnected) {
@@ -358,87 +539,108 @@ export default function App() {
           `
         }}>
           {/* Column 1: Full Preview */}
-          <div className="flex-1 p-6 lg:p-8 flex flex-col relative border-r border-[#1A1A1A]/20 min-w-0">
-            <div className="w-full max-w-[420px] ml-auto mr-0 xl:mr-8 flex flex-col h-full justify-center">
-              <div className="mb-4 shrink-0">
-                <h3 className="font-mono font-bold text-sm text-[#1A1A1A]">FULL PREVIEW</h3>
+          <div className="flex-[2.5] p-2 lg:p-4 flex flex-col items-center justify-start relative border-r border-[#1A1A1A]/20 min-w-0 h-full">
+            <div className="w-full flex flex-col items-center justify-start h-full min-h-0">
+              <div className="mb-1.5 shrink-0 text-center w-full">
+                <h3 className="font-mono font-bold text-xs tracking-wider text-[#1A1A1A]">FULL PREVIEW</h3>
                 <p className="font-mono text-[10px] text-[#6B6B6B]">See the full video/animation here at normal scale</p>
               </div>
               
-              <div className="flex-1 bg-[#080808] border-2 border-[#1A1A1A] p-2 flex flex-col relative overflow-hidden rounded-md shadow-[4px_4px_0_0_#1A1A1A]">
-                <div className="flex-1 relative w-full h-full min-h-0 flex items-center justify-center">
-                  {rawSourceFrame ? (
-                    <img 
-                      src={(() => {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = rawSourceFrame.width;
-                        canvas.height = rawSourceFrame.height;
-                        const ctx = canvas.getContext('2d');
-                        if (ctx) ctx.putImageData(rawSourceFrame, 0, 0);
-                        return canvas.toDataURL();
-                      })()}
-                      className="w-full h-full object-contain"
-                      alt="Source"
+              <div className="flex-1 w-full relative min-h-0">
+                <div className="absolute inset-0 p-1 flex items-center justify-center">
+                  
+                  {/* Flawless Aspect-Ratio Bounding Box (Always Stable 572:367 Container) */}
+                  <div className="relative flex items-center justify-center max-w-full max-h-full shrink-0">
+                    {/* Sizing SVG establishing constant 572:367 box size before & after media import */}
+                    <svg 
+                      viewBox="0 0 572 367"
+                      width={572}
+                      height={367}
+                      className="max-w-full max-h-full w-full h-full block opacity-0 pointer-events-none"
+                      style={{ objectFit: 'contain' }}
                     />
-                  ) : (
-                    <span className="font-mono text-[#6B6B6B] text-xs">NO MEDIA</span>
-                  )}
-                </div>
-                
-                {/* Dummy Playbar for Aesthetics (The real one is below) */}
-                <div className="h-8 mt-2 flex items-center px-2 gap-3 text-white">
-                  <button className="text-sm font-bold opacity-80 hover:opacity-100">▶</button>
-                  <div className="text-[9px] font-mono whitespace-nowrap opacity-60">
-                    {(activeFrameIndex / targetFps).toFixed(2)} / {media ? (media.frames.length / targetFps).toFixed(2) : '0.00'}
+
+                    {/* Actual Black Container Box overlaying the exact expanded bounds */}
+                    <div className="absolute inset-0 bg-[#080808] border-2 border-[#1A1A1A] rounded-md shadow-[4px_4px_0_0_#1A1A1A] flex flex-col justify-between p-2 overflow-hidden">
+                      {/* Media Display Area */}
+                      <div className="flex-1 w-full min-h-0 relative flex items-center justify-center overflow-hidden">
+                        {rawSourceFrame ? (
+                          <canvas 
+                            ref={fullPreviewCanvasRef}
+                            className={`w-full h-full block ${previewFitMode === 'cover' ? 'object-cover' : 'object-contain'}`}
+                            style={{ imageRendering: 'pixelated' }}
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center w-full h-full bg-[#111]">
+                            <span className="font-mono text-[#6B6B6B] text-xs">NO MEDIA</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Playback Control Bar */}
+                      <div className="h-7 flex items-center px-2 gap-2 text-white bg-[#111]/90 backdrop-blur rounded border border-white/10 shrink-0 mt-1 z-10">
+                        <button 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setIsPlaying(p => !p);
+                          }} 
+                          className="text-xs font-bold text-[#E85D2A] hover:text-white transition-colors cursor-pointer px-1 py-1"
+                        >
+                          {isPlaying ? '❚❚' : '▶'}
+                        </button>
+                        <div className="text-[9px] font-mono whitespace-nowrap opacity-70">
+                          {(activeFrameIndex / targetFps).toFixed(2)}s
+                        </div>
+                        <div className="flex-1 h-1 bg-white/20 rounded-full relative min-w-[30px]">
+                          <div 
+                            className="absolute inset-y-0 left-0 bg-[#E85D2A] rounded-full" 
+                            style={{ width: media && media.frames.length ? `${(activeFrameIndex / media.frames.length) * 100}%` : '0%' }}
+                          />
+                        </div>
+                        <button 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setPreviewFitMode(m => m === 'cover' ? 'contain' : 'cover');
+                          }} 
+                          className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-white/10 hover:bg-[#E85D2A] text-white transition-colors cursor-pointer uppercase tracking-wider"
+                          title="Toggle FIT (contain full frame) vs FILL (zoom to fill box)"
+                        >
+                          {previewFitMode === 'cover' ? 'FILL' : 'FIT'}
+                        </button>
+                        <div className="text-[9px] font-mono whitespace-nowrap text-[#E85D2A] font-bold">{targetFps} FPS</div>
+                      </div>
+                    </div>
+
                   </div>
-                  <div className="flex-1 h-1 bg-white/20 rounded-full relative">
-                    <div 
-                      className="absolute inset-y-0 left-0 bg-[#E85D2A] rounded-full" 
-                      style={{ width: media && media.frames.length ? `${(activeFrameIndex / media.frames.length) * 100}%` : '0%' }}
-                    />
-                    <div 
-                      className="absolute w-3 h-3 bg-[#E85D2A] rounded-full top-1/2 -translate-y-1/2"
-                      style={{ left: media && media.frames.length ? `calc(${(activeFrameIndex / media.frames.length) * 100}% - 6px)` : '0%' }}
-                    />
-                  </div>
-                  <div className="text-[9px] font-mono whitespace-nowrap opacity-60">30 FPS</div>
+
                 </div>
               </div>
             </div>
           </div>
 
           {/* Column 2: True OLED Preview */}
-          <div className="flex-1 p-6 lg:p-8 flex flex-col items-center justify-center relative min-w-0">
-            <div className="text-center mb-8">
-              <h3 className="font-mono font-bold text-sm text-[#1A1A1A]">TRUE OLED PREVIEW (128 × 64)</h3>
-              <p className="font-mono text-[10px] text-[#6B6B6B]">Exact physical scale • 1:1 pixels • What will display on device</p>
+          <div className="flex-1 p-3 flex flex-col items-center justify-center relative min-w-0">
+            <div className="text-center mb-2 shrink-0">
+              <h3 className="font-mono font-bold text-xs tracking-wider text-[#1A1A1A]">TRUE OLED PREVIEW (128 × 64)</h3>
+              <p className="font-mono text-[10px] text-[#6B6B6B]">Exact physical scale • 1:1 pixels</p>
             </div>
 
-            <div className="relative flex items-center justify-center w-full max-h-full flex-1 min-h-0 gap-6 xl:gap-12">
-              {/* Decorative Arrow & Text (Left) */}
-              <div className="flex items-center gap-2 text-[#E85D2A] font-display font-medium text-xs leading-tight hidden lg:flex">
-                <div className="text-right">
-                  Shows the exact<br/>128 × 64 output<br/>(1:1 pixel scale)
-                </div>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="rotate-[15deg]">
-                  <path d="M4 12C9 12 15 10 20 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  <path d="M16 8L20 12L16 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-
+            <div className="relative flex items-center justify-center w-full max-h-full flex-1 min-h-0 gap-3">
               {/* Hardware Bezel */}
-              <div className="bg-[#2A2A2A] rounded-xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.5),inset_0_2px_1px_rgba(255,255,255,0.1),inset_0_-2px_1px_rgba(0,0,0,0.5)] border border-[#111] relative z-10 shrink max-w-full max-h-full flex flex-col justify-center">
+              <div className="bg-[#2A2A2A] rounded-xl p-3 shadow-[0_10px_30px_rgba(0,0,0,0.5),inset_0_2px_1px_rgba(255,255,255,0.1),inset_0_-2px_1px_rgba(0,0,0,0.5)] border border-[#111] relative z-10 shrink-0 max-w-full max-h-full flex flex-col justify-center">
                 {/* Screws */}
-                <div className="absolute top-2 left-2 w-3 h-3 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-45"><div className="w-full h-[1px] bg-[#333]" /></div>
-                <div className="absolute top-2 right-2 w-3 h-3 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-12"><div className="w-full h-[1px] bg-[#333]" /></div>
-                <div className="absolute bottom-2 left-2 w-3 h-3 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center -rotate-12"><div className="w-full h-[1px] bg-[#333]" /></div>
-                <div className="absolute bottom-2 right-2 w-3 h-3 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-90"><div className="w-full h-[1px] bg-[#333]" /></div>
+                <div className="absolute top-2 left-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-45"><div className="w-full h-[1px] bg-[#333]" /></div>
+                <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-12"><div className="w-full h-[1px] bg-[#333]" /></div>
+                <div className="absolute bottom-2 left-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center -rotate-12"><div className="w-full h-[1px] bg-[#333]" /></div>
+                <div className="absolute bottom-2 right-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-90"><div className="w-full h-[1px] bg-[#333]" /></div>
                 
                 <div className="text-[#555] font-mono text-[8px] text-center mb-1">SSD1306 128x64</div>
                 
-                <div className="bg-[#000] p-1 shadow-[inset_0_0_10px_#000] rounded max-w-full max-h-full shrink">
-                  <div className="pointer-events-auto max-w-full max-h-full flex items-center justify-center">
-                    <OledCanvas frameData={processedFrame} theme={ditherConfig.theme} scale={2} />
+                <div className="bg-[#000] p-1 shadow-[inset_0_0_10px_#000] rounded shrink flex items-center justify-center">
+                  <div className="pointer-events-auto w-[128px]">
+                    <OledCanvas frameData={processedFrame} theme={ditherConfig.theme} scale={8} />
                   </div>
                 </div>
 
@@ -446,28 +648,28 @@ export default function App() {
               </div>
 
               {/* Decorative Sticky Note (Right) */}
-              <div className="hidden xl:block">
-                <div className="bg-[#FFD485] text-[#1A1A1A] p-4 font-mono text-[10px] w-40 shadow-lg rotate-3">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="w-3 h-3 rounded-full bg-[#1A1A1A]/20" />
+              <div className="hidden xl:block shrink-0">
+                <div className="bg-[#FFD485] text-[#1A1A1A] p-2.5 font-mono text-[9px] w-32 shadow-lg rotate-2">
+                  <div className="flex justify-between items-start mb-1">
+                    <div className="w-2 h-2 rounded-full bg-[#1A1A1A]/20" />
                     <span>💡</span>
                   </div>
-                  The full preview shows the entire video. The small OLED shows exactly what will be displayed on your device.
+                  OLED output shows 1:1 true scale.
                 </div>
               </div>
             </div>
           </div>
 
           {/* Column 3: Display Info */}
-          <div className="w-[200px] shrink-0 p-6 border-l border-[#1A1A1A]/20 flex flex-col justify-start overflow-y-auto">
-            <div className="bg-white border-2 border-[#1A1A1A] shadow-[4px_4px_0_0_#1A1A1A] p-4 font-mono text-xs flex flex-col gap-5 mb-auto">
+          <div className="w-[180px] shrink-0 p-4 border-l border-[#1A1A1A]/20 flex flex-col justify-start overflow-y-auto">
+            <div className="bg-white border-2 border-[#1A1A1A] shadow-[3px_3px_0_0_#1A1A1A] p-3 font-mono text-xs flex flex-col gap-4 mb-auto">
               
               <div>
-                <div className="bg-[#1A1A1A] text-white px-2 py-1 text-[10px] font-bold uppercase tracking-wider mb-3 flex justify-between items-center">
+                <div className="bg-[#1A1A1A] text-white px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider mb-2 flex justify-between items-center">
                   <span>DISPLAY INFO</span>
-                  <span className="w-2 h-2 rounded-full bg-[#E85D2A]"></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#E85D2A]"></span>
                 </div>
-                <div className="flex flex-col gap-1 text-[#6B6B6B]">
+                <div className="flex flex-col gap-0.5 text-[#6B6B6B] text-[11px]">
                   <div>128 × 64</div>
                   <div>1-BIT (MONO)</div>
                   <div>I²C 0x3C</div>
@@ -478,21 +680,16 @@ export default function App() {
               <div className="h-px bg-[#1A1A1A]/20" />
 
               <div>
-                <div className="text-[9px] font-bold uppercase tracking-wider text-[#1A1A1A] mb-2">CURRENT FRAME</div>
-                <div className="text-[#6B6B6B]">{activeFrameIndex.toString().padStart(3, '0')} / {media ? media.frames.length.toString().padStart(3, '0') : '000'}</div>
-                <div className="text-[#6B6B6B]">{(activeFrameIndex / targetFps).toFixed(2)}s</div>
+                <div className="text-[9px] font-bold uppercase tracking-wider text-[#1A1A1A] mb-1">CURRENT FRAME</div>
+                <div className="text-[#6B6B6B] text-[11px]">{activeFrameIndex.toString().padStart(3, '0')} / {media ? media.frames.length.toString().padStart(3, '0') : '000'}</div>
+                <div className="text-[#6B6B6B] text-[11px]">{(activeFrameIndex / targetFps).toFixed(2)}s</div>
               </div>
 
               <div className="h-px bg-[#1A1A1A]/20" />
 
               <div>
-                <div className="text-[9px] font-bold uppercase tracking-wider text-[#1A1A1A] mb-2">OUTPUT SIZE</div>
-                <div className="text-[#6B6B6B] mb-2">1024 bytes/frame</div>
-                <div className="h-2 w-full flex">
-                  {Array.from({length: 10}).map((_, i) => (
-                    <div key={i} className="h-full flex-1 border-r border-white/20 last:border-0" style={{ backgroundColor: `rgba(26,26,26,${0.1 + (i*0.1)})` }} />
-                  ))}
-                </div>
+                <div className="text-[9px] font-bold uppercase tracking-wider text-[#1A1A1A] mb-1">OUTPUT SIZE</div>
+                <div className="text-[#6B6B6B] text-[11px] mb-1">1024 bytes/frame</div>
               </div>
 
             </div>
@@ -500,7 +697,7 @@ export default function App() {
         </section>
 
         {/* Bottom Console — Technical Control Panel */}
-        <aside className="h-[380px] shrink-0 bg-white flex z-20 p-6 gap-6 relative border-t-2 border-[#1A1A1A]">
+        <aside className="h-[310px] shrink-0 bg-white flex z-20 p-4 gap-4 relative border-t-2 border-[#1A1A1A]">
           
           {/* Zone 1: Media Pool (Left) */}
           <BlueprintHoverCard className="w-[280px] shrink-0 min-w-0">
@@ -511,45 +708,269 @@ export default function App() {
             
             {/* Tabs */}
             <div className="flex border-b border-[#1A1A1A]/20 bg-[#F5F0EB] shrink-0">
-              <button className="flex-1 py-2 text-[9px] font-bold font-mono tracking-widest text-[#1A1A1A] border-b-2 border-[#E85D2A]">+ IMPORT</button>
-              <button className="flex-1 py-2 text-[9px] font-bold font-mono tracking-widest text-[#6B6B6B] hover:text-[#1A1A1A]">SAMPLES</button>
-              <button className="flex-1 py-2 text-[9px] font-bold font-mono tracking-widest text-[#6B6B6B] hover:text-[#1A1A1A]">RECENT</button>
+              <button 
+                onClick={() => setMediaPoolTab('import')}
+                className={`flex-1 py-2 text-[9px] font-bold font-mono tracking-widest cursor-pointer transition-colors ${
+                  mediaPoolTab === 'import' ? 'text-[#1A1A1A] border-b-2 border-[#E85D2A] bg-white' : 'text-[#6B6B6B] hover:text-[#1A1A1A]'
+                }`}
+              >
+                + IMPORT
+              </button>
+              <button 
+                onClick={() => setMediaPoolTab('samples')}
+                className={`flex-1 py-2 text-[9px] font-bold font-mono tracking-widest cursor-pointer transition-colors ${
+                  mediaPoolTab === 'samples' ? 'text-[#1A1A1A] border-b-2 border-[#E85D2A] bg-white' : 'text-[#6B6B6B] hover:text-[#1A1A1A]'
+                }`}
+              >
+                SAMPLES
+              </button>
+              <button 
+                onClick={() => setMediaPoolTab('recent')}
+                className={`flex-1 py-2 text-[9px] font-bold font-mono tracking-widest cursor-pointer transition-colors ${
+                  mediaPoolTab === 'recent' ? 'text-[#1A1A1A] border-b-2 border-[#E85D2A] bg-white' : 'text-[#6B6B6B] hover:text-[#1A1A1A]'
+                }`}
+              >
+                RECENT
+              </button>
             </div>
 
             <div className="flex-1 flex flex-col min-h-0 overflow-y-auto z-[2] relative">
-              <DropZone onMediaLoaded={handleMediaLoaded} currentMedia={null} />
-              
-              {/* Asset Pool */}
-              <div className="p-3">
-                <div className="flex flex-wrap gap-2">
-                  {Object.values(assets).map(asset => {
-                    const firstFrame = asset.media.frames[0];
-                    return (
-                      <div key={asset.id} className="w-[calc(33.333%-0.34rem)] aspect-[4/3] bg-[#080808] border-2 border-[#1A1A1A] hover:border-[#E85D2A] p-0.5 flex items-center justify-center cursor-pointer transition-colors relative group">
-                        {firstFrame && (
-                          <div className="w-full h-full border border-[#1A1A1A] overflow-hidden">
+              {mediaPoolTab === 'import' && (
+                <>
+                  <DropZone onMediaLoaded={handleMediaLoaded} currentMedia={null} />
+                  
+                  {/* Asset Pool Grid */}
+                  <div className="p-2.5">
+                    {Object.values(assets).length === 0 ? (
+                      <p className="text-[9px] font-mono text-[#6B6B6B] text-center py-6 border border-dashed border-[#1A1A1A]/30">
+                        No imported video assets yet. Drop a file above to add to your bin!
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        {Object.values(assets).map(asset => {
+                          const firstFrame = asset.media.frames[0];
+                          return (
+                            <div 
+                              key={asset.id} 
+                              draggable={true}
+                              onDragStart={(e) => {
+                                e.dataTransfer.setData('application/x-oled-asset', asset.id);
+                                e.dataTransfer.setData('text/plain', asset.id);
+                              }}
+                              onDoubleClick={() => handleAddAssetToTimeline(asset.id)}
+                              className="bg-[#080808] border-2 border-[#1A1A1A] hover:border-[#E85D2A] transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-sm"
+                              title={`Double click or drag ${asset.media.sourceInfo.filename} to timeline`}
+                            >
+                              {/* Thumbnail Image */}
+                              <div className="flex-1 w-full h-full relative overflow-hidden bg-[#050505]">
+                                {firstFrame && (
+                                  <img 
+                                    src={(() => {
+                                      const canvas = document.createElement('canvas');
+                                      canvas.width = firstFrame.imageData.width;
+                                      canvas.height = firstFrame.imageData.height;
+                                      const ctx = canvas.getContext('2d');
+                                      if (ctx) ctx.putImageData(firstFrame.imageData, 0, 0);
+                                      return canvas.toDataURL();
+                                    })()} 
+                                    className="w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity" 
+                                    alt={asset.id} 
+                                  />
+                                )}
+
+                                {/* Frame badge */}
+                                <span className="absolute top-1 right-1 bg-black/80 text-[7px] text-white font-mono px-1 py-0.5 border border-white/20 font-bold">
+                                  {asset.media.frames.length}f
+                                </span>
+
+                                {/* Bottom title */}
+                                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/90 to-transparent p-1 pt-3">
+                                  <p className="text-[8px] font-bold text-white font-mono truncate">{asset.media.sourceInfo.filename}</p>
+                                </div>
+
+                                {/* Hover Action Overlay */}
+                                <div className="absolute inset-0 bg-black/85 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-1.5 gap-1.5 z-10">
+                                  <span className="text-[7px] font-mono text-[#E85D2A] font-bold uppercase tracking-wider">DRAG OR CHOOSE</span>
+                                  <button 
+                                    onClick={(e) => { e.stopPropagation(); handleAddAssetToTimeline(asset.id); }}
+                                    className="w-full py-1 text-[8px] font-bold bg-[#E85D2A] text-white hover:bg-white hover:text-[#1A1A1A] transition-colors cursor-pointer uppercase font-mono tracking-wider"
+                                  >
+                                    + ADD CLIP
+                                  </button>
+                                  <button 
+                                    onClick={(e) => { e.stopPropagation(); handleReplaceTimelineWithAsset(asset.id); }}
+                                    className="w-full py-0.5 text-[7px] font-bold border border-white/40 text-white hover:bg-white hover:text-[#1A1A1A] transition-colors cursor-pointer uppercase font-mono tracking-wider"
+                                  >
+                                    REPLACE
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {mediaPoolTab === 'samples' && (
+                <div className="p-2.5">
+                  <div className="flex justify-between items-center mb-2 px-1">
+                    <span className="text-[8px] font-mono text-[#6B6B6B] uppercase tracking-wider font-bold">SAMPLE ANIMATION BIN</span>
+                    <span className="text-[7px] font-mono text-[#888]">Double-click or drag card</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { id: 'dino', icon: '🦖', name: 'DINO RUNNER', tag: '30FPS' },
+                      { id: 'heartbeat', icon: '💓', name: 'ECG HEARTBEAT', tag: 'PQRST' },
+                      { id: 'spinner', icon: '🔄', name: 'LOADING SPINNER', tag: 'ARC' },
+                      { id: 'wificonnect', icon: '📶', name: 'WIFI SIGNAL', tag: 'PULSE' },
+                      { id: 'bouncing', icon: '📀', name: 'BOUNCING LOGO', tag: '60f' },
+                      { id: 'pacman', icon: '👾', name: 'PAC-MAN LOOP', tag: 'CHOMP' },
+                      { id: 'battery', icon: '🔋', name: 'BATTERY CHARGE', tag: '100%' },
+                      { id: 'sinewave', icon: '🌊', name: 'SINE WAVE OSC', tag: '1.2kHz' },
+                      { id: 'ripple', icon: '🎯', name: 'RADAR RIPPLE', tag: 'SCAN' },
+                      { id: 'analogclock', icon: '🕒', name: 'ANALOG CLOCK', tag: 'TICKS' },
+                      { id: 'starfield', icon: '🌌', name: 'STARFIELD WARP', tag: '3D' },
+                      { id: 'matrix', icon: '🟩', name: 'MATRIX RAIN', tag: '1-BIT' },
+                      { id: 'rain', icon: '🌧', name: 'RAIN STORM', tag: 'SHOWER' },
+                      { id: 'badapple', icon: '🍎', name: 'BAD APPLE', tag: 'MONO' },
+                      { id: 'dvd', icon: '📀', name: 'DVD BOUNCE', tag: 'CORNER' },
+                      { id: 'cube3d', icon: '🎲', name: '3D CUBE WIRING', tag: '3D MESH' },
+                      { id: 'flame', icon: '🔥', name: 'DOOM FIRE SIM', tag: 'AUTOMATA' },
+                      { id: 'plasma', icon: '⚡', name: 'DITHERED PLASMA', tag: 'BAYER4x4' },
+                      { id: 'fireworks', icon: '🎆', name: 'FIREWORKS BURST', tag: 'SPARKS' },
+                      { id: 'roboeyes', icon: '🤖', name: 'ROBO-EYES FACE', tag: 'DYNAMIC' },
+                      { id: 'spirograph', icon: '🌀', name: 'SPIROGRAPH ROULETTE', tag: 'MATH' },
+                      { id: 'qrcode', icon: '🏁', name: 'QR SCANNER WIPE', tag: 'LASER' },
+                    ].map(sample => (
+                      <div
+                        key={sample.id}
+                        draggable={true}
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('application/x-oled-asset', sample.id);
+                          e.dataTransfer.setData('text/plain', sample.id);
+                        }}
+                        onDoubleClick={() => handleLoadSample(sample.id as any, 'append')}
+                        className="bg-[#080808] border-2 border-[#1A1A1A] hover:border-[#E85D2A] transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-sm"
+                        title={`Double click or drag ${sample.name} to timeline`}
+                      >
+                        {/* Thumbnail Image */}
+                        <div className="flex-1 w-full h-full relative overflow-hidden bg-[#050505]">
+                          {sampleThumbnails[sample.id] ? (
                             <img 
-                              src={(() => {
-                                const canvas = document.createElement('canvas');
-                                canvas.width = firstFrame.imageData.width;
-                                canvas.height = firstFrame.imageData.height;
-                                const ctx = canvas.getContext('2d');
-                                if (ctx) ctx.putImageData(firstFrame.imageData, 0, 0);
-                                return canvas.toDataURL();
-                              })()} 
-                              className="w-full h-full object-cover opacity-80 group-hover:opacity-100" 
-                              alt={asset.id} 
+                              src={sampleThumbnails[sample.id]} 
+                              alt={sample.name} 
+                              className="w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity" 
                             />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-xl">{sample.icon}</div>
+                          )}
+
+                          {/* FPS Badge */}
+                          <span className="absolute top-1 right-1 bg-black/80 text-[7px] text-white font-mono px-1 py-0.5 border border-white/20 font-bold">
+                            {sample.tag}
+                          </span>
+
+                          {/* Bottom Title Bar */}
+                          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/90 to-transparent p-1 pt-3">
+                            <p className="text-[8px] font-bold text-white font-mono truncate flex items-center gap-1">
+                              <span>{sample.icon}</span>
+                              <span>{sample.name}</span>
+                            </p>
                           </div>
-                        )}
-                        <div className="absolute bottom-0 left-0 right-0 bg-[#1A1A1A]/80 p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <p className="text-[7px] text-[#F5F0EB] font-mono truncate text-center">{asset.media.sourceInfo.filename}</p>
+
+                          {/* Hover Action Overlay */}
+                          <div className="absolute inset-0 bg-black/85 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-1.5 gap-1.5 z-10">
+                            <span className="text-[7px] font-mono text-[#E85D2A] font-bold uppercase tracking-wider">DRAG OR CHOOSE</span>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); handleLoadSample(sample.id as any, 'append'); }}
+                              className="w-full py-1 text-[8px] font-bold bg-[#E85D2A] text-white hover:bg-white hover:text-[#1A1A1A] transition-colors cursor-pointer uppercase font-mono tracking-wider"
+                              title="Append sample animation to timeline"
+                            >
+                              + ADD CLIP
+                            </button>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); handleLoadSample(sample.id as any, 'replace'); }}
+                              className="w-full py-0.5 text-[7px] font-bold border border-white/40 text-white hover:bg-white hover:text-[#1A1A1A] transition-colors cursor-pointer uppercase font-mono tracking-wider"
+                              title="Replace sequence with this sample animation"
+                            >
+                              REPLACE
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {mediaPoolTab === 'recent' && (
+                <div className="p-2.5">
+                  {Object.values(assets).length === 0 ? (
+                    <p className="text-[9px] font-mono text-[#6B6B6B] text-center py-6 border border-dashed border-[#1A1A1A]/30">
+                      No recent files.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.values(assets).map(asset => {
+                        const firstFrame = asset.media.frames[0];
+                        return (
+                          <div 
+                            key={asset.id} 
+                            draggable={true}
+                            onDragStart={(e) => {
+                              e.dataTransfer.setData('application/x-oled-asset', asset.id);
+                              e.dataTransfer.setData('text/plain', asset.id);
+                            }}
+                            onDoubleClick={() => handleAddAssetToTimeline(asset.id)}
+                            className="bg-[#080808] border-2 border-[#1A1A1A] hover:border-[#E85D2A] transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-sm"
+                          >
+                            <div className="flex-1 w-full h-full relative overflow-hidden bg-[#050505]">
+                              {firstFrame && (
+                                <img 
+                                  src={(() => {
+                                    const canvas = document.createElement('canvas');
+                                    canvas.width = firstFrame.imageData.width;
+                                    canvas.height = firstFrame.imageData.height;
+                                    const ctx = canvas.getContext('2d');
+                                    if (ctx) ctx.putImageData(firstFrame.imageData, 0, 0);
+                                    return canvas.toDataURL();
+                                  })()} 
+                                  className="w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity" 
+                                  alt={asset.id} 
+                                />
+                              )}
+                              <span className="absolute top-1 right-1 bg-black/80 text-[7px] text-white font-mono px-1 py-0.5 border border-white/20 font-bold">
+                                {asset.media.frames.length}f
+                              </span>
+                              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/90 to-transparent p-1 pt-3">
+                                <p className="text-[8px] font-bold text-white font-mono truncate">{asset.media.sourceInfo.filename}</p>
+                              </div>
+                              <div className="absolute inset-0 bg-black/85 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-1.5 gap-1.5 z-10">
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); handleAddAssetToTimeline(asset.id); }}
+                                  className="w-full py-1 text-[8px] font-bold bg-[#E85D2A] text-white hover:bg-white hover:text-[#1A1A1A] transition-colors cursor-pointer uppercase font-mono tracking-wider"
+                                >
+                                  + ADD CLIP
+                                </button>
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); handleReplaceTimelineWithAsset(asset.id); }}
+                                  className="w-full py-0.5 text-[7px] font-bold border border-white/40 text-white hover:bg-white hover:text-[#1A1A1A] transition-colors cursor-pointer uppercase font-mono tracking-wider"
+                                >
+                                  REPLACE
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </BlueprintHoverCard>
 
@@ -585,6 +1006,7 @@ export default function App() {
                 onZoomChange={setZoomLevel}
                 selectedClipIds={selectedClipIds}
                 onSelectClips={setSelectedClipIds}
+                onAssetDrop={handleAddAssetToTimeline}
               />
             </div>
 
