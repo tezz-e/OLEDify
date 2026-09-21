@@ -62,7 +62,13 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
       handleMiddleMouseDown(e);
       return;
     }
-    if (e.button !== 0) return; // Left-click only for marquee box
+    if (e.button !== 0) return; // Left-click only
+
+    // Ignore clicks directly on interactive clip elements or controls
+    const target = e.target as HTMLElement;
+    if (target.closest('[data-clip-id]') || target.closest('button') || target.closest('input')) {
+      return;
+    }
 
     e.preventDefault();
     document.body.style.userSelect = 'none';
@@ -72,37 +78,57 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
 
     const startX = e.clientX - rect.left + (scrollRef.current?.scrollLeft || 0);
     const startY = e.clientY - rect.top + (scrollRef.current?.scrollTop || 0);
+    const initialClientX = e.clientX;
+    const initialClientY = e.clientY;
 
-    setMarqueeBox({ startX, startY, currentX: startX, currentY: startY });
+    let isMarqueeActive = false;
 
     const onMove = (mv: MouseEvent) => {
       if (!scrollRef.current) return;
-      const currentRect = scrollRef.current.getBoundingClientRect();
-      const curX = mv.clientX - currentRect.left + scrollRef.current.scrollLeft;
-      const curY = mv.clientY - currentRect.top + scrollRef.current.scrollTop;
+      const dx = mv.clientX - initialClientX;
+      const dy = mv.clientY - initialClientY;
+      const dist = Math.hypot(dx, dy);
 
-      setMarqueeBox({ startX, startY, currentX: curX, currentY: curY });
+      // Only start marquee box selection if dragging exceeds 4px threshold
+      if (!isMarqueeActive && dist > 4) {
+        isMarqueeActive = true;
+      }
 
-      const boxLeft = Math.min(startX, curX);
-      const boxRight = Math.max(startX, curX);
+      if (isMarqueeActive) {
+        const currentRect = scrollRef.current.getBoundingClientRect();
+        const curX = mv.clientX - currentRect.left + scrollRef.current.scrollLeft;
+        const curY = mv.clientY - currentRect.top + scrollRef.current.scrollTop;
 
-      let accPx = 0;
-      const selected: string[] = [];
-      clips.forEach(clip => {
-        const len = clip.outFrame - clip.inFrame + 1;
-        const clipLeft = accPx;
-        const clipRight = accPx + len * thumbPx;
-        if (boxRight >= clipLeft && boxLeft <= clipRight) {
-          selected.push(clip.id);
-        }
-        accPx += len * thumbPx + GAP_PX;
-      });
+        setMarqueeBox({ startX, startY, currentX: curX, currentY: curY });
 
-      onSelectClips(selected);
+        const boxLeft = Math.min(startX, curX);
+        const boxRight = Math.max(startX, curX);
+
+        let accPx = 0;
+        const selected: string[] = [];
+        clips.forEach(clip => {
+          const len = clip.outFrame - clip.inFrame + 1;
+          const clipLeft = accPx;
+          const clipRight = accPx + len * thumbPx;
+          if (boxRight >= clipLeft && boxLeft <= clipRight) {
+            selected.push(clip.id);
+          }
+          accPx += len * thumbPx + GAP_PX;
+        });
+
+        onSelectClips(selected);
+      }
     };
 
-    const onUp = () => {
-      setMarqueeBox(null);
+    const onUp = (upEv: MouseEvent) => {
+      if (isMarqueeActive) {
+        setMarqueeBox(null);
+      } else {
+        // Plain tap/click on empty timeline track -> seek playhead cursor to that point & deselect clips!
+        scrubAt(upEv.clientX);
+        onSelectClips([]);
+      }
+
       document.body.style.userSelect = '';
       window.getSelection()?.removeAllRanges();
       window.removeEventListener('mousemove', onMove);
@@ -238,10 +264,15 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
   }, [clips, thumbPx, totalActiveFrames, onFrameSelect]);
 
   const handleRulerMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return;
     e.preventDefault();
+    e.stopPropagation();
     isScrubbing.current = true;
     scrubAt(e.clientX);
-    const onMove = (mv: MouseEvent) => { if (isScrubbing.current) scrubAt(mv.clientX); };
+    const onMove = (mv: MouseEvent) => {
+      mv.preventDefault();
+      if (isScrubbing.current) scrubAt(mv.clientX);
+    };
     const onUp = () => {
       isScrubbing.current = false;
       window.removeEventListener('mousemove', onMove);
