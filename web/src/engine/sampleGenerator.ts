@@ -114,7 +114,7 @@ export function generateSampleMedia(sampleType: SamplePresetType): DecodedMedia 
   const width = 256;
   const height = 128;
   const targetFps = 30;
-  const totalFrames = ['dino', 'heartbeat', 'wificonnect', 'battery', 'analogclock', 'bouncing'].includes(sampleType) ? 60 : 45;
+  const totalFrames = 180; // 6.0 full seconds of high-frame-rate animation @ 30 FPS
   const frames: ExtractedFrame[] = [];
 
   for (let f = 0; f < totalFrames; f++) {
@@ -135,14 +135,15 @@ export function generateSampleMedia(sampleType: SamplePresetType): DecodedMedia 
       ctx.fillRect(0, groundY, width, 2);
 
       for (let dot = 0; dot < 8; dot++) {
-        const dotX = (dot * 36 - f * 6 + 400) % width;
+        const dotX = (dot * 36 - f * 6 + 1000) % width;
         ctx.fillRect(dotX, groundY + 4, 3 * S, 1 * S);
       }
 
-      // Authentic Dino Jump Physics: Jump starts at f=12, peaks at f=27, lands at f=42
+      // Periodic jump cycle every 60 frames (starts at 12, peaks at 27, lands at 42)
+      const cycleF = f % 60;
       let jumpY = 0;
-      if (f >= 12 && f <= 42) {
-        const progress = (f - 12) / 30;
+      if (cycleF >= 12 && cycleF <= 42) {
+        const progress = (cycleF - 12) / 30;
         jumpY = Math.sin(progress * Math.PI) * 32 * S; // 64px clearance
       }
 
@@ -151,14 +152,14 @@ export function generateSampleMedia(sampleType: SamplePresetType): DecodedMedia 
       const currentDinoFrame = jumpY > 0 ? trex_run1 : (Math.floor(f / 3) % 2 === 0 ? trex_run1 : trex_run2);
       drawBitmap(ctx, currentDinoFrame, TREX_W, TREX_H, dinoX, dinoY, S);
 
-      // Cactus 1 arrives right under Dino at peak jump (f=27)
-      const cactus1X = dinoX + (27 - f) * 7.5;
+      // Cactus 1 arrives right under Dino at peak jump (cycleF = 27)
+      const cactus1X = dinoX + (27 - cycleF) * 7.5;
       if (cactus1X > -30 && cactus1X < width + 40) {
         drawBitmap(ctx, cactus_a, CACTUS_A_W, CACTUS_A_H, cactus1X, (54 - CACTUS_A_H) * S, S);
       }
 
-      // Cactus 2 appears in sequence
-      const cactus2X = dinoX + (75 - f) * 7.5;
+      // Cactus 2 arrives midway in sequence
+      const cactus2X = dinoX + (57 - cycleF) * 7.5;
       if (cactus2X > -40 && cactus2X < width + 40) {
         drawBitmap(ctx, cactus_c, CACTUS_C_W, CACTUS_C_H, cactus2X, (54 - CACTUS_C_H) * S, S);
       }
