@@ -291,7 +291,13 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
   const zoomPct = Math.round(zoomLevel * 100);
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[#F5F0EB] relative select-none">
+    <div 
+      onContextMenuCapture={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[#F5F0EB] relative select-none"
+    >
 
       {/* Header bar */}
       <div className="px-3 py-1 border-b border-[#1A1A1A]/20 flex items-center justify-between shrink-0 bg-[#EDEAE5] gap-4">

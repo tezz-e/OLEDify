@@ -25,6 +25,11 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const [activeItem, setActiveItem] = useState<string | null>(null);
 
   useEffect(() => {
+    const preventNative = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener('contextmenu', preventNative, { capture: true });
+
     const handleClickOutside = (e: MouseEvent) => {
       if (e.button !== 0 && e.type === 'mousedown') return;
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -32,6 +37,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       }
     };
     const handleContextMenuOutside = (e: MouseEvent) => {
+      e.preventDefault();
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         onClose();
       }
@@ -48,6 +54,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 
     return () => {
       clearTimeout(timer);
+      window.removeEventListener('contextmenu', preventNative, { capture: true });
       window.removeEventListener('mousedown', handleClickOutside);
       window.removeEventListener('contextmenu', handleContextMenuOutside);
       window.removeEventListener('keydown', handleKeyDown);
