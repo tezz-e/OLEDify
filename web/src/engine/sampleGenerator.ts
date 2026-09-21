@@ -139,24 +139,27 @@ export function generateSampleMedia(sampleType: SamplePresetType): DecodedMedia 
         ctx.fillRect(dotX, groundY + 4, 3 * S, 1 * S);
       }
 
+      // Authentic Dino Jump Physics: Jump starts at f=12, peaks at f=27, lands at f=42
       let jumpY = 0;
-      if (f >= 20 && f <= 40) {
-        const progress = (f - 20) / 20;
-        jumpY = Math.sin(progress * Math.PI) * 22 * S;
+      if (f >= 12 && f <= 42) {
+        const progress = (f - 12) / 30;
+        jumpY = Math.sin(progress * Math.PI) * 32 * S; // 64px clearance
       }
 
-      const dinoX = 20 * S;
+      const dinoX = 20 * S; // 40px
       const dinoY = (54 - TREX_H) * S - jumpY;
       const currentDinoFrame = jumpY > 0 ? trex_run1 : (Math.floor(f / 3) % 2 === 0 ? trex_run1 : trex_run2);
       drawBitmap(ctx, currentDinoFrame, TREX_W, TREX_H, dinoX, dinoY, S);
 
-      const cactus1X = ((280 - f * 5.5) % 360) - 20;
-      if (cactus1X > -30 && cactus1X < width) {
+      // Cactus 1 arrives right under Dino at peak jump (f=27)
+      const cactus1X = dinoX + (27 - f) * 7.5;
+      if (cactus1X > -30 && cactus1X < width + 40) {
         drawBitmap(ctx, cactus_a, CACTUS_A_W, CACTUS_A_H, cactus1X, (54 - CACTUS_A_H) * S, S);
       }
 
-      const cactus2X = ((460 - f * 5.5) % 360) - 30;
-      if (cactus2X > -40 && cactus2X < width) {
+      // Cactus 2 appears in sequence
+      const cactus2X = dinoX + (75 - f) * 7.5;
+      if (cactus2X > -40 && cactus2X < width + 40) {
         drawBitmap(ctx, cactus_c, CACTUS_C_W, CACTUS_C_H, cactus2X, (54 - CACTUS_C_H) * S, S);
       }
 

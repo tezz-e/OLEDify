@@ -24,6 +24,13 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
+      // Ignore right clicks for outside dismissal
+      if (e.button !== 0 && e.type === 'mousedown') return;
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    const handleContextMenuOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         onClose();
       }
@@ -31,10 +38,18 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
-    window.addEventListener('mousedown', handleClickOutside);
-    window.addEventListener('keydown', handleKeyDown);
+
+    // Use slight delay to avoid capturing the triggering right click event
+    const timer = setTimeout(() => {
+      window.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('contextmenu', handleContextMenuOutside);
+      window.addEventListener('keydown', handleKeyDown);
+    }, 50);
+
     return () => {
+      clearTimeout(timer);
       window.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('contextmenu', handleContextMenuOutside);
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [onClose]);

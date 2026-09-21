@@ -55,6 +55,58 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; clipId: string } | null>(null);
   const [isDropTargetOver, setIsDropTargetOver] = useState(false);
+  const [marqueeBox, setMarqueeBox] = useState<{ startX: number; startY: number; currentX: number; currentY: number } | null>(null);
+
+  const handleTrackMouseDown = (e: React.MouseEvent) => {
+    if (e.button === 1) {
+      handleMiddleMouseDown(e);
+      return;
+    }
+    if (e.button !== 0) return; // Left-click only for marquee box
+
+    const rect = scrollRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const startX = e.clientX - rect.left + (scrollRef.current?.scrollLeft || 0);
+    const startY = e.clientY - rect.top + (scrollRef.current?.scrollTop || 0);
+
+    setMarqueeBox({ startX, startY, currentX: startX, currentY: startY });
+
+    const onMove = (mv: MouseEvent) => {
+      if (!scrollRef.current) return;
+      const currentRect = scrollRef.current.getBoundingClientRect();
+      const curX = mv.clientX - currentRect.left + scrollRef.current.scrollLeft;
+      const curY = mv.clientY - currentRect.top + scrollRef.current.scrollTop;
+
+      setMarqueeBox({ startX, startY, currentX: curX, currentY: curY });
+
+      const boxLeft = Math.min(startX, curX);
+      const boxRight = Math.max(startX, curX);
+
+      let accPx = 0;
+      const selected: string[] = [];
+      clips.forEach(clip => {
+        const len = clip.outFrame - clip.inFrame + 1;
+        const clipLeft = accPx;
+        const clipRight = accPx + len * thumbPx;
+        if (boxRight >= clipLeft && boxLeft <= clipRight) {
+          selected.push(clip.id);
+        }
+        accPx += len * thumbPx + GAP_PX;
+      });
+
+      onSelectClips(selected);
+    };
+
+    const onUp = () => {
+      setMarqueeBox(null);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
 
   const thumbPx = THUMB_BASE * zoomLevel;
 
@@ -286,23 +338,54 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
               defaultValue={Math.max(0, Math.min(100, 100 * Math.log(zoomLevel / MIN_ZOOM) / Math.log(ZOOM_RATIO)))}
               isStepped={false}
               onChange={(val) => {
-                startTransition(() => {
-                  onZoomChange(MIN_ZOOM * Math.pow(ZOOM_RATIO, val / 100));
-                });
+                const nextZoom = (val / 100);
+                onZoomChange(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, nextZoom)));
               }}
-              formatValue={(val) => `${Math.round(val)}%`}
             />
           </div>
+          <button 
+            onClick={zoomIn}
+            className="w-5 h-5 rounded bg-[#333] hover:bg-[#E85D2A] text-white flex items-center justify-center font-bold text-xs transition-colors cursor-pointer"
+            title="Zoom In (Ctrl + Scroll Up)"
+          >
+            +
+          </button>
+
+          <div className="h-4 w-px bg-white/20 mx-1" />
+
+          {selectedClipIds.length > 0 && (
+            <button
+              onClick={() => {
+                onClipsChange(clips.filter(c => !selectedClipIds.includes(c.id)));
+                onSelectClips([]);
+              }}
+              className="text-[9px] font-bold text-[#FF5555] hover:bg-[#FF5555] hover:text-white px-2 py-0.5 border border-[#FF5555]/40 rounded transition-colors cursor-pointer uppercase tracking-wider"
+            >
+              DELETE ({selectedClipIds.length})
+            </button>
+          )}
+
+          {onSplitClip && (
+            <button
+              onClick={onSplitClip}
+              className="text-[9px] font-bold text-[#E85D2A] hover:bg-[#E85D2A] hover:text-white px-2 py-0.5 border border-[#E85D2A]/40 rounded transition-colors cursor-pointer uppercase tracking-wider flex items-center gap-1"
+              title="Split clip at playhead (Ctrl+B / S)"
+            >
+              ✂ SPLIT
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Scrollable track area */}
+      {/* Scrollable track area (horizontal AND vertical scrolling enabled) */}
       <div
         ref={scrollRef}
         onContextMenu={(e) => {
           e.preventDefault();
+          e.stopPropagation();
           setContextMenu({ x: e.clientX, y: e.clientY, clipId: '' });
         }}
+        onMouseDown={handleTrackMouseDown}
         onDragOver={(e) => {
           e.preventDefault();
           e.dataTransfer.dropEffect = 'copy';
@@ -322,15 +405,14 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
             }
           }
         }}
-        className={`flex-1 overflow-x-auto overflow-y-hidden relative transition-colors ${
+        className={`flex-1 overflow-auto relative transition-colors ${
           isDropTargetOver ? 'bg-[#E85D2A]/10' : ''
         }`}
-        style={{ minHeight: RULER_H + CLIP_HEIGHT + 8 }}
-        onMouseDown={handleMiddleMouseDown}
+        style={{ minHeight: RULER_H + CLIP_HEIGHT + 40 }}
       >
         <div
           className="relative min-h-full"
-          style={{ width: Math.max(contentWidth, 100), minHeight: RULER_H + CLIP_HEIGHT + 8 }}
+          style={{ width: Math.max(contentWidth, 100), minHeight: RULER_H + CLIP_HEIGHT + 40 }}
         >
 
           {/* RULER */}
@@ -368,7 +450,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
           {/* CLIP TRACK */}
           <div
             className="absolute left-0"
-            style={{ top: RULER_H + 2, height: CLIP_HEIGHT }}
+            style={{ top: RULER_H + 4, height: CLIP_HEIGHT }}
           >
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={clips.map(c => c.id)} strategy={horizontalListSortingStrategy}>
@@ -409,16 +491,29 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
 
           {/* PLAYHEAD line */}
           <div
-            className="absolute top-0 pointer-events-none z-50"
+            className="absolute top-0 pointer-events-none z-30"
             style={{
               left: playheadPx,
               width: 1,
-              height: RULER_H + CLIP_HEIGHT + 8,
+              height: '100%',
               background: '#E85D2A',
               boxShadow: '0 0 4px rgba(232,93,42,0.5)',
               transform: 'translateX(-0.5px)',
             }}
           />
+
+          {/* Marquee Selection Box Overlay */}
+          {marqueeBox && (
+            <div
+              className="absolute border-2 border-dashed border-[#E85D2A] bg-[#E85D2A]/15 pointer-events-none z-40"
+              style={{
+                left: Math.min(marqueeBox.startX, marqueeBox.currentX),
+                top: Math.min(marqueeBox.startY, marqueeBox.currentY),
+                width: Math.abs(marqueeBox.currentX - marqueeBox.startX),
+                height: Math.abs(marqueeBox.currentY - marqueeBox.startY),
+              }}
+            />
+          )}
 
         </div>
       </div>

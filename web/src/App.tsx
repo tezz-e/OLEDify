@@ -306,8 +306,10 @@ export default function App() {
       }
 
       // 2. Play / Pause: Spacebar
-      if (e.code === 'Space') {
+      if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
         e.preventDefault();
+        e.stopPropagation();
+        (document.activeElement as HTMLElement)?.blur();
         setIsPlaying(p => !p);
         return;
       }
