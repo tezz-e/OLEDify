@@ -64,6 +64,11 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
     }
     if (e.button !== 0) return; // Left-click only for marquee box
 
+    const target = e.target as HTMLElement;
+    if (target.closest('.ruler-area') || target.closest('[data-clip-id]') || target.closest('button, input, select')) {
+      return;
+    }
+
     e.preventDefault();
     document.body.style.userSelect = 'none';
 
@@ -114,6 +119,36 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
   };
 
   const thumbPx = THUMB_BASE * zoomLevel;
+
+  // Native capture-phase context menu handler — 100% blocks browser native menu
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const handleNativeContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const target = e.target as HTMLElement;
+      const clipElement = target.closest('[data-clip-id]');
+      const clipId = clipElement ? clipElement.getAttribute('data-clip-id') || '' : '';
+
+      if (clipId) {
+        onSelectClips([clipId]);
+      }
+
+      setContextMenu({
+        x: e.clientX,
+        y: e.clientY,
+        clipId
+      });
+    };
+
+    el.addEventListener('contextmenu', handleNativeContextMenu, { capture: true });
+    return () => {
+      el.removeEventListener('contextmenu', handleNativeContextMenu, { capture: true });
+    };
+  }, [onSelectClips]);
 
   // Content width = sum of TRIMMED clip widths + gaps (matches ClipBlock normal render)
   const totalActiveFrames = useMemo(
@@ -209,6 +244,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
 
   const handleRulerMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     isScrubbing.current = true;
     scrubAt(e.clientX);
     const onMove = (mv: MouseEvent) => { if (isScrubbing.current) scrubAt(mv.clientX); };
@@ -300,53 +336,37 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
     >
 
       {/* Header bar */}
-      <div className="px-3 py-1 border-b border-[#1A1A1A]/20 flex items-center justify-between shrink-0 bg-[#EDEAE5] gap-4">
-        <span className="text-[9px] font-mono font-bold tracking-widest text-[#1A1A1A] uppercase">
-          {totalActiveFrames} frames ({clips.length} clips)
-        </span>
+      <div className="px-3 py-1.5 border-b border-[#1A1A1A]/20 flex items-center justify-between shrink-0 bg-[#EDEAE5]">
+        <div className="flex items-center gap-2">
+          <span className="text-[9px] font-mono font-bold tracking-widest text-[#1A1A1A] uppercase">
+            {totalActiveFrames} frames ({clips.length} clips)
+          </span>
+        </div>
 
-        <div className="flex items-center gap-4 mr-10">
-          <div className="w-48">
-            <ElasticSlider
-              startingValue={0}
-              maxValue={100}
-              defaultValue={Math.max(0, Math.min(100, 100 * Math.log(zoomLevel / MIN_ZOOM) / Math.log(ZOOM_RATIO)))}
-              isStepped={false}
-              onChange={(val) => {
-                const nextZoom = (val / 100);
-                onZoomChange(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, nextZoom)));
-              }}
-            />
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] font-mono text-[#666] font-bold uppercase tracking-wider">ZOOM</span>
+            <div className="w-36">
+              <ElasticSlider
+                startingValue={0}
+                maxValue={100}
+                defaultValue={Math.max(0, Math.min(100, 100 * Math.log(zoomLevel / MIN_ZOOM) / Math.log(ZOOM_RATIO)))}
+                isStepped={false}
+                onChange={(val) => {
+                  const nextZoom = (val / 100);
+                  onZoomChange(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, nextZoom)));
+                }}
+              />
+            </div>
           </div>
-          <button 
-            onClick={zoomIn}
-            className="w-5 h-5 rounded bg-[#333] hover:bg-[#E85D2A] text-white flex items-center justify-center font-bold text-xs transition-colors cursor-pointer"
-            title="Zoom In (Ctrl + Scroll Up)"
-          >
-            +
-          </button>
-
-          <div className="h-4 w-px bg-white/20 mx-1" />
-
-          {selectedClipIds.length > 0 && (
-            <button
-              onClick={() => {
-                onClipsChange(clips.filter(c => !selectedClipIds.includes(c.id)));
-                onSelectClips([]);
-              }}
-              className="text-[9px] font-bold text-[#FF5555] hover:bg-[#FF5555] hover:text-white px-2 py-0.5 border border-[#FF5555]/40 rounded transition-colors cursor-pointer uppercase tracking-wider"
-            >
-              DELETE ({selectedClipIds.length})
-            </button>
-          )}
 
           {onSplitClip && (
             <button
               onClick={onSplitClip}
-              className="text-[9px] font-bold text-[#E85D2A] hover:bg-[#E85D2A] hover:text-white px-2 py-0.5 border border-[#E85D2A]/40 rounded transition-colors cursor-pointer uppercase tracking-wider flex items-center gap-1"
+              className="text-[9px] font-mono font-bold text-[#E85D2A] hover:bg-[#E85D2A] hover:text-white px-2.5 py-1 border border-[#E85D2A]/40 rounded-md transition-colors cursor-pointer uppercase tracking-wider flex items-center gap-1.5 bg-white/50"
               title="Split clip at playhead (Ctrl+B / S)"
             >
-              ✂ SPLIT
+              ✂ SPLIT CLIP
             </button>
           )}
         </div>
@@ -392,7 +412,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
 
           {/* RULER */}
           <div
-            className="absolute top-0 left-0 right-0 select-none cursor-crosshair"
+            className="ruler-area absolute top-0 left-0 right-0 select-none cursor-crosshair z-20"
             style={{ height: RULER_H, background: '#E8E4DF', borderBottom: '1px solid rgba(26,26,26,0.2)' }}
             onMouseDown={handleRulerMouseDown}
           >
@@ -536,6 +556,7 @@ const SortableClipWrapper = ({
     <ClipBlock
       clip={clip}
       asset={asset}
+      data-clip-id={clip.id}
       onUpdateBounds={onUpdateBounds}
       setNodeRef={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
