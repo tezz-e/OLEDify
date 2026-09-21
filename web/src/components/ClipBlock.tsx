@@ -93,10 +93,11 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
   const frameCount = asset.media.frames.length;
 
   // ---- Layout ----
-  const trimActive = trimDrag !== null;
+  const isActiveDrag = trimDrag !== null;
   const activeIn  = trimDrag?.previewIn  ?? clip.inFrame;
   const activeOut = trimDrag?.previewOut ?? clip.outFrame;
-  const clipWidth = Math.max(thumbPx, (activeOut - activeIn + 1) * thumbPx);
+
+  const clipWidth = (activeOut - activeIn + 1) * thumbPx; // active trimmed width
 
   // ---- Left trim ----
   const handleLeftDrag = useCallback((e: React.MouseEvent) => {
@@ -171,16 +172,12 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
       data-clip-id={clip.id}
       style={{ ...style, width: clipWidth, height: CLIP_HEIGHT, flexShrink: 0, position: 'relative' }}
       onClick={onClick}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (onContextMenu) onContextMenu(e);
-      }}
+      onContextMenu={onContextMenu}
       className={`select-none overflow-hidden rounded border border-white/10 ${isDragging ? 'opacity-40 z-50' : 'z-10'}`}
     >
       {/* ---- Full thumbnail strip ---- */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none bg-[#1A1A1A]">
-        {/* Solid color fallback */}
+        {/* Solid color fallback (always visible behind thumbs) */}
         <div className="absolute inset-0" style={{ background: '#1e3040' }} />
 
         {/* Thumbnail strip */}
@@ -213,7 +210,7 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
       </div>
 
       {/* ---- Active region border during trim ---- */}
-      {trimActive && (
+      {isActiveDrag && (
         <div
           className="absolute inset-0 pointer-events-none z-20"
           style={{
@@ -247,7 +244,7 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
       >
         <span className="text-[7px] text-white/60 font-mono truncate tracking-wide">
           {asset.media.sourceInfo.filename}
-          {trimActive && (
+          {isActiveDrag && (
             <span className="text-[#E85D2A] ml-1">[{activeIn}–{activeOut}]</span>
           )}
         </span>

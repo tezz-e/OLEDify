@@ -62,13 +62,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
       handleMiddleMouseDown(e);
       return;
     }
-    if (e.button !== 0) return; // Left-click only
-
-    // Ignore clicks directly on interactive clip elements or controls
-    const target = e.target as HTMLElement;
-    if (target.closest('[data-clip-id]') || target.closest('button') || target.closest('input')) {
-      return;
-    }
+    if (e.button !== 0) return; // Left-click only for marquee box
 
     e.preventDefault();
     document.body.style.userSelect = 'none';
@@ -78,57 +72,37 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
 
     const startX = e.clientX - rect.left + (scrollRef.current?.scrollLeft || 0);
     const startY = e.clientY - rect.top + (scrollRef.current?.scrollTop || 0);
-    const initialClientX = e.clientX;
-    const initialClientY = e.clientY;
 
-    let isMarqueeActive = false;
+    setMarqueeBox({ startX, startY, currentX: startX, currentY: startY });
 
     const onMove = (mv: MouseEvent) => {
       if (!scrollRef.current) return;
-      const dx = mv.clientX - initialClientX;
-      const dy = mv.clientY - initialClientY;
-      const dist = Math.hypot(dx, dy);
+      const currentRect = scrollRef.current.getBoundingClientRect();
+      const curX = mv.clientX - currentRect.left + scrollRef.current.scrollLeft;
+      const curY = mv.clientY - currentRect.top + scrollRef.current.scrollTop;
 
-      // Only start marquee box selection if dragging exceeds 4px threshold
-      if (!isMarqueeActive && dist > 4) {
-        isMarqueeActive = true;
-      }
+      setMarqueeBox({ startX, startY, currentX: curX, currentY: curY });
 
-      if (isMarqueeActive) {
-        const currentRect = scrollRef.current.getBoundingClientRect();
-        const curX = mv.clientX - currentRect.left + scrollRef.current.scrollLeft;
-        const curY = mv.clientY - currentRect.top + scrollRef.current.scrollTop;
+      const boxLeft = Math.min(startX, curX);
+      const boxRight = Math.max(startX, curX);
 
-        setMarqueeBox({ startX, startY, currentX: curX, currentY: curY });
+      let accPx = 0;
+      const selected: string[] = [];
+      clips.forEach(clip => {
+        const len = clip.outFrame - clip.inFrame + 1;
+        const clipLeft = accPx;
+        const clipRight = accPx + len * thumbPx;
+        if (boxRight >= clipLeft && boxLeft <= clipRight) {
+          selected.push(clip.id);
+        }
+        accPx += len * thumbPx + GAP_PX;
+      });
 
-        const boxLeft = Math.min(startX, curX);
-        const boxRight = Math.max(startX, curX);
-
-        let accPx = 0;
-        const selected: string[] = [];
-        clips.forEach(clip => {
-          const len = clip.outFrame - clip.inFrame + 1;
-          const clipLeft = accPx;
-          const clipRight = accPx + len * thumbPx;
-          if (boxRight >= clipLeft && boxLeft <= clipRight) {
-            selected.push(clip.id);
-          }
-          accPx += len * thumbPx + GAP_PX;
-        });
-
-        onSelectClips(selected);
-      }
+      onSelectClips(selected);
     };
 
-    const onUp = (upEv: MouseEvent) => {
-      if (isMarqueeActive) {
-        setMarqueeBox(null);
-      } else {
-        // Plain tap/click on empty timeline track -> seek playhead cursor to that point & deselect clips!
-        scrubAt(upEv.clientX);
-        onSelectClips([]);
-      }
-
+    const onUp = () => {
+      setMarqueeBox(null);
       document.body.style.userSelect = '';
       window.getSelection()?.removeAllRanges();
       window.removeEventListener('mousemove', onMove);
@@ -140,36 +114,6 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
   };
 
   const thumbPx = THUMB_BASE * zoomLevel;
-
-  // Native capture-phase context menu handler — 100% blocks browser native menu
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-
-    const handleNativeContextMenu = (e: MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const target = e.target as HTMLElement;
-      const clipElement = target.closest('[data-clip-id]');
-      const clipId = clipElement ? clipElement.getAttribute('data-clip-id') || '' : '';
-
-      if (clipId) {
-        onSelectClips([clipId]);
-      }
-
-      setContextMenu({
-        x: e.clientX,
-        y: e.clientY,
-        clipId
-      });
-    };
-
-    el.addEventListener('contextmenu', handleNativeContextMenu, { capture: true });
-    return () => {
-      el.removeEventListener('contextmenu', handleNativeContextMenu, { capture: true });
-    };
-  }, [onSelectClips]);
 
   // Content width = sum of TRIMMED clip widths + gaps (matches ClipBlock normal render)
   const totalActiveFrames = useMemo(
@@ -264,15 +208,10 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
   }, [clips, thumbPx, totalActiveFrames, onFrameSelect]);
 
   const handleRulerMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0) return;
     e.preventDefault();
-    e.stopPropagation();
     isScrubbing.current = true;
     scrubAt(e.clientX);
-    const onMove = (mv: MouseEvent) => {
-      mv.preventDefault();
-      if (isScrubbing.current) scrubAt(mv.clientX);
-    };
+    const onMove = (mv: MouseEvent) => { if (isScrubbing.current) scrubAt(mv.clientX); };
     const onUp = () => {
       isScrubbing.current = false;
       window.removeEventListener('mousemove', onMove);
@@ -597,7 +536,6 @@ const SortableClipWrapper = ({
     <ClipBlock
       clip={clip}
       asset={asset}
-      data-clip-id={clip.id}
       onUpdateBounds={onUpdateBounds}
       setNodeRef={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
