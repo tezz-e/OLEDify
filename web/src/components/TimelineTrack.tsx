@@ -120,35 +120,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
 
   const thumbPx = THUMB_BASE * zoomLevel;
 
-  // Native capture-phase context menu handler — 100% blocks browser native menu
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
 
-    const handleNativeContextMenu = (e: MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const target = e.target as HTMLElement;
-      const clipElement = target.closest('[data-clip-id]');
-      const clipId = clipElement ? clipElement.getAttribute('data-clip-id') || '' : '';
-
-      if (clipId) {
-        onSelectClips([clipId]);
-      }
-
-      setContextMenu({
-        x: e.clientX,
-        y: e.clientY,
-        clipId
-      });
-    };
-
-    el.addEventListener('contextmenu', handleNativeContextMenu, { capture: true });
-    return () => {
-      el.removeEventListener('contextmenu', handleNativeContextMenu, { capture: true });
-    };
-  }, [onSelectClips]);
 
   // Content width = sum of TRIMMED clip widths + gaps (matches ClipBlock normal render)
   const totalActiveFrames = useMemo(
@@ -328,10 +300,6 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
 
   return (
     <div 
-      onContextMenuCapture={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      }}
       className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[#F5F0EB] relative select-none"
     >
 
@@ -341,6 +309,11 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
           <span className="text-[9px] font-mono font-bold tracking-widest text-[#1A1A1A] uppercase">
             {totalActiveFrames} frames ({clips.length} clips)
           </span>
+          {selectedClipIds.length > 0 && (
+            <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 bg-[#E85D2A] text-white border border-[#1A1A1A] shadow-[1px_1px_0_0_#1A1A1A] tracking-wider uppercase">
+              SELECTED: {selectedClipIds.length} CLIP{selectedClipIds.length > 1 ? 'S' : ''}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
@@ -539,8 +512,11 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
           onClose={() => setContextMenu(null)}
           clipId={contextMenu.clipId}
           clips={clips}
+          assets={assets}
           onClipsChange={onClipsChange}
           onSplitClip={onSplitClip}
+          onSelectClips={onSelectClips}
+          onZoomChange={onZoomChange}
         />
       )}
     </div>

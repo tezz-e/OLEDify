@@ -271,25 +271,66 @@ export default function App() {
     // Only split if we are not at the very start of the clip
     if (targetClipIndex !== -1 && localFrameIndex > 0) {
       const clipToSplit = clips[targetClipIndex];
+      const sourceAsset = assets[clipToSplit.assetId];
+      if (!sourceAsset) return;
+
       const splitPointInAsset = clipToSplit.inFrame + localFrameIndex;
 
-      const newClip1 = {
-        ...clipToSplit,
-        outFrame: splitPointInAsset - 1
+      // Slice frames for Part 1
+      const frames1 = sourceAsset.media.frames.slice(clipToSplit.inFrame, splitPointInAsset);
+      const asset1Id = `asset_${Date.now()}_a`;
+      const asset1: MediaAsset = {
+        id: asset1Id,
+        media: {
+          ...sourceAsset.media,
+          sourceInfo: {
+            ...sourceAsset.media.sourceInfo,
+            frameCount: frames1.length,
+          },
+          frames: frames1.map((f, idx) => ({ ...f, index: idx }))
+        }
       };
 
-      const newClip2 = {
-        id: "clip_" + Date.now(),
-        assetId: clipToSplit.assetId,
-        inFrame: splitPointInAsset,
-        outFrame: clipToSplit.outFrame
+      // Slice frames for Part 2
+      const frames2 = sourceAsset.media.frames.slice(splitPointInAsset, clipToSplit.outFrame + 1);
+      const asset2Id = `asset_${Date.now()}_b`;
+      const asset2: MediaAsset = {
+        id: asset2Id,
+        media: {
+          ...sourceAsset.media,
+          sourceInfo: {
+            ...sourceAsset.media.sourceInfo,
+            frameCount: frames2.length,
+          },
+          frames: frames2.map((f, idx) => ({ ...f, index: idx }))
+        }
       };
+
+      const newClip1: TimelineClip = {
+        id: clipToSplit.id,
+        assetId: asset1Id,
+        inFrame: 0,
+        outFrame: frames1.length - 1
+      };
+
+      const newClip2: TimelineClip = {
+        id: "clip_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
+        assetId: asset2Id,
+        inFrame: 0,
+        outFrame: frames2.length - 1
+      };
+
+      setAssets(prev => ({
+        ...prev,
+        [asset1Id]: asset1,
+        [asset2Id]: asset2
+      }));
 
       const newClips = [...clips];
       newClips.splice(targetClipIndex, 1, newClip1, newClip2);
-      setClips(newClips);
+      setClipsWithHistory(newClips);
     }
-  }, [clips, activeFrameIndex, timelineMedia]);
+  }, [clips, assets, activeFrameIndex, timelineMedia, setClipsWithHistory]);
 
   // Global native right-click prevention
   useEffect(() => {
@@ -1016,6 +1057,7 @@ export default function App() {
                 selectedClipIds={selectedClipIds}
                 onSelectClips={setSelectedClipIds}
                 onAssetDrop={handleAddAssetToTimeline}
+                onSplitClip={handleSplitClip}
               />
             </div>
 

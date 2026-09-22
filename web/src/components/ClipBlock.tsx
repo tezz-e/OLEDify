@@ -181,6 +181,7 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
   return (
     <div
       ref={setNodeRef}
+      data-clip-id={clip.id}
       style={{ ...style, width: clipWidth, height: CLIP_HEIGHT, flexShrink: 0, position: 'relative' }}
       onClick={(e) => {
         if (e.button === 0 && onClick) onClick(e);
@@ -276,11 +277,13 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
         />
       )}
 
-      {/* ---- Selected border (always) ---- */}
+      {/* ---- Selected border ---- */}
       {isSelected && (
         <div
           className="absolute inset-0 pointer-events-none z-20"
-          style={{ boxShadow: 'inset 0 0 0 2px #E85D2A' }}
+          style={{ 
+            boxShadow: 'inset 0 0 0 2px #E85D2A, 0 0 8px rgba(232,93,42,0.35)',
+          }}
         />
       )}
 
@@ -288,19 +291,20 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
       <div
         {...dragHandleProps}
         className="absolute top-0 left-0 right-0 flex items-center justify-center cursor-grab active:cursor-grabbing z-30"
-        style={{ height: 12, background: 'rgba(0,0,0,0.45)' }}
+        style={{ height: 12, background: 'rgba(0,0,0,0.5)' }}
         title="Drag to reorder"
       >
-        <div className="w-8 h-[2px] rounded-full bg-white/35" />
+        <div className={`w-8 h-[2px] rounded-full transition-colors ${isSelected ? 'bg-[#E85D2A]' : 'bg-white/40'}`} />
       </div>
 
       {/* ---- Clip label ---- */}
       <div
-        className="absolute bottom-0 left-0 right-0 flex items-center px-2 pointer-events-none z-20 overflow-hidden"
-        style={{ height: 16, background: 'rgba(0,0,0,0.5)' }}
+        className="absolute bottom-0 left-0 right-0 flex items-center px-1.5 pointer-events-none z-20 overflow-hidden"
+        style={{ height: 16, background: 'rgba(0,0,0,0.7)' }}
       >
-        <span className="text-[7px] text-white/60 font-mono truncate tracking-wide">
-          {asset.media.sourceInfo.filename}
+        <span className="text-[7px] text-white/80 font-mono truncate tracking-wide flex items-center gap-1">
+          {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-[#E85D2A] shrink-0" />}
+          <span>{asset.media.sourceInfo.filename}</span>
           {isActiveDrag && !trimDrag?.fading && (
             <span className="text-[#E85D2A] ml-1">[{activeIn}–{activeOut}]</span>
           )}
