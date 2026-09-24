@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Header } from './components/Header';
 import { SettingsModal } from './components/SettingsModal';
+import { CharacterStudioModal } from './components/studio/CharacterStudioModal';
 import { DropZone } from './components/DropZone';
 import { TimelineTrack } from './components/TimelineTrack';
 import { OledCanvas } from './components/OledCanvas';
@@ -45,7 +46,8 @@ export default function App() {
   const [historyIndex, setHistoryIndex] = useState(0);
 
   // UI State
-  const [mediaPoolTab, setMediaPoolTab] = useState<'import' | 'samples' | 'recent'>('import');
+  const [mediaPoolTab, setMediaPoolTab] = useState<'import' | 'samples' | 'recent' | 'create'>('import');
+  const [studioOpen, setStudioOpen] = useState(false);
   const [serialConnected, setSerialConnected] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
@@ -782,6 +784,14 @@ export default function App() {
               >
                 RECENT
               </button>
+              <button 
+                onClick={() => setMediaPoolTab('create')}
+                className={`flex-1 py-2 text-[9px] font-bold font-mono tracking-widest cursor-pointer transition-colors ${
+                  mediaPoolTab === 'create' ? 'text-[#1A1A1A] border-b-2 border-[#E85D2A] bg-white' : 'text-[#e85d2a] hover:text-[#1A1A1A]'
+                }`}
+              >
+                ✨ CREATE
+              </button>
             </div>
 
             <div className="flex-1 flex flex-col min-h-0 overflow-y-auto z-[2] relative">
@@ -957,6 +967,18 @@ export default function App() {
                 </div>
               )}
 
+              {mediaPoolTab === 'create' && (
+                <div className="p-4 flex-1 flex flex-col items-center justify-center text-center gap-4 border border-dashed border-[#1A1A1A]/30 m-2">
+                  <p className="text-[10px] font-mono text-[#6B6B6B]">Generate parametric characters with automated line-boil</p>
+                  <button
+                    onClick={() => setStudioOpen(true)}
+                    className="py-3 px-6 bg-[#E85D2A] text-[#f5f0eb] text-xs font-mono font-bold tracking-widest border-2 border-[#1A1A1A] shadow-[4px_4px_0_#1A1A1A] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#1A1A1A] transition-all cursor-pointer"
+                  >
+                    ✨ LAUNCH CHARACTER STUDIO
+                  </button>
+                </div>
+              )}
+
               {mediaPoolTab === 'recent' && (
                 <div className="p-2.5">
                   {Object.values(assets).length === 0 ? (
@@ -1128,6 +1150,21 @@ export default function App() {
         targetFps={targetFps}
         xbmpFrames={exportXbmpFrames}
       />
+      {studioOpen && (
+        <CharacterStudioModal 
+          onClose={() => setStudioOpen(false)}
+          onInject={(charMedia) => {
+            const assetId = "asset_char_" + Date.now();
+            const clipId = "clip_" + Date.now();
+            setAssets(prev => ({ ...prev, [assetId]: { id: assetId, media: charMedia } }));
+            setClipsWithHistory(prev => [
+              ...prev,
+              { id: clipId, assetId, inFrame: 0, outFrame: charMedia.frames.length - 1 }
+            ]);
+            setStudioOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
