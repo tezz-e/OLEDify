@@ -319,7 +319,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <span className="text-[9px] font-mono text-[#666] font-bold uppercase tracking-wider">ZOOM</span>
-            <div className="w-36">
+            <div className="w-56 sm:w-64">
               <ElasticSlider
                 startingValue={0}
                 maxValue={100}
@@ -332,16 +332,6 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
               />
             </div>
           </div>
-
-          {onSplitClip && (
-            <button
-              onClick={onSplitClip}
-              className="text-[9px] font-mono font-bold text-[#E85D2A] hover:bg-[#E85D2A] hover:text-white px-2.5 py-1 border border-[#E85D2A]/40 rounded-md transition-colors cursor-pointer uppercase tracking-wider flex items-center gap-1.5 bg-white/50"
-              title="Split clip at playhead (Ctrl+B / S)"
-            >
-              ✂ SPLIT CLIP
-            </button>
-          )}
         </div>
       </div>
 
