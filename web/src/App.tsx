@@ -174,6 +174,47 @@ export default function App() {
     });
   };
 
+  const loadAshkeJson = async () => {
+    try {
+      const res = await fetch('/ashke.json');
+      const data = await res.json();
+      const frames: ExtractedFrame[] = await Promise.all(data.frames.map(async (b64: string, index: number) => {
+        const img = new Image();
+        img.src = b64;
+        await new Promise(r => img.onload = r);
+        const canvas = document.createElement('canvas');
+        canvas.width = 128; canvas.height = 64;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0);
+        return {
+          index,
+          timestampMs: index * (1000 / data.fps),
+          durationMs: 1000 / data.fps,
+          imageData: ctx.getImageData(0, 0, 128, 64)
+        };
+      }));
+      
+      const newMedia: DecodedMedia = {
+        sourceInfo: {
+          type: 'video', filename: 'ashke_generated', sourceWidth: 128, sourceHeight: 64,
+          frameCount: frames.length, fps: data.fps, durationMs: frames.length * (1000/data.fps)
+        },
+        frames
+      };
+      
+      const assetId = "asset_ashke_" + Date.now();
+      const clipId = "clip_" + Date.now();
+      
+      setAssets(prev => ({ ...prev, [assetId]: { id: assetId, media: newMedia } }));
+      setClipsWithHistory([{ id: clipId, assetId, inFrame: 0, outFrame: newMedia.frames.length - 1 }]);
+      setActiveFrameIndex(0);
+      setIsPlaying(false); if (data.fps) { setTargetFps(data.fps); }
+    } catch(e) {
+      console.error(e);
+      alert('Failed to load ashke.json');
+    }
+  };
+
   const handleLoadSample = useCallback((sampleType: SamplePresetType, mode: 'append' | 'replace' = 'append') => {
     const newMedia = generateSampleMedia(sampleType);
     const assetId = "asset_" + sampleType + "_" + Date.now();
@@ -184,7 +225,7 @@ export default function App() {
     if (mode === 'replace') {
       setClipsWithHistory([{ id: clipId, assetId, inFrame: 0, outFrame: newMedia.frames.length - 1 }]);
       setActiveFrameIndex(0);
-      setIsPlaying(false);
+      setIsPlaying(false); if (data.fps) { setTargetFps(data.fps); }
     } else {
       setClipsWithHistory(prev => [...prev, { id: clipId, assetId, inFrame: 0, outFrame: newMedia.frames.length - 1 }]);
     }
@@ -226,7 +267,7 @@ export default function App() {
     const clipId = "clip_" + Date.now();
     setClipsWithHistory([{ id: clipId, assetId, inFrame: 0, outFrame: asset.media.frames.length - 1 }]);
     setActiveFrameIndex(0);
-    setIsPlaying(false);
+    setIsPlaying(false); if (data.fps) { setTargetFps(data.fps); }
   }, [assets, setClipsWithHistory, handleLoadSample]);
 
   // Sample Thumbnails cache for NLE Grid Bin
@@ -369,13 +410,13 @@ export default function App() {
       // 3. Step 1 Frame Left / Right Arrow
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        setIsPlaying(false);
+        setIsPlaying(false); if (data.fps) { setTargetFps(data.fps); }
         setActiveFrameIndex(prev => Math.max(0, prev - 1));
         return;
       }
       if (e.key === 'ArrowRight') {
         e.preventDefault();
-        setIsPlaying(false);
+        setIsPlaying(false); if (data.fps) { setTargetFps(data.fps); }
         const maxLen = (timelineMedia?.frames.length ?? media?.frames.length ?? 1) - 1;
         setActiveFrameIndex(prev => Math.min(maxLen, prev + 1));
         return;
@@ -384,13 +425,13 @@ export default function App() {
       // 4. Jump to Start / End: Home / End
       if (e.key === 'Home') {
         e.preventDefault();
-        setIsPlaying(false);
+        setIsPlaying(false); if (data.fps) { setTargetFps(data.fps); }
         setActiveFrameIndex(0);
         return;
       }
       if (e.key === 'End') {
         e.preventDefault();
-        setIsPlaying(false);
+        setIsPlaying(false); if (data.fps) { setTargetFps(data.fps); }
         const maxLen = (timelineMedia?.frames.length ?? media?.frames.length ?? 1) - 1;
         setActiveFrameIndex(maxLen);
         return;
@@ -881,6 +922,13 @@ export default function App() {
                     <span className="text-[7px] font-mono text-[#888]">Double-click or drag card</span>
                   </div>
 
+                  <button 
+                    onClick={loadAshkeJson}
+                    className="w-full py-2 mb-2 bg-[#E85D2A] text-white font-mono text-[9px] font-bold tracking-widest uppercase hover:opacity-80 transition-opacity"
+                  >
+                    🔥 LOAD GENERATED "ASHKE" TEST EDIT
+                  </button>
+
                   <div className="grid grid-cols-2 gap-2">
                     {[
                       { id: 'dino', icon: '🦖', name: 'DINO RUNNER', tag: '30FPS' },
@@ -1064,7 +1112,7 @@ export default function App() {
                 onClipsChange={setClipsWithHistory}
                 activeGlobalFrame={activeFrameIndex} 
                 onFrameSelect={(i) => {
-                  setIsPlaying(false);
+                  setIsPlaying(false); if (data.fps) { setTargetFps(data.fps); }
                   setActiveFrameIndex(i);
                 }}
                 onPreviewAssetFrame={(assetId, frameIndex) => {
@@ -1093,11 +1141,11 @@ export default function App() {
                 targetFps={targetFps}
                 onFpsChange={setTargetFps}
                 onFrameSeek={(f) => {
-                  setIsPlaying(false);
+                  setIsPlaying(false); if (data.fps) { setTargetFps(data.fps); }
                   setActiveFrameIndex(f);
                 }}
                 onReset={() => {
-                  setIsPlaying(false);
+                  setIsPlaying(false); if (data.fps) { setTargetFps(data.fps); }
                   setActiveFrameIndex(0);
                 }}
               />
