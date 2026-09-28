@@ -27,7 +27,7 @@ export const ARCHETYPE_METADATA: Record<MotionArchetype, ArchetypeMeta> = {
     icon: '✨',
     name: 'AUTO SEMANTIC DIRECTOR',
     tag: 'DYNAMIC',
-    description: 'Auto-adapts motion style per word based on semantic meaning, beats & duration (Ashke style)'
+    description: 'Auto-adapts motion style per word dynamically based on semantic meaning, beats & duration'
   },
   blade_slash: {
     id: 'blade_slash',

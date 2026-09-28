@@ -66,7 +66,7 @@ export function computeSafeTextLayout(
     }
   }
 
-  // Tier 3: Extreme word (>10 chars, e.g. "THANGAMAANA") -> Syllabic / Midpoint Splitting
+  // Tier 3: Extreme word (>10 chars, e.g. "EXTRAORDINARY") -> Syllabic / Midpoint Splitting
   let splitLines: string[] = [];
   if (charCount > 10 && !clean.includes(' ')) {
     const mid = Math.ceil(charCount / 2);

@@ -13,7 +13,7 @@ const IMPACT_KEYWORDS = new Set([
   'crash', 'blast', 'hammer', 'heavy', 'thud', 'strike', 'fall', 'bullet', 'gun',
   'thaaka', 'rodhe', 'dhamaka', 'thok', 'fuego', 'shot', 'blast', 'fire', 'aag', 'toot',
   'shatter', 'knockout', 'stomp', 'ground', 'kill', 'destroy', 'goli', 'pistol', 'trigger',
-  'bass', 'loud', 'clash', 'bomb', 'attack', 'ashke', 'clout', 'pow'
+  'bass', 'loud', 'clash', 'bomb', 'attack', 'clout', 'pow'
 ]);
 
 const ANTHEM_KEYWORDS = new Set([

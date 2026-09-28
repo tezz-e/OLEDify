@@ -69,7 +69,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // --- KINETIC STYLE CONFIG ---
-  // Default to AUTO_SEMANTIC (Dynamic Director as seen in Ashke)
+  // Default to AUTO_SEMANTIC (Smart Adaptive Director)
   const [archetype, setArchetype] = useState<MotionArchetype>('auto_semantic');
   const [wordOverrides, setWordOverrides] = useState<Record<string, MotionArchetype>>({});
   const [editingWordTarget, setEditingWordTarget] = useState<EditingWordTarget | null>(null);
@@ -946,7 +946,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     </span>
                   </div>
                   <span className="text-[7px] font-bold bg-[#E85D2A] text-white px-1.5 py-0.5 tracking-wider uppercase rounded-xs">
-                    ASHKE DYNAMIC
+                    SMART ADAPTIVE
                   </span>
                 </div>
                 <p className={`text-[9px] leading-tight font-sans ${
