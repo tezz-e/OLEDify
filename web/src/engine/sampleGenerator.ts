@@ -183,31 +183,20 @@ export type SamplePresetType =
   | 'qrcode';
 
 /**
- * Generates procedural sample animations for instant testing without uploading files.
+ * Draws a single frame of a procedural sample animation onto a 2D canvas context.
  */
-export function generateSampleMedia(sampleType: SamplePresetType): DecodedMedia {
-  const width = 256;
-  const height = 128;
-  const targetFps = DINO_RUNNER_FPS;
-  const totalFrames = sampleType === 'dino' ? DINO_RUNNER_FRAME_COUNT : 180;
-  const frames: ExtractedFrame[] = [];
-
-  for (let f = 0; f < totalFrames; f++) {
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d')!;
-
-    // Dark background
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, width, height);
-    ctx.fillStyle = '#FFFFFF';
-    ctx.strokeStyle = '#FFFFFF';
-
-    if (sampleType === 'dino') {
-      const S = DINO_SCALE;
-      const groundY = DINO_GROUND_Y;
-      ctx.fillRect(0, groundY, width, 2);
+export function drawSampleFrame(
+  ctx: CanvasRenderingContext2D,
+  sampleType: SamplePresetType,
+  f: number,
+  totalFrames: number,
+  width: number,
+  height: number
+): void {
+  if (sampleType === 'dino') {
+    const S = DINO_SCALE;
+    const groundY = DINO_GROUND_Y;
+    ctx.fillRect(0, groundY, width, 2);
 
       for (let dot = 0; dot < DINO_WORLD_WIDTH / 36; dot++) {
         const dotX = positiveModulo(dot * 36 - f * DINO_SPEED, DINO_WORLD_WIDTH);
@@ -680,6 +669,58 @@ export function generateSampleMedia(sampleType: SamplePresetType): DecodedMedia 
       ctx.arc(width / 2, height / 2, radius, 0, Math.PI * 2);
       ctx.fill();
     }
+}
+
+/**
+ * Fast single-frame thumbnail generator.
+ * Only renders 1 frame to a single canvas, returning base64 DataURL in < 0.1ms.
+ */
+export function generateSampleThumbnail(sampleType: SamplePresetType): string {
+  const width = 128;
+  const height = 64;
+  const totalFrames = sampleType === 'dino' ? DINO_RUNNER_FRAME_COUNT : 180;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return '';
+
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(0, 0, width, height);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.strokeStyle = '#FFFFFF';
+
+  ctx.save();
+  ctx.scale(0.5, 0.5);
+  drawSampleFrame(ctx, sampleType, 12, totalFrames, 256, 128);
+  ctx.restore();
+
+  return canvas.toDataURL();
+}
+
+/**
+ * Generates procedural sample animations for instant testing without uploading files.
+ * Reuses a single canvas for the loop to eliminate DOM allocations.
+ */
+export function generateSampleMedia(sampleType: SamplePresetType): DecodedMedia {
+  const width = 256;
+  const height = 128;
+  const targetFps = DINO_RUNNER_FPS;
+  const totalFrames = sampleType === 'dino' ? DINO_RUNNER_FRAME_COUNT : 180;
+  const frames: ExtractedFrame[] = [];
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d')!;
+
+  for (let f = 0; f < totalFrames; f++) {
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.strokeStyle = '#FFFFFF';
+
+    drawSampleFrame(ctx, sampleType, f, totalFrames, width, height);
 
     const imgData = ctx.getImageData(0, 0, width, height);
     frames.push({

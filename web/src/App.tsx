@@ -1,19 +1,20 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Header } from './components/Header';
-import { SettingsModal } from './components/SettingsModal';
-import { CharacterStudioModal } from './components/studio/CharacterStudioModal';
-import { LyricsStudioView } from './components/studio/lyrics/LyricsStudioView';
 import { DropZone } from './components/DropZone';
 import { TimelineTrack } from './components/TimelineTrack';
 import { OledCanvas } from './components/OledCanvas';
 import { PlaybackBar } from './components/PlaybackBar';
 import { DitherControls } from './components/DitherControls';
 import { CropControls } from './components/CropControls';
-import { ExportModal } from './components/ExportModal';
 import { DecryptedText } from './components/reactbits/DecryptedText';
 import { CountUp } from './components/reactbits/CountUp';
-import Particles from './components/reactbits/Particles';
 import { BlueprintHoverCard } from './components/reactbits/BlueprintHoverCard';
+
+// Lazy-loaded heavy studios and modals to speed up initial page reload
+const SettingsModal = React.lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
+const CharacterStudioModal = React.lazy(() => import('./components/studio/CharacterStudioModal').then(m => ({ default: m.CharacterStudioModal })));
+const LyricsStudioView = React.lazy(() => import('./components/studio/lyrics/LyricsStudioView').then(m => ({ default: m.LyricsStudioView })));
+const ExportModal = React.lazy(() => import('./components/ExportModal').then(m => ({ default: m.ExportModal })));
 
 const themePalettes: Record<PhosphorTheme, string[]> = {
   cyan: ['#00F0FF', '#083B44', '#E0DBD5'],
@@ -30,7 +31,7 @@ import { HardwareConfig } from './types/oled';
 import { applyDithering, generateCppHeader } from './engine/ditherEngine';
 import { serialStreamer } from './engine/webSerialStreamer';
 import { renderCropTo128x64, imageDataToCanvas, computeCoverCrop } from './engine/cropEngine';
-import { generateSampleMedia, SamplePresetType } from './engine/sampleGenerator';
+import { generateSampleMedia, generateSampleThumbnail, SamplePresetType } from './engine/sampleGenerator';
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
   constructor(props: { children: React.ReactNode }) {
@@ -277,24 +278,20 @@ function MainApp() {
     setIsPlaying(false);
   }, [assets, setClipsWithHistory, handleLoadSample]);
 
-  // Sample Thumbnails cache for NLE Grid Bin
-  const sampleThumbnails = useMemo(() => {
+  // Sample Thumbnails cache for NLE Grid Bin (computed lazily ONLY when user visits 'samples' tab)
+  const [sampleThumbnails, setSampleThumbnails] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (mediaPoolTab !== 'samples') return;
+    if (Object.keys(sampleThumbnails).length > 0) return;
+
     const samples = ['dino', 'heartbeat', 'spinner', 'wificonnect', 'bouncing', 'pacman', 'battery', 'sinewave', 'ripple', 'analogclock', 'starfield', 'matrix', 'rain', 'badapple'] as const;
     const map: Record<string, string> = {};
     samples.forEach(id => {
-      const media = generateSampleMedia(id as any);
-      const frame = media.frames[Math.min(10, media.frames.length - 1)];
-      if (frame) {
-        const canvas = document.createElement('canvas');
-        canvas.width = frame.imageData.width;
-        canvas.height = frame.imageData.height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) ctx.putImageData(frame.imageData, 0, 0);
-        map[id] = canvas.toDataURL();
-      }
+      map[id] = generateSampleThumbnail(id as any);
     });
-    return map;
-  }, []);
+    setSampleThumbnails(map);
+  }, [mediaPoolTab, sampleThumbnails]);
 
   // Trimming is now handled at the clip level
 
@@ -1232,51 +1229,57 @@ function MainApp() {
         </aside>
       </main>
 
-      {/* Modals */}
-      <SettingsModal 
-        isOpen={settingsOpen} 
-        onClose={() => setSettingsOpen(false)} 
-        config={hardwareConfig} 
-        onChange={setHardwareConfig} 
-      />
-      <ExportModal 
-        isOpen={exportModalOpen} 
-        onClose={() => setExportModalOpen(false)} 
-        cppCode={cppCode} 
-        frameCount={media ? media.frames.length : 0}
-        targetFps={targetFps}
-        xbmpFrames={exportXbmpFrames}
-      />
-      {studioOpen && (
-        <CharacterStudioModal 
-          onClose={() => setStudioOpen(false)}
-          onInject={(charMedia) => {
-            const assetId = "asset_char_" + Date.now();
-            const clipId = "clip_" + Date.now();
-            setAssets(prev => ({ ...prev, [assetId]: { id: assetId, media: charMedia } }));
-            setClipsWithHistory(prev => [
-              ...prev,
-              { id: clipId, assetId, inFrame: 0, outFrame: charMedia.frames.length - 1 }
-            ]);
-            setStudioOpen(false);
-          }}
-        />
-      )}
-      {activeView === 'lyrics-studio' && (
-        <LyricsStudioView 
-          onClose={() => setActiveView('editor')}
-          onInjectToTimeline={(kineticMedia) => {
-            const assetId = "asset_kinetic_" + Date.now();
-            const clipId = "clip_" + Date.now();
-            setAssets(prev => ({ ...prev, [assetId]: { id: assetId, media: kineticMedia } }));
-            setClipsWithHistory(prev => [
-              ...prev,
-              { id: clipId, assetId, inFrame: 0, outFrame: kineticMedia.frames.length - 1 }
-            ]);
-            setActiveView('editor');
-          }}
-        />
-      )}
+      {/* Modals & Studios (Lazy-Loaded On Demand) */}
+      <React.Suspense fallback={null}>
+        {settingsOpen && (
+          <SettingsModal 
+            isOpen={settingsOpen} 
+            onClose={() => setSettingsOpen(false)} 
+            config={hardwareConfig} 
+            onChange={setHardwareConfig} 
+          />
+        )}
+        {exportModalOpen && (
+          <ExportModal 
+            isOpen={exportModalOpen} 
+            onClose={() => setExportModalOpen(false)} 
+            cppCode={cppCode} 
+            frameCount={media ? media.frames.length : 0}
+            targetFps={targetFps}
+            xbmpFrames={exportXbmpFrames}
+          />
+        )}
+        {studioOpen && (
+          <CharacterStudioModal 
+            onClose={() => setStudioOpen(false)}
+            onInject={(charMedia) => {
+              const assetId = "asset_char_" + Date.now();
+              const clipId = "clip_" + Date.now();
+              setAssets(prev => ({ ...prev, [assetId]: { id: assetId, media: charMedia } }));
+              setClipsWithHistory(prev => [
+                ...prev,
+                { id: clipId, assetId, inFrame: 0, outFrame: charMedia.frames.length - 1 }
+              ]);
+              setStudioOpen(false);
+            }}
+          />
+        )}
+        {activeView === 'lyrics-studio' && (
+          <LyricsStudioView 
+            onClose={() => setActiveView('editor')}
+            onInjectToTimeline={(kineticMedia) => {
+              const assetId = "asset_kinetic_" + Date.now();
+              const clipId = "clip_" + Date.now();
+              setAssets(prev => ({ ...prev, [assetId]: { id: assetId, media: kineticMedia } }));
+              setClipsWithHistory(prev => [
+                ...prev,
+                { id: clipId, assetId, inFrame: 0, outFrame: kineticMedia.frames.length - 1 }
+              ]);
+              setActiveView('editor');
+            }}
+          />
+        )}
+      </React.Suspense>
     </div>
   );
 }
