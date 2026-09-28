@@ -1,11 +1,17 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, Music, FileText, Upload, Play, Pause, ArrowLeft, Sparkles, Check, RefreshCw, X, RotateCcw, ChevronUp, ChevronDown, CheckCheck } from 'lucide-react';
+import { Search, Music, FileText, Upload, Play, Pause, ArrowLeft, Sparkles, Check, RefreshCw, X, RotateCcw, ChevronUp, ChevronDown, CheckCheck, Bot, Cpu } from 'lucide-react';
 import { searchLrclib, getLrclibExact, searchLyricsOvhFallback } from '../../../engine/lyrics/lrclibClient';
 import { parseLrc, parsePlainTextLyrics } from '../../../engine/lyrics/lrcParser';
 import { LrclibTrack, ParsedLyrics, LyricLine, LyricWord } from '../../../engine/lyrics/types';
 import { MotionArchetype, ARCHETYPE_METADATA } from '../../../engine/kinetic/types';
 import { renderKineticSequence } from '../../../engine/kinetic/kineticEngine';
 import { getWordEffectiveArchetype } from '../../../engine/kinetic/semanticClassifier';
+import {
+  checkOllamaHealth,
+  classifyLyricsWithOllama,
+  OllamaHealthStatus,
+  RECOMMENDED_OLLAMA_MODELS
+} from '../../../engine/kinetic/ollamaClassifier';
 import { DecodedMedia, ExtractedFrame } from '../../../types/media';
 import { OledCanvas } from '../../OledCanvas';
 import { GlassSurface } from '../../reactbits/GlassSurface';
@@ -76,6 +82,55 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const [fontFamily, setFontFamily] = useState('"IBM Plex Mono", monospace');
   const [isRendering, setIsRendering] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
+
+  // --- LOCAL OLLAMA INFERENCE STATE ---
+  const [inferenceMode, setInferenceMode] = useState<'heuristic' | 'ollama'>('heuristic');
+  const [ollamaStatus, setOllamaStatus] = useState<OllamaHealthStatus | null>(null);
+  const [selectedOllamaModel, setSelectedOllamaModel] = useState<string>('qwen2.5:3b');
+  const [isAnalyzingOllama, setIsAnalyzingOllama] = useState<boolean>(false);
+  const [ollamaProgress, setOllamaProgress] = useState<{ percent: number; message: string } | null>(null);
+
+  // Check Ollama status when user toggles to Ollama mode
+  useEffect(() => {
+    if (inferenceMode === 'ollama') {
+      checkOllamaHealth().then(status => {
+        setOllamaStatus(status);
+        if (status.online && status.recommendedModel) {
+          setSelectedOllamaModel(status.recommendedModel);
+        }
+      });
+    }
+  }, [inferenceMode]);
+
+  const handleRunOllamaAnalysis = async () => {
+    if (!parsedLyrics || parsedLyrics.lines.length === 0) return;
+    setIsAnalyzingOllama(true);
+    setOllamaProgress({ percent: 0, message: 'Connecting to Ollama...' });
+
+    try {
+      const selectedLines = parsedLyrics.lines.slice(selectedStartIndex, selectedEndIndex + 1);
+      const results = await classifyLyricsWithOllama(
+        selectedLines.length > 0 ? selectedLines : parsedLyrics.lines,
+        {
+          model: selectedOllamaModel,
+          songTitle: parsedLyrics.title || searchQuery,
+          artist: parsedLyrics.artist,
+          onProgress: (percent, message) => {
+            setOllamaProgress({ percent, message });
+          },
+        }
+      );
+
+      if (Object.keys(results).length > 0) {
+        setWordOverrides(prev => ({ ...prev, ...results }));
+      }
+    } catch (err: any) {
+      console.error('Ollama analysis failed:', err);
+    } finally {
+      setIsAnalyzingOllama(false);
+      setTimeout(() => setOllamaProgress(null), 3500);
+    }
+  };
 
   // --- PREVIEW FRAME IN OLED CANVAS ---
   const [previewFrame, setPreviewFrame] = useState<ImageData | null>(null);
@@ -925,7 +980,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             </div>
 
             {/* Featured Dynamic Semantic Director Hero Card */}
-            <div>
+            <div className="flex flex-col gap-2">
               <div
                 onClick={() => setArchetype('auto_semantic')}
                 className={`p-3 border-2 transition-all cursor-pointer flex flex-col gap-1.5 rounded-sm ${
@@ -954,6 +1009,124 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                 }`}>
                   Adapts typography style dynamically per word according to meaning, phonetics, vocal duration & beats (e.g. blade slashes for sharp words, impact slams for drops, 3D blocks for anthems).
                 </p>
+
+                {/* Inference Engine Sub-Selector */}
+                {archetype === 'auto_semantic' && (
+                  <div 
+                    onClick={(e) => e.stopPropagation()} 
+                    className={`mt-2 pt-2 border-t flex flex-col gap-2 ${
+                      themeMode === 'dark' ? 'border-white/10' : 'border-[#1A1A1A]/15'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[8px] font-mono uppercase font-bold text-[#6B6B6B]">
+                        INFERENCE ENGINE:
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setInferenceMode('heuristic')}
+                          className={`px-2 py-0.5 text-[8px] font-mono font-bold border transition-colors cursor-pointer ${
+                            inferenceMode === 'heuristic'
+                              ? 'bg-[#1A1A1A] text-white border-[#1A1A1A]'
+                              : themeMode === 'dark' ? 'border-white/20 text-white/60 hover:text-white' : 'border-[#1A1A1A]/30 text-[#6B6B6B]'
+                          }`}
+                        >
+                          ⚡ FAST HEURISTIC
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setInferenceMode('ollama')}
+                          className={`px-2 py-0.5 text-[8px] font-mono font-bold border transition-colors cursor-pointer flex items-center gap-1 ${
+                            inferenceMode === 'ollama'
+                              ? 'bg-[#E85D2A] text-white border-[#E85D2A]'
+                              : themeMode === 'dark' ? 'border-white/20 text-white/60 hover:text-white' : 'border-[#1A1A1A]/30 text-[#6B6B6B]'
+                          }`}
+                        >
+                          <Bot className="w-2.5 h-2.5" />
+                          <span>LOCAL OLLAMA</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Ollama Active Panel */}
+                    {inferenceMode === 'ollama' && (
+                      <div className={`p-2 border text-[9px] font-mono flex flex-col gap-1.5 ${
+                        themeMode === 'dark' ? 'bg-[#121215] border-white/10' : 'bg-white border-[#1A1A1A]/20'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[8px] text-[#888] font-bold">OLLAMA STATUS:</span>
+                          <span className={`text-[8px] font-bold flex items-center gap-1 ${
+                            ollamaStatus?.online ? 'text-emerald-500' : 'text-amber-500'
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${
+                              ollamaStatus?.online ? 'bg-emerald-500 shadow-[0_0_5px_#10B981]' : 'bg-amber-500'
+                            }`} />
+                            {ollamaStatus?.online ? `CONNECTED (${ollamaStatus.version || 'v0.x'})` : 'OFFLINE (http://localhost:11434)'}
+                          </span>
+                        </div>
+
+                        {ollamaStatus?.online ? (
+                          <>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-[8px] text-[#888]">MODEL:</span>
+                              <select
+                                value={selectedOllamaModel}
+                                onChange={(e) => setSelectedOllamaModel(e.target.value)}
+                                className={`text-[8px] font-mono p-1 border outline-none ${
+                                  themeMode === 'dark' ? 'bg-[#1E1E24] text-white border-white/20' : 'bg-white text-black border-[#1A1A1A]'
+                                }`}
+                              >
+                                {(ollamaStatus.models.length > 0 ? ollamaStatus.models : RECOMMENDED_OLLAMA_MODELS).map(m => (
+                                  <option key={m} value={m}>{m} {m === 'qwen2.5:3b' ? '★ Recommended (2GB VRAM)' : ''}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={handleRunOllamaAnalysis}
+                              disabled={isAnalyzingOllama}
+                              className={`w-full py-1.5 px-2 text-[9px] font-bold uppercase tracking-wider font-mono border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                                isAnalyzingOllama
+                                  ? 'bg-[#E85D2A]/30 text-white cursor-wait border-[#E85D2A]'
+                                  : 'bg-[#E85D2A] text-white hover:bg-[#d44c1a] border-[#E85D2A]'
+                              }`}
+                            >
+                              {isAnalyzingOllama ? (
+                                <>
+                                  <RefreshCw className="w-3 h-3 animate-spin" />
+                                  <span>{ollamaProgress?.message || 'ANALYZING...'}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="w-3 h-3" />
+                                  <span>ANALYZE LYRICS WITH {selectedOllamaModel.toUpperCase()}</span>
+                                </>
+                              )}
+                            </button>
+
+                            {ollamaProgress && (
+                              <div className="w-full bg-black/10 dark:bg-white/10 h-1 overflow-hidden">
+                                <div 
+                                  className="bg-[#E85D2A] h-full transition-all duration-300" 
+                                  style={{ width: `${ollamaProgress.percent}%` }}
+                                />
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="text-[8px] text-[#888] flex flex-col gap-1 leading-normal border-t border-dashed border-[#1A1A1A]/20 pt-1.5">
+                            <span className="font-bold text-[#E85D2A]">TO RUN LOCAL OLLAMA ON YOUR GTX 1650:</span>
+                            <span>1. In PowerShell: <code className="bg-black/10 dark:bg-white/10 px-1">winget install Ollama.Ollama</code></span>
+                            <span>2. Launch model: <code className="bg-black/10 dark:bg-white/10 px-1">ollama run qwen2.5:3b</code> (Fits 2 GB VRAM)</span>
+                            <span className="opacity-70 italic mt-0.5">Studio will automatically fall back to Fast Heuristic mode until connected.</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 

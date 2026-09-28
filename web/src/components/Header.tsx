@@ -1,8 +1,9 @@
-import React from 'react';
-import { Settings } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Settings, Cpu } from 'lucide-react';
 import { DecryptedText } from './reactbits/DecryptedText';
 import { ClickSpark } from './reactbits/ClickSpark';
 import SpecularButton from './reactbits/SpecularButton';
+import { detectGpu, GpuTelemetry } from '../engine/gpuDetector';
 
 interface HeaderProps {
   serialConnected: boolean;
@@ -29,6 +30,11 @@ export const Header: React.FC<HeaderProps> = ({
   activeView = 'editor',
   onViewChange,
 }) => {
+  const [gpuInfo, setGpuInfo] = useState<GpuTelemetry | null>(null);
+
+  useEffect(() => {
+    setGpuInfo(detectGpu());
+  }, []);
   return (
     <header className="relative w-full h-14 px-6 bg-white border-b-2 border-[#1A1A1A] flex items-center justify-between shrink-0 z-20">
       <div className="flex items-center">
@@ -72,6 +78,26 @@ export const Header: React.FC<HeaderProps> = ({
       )}
       
       <div className="flex items-center space-x-3">
+        {gpuInfo && gpuInfo.webGlSupported && (
+          <div
+            onClick={onSettingsOpen}
+            className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 border border-[#1A1A1A] bg-[#F5F0EB] text-[9px] font-mono cursor-pointer hover:border-[#E85D2A] transition-colors"
+            title={`${gpuInfo.renderer}\nArchitecture: ${gpuInfo.isDedicated ? 'Dedicated GPU' : 'Integrated GPU'}`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                gpuInfo.isDedicated ? 'bg-emerald-500 shadow-[0_0_5px_#10B981]' : 'bg-amber-500'
+              }`}
+            />
+            <span className="font-bold text-[#1A1A1A]">{gpuInfo.simplifiedName}</span>
+            <span className={`text-[7px] px-1 py-0.2 font-bold uppercase rounded-xs ${
+              gpuInfo.isDedicated ? 'bg-[#1A1A1A] text-white' : 'bg-amber-100 text-amber-900 border border-amber-300'
+            }`}>
+              {gpuInfo.isDedicated ? 'DEDICATED' : 'INTEGRATED'}
+            </span>
+          </div>
+        )}
+
         <button 
           onClick={onSettingsOpen}
           className="p-2 bg-white border border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white transition-colors duration-150 rounded-none cursor-pointer"

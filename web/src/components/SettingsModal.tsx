@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Settings, Cpu, Monitor, X } from 'lucide-react';
 import { HardwareConfig, Microcontroller, DisplayController } from '../types/oled';
 import { GlassSurface } from './reactbits/GlassSurface';
+import { detectGpu } from '../engine/gpuDetector';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface SettingsModalProps {
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, onChange }) => {
+  const gpuInfo = useMemo(() => detectGpu(), []);
   if (!isOpen) return null;
 
   const mcuOptions: { value: Microcontroller; label: string }[] = [
@@ -113,7 +115,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
             />
           </div>
 
-          <div className="space-y-1">
+              <div className="space-y-1">
             <label className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">SCL_PIN_(GPIO)</label>
             <input
               type="number"
@@ -121,6 +123,37 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
               onChange={(e) => onChange({ ...config, sclPin: parseInt(e.target.value, 10) || 0 })}
               className="w-full bg-white border border-[#1A1A1A] px-2.5 py-1 text-xs text-[#1A1A1A] font-mono focus:border-[#E85D2A] outline-none rounded-none"
             />
+          </div>
+        </div>
+
+        {/* GPU Hardware Telemetry Diagnostics */}
+        <div className="px-4 pb-4">
+          <div className="p-3 border border-[#1A1A1A] bg-[#F5F0EB]/80 flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider font-mono text-[#1A1A1A] flex items-center gap-1.5">
+                <Cpu className="w-3.5 h-3.5 text-[#E85D2A]" /> HOST ACCELERATOR (GPU)
+              </span>
+              <span
+                className={`text-[8px] font-bold font-mono px-1.5 py-0.5 uppercase tracking-wider ${
+                  gpuInfo.isDedicated
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-amber-500 text-white'
+                }`}
+              >
+                {gpuInfo.isDedicated ? 'DEDICATED GPU ACTIVE' : 'INTEGRATED GPU'}
+              </span>
+            </div>
+            <div className="text-[11px] font-mono text-[#1A1A1A] font-bold">
+              {gpuInfo.simplifiedName}
+            </div>
+            <div className="text-[8px] font-mono text-[#6B6B6B] break-all leading-tight">
+              {gpuInfo.renderer}
+            </div>
+            {!gpuInfo.isDedicated && (
+              <div className="mt-1 text-[9px] text-[#E85D2A] font-mono border-t border-[#1A1A1A]/10 pt-1 leading-snug">
+                ⚠️ Rendering on low-power iGPU. To unlock full NVDEC/hardware speed, assign Edge to "High performance" in Windows Graphics Settings.
+              </div>
+            )}
           </div>
         </div>
       </GlassSurface>
