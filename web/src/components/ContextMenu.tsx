@@ -149,10 +149,10 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     <AnimatePresence>
       <motion.div 
         ref={menuRef}
-        initial={{ opacity: 0, scale: 0.88, rotate: -1.5, y: -6 }}
-        animate={{ opacity: 1, scale: 1, rotate: 0, y: 0 }}
-        exit={{ opacity: 0, scale: 0.92, rotate: 1, y: -4 }}
-        transition={{ type: 'spring', damping: 26, stiffness: 520, mass: 0.45 }}
+        initial={{ opacity: 0, scale: 0.96, y: -4 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96 }}
+        transition={{ duration: 0.12 }}
         style={{ 
           left: safeX, 
           top: safeY, 
@@ -163,183 +163,164 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
           e.preventDefault();
           e.stopPropagation();
         }}
-        className="fixed z-[99999] w-[220px] max-h-[calc(100vh-16px)] overflow-y-auto bg-[#FAF7F2] text-[#1A1A1A] border-2 border-[#1A1A1A] shadow-[4px_4px_0_0_#1A1A1A] p-1.5 select-none font-mono text-xs pointer-events-auto rounded-none"
+        className="fixed z-[99999] w-[210px] max-h-[calc(100vh-16px)] overflow-y-auto bg-white/95 backdrop-blur-md text-[#141413] border border-[#E8E5DE] rounded-xl shadow-lg p-1.5 select-none font-sans text-xs pointer-events-auto"
       >
-        {/* Paper Blueprint Header Badge */}
-        <div className="px-2.5 py-1.5 mb-2 bg-[#EFECE6] border border-[#1A1A1A] flex justify-between items-center shadow-[1px_1px_0_0_#1A1A1A]">
-          <span className="text-[9px] font-bold tracking-widest text-[#E85D2A] uppercase flex items-center gap-1.5 font-mono">
-            <span className="w-2 h-2 bg-[#E85D2A] border border-[#1A1A1A] animate-pulse shrink-0" />
-            {hasSpecificClip ? 'CLIP EDITING' : 'TIMELINE MENU'}
+        {/* Subtle Header */}
+        <div className="px-2.5 py-1 mb-1 border-b border-[#E8E5DE] flex justify-between items-center">
+          <span className="text-[10px] font-sans font-medium text-[#87867F] uppercase tracking-wider">
+            {hasSpecificClip ? 'Clip Actions' : 'Timeline'}
           </span>
-          <span className="text-[8px] font-mono text-[#6B6B6B] font-bold tracking-wider">NLE // 2.0</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-[#D97757]" />
         </div>
 
         <div className="space-y-0.5 relative">
           {/* Split Action */}
           {onSplitClip && (
-            <motion.button 
-              whileHover={{ x: 2 }}
-              whileTap={{ scale: 0.97 }}
+            <button 
               onClick={(e) => {
                 e.stopPropagation();
                 onSplitClip();
                 onClose();
               }}
-              className="w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group hover:bg-[#E85D2A] hover:text-white hover:border-[#1A1A1A] border border-transparent rounded-none text-[#1A1A1A] font-bold"
+              className="w-full text-left px-2.5 py-1.5 rounded-lg flex justify-between items-center transition-colors cursor-pointer text-[#141413] hover:bg-[#FAF0EB] hover:text-[#D97757]"
             >
-              <span className="flex items-center gap-2 font-medium text-[10px]">
-                <span className="text-[#E85D2A] group-hover:text-white">✂</span> Split at Playhead
+              <span className="flex items-center gap-2 font-medium text-xs">
+                <span>✂</span> Split at Playhead
               </span>
-              <kbd className="text-[8px] bg-white border border-[#1A1A1A] px-1 py-0.5 text-[#1A1A1A] font-mono font-bold shadow-[1px_1px_0_0_#1A1A1A] group-hover:bg-[#1A1A1A] group-hover:text-white group-hover:border-white">Ctrl+B</kbd>
-            </motion.button>
+              <kbd className="text-[10px] bg-[#FAF9F5] border border-[#E8E5DE] px-1.5 py-0.5 text-[#5E5D59] font-mono rounded">Ctrl+B</kbd>
+            </button>
           )}
 
           {hasSpecificClip && (
             <>
               {/* Duplicate */}
-              <motion.button 
-                whileHover={{ x: 2 }}
-                whileTap={{ scale: 0.97 }}
+              <button 
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDuplicate();
                 }}
-                className="w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group hover:bg-[#E85D2A] hover:text-white hover:border-[#1A1A1A] border border-transparent rounded-none text-[#1A1A1A] font-bold"
+                className="w-full text-left px-2.5 py-1.5 rounded-lg flex justify-between items-center transition-colors cursor-pointer text-[#141413] hover:bg-[#FAF0EB] hover:text-[#D97757]"
               >
-                <span className="flex items-center gap-2 font-medium text-[10px]">
+                <span className="flex items-center gap-2 font-medium text-xs">
                   <span>📄</span> Duplicate Clip
                 </span>
-                <kbd className="text-[8px] bg-white border border-[#1A1A1A] px-1 py-0.5 text-[#1A1A1A] font-mono font-bold shadow-[1px_1px_0_0_#1A1A1A] group-hover:bg-[#1A1A1A] group-hover:text-white group-hover:border-white">Ctrl+D</kbd>
-              </motion.button>
+                <kbd className="text-[10px] bg-[#FAF9F5] border border-[#E8E5DE] px-1.5 py-0.5 text-[#5E5D59] font-mono rounded">Ctrl+D</kbd>
+              </button>
 
               {/* Reset Trim */}
-              <motion.button 
-                whileHover={{ x: 2 }}
-                whileTap={{ scale: 0.97 }}
+              <button 
                 onClick={(e) => {
                   e.stopPropagation();
                   handleResetTrim();
                 }}
-                className="w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group hover:bg-[#E85D2A] hover:text-white hover:border-[#1A1A1A] border border-transparent rounded-none text-[#1A1A1A] font-bold"
+                className="w-full text-left px-2.5 py-1.5 rounded-lg flex justify-between items-center transition-colors cursor-pointer text-[#141413] hover:bg-[#FAF0EB] hover:text-[#D97757]"
               >
-                <span className="flex items-center gap-2 font-medium text-[10px]">
+                <span className="flex items-center gap-2 font-medium text-xs">
                   <span>↺</span> Reset Trim Bounds
                 </span>
-              </motion.button>
+              </button>
 
               {/* Reorder Left / Right Buttons */}
               {clips.length > 1 && (
-                <div className="flex gap-1 py-0.5">
-                  <motion.button 
-                    whileTap={{ scale: 0.95 }}
+                <div className="flex gap-1.5 py-1 px-1">
+                  <button 
                     onClick={(e) => {
                       e.stopPropagation();
                       handleMoveClip('left');
                     }}
-                    className="flex-1 px-1.5 py-0.5 text-[8px] font-mono font-bold border border-[#1A1A1A] bg-white hover:bg-[#E85D2A] hover:text-white shadow-[1px_1px_0_0_#1A1A1A] transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                    className="flex-1 py-1 text-[11px] font-sans font-medium border border-[#E8E5DE] bg-[#FAF9F5] hover:bg-[#FAF0EB] hover:text-[#D97757] rounded-md transition-colors flex items-center justify-center gap-1 cursor-pointer"
                     title="Move clip left in timeline"
                   >
-                    ⬅ Left
-                  </motion.button>
-                  <motion.button 
-                    whileTap={{ scale: 0.95 }}
+                    ← Move Left
+                  </button>
+                  <button 
                     onClick={(e) => {
                       e.stopPropagation();
                       handleMoveClip('right');
                     }}
-                    className="flex-1 px-1.5 py-0.5 text-[8px] font-mono font-bold border border-[#1A1A1A] bg-white hover:bg-[#E85D2A] hover:text-white shadow-[1px_1px_0_0_#1A1A1A] transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                    className="flex-1 py-1 text-[11px] font-sans font-medium border border-[#E8E5DE] bg-[#FAF9F5] hover:bg-[#FAF0EB] hover:text-[#D97757] rounded-md transition-colors flex items-center justify-center gap-1 cursor-pointer"
                     title="Move clip right in timeline"
                   >
-                    Right ➡️
-                  </motion.button>
+                    Move Right →
+                  </button>
                 </div>
               )}
 
-              <div className="h-px bg-[#1A1A1A]/20 my-0.5 mx-0.5" />
+              <div className="h-px bg-[#E8E5DE] my-1 mx-1" />
 
               {/* Delete Clip */}
-              <motion.button 
-                whileHover={{ x: 2 }}
-                whileTap={{ scale: 0.97 }}
+              <button 
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDelete();
                 }}
-                className="w-full text-left px-2 py-1 flex justify-between items-center text-[#D32F2F] hover:bg-[#D32F2F] hover:text-white transition-all cursor-pointer group border border-transparent hover:border-[#1A1A1A] font-bold"
+                className="w-full text-left px-2.5 py-1.5 rounded-lg flex justify-between items-center text-[#C53030] hover:bg-[#FFF5F5] transition-colors cursor-pointer"
               >
-                <span className="flex items-center gap-2 font-medium text-[10px]">
+                <span className="flex items-center gap-2 font-medium text-xs">
                   <span>🗑</span> Delete Clip
                 </span>
-                <kbd className="text-[8px] bg-white border border-[#1A1A1A] px-1 py-0.5 text-[#1A1A1A] font-mono font-bold shadow-[1px_1px_0_0_#1A1A1A] group-hover:bg-[#1A1A1A] group-hover:text-white group-hover:border-white">DEL</kbd>
-              </motion.button>
+                <kbd className="text-[10px] bg-[#FFF5F5] border border-[#FED7D7] px-1.5 py-0.5 text-[#C53030] font-mono rounded">DEL</kbd>
+              </button>
             </>
           )}
 
           {/* Section Divider */}
-          <div className="h-px bg-[#1A1A1A]/20 my-0.5 mx-0.5" />
+          <div className="h-px bg-[#E8E5DE] my-1 mx-1" />
 
           {/* Timeline & Selection Actions */}
-          <motion.button 
-            whileHover={{ x: 2 }}
-            whileTap={{ scale: 0.97 }}
+          <button 
             onClick={(e) => {
               e.stopPropagation();
               handleSelectAll();
             }}
-            className="w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group hover:bg-[#E85D2A] hover:text-white hover:border-[#1A1A1A] border border-transparent rounded-none text-[#1A1A1A] font-bold"
+            className="w-full text-left px-2.5 py-1.5 rounded-lg flex justify-between items-center transition-colors cursor-pointer text-[#141413] hover:bg-[#FAF0EB] hover:text-[#D97757]"
           >
-            <span className="flex items-center gap-2 font-medium text-[10px]">
-              <span>🎯</span> Select All Clips
+            <span className="flex items-center gap-2 font-medium text-xs">
+              <span>🎯</span> Select All
             </span>
-            <kbd className="text-[8px] bg-white border border-[#1A1A1A] px-1 py-0.5 text-[#1A1A1A] font-mono font-bold shadow-[1px_1px_0_0_#1A1A1A] group-hover:bg-[#1A1A1A] group-hover:text-white group-hover:border-white">Ctrl+A</kbd>
-          </motion.button>
+            <kbd className="text-[10px] bg-[#FAF9F5] border border-[#E8E5DE] px-1.5 py-0.5 text-[#5E5D59] font-mono rounded">Ctrl+A</kbd>
+          </button>
 
-          <motion.button 
-            whileHover={{ x: 2 }}
-            whileTap={{ scale: 0.97 }}
+          <button 
             onClick={(e) => {
               e.stopPropagation();
               handleDeselectAll();
             }}
-            className="w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group hover:bg-[#E85D2A] hover:text-white hover:border-[#1A1A1A] border border-transparent rounded-none text-[#1A1A1A] font-bold"
+            className="w-full text-left px-2.5 py-1.5 rounded-lg flex justify-between items-center transition-colors cursor-pointer text-[#141413] hover:bg-[#FAF0EB] hover:text-[#D97757]"
           >
-            <span className="flex items-center gap-2 font-medium text-[10px]">
+            <span className="flex items-center gap-2 font-medium text-xs">
               <span>✖</span> Deselect All
             </span>
-          </motion.button>
+          </button>
 
           {onZoomChange && (
-            <motion.button 
-              whileHover={{ x: 2 }}
-              whileTap={{ scale: 0.97 }}
+            <button 
               onClick={(e) => {
                 e.stopPropagation();
                 handleResetZoom();
               }}
-              className="w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group hover:bg-[#E85D2A] hover:text-white hover:border-[#1A1A1A] border border-transparent rounded-none text-[#1A1A1A] font-bold"
+              className="w-full text-left px-2.5 py-1.5 rounded-lg flex justify-between items-center transition-colors cursor-pointer text-[#141413] hover:bg-[#FAF0EB] hover:text-[#D97757]"
             >
-              <span className="flex items-center gap-2 font-medium text-[10px]">
-                <span>🔍</span> Reset Zoom (100%)
+              <span className="flex items-center gap-2 font-medium text-xs">
+                <span>🔍</span> Reset Zoom
               </span>
-            </motion.button>
+            </button>
           )}
 
           {!hasSpecificClip && clips.length > 0 && (
             <>
-              <div className="h-px bg-[#1A1A1A]/20 my-0.5 mx-0.5" />
-              <motion.button 
-                whileHover={{ x: 2 }}
-                whileTap={{ scale: 0.97 }}
+              <div className="h-px bg-[#E8E5DE] my-1 mx-1" />
+              <button 
                 onClick={(e) => {
                   e.stopPropagation();
                   handleClearAll();
                 }}
-                className="w-full text-left px-2 py-1 flex justify-between items-center text-[#D32F2F] hover:bg-[#D32F2F] hover:text-white transition-all cursor-pointer group border border-transparent hover:border-[#1A1A1A] font-bold"
+                className="w-full text-left px-2.5 py-1.5 rounded-lg flex justify-between items-center text-[#C53030] hover:bg-[#FFF5F5] transition-colors cursor-pointer"
               >
-                <span className="flex items-center gap-2 font-medium text-[10px]">
+                <span className="flex items-center gap-2 font-medium text-xs">
                   <span>🧹</span> Clear All Clips
                 </span>
-              </motion.button>
+              </button>
             </>
           )}
         </div>

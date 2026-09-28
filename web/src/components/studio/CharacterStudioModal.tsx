@@ -179,7 +179,7 @@ export function CharacterStudioModal({ onClose, onInject }: CharacterStudioModal
         {/* Header */}
         <div className="bg-[#1a1a1a] text-[#f5f0eb] p-3 flex justify-between items-center">
           <h2 className="font-mono text-xl tracking-widest uppercase">✨ Character Studio</h2>
-          <button onClick={onClose} className="hover:text-[#e85d2a]">✕</button>
+          <button onClick={onClose} className="hover:text-[#D97757]">✕</button>
         </div>
 
         <div className="p-6 flex flex-col md:flex-row gap-6">
@@ -209,7 +209,7 @@ export function CharacterStudioModal({ onClose, onInject }: CharacterStudioModal
                     type="text" 
                     value={textContent}
                     onChange={e => setTextContent(e.target.value)}
-                    className="w-full bg-white border-2 border-[#1a1a1a] p-2 outline-none focus:border-[#e85d2a]"
+                    className="w-full bg-white border-2 border-[#1a1a1a] p-2 outline-none focus:border-[#D97757]"
                   />
                 </div>
                 <div>
@@ -217,7 +217,7 @@ export function CharacterStudioModal({ onClose, onInject }: CharacterStudioModal
                   <select 
                     value={fontFamily}
                     onChange={e => setFontFamily(e.target.value)}
-                    className="w-full bg-white border-2 border-[#1a1a1a] p-2 outline-none focus:border-[#e85d2a]"
+                    className="w-full bg-white border-2 border-[#1a1a1a] p-2 outline-none focus:border-[#D97757]"
                   >
                     <option value="VT323">VT323 (Pixel)</option>
                     <option value="Impact">Impact (Heavy)</option>
@@ -233,7 +233,7 @@ export function CharacterStudioModal({ onClose, onInject }: CharacterStudioModal
                   <select 
                     value={archetype}
                     onChange={e => setArchetype(e.target.value as any)}
-                    className="w-full bg-white border-2 border-[#1a1a1a] p-2 outline-none focus:border-[#e85d2a]"
+                    className="w-full bg-white border-2 border-[#1a1a1a] p-2 outline-none focus:border-[#D97757]"
                   >
                     <option value="bottts">Robot (Bottts)</option>
                     <option value="pixelArt">Pixel Character</option>
@@ -249,11 +249,11 @@ export function CharacterStudioModal({ onClose, onInject }: CharacterStudioModal
                       type="text" 
                       value={seed}
                       onChange={e => setSeed(e.target.value)}
-                      className="flex-1 bg-white border-2 border-[#1a1a1a] p-2 outline-none focus:border-[#e85d2a]"
+                      className="flex-1 bg-white border-2 border-[#1a1a1a] p-2 outline-none focus:border-[#D97757]"
                     />
                     <button 
                       onClick={() => setSeed(Math.random().toString(36).substring(7))}
-                      className="bg-[#1a1a1a] text-white px-4 border-2 border-[#1a1a1a] hover:bg-[#e85d2a] hover:border-[#e85d2a]"
+                      className="bg-[#1a1a1a] text-white px-4 border-2 border-[#1a1a1a] hover:bg-[#D97757] hover:border-[#D97757]"
                     >
                       🎲
                     </button>
@@ -293,7 +293,7 @@ export function CharacterStudioModal({ onClose, onInject }: CharacterStudioModal
             <button 
               onClick={handleInject}
               disabled={isGenerating}
-              className="w-full py-3 bg-[#e85d2a] text-white font-mono font-bold tracking-widest border-2 border-[#1a1a1a] shadow-[4px_4px_0_#1a1a1a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#1a1a1a] transition-all disabled:opacity-50"
+              className="w-full py-3 bg-[#D97757] text-white font-mono font-bold tracking-widest border-2 border-[#1a1a1a] shadow-[4px_4px_0_#1a1a1a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#1a1a1a] transition-all disabled:opacity-50"
             >
               INJECT TO TIMELINE ↴
             </button>

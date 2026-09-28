@@ -30,7 +30,7 @@ export const ThemeSwitch: React.FC<ThemeSwitchProps> = ({
         type="button"
         onClick={() => onChange('light')}
         className={`flex items-center gap-1 text-[9px] font-bold tracking-wider uppercase transition-colors cursor-pointer ${
-          !isDark ? 'text-[#E85D2A]' : 'text-white/40 hover:text-white/70'
+          !isDark ? 'text-[#D97757]' : 'text-white/40 hover:text-white/70'
         }`}
         title="Switch to uniform Light Mode"
       >
@@ -48,7 +48,7 @@ export const ThemeSwitch: React.FC<ThemeSwitchProps> = ({
         trackColor="#D4CEC5"
         trackOnColor="#2B2B33"
         thumbColor="#1A1A1A"
-        thumbOnColor="#E85D2A"
+        thumbOnColor="#D97757"
         speed={55}
         stretch={40}
         ariaLabel="Toggle between Light and Dark mode"

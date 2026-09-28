@@ -8,7 +8,6 @@ import { DitherControls } from './components/DitherControls';
 import { CropControls } from './components/CropControls';
 import { DecryptedText } from './components/reactbits/DecryptedText';
 import { CountUp } from './components/reactbits/CountUp';
-import { BlueprintHoverCard } from './components/reactbits/BlueprintHoverCard';
 
 // Lazy-loaded heavy studios and modals to speed up initial page reload
 const SettingsModal = React.lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
@@ -50,18 +49,21 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
   render() {
     if (this.state.hasError) {
       return (
-        <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#F5F0EB] text-[#1A1A1A] p-6 font-mono">
-          <div className="bg-white border-2 border-[#1A1A1A] p-6 max-w-lg shadow-[8px_8px_0_0_#1A1A1A] flex flex-col gap-4">
-            <h2 className="text-sm font-bold text-[#E85D2A] uppercase tracking-wider">⚠️ RECOVERY MODE ACTIVATED</h2>
-            <p className="text-xs text-[#6B6B6B]">An unexpected runtime error occurred, but application state was preserved.</p>
-            <pre className="p-3 bg-[#1A1A1A] text-white text-[10px] rounded overflow-auto max-h-36">
+        <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#FAF9F5] text-[#141413] p-6 font-sans">
+          <div className="bg-white border border-[#E8E5DE] rounded-2xl p-6 max-w-lg shadow-xl flex flex-col gap-4">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#D97757]" />
+              <h2 className="font-serif text-lg text-[#141413]">Application Error Preserved</h2>
+            </div>
+            <p className="text-xs text-[#5E5D59] leading-relaxed">An unexpected runtime error occurred, but application state was preserved.</p>
+            <pre className="p-3 bg-[#FAF9F5] border border-[#E8E5DE] text-[#141413] text-[11px] font-mono rounded-lg overflow-auto max-h-36">
               {this.state.error?.message || 'Unknown error'}
             </pre>
             <button
               onClick={() => { this.setState({ hasError: false, error: null }); window.location.reload(); }}
-              className="py-2 px-4 bg-[#E85D2A] text-white text-xs font-bold border border-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white transition-colors cursor-pointer"
+              className="py-2 px-4 bg-[#141413] hover:bg-[#2A2926] text-[#FAF9F5] text-xs font-sans font-medium rounded-lg shadow-xs transition-colors cursor-pointer w-fit"
             >
-              RELOAD STUDIO
+              Reload Application
             </button>
           </div>
         </div>
@@ -676,27 +678,21 @@ function MainApp() {
       />
 
       <main className="flex-1 flex flex-col min-h-0 z-10">
-        {/* Top: New 3-Column Preview Section */}
-        <section className="flex-1 flex items-stretch bg-[#F5F0EB] relative min-h-0 border-b border-[#1A1A1A]/20" style={{
-          backgroundImage: `
-            repeating-linear-gradient(0deg, #e0dbd5 0 1px, transparent 1px 40px),
-            repeating-linear-gradient(90deg, #e0dbd5 0 1px, transparent 1px 40px)
-          `
-        }}>
-          {/* Column 1: Full Preview */}
-          <div className="flex-[2.5] p-2 lg:p-4 flex flex-col items-center justify-start relative border-r border-[#1A1A1A]/20 min-w-0 h-full">
+        {/* Top: 3-Column Studio Preview Section */}
+        <section className="flex-1 flex items-stretch bg-[#FAF9F5] relative min-h-0 border-b border-[#E8E5DE]">
+          {/* Column 1: Full Frame Preview */}
+          <div className="flex-[2.5] p-3 lg:p-5 flex flex-col items-center justify-start relative border-r border-[#E8E5DE] min-w-0 h-full bg-[#FAF9F5]">
             <div className="w-full flex flex-col items-center justify-start h-full min-h-0">
-              <div className="mb-1.5 shrink-0 text-center w-full">
-                <h3 className="font-mono font-bold text-xs tracking-wider text-[#1A1A1A]">FULL PREVIEW</h3>
-                <p className="font-mono text-[10px] text-[#6B6B6B]">See the full video/animation here at normal scale</p>
+              <div className="mb-2 shrink-0 text-center w-full">
+                <h3 className="font-serif text-sm tracking-tight text-[#141413]">Full Frame View</h3>
+                <p className="font-sans text-[11px] text-[#5E5D59]">Native canvas buffer at 1:1 aspect ratio</p>
               </div>
               
               <div className="flex-1 w-full relative min-h-0">
                 <div className="absolute inset-0 p-1 flex items-center justify-center">
                   
-                  {/* Flawless Aspect-Ratio Bounding Box (Always Stable 572:367 Container) */}
+                  {/* Aspect-Ratio Bounding Box Container */}
                   <div className="relative flex items-center justify-center max-w-full max-h-full shrink-0">
-                    {/* Sizing SVG establishing constant 572:367 box size before & after media import */}
                     <svg 
                       viewBox="0 0 572 367"
                       width={572}
@@ -705,8 +701,8 @@ function MainApp() {
                       style={{ objectFit: 'contain' }}
                     />
 
-                    {/* Actual Black Container Box overlaying the exact expanded bounds */}
-                    <div className="absolute inset-0 bg-[#080808] border-2 border-[#1A1A1A] rounded-md shadow-[4px_4px_0_0_#1A1A1A] flex flex-col justify-between p-2 overflow-hidden">
+                    {/* Clean Dark Frame Container */}
+                    <div className="absolute inset-0 bg-[#141413] border border-[#2C2B29] rounded-sm shadow-xs flex flex-col justify-between p-2.5 overflow-hidden">
                       {/* Media Display Area */}
                       <div className="flex-1 w-full min-h-0 relative flex items-center justify-center overflow-hidden">
                         {rawSourceFrame ? (
@@ -716,30 +712,30 @@ function MainApp() {
                             style={{ imageRendering: 'pixelated' }}
                           />
                         ) : (
-                          <div className="flex items-center justify-center w-full h-full bg-[#111]">
-                            <span className="font-mono text-[#6B6B6B] text-xs">NO MEDIA</span>
+                          <div className="flex items-center justify-center w-full h-full bg-[#0D0D0E]">
+                            <span className="font-mono text-[#5E5D59] text-xs">No media loaded</span>
                           </div>
                         )}
                       </div>
                       
                       {/* Playback Control Bar */}
-                      <div className="h-7 flex items-center px-2 gap-2 text-white bg-[#111]/90 backdrop-blur rounded border border-white/10 shrink-0 mt-1 z-10">
+                      <div className="h-7 flex items-center px-2.5 gap-2.5 text-white bg-[#1C1C1E]/95 rounded-xs border border-white/10 shrink-0 mt-1 z-10 font-sans">
                         <button 
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             setIsPlaying(p => !p);
                           }} 
-                          className="text-xs font-bold text-[#E85D2A] hover:text-white transition-colors cursor-pointer px-1 py-1"
+                          className="text-xs font-bold text-[#D97757] hover:text-white transition-colors cursor-pointer px-1 py-1"
                         >
                           {isPlaying ? '❚❚' : '▶'}
                         </button>
-                        <div className="text-[9px] font-mono whitespace-nowrap opacity-70">
+                        <div className="text-[10px] font-mono whitespace-nowrap text-[#87867F]">
                           {(activeFrameIndex / targetFps).toFixed(2)}s
                         </div>
-                        <div className="flex-1 h-1 bg-white/20 rounded-full relative min-w-[30px]">
+                        <div className="flex-1 h-1 bg-white/15 rounded-full relative min-w-[30px]">
                           <div 
-                            className="absolute inset-y-0 left-0 bg-[#E85D2A] rounded-full" 
+                            className="absolute inset-y-0 left-0 bg-[#D97757] rounded-full" 
                             style={{ width: media && media.frames.length ? `${(activeFrameIndex / media.frames.length) * 100}%` : '0%' }}
                           />
                         </div>
@@ -749,12 +745,12 @@ function MainApp() {
                             e.stopPropagation();
                             setPreviewFitMode(m => m === 'cover' ? 'contain' : 'cover');
                           }} 
-                          className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-white/10 hover:bg-[#E85D2A] text-white transition-colors cursor-pointer uppercase tracking-wider"
-                          title="Toggle FIT (contain full frame) vs FILL (zoom to fill box)"
+                          className="text-[9px] font-mono px-1.5 py-0.5 rounded-xs bg-white/10 hover:bg-[#D97757] text-white transition-colors cursor-pointer uppercase tracking-wider"
+                          title="Toggle FIT vs FILL"
                         >
                           {previewFitMode === 'cover' ? 'FILL' : 'FIT'}
                         </button>
-                        <div className="text-[9px] font-mono whitespace-nowrap text-[#E85D2A] font-bold">{targetFps} FPS</div>
+                        <div className="text-[10px] font-mono whitespace-nowrap text-[#D97757] font-medium">{targetFps} FPS</div>
                       </div>
                     </div>
 
@@ -765,76 +761,59 @@ function MainApp() {
             </div>
           </div>
 
-          {/* Column 2: True OLED Preview */}
-          <div className="flex-1 p-3 flex flex-col items-center justify-center relative min-w-0">
-            <div className="text-center mb-2 shrink-0">
-              <h3 className="font-mono font-bold text-xs tracking-wider text-[#1A1A1A]">TRUE OLED PREVIEW (128 × 64)</h3>
-              <p className="font-mono text-[10px] text-[#6B6B6B]">Exact physical scale • 1:1 pixels</p>
+          {/* Column 2: True Hardware OLED Display Preview */}
+          <div className="flex-1 p-4 flex flex-col items-center justify-center relative min-w-0 bg-[#FAF9F5]">
+            <div className="text-center mb-2.5 shrink-0">
+              <h3 className="font-serif text-sm tracking-tight text-[#141413]">Monochrome Matrix</h3>
+              <p className="font-sans text-[11px] text-[#5E5D59]">128 × 64 Physical OLED scale</p>
             </div>
 
-            <div className="relative flex items-center justify-center w-full max-h-full flex-1 min-h-0 gap-3">
-              {/* Hardware Bezel */}
-              <div className="bg-[#2A2A2A] rounded-xl p-3 shadow-[0_10px_30px_rgba(0,0,0,0.5),inset_0_2px_1px_rgba(255,255,255,0.1),inset_0_-2px_1px_rgba(0,0,0,0.5)] border border-[#111] relative z-10 shrink-0 max-w-full max-h-full flex flex-col justify-center">
-                {/* Screws */}
-                <div className="absolute top-2 left-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-45"><div className="w-full h-[1px] bg-[#333]" /></div>
-                <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-12"><div className="w-full h-[1px] bg-[#333]" /></div>
-                <div className="absolute bottom-2 left-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center -rotate-12"><div className="w-full h-[1px] bg-[#333]" /></div>
-                <div className="absolute bottom-2 right-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-90"><div className="w-full h-[1px] bg-[#333]" /></div>
+            <div className="relative flex items-center justify-center w-full max-h-full flex-1 min-h-0">
+              {/* Precision Engineered Hardware Frame */}
+              <div className="bg-[#18181A] rounded-sm p-4 shadow-sm border border-[#2C2B29] relative z-10 shrink-0 max-w-full max-h-full flex flex-col items-center justify-center">
+                <div className="text-[#87867F] font-mono text-[8px] tracking-wider text-center mb-1.5 uppercase font-medium">SH1106 / SSD1306</div>
                 
-                <div className="text-[#555] font-mono text-[8px] text-center mb-1">SSD1306 128x64</div>
-                
-                <div className="bg-[#000] p-1 shadow-[inset_0_0_10px_#000] rounded shrink flex items-center justify-center">
+                <div className="bg-[#050505] p-1.5 rounded-xs border border-white/5 flex items-center justify-center">
                   <div className="pointer-events-auto w-[128px]">
                     <OledCanvas frameData={processedFrame} theme={ditherConfig.theme} scale={8} />
                   </div>
                 </div>
 
-                <div className="text-[#555] font-mono text-[8px] text-center mt-1">I²C 0x3C</div>
-              </div>
-
-              {/* Decorative Sticky Note (Right) */}
-              <div className="hidden xl:block shrink-0">
-                <div className="bg-[#FFD485] text-[#1A1A1A] p-2.5 font-mono text-[9px] w-32 shadow-lg rotate-2">
-                  <div className="flex justify-between items-start mb-1">
-                    <div className="w-2 h-2 rounded-full bg-[#1A1A1A]/20" />
-                    <span>💡</span>
-                  </div>
-                  OLED output shows 1:1 true scale.
-                </div>
+                <div className="text-[#87867F] font-mono text-[8px] tracking-wider text-center mt-1.5 font-medium">I²C Bus (0x3C)</div>
               </div>
             </div>
           </div>
 
-          {/* Column 3: Display Info */}
-          <div className="w-[180px] shrink-0 p-4 border-l border-[#1A1A1A]/20 flex flex-col justify-start overflow-y-auto">
-            <div className="bg-white border-2 border-[#1A1A1A] shadow-[3px_3px_0_0_#1A1A1A] p-3 font-mono text-xs flex flex-col gap-4 mb-auto">
+          {/* Column 3: Display Hardware Telemetry */}
+          <div className="w-[200px] shrink-0 p-4 border-l border-[#E8E5DE] bg-[#FAF9F5] flex flex-col justify-start overflow-y-auto">
+            <div className="bg-white border border-[#E8E5DE] rounded-sm p-3.5 shadow-xs flex flex-col gap-3.5 mb-auto font-sans">
               
               <div>
-                <div className="bg-[#1A1A1A] text-white px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider mb-2 flex justify-between items-center">
-                  <span>DISPLAY INFO</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#E85D2A]"></span>
+                <div className="text-[10px] font-sans font-semibold tracking-wider text-[#141413] mb-2 flex justify-between items-center pb-1.5 border-b border-[#E8E5DE]">
+                  <span>Telemetry</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#D97757]"></span>
                 </div>
-                <div className="flex flex-col gap-0.5 text-[#6B6B6B] text-[11px]">
-                  <div>128 × 64</div>
-                  <div>1-BIT (MONO)</div>
-                  <div>I²C 0x3C</div>
-                  <div>{targetFps} FPS</div>
+                <div className="flex flex-col gap-1 text-[#5E5D59] font-mono text-[10px]">
+                  <div className="flex justify-between"><span className="text-[#87867F]">Grid:</span> <span className="text-[#141413] font-medium">128 × 64</span></div>
+                  <div className="flex justify-between"><span className="text-[#87867F]">Depth:</span> <span className="text-[#141413] font-medium">1-Bit Mono</span></div>
+                  <div className="flex justify-between"><span className="text-[#87867F]">Clock:</span> <span className="text-[#141413] font-medium">{targetFps} FPS</span></div>
+                  <div className="flex justify-between"><span className="text-[#87867F]">Bus:</span> <span className="text-[#141413] font-medium">0x3C</span></div>
                 </div>
               </div>
 
-              <div className="h-px bg-[#1A1A1A]/20" />
+              <div className="h-px bg-[#E8E5DE]" />
 
               <div>
-                <div className="text-[9px] font-bold uppercase tracking-wider text-[#1A1A1A] mb-1">CURRENT FRAME</div>
-                <div className="text-[#6B6B6B] text-[11px]">{activeFrameIndex.toString().padStart(3, '0')} / {media ? media.frames.length.toString().padStart(3, '0') : '000'}</div>
-                <div className="text-[#6B6B6B] text-[11px]">{(activeFrameIndex / targetFps).toFixed(2)}s</div>
+                <div className="text-[10px] font-sans font-semibold tracking-wide text-[#141413] mb-1">Active Frame</div>
+                <div className="text-[#5E5D59] font-mono text-[11px]">{activeFrameIndex.toString().padStart(3, '0')} / {media ? media.frames.length.toString().padStart(3, '0') : '000'}</div>
+                <div className="text-[#87867F] font-mono text-[10px]">{(activeFrameIndex / targetFps).toFixed(2)}s elapsed</div>
               </div>
 
-              <div className="h-px bg-[#1A1A1A]/20" />
+              <div className="h-px bg-[#E8E5DE]" />
 
               <div>
-                <div className="text-[9px] font-bold uppercase tracking-wider text-[#1A1A1A] mb-1">OUTPUT SIZE</div>
-                <div className="text-[#6B6B6B] text-[11px] mb-1">1024 bytes/frame</div>
+                <div className="text-[10px] font-sans font-semibold tracking-wide text-[#141413] mb-1">Payload Size</div>
+                <div className="text-[#5E5D59] font-mono text-[10px]">1,024 B / frame</div>
               </div>
 
             </div>
@@ -842,64 +821,69 @@ function MainApp() {
         </section>
 
         {/* Bottom Console — Technical Control Panel */}
-        <aside className="h-[340px] shrink-0 bg-white flex z-20 p-4 gap-4 relative border-t-2 border-[#1A1A1A]">
+        <aside className="h-[350px] shrink-0 bg-[#FAF9F5] flex z-20 p-4 gap-4 relative border-t border-[#E8E5DE]">
           
-          {/* Zone 1: Media Pool (Left) */}
-          <BlueprintHoverCard className="w-[280px] shrink-0 min-w-0">
-            <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6B6B6B] px-4 py-3 border-b-2 border-[#1A1A1A] font-mono z-[2] relative flex items-center gap-2">
-              <span className="w-2 h-2 bg-[#E85D2A]"></span>
-              <span className="text-[#1A1A1A]">MEDIA_POOL</span>
-            </h2>
+          {/* Zone 1: Media Library (Left) */}
+          <div className="w-[300px] shrink-0 min-w-0 bg-white border border-[#E8E5DE] rounded-xl shadow-xs flex flex-col overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#E8E5DE] flex items-center justify-between bg-[#FAF9F5]/50 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#D97757]"></span>
+                <h2 className="font-serif text-sm font-normal text-[#141413]">Media Assets</h2>
+              </div>
+              <span className="text-[11px] font-mono text-[#87867F]">
+                {Object.keys(assets).length} items
+              </span>
+            </div>
             
             {/* Tabs */}
-            <div className="flex border-b border-[#1A1A1A]/20 bg-[#F5F0EB] shrink-0">
+            <div className="flex border-b border-[#E8E5DE] bg-[#FAF9F5] p-1 gap-1 shrink-0">
               <button 
                 onClick={() => setMediaPoolTab('import')}
-                className={`flex-1 py-2 text-[9px] font-bold font-mono tracking-widest cursor-pointer transition-colors ${
-                  mediaPoolTab === 'import' ? 'text-[#1A1A1A] border-b-2 border-[#E85D2A] bg-white' : 'text-[#6B6B6B] hover:text-[#1A1A1A]'
+                className={`flex-1 py-1.5 text-xs font-sans font-medium rounded-md transition-all cursor-pointer ${
+                  mediaPoolTab === 'import' ? 'bg-white text-[#141413] shadow-xs' : 'text-[#5E5D59] hover:text-[#141413]'
                 }`}
               >
-                + IMPORT
+                Import
               </button>
               <button 
                 onClick={() => setMediaPoolTab('samples')}
-                className={`flex-1 py-2 text-[9px] font-bold font-mono tracking-widest cursor-pointer transition-colors ${
-                  mediaPoolTab === 'samples' ? 'text-[#1A1A1A] border-b-2 border-[#E85D2A] bg-white' : 'text-[#6B6B6B] hover:text-[#1A1A1A]'
+                className={`flex-1 py-1.5 text-xs font-sans font-medium rounded-md transition-all cursor-pointer ${
+                  mediaPoolTab === 'samples' ? 'bg-white text-[#141413] shadow-xs' : 'text-[#5E5D59] hover:text-[#141413]'
                 }`}
               >
-                SAMPLES
+                Presets
               </button>
               <button 
                 onClick={() => setMediaPoolTab('recent')}
-                className={`flex-1 py-2 text-[9px] font-bold font-mono tracking-widest cursor-pointer transition-colors ${
-                  mediaPoolTab === 'recent' ? 'text-[#1A1A1A] border-b-2 border-[#E85D2A] bg-white' : 'text-[#6B6B6B] hover:text-[#1A1A1A]'
+                className={`flex-1 py-1.5 text-xs font-sans font-medium rounded-md transition-all cursor-pointer ${
+                  mediaPoolTab === 'recent' ? 'bg-white text-[#141413] shadow-xs' : 'text-[#5E5D59] hover:text-[#141413]'
                 }`}
               >
-                RECENT
+                Recent
               </button>
               <button 
                 onClick={() => setMediaPoolTab('create')}
-                className={`flex-1 py-2 text-[9px] font-bold font-mono tracking-widest cursor-pointer transition-colors ${
-                  mediaPoolTab === 'create' ? 'text-[#1A1A1A] border-b-2 border-[#E85D2A] bg-white' : 'text-[#e85d2a] hover:text-[#1A1A1A]'
+                className={`flex-1 py-1.5 text-xs font-sans font-medium rounded-md transition-all cursor-pointer ${
+                  mediaPoolTab === 'create' ? 'bg-[#FAF0EB] text-[#D97757] font-semibold shadow-xs' : 'text-[#D97757] hover:bg-[#FAF0EB]/60'
                 }`}
               >
-                ✨ CREATE
+                Lyrics
               </button>
             </div>
 
-            <div className="flex-1 flex flex-col min-h-0 overflow-y-auto z-[2] relative">
+            <div className="flex-1 flex flex-col min-h-0 overflow-y-auto relative bg-white">
               {mediaPoolTab === 'import' && (
                 <>
                   <DropZone onMediaLoaded={handleMediaLoaded} currentMedia={null} />
                   
                   {/* Asset Pool Grid */}
-                  <div className="p-2.5">
+                  <div className="p-3">
                     {Object.values(assets).length === 0 ? (
-                      <p className="text-[9px] font-mono text-[#6B6B6B] text-center py-6 border border-dashed border-[#1A1A1A]/30">
-                        No imported video assets yet. Drop a file above to add to your bin!
+                      <p className="text-xs font-sans text-[#87867F] text-center py-6 border border-dashed border-[#E8E5DE] rounded-lg">
+                        No imported assets yet. Drop a file above to add to your sequence.
                       </p>
                     ) : (
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-2.5">
                         {Object.values(assets).map(asset => {
                           const firstFrame = asset.media.frames[0];
                           return (
@@ -911,11 +895,11 @@ function MainApp() {
                                 e.dataTransfer.setData('text/plain', asset.id);
                               }}
                               onDoubleClick={() => handleAddAssetToTimeline(asset.id)}
-                              className="bg-[#080808] border-2 border-[#1A1A1A] hover:border-[#E85D2A] transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-sm"
+                              className="bg-[#141413] border border-[#E8E5DE] hover:border-[#D97757] rounded-lg transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-xs hover:shadow-sm"
                               title={`Double click or drag ${asset.media.sourceInfo.filename} to timeline`}
                             >
                               {/* Thumbnail Image */}
-                              <div className="flex-1 w-full h-full relative overflow-hidden bg-[#050505]">
+                              <div className="flex-1 w-full h-full relative overflow-hidden bg-[#0A0A09]">
                                 {firstFrame && (
                                   <img 
                                     src={(() => {
@@ -932,29 +916,28 @@ function MainApp() {
                                 )}
 
                                 {/* Frame badge */}
-                                <span className="absolute top-1 right-1 bg-black/80 text-[7px] text-white font-mono px-1 py-0.5 border border-white/20 font-bold">
+                                <span className="absolute top-1.5 right-1.5 bg-[#141413]/80 backdrop-blur-xs text-[9px] text-[#FAF9F5] font-mono px-1.5 py-0.5 rounded border border-white/10">
                                   {asset.media.frames.length}f
                                 </span>
 
                                 {/* Bottom title */}
-                                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/90 to-transparent p-1 pt-3">
-                                  <p className="text-[8px] font-bold text-white font-mono truncate">{asset.media.sourceInfo.filename}</p>
+                                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-[#141413] via-[#141413]/80 to-transparent p-1.5 pt-4">
+                                  <p className="text-[10px] font-sans font-medium text-[#FAF9F5] truncate">{asset.media.sourceInfo.filename}</p>
                                 </div>
 
                                 {/* Hover Action Overlay */}
-                                <div className="absolute inset-0 bg-black/85 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-1.5 gap-1.5 z-10">
-                                  <span className="text-[7px] font-mono text-[#E85D2A] font-bold uppercase tracking-wider">DRAG OR CHOOSE</span>
+                                <div className="absolute inset-0 bg-[#141413]/85 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-2 gap-1.5 z-10">
                                   <button 
                                     onClick={(e) => { e.stopPropagation(); handleAddAssetToTimeline(asset.id); }}
-                                    className="w-full py-1 text-[8px] font-bold bg-[#E85D2A] text-white hover:bg-white hover:text-[#1A1A1A] transition-colors cursor-pointer uppercase font-mono tracking-wider"
+                                    className="w-full py-1 text-xs font-sans font-medium bg-[#D97757] hover:bg-[#C66545] text-white rounded transition-colors cursor-pointer"
                                   >
-                                    + ADD CLIP
+                                    Add Clip
                                   </button>
                                   <button 
                                     onClick={(e) => { e.stopPropagation(); handleReplaceTimelineWithAsset(asset.id); }}
-                                    className="w-full py-0.5 text-[7px] font-bold border border-white/40 text-white hover:bg-white hover:text-[#1A1A1A] transition-colors cursor-pointer uppercase font-mono tracking-wider"
+                                    className="w-full py-0.5 text-[10px] font-sans font-medium border border-white/20 text-white/90 hover:bg-white/10 rounded transition-colors cursor-pointer"
                                   >
-                                    REPLACE
+                                    Replace
                                   </button>
                                 </div>
                               </div>
@@ -968,36 +951,36 @@ function MainApp() {
               )}
 
               {mediaPoolTab === 'samples' && (
-                <div className="p-2.5">
-                  <div className="flex justify-between items-center mb-2 px-1">
-                    <span className="text-[8px] font-mono text-[#6B6B6B] uppercase tracking-wider font-bold">SAMPLE ANIMATION BIN</span>
-                    <span className="text-[7px] font-mono text-[#888]">Double-click or drag card</span>
+                <div className="p-3">
+                  <div className="flex justify-between items-center mb-2.5 px-0.5">
+                    <span className="text-xs font-sans text-[#141413] font-medium">Curated Presets</span>
+                    <span className="text-[10px] font-sans text-[#87867F]">Drag or double-click</span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-2.5">
                     {[
-                      { id: 'dino', icon: '🦖', name: 'DINO RUNNER', tag: '30FPS' },
-                      { id: 'heartbeat', icon: '💓', name: 'ECG HEARTBEAT', tag: 'PQRST' },
-                      { id: 'spinner', icon: '🔄', name: 'LOADING SPINNER', tag: 'ARC' },
-                      { id: 'wificonnect', icon: '📶', name: 'WIFI SIGNAL', tag: 'PULSE' },
-                      { id: 'bouncing', icon: '📀', name: 'BOUNCING LOGO', tag: '60f' },
-                      { id: 'pacman', icon: '👾', name: 'PAC-MAN LOOP', tag: 'CHOMP' },
-                      { id: 'battery', icon: '🔋', name: 'BATTERY CHARGE', tag: '100%' },
-                      { id: 'sinewave', icon: '🌊', name: 'SINE WAVE OSC', tag: '1.2kHz' },
-                      { id: 'ripple', icon: '🎯', name: 'RADAR RIPPLE', tag: 'SCAN' },
-                      { id: 'analogclock', icon: '🕒', name: 'ANALOG CLOCK', tag: 'TICKS' },
-                      { id: 'starfield', icon: '🌌', name: 'STARFIELD WARP', tag: '3D' },
-                      { id: 'matrix', icon: '🟩', name: 'MATRIX RAIN', tag: '1-BIT' },
-                      { id: 'rain', icon: '🌧', name: 'RAIN STORM', tag: 'SHOWER' },
-                      { id: 'badapple', icon: '🍎', name: 'BAD APPLE', tag: 'MONO' },
-                      { id: 'dvd', icon: '📀', name: 'DVD BOUNCE', tag: 'CORNER' },
-                      { id: 'cube3d', icon: '🎲', name: '3D CUBE WIRING', tag: '3D MESH' },
-                      { id: 'flame', icon: '🔥', name: 'DOOM FIRE SIM', tag: 'AUTOMATA' },
-                      { id: 'plasma', icon: '⚡', name: 'DITHERED PLASMA', tag: 'BAYER4x4' },
-                      { id: 'fireworks', icon: '🎆', name: 'FIREWORKS BURST', tag: 'SPARKS' },
-                      { id: 'roboeyes', icon: '🤖', name: 'ROBO-EYES FACE', tag: 'DYNAMIC' },
-                      { id: 'spirograph', icon: '🌀', name: 'SPIROGRAPH ROULETTE', tag: 'MATH' },
-                      { id: 'qrcode', icon: '🏁', name: 'QR SCANNER WIPE', tag: 'LASER' },
+                      { id: 'dino', icon: '🦖', name: 'Dino Runner', tag: '30fps' },
+                      { id: 'heartbeat', icon: '💓', name: 'ECG Heartbeat', tag: 'pqrst' },
+                      { id: 'spinner', icon: '🔄', name: 'Loading Spinner', tag: 'arc' },
+                      { id: 'wificonnect', icon: '📶', name: 'WiFi Signal', tag: 'pulse' },
+                      { id: 'bouncing', icon: '📀', name: 'Bouncing Logo', tag: '60f' },
+                      { id: 'pacman', icon: '👾', name: 'Pac-Man Loop', tag: 'chomp' },
+                      { id: 'battery', icon: '🔋', name: 'Battery Charge', tag: '100%' },
+                      { id: 'sinewave', icon: '🌊', name: 'Sine Wave Osc', tag: '1.2kHz' },
+                      { id: 'ripple', icon: '🎯', name: 'Radar Ripple', tag: 'scan' },
+                      { id: 'analogclock', icon: '🕒', name: 'Analog Clock', tag: 'ticks' },
+                      { id: 'starfield', icon: '🌌', name: 'Starfield Warp', tag: '3d' },
+                      { id: 'matrix', icon: '🟩', name: 'Matrix Rain', tag: '1-bit' },
+                      { id: 'rain', icon: '🌧', name: 'Rain Storm', tag: 'shower' },
+                      { id: 'badapple', icon: '🍎', name: 'Bad Apple', tag: 'mono' },
+                      { id: 'dvd', icon: '📀', name: 'DVD Bounce', tag: 'corner' },
+                      { id: 'cube3d', icon: '🎲', name: '3D Cube Wiring', tag: '3d mesh' },
+                      { id: 'flame', icon: '🔥', name: 'Doom Fire Sim', tag: 'automata' },
+                      { id: 'plasma', icon: '⚡', name: 'Dithered Plasma', tag: 'bayer' },
+                      { id: 'fireworks', icon: '🎆', name: 'Fireworks Burst', tag: 'sparks' },
+                      { id: 'roboeyes', icon: '🤖', name: 'Robo-Eyes Face', tag: 'dynamic' },
+                      { id: 'spirograph', icon: '🌀', name: 'Spirograph', tag: 'math' },
+                      { id: 'qrcode', icon: '🏁', name: 'QR Scanner', tag: 'laser' },
                     ].map(sample => (
                       <div
                         key={sample.id}
@@ -1007,11 +990,11 @@ function MainApp() {
                           e.dataTransfer.setData('text/plain', sample.id);
                         }}
                         onDoubleClick={() => handleLoadSample(sample.id as any, 'append')}
-                        className="bg-[#080808] border-2 border-[#1A1A1A] hover:border-[#E85D2A] transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-sm"
+                        className="bg-[#141413] border border-[#E8E5DE] hover:border-[#D97757] rounded-lg transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-xs hover:shadow-sm"
                         title={`Double click or drag ${sample.name} to timeline`}
                       >
                         {/* Thumbnail Image */}
-                        <div className="flex-1 w-full h-full relative overflow-hidden bg-[#050505]">
+                        <div className="flex-1 w-full h-full relative overflow-hidden bg-[#0A0A09]">
                           {sampleThumbnails[sample.id] ? (
                             <img 
                               src={sampleThumbnails[sample.id]} 
@@ -1023,34 +1006,33 @@ function MainApp() {
                           )}
 
                           {/* FPS Badge */}
-                          <span className="absolute top-1 right-1 bg-black/80 text-[7px] text-white font-mono px-1 py-0.5 border border-white/20 font-bold">
+                          <span className="absolute top-1.5 right-1.5 bg-[#141413]/80 backdrop-blur-xs text-[9px] text-[#FAF9F5] font-mono px-1.5 py-0.5 rounded border border-white/10">
                             {sample.tag}
                           </span>
 
                           {/* Bottom Title Bar */}
-                          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/90 to-transparent p-1 pt-3">
-                            <p className="text-[8px] font-bold text-white font-mono truncate flex items-center gap-1">
+                          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-[#141413] via-[#141413]/80 to-transparent p-1.5 pt-4">
+                            <p className="text-[10px] font-sans font-medium text-[#FAF9F5] truncate flex items-center gap-1.5">
                               <span>{sample.icon}</span>
                               <span>{sample.name}</span>
                             </p>
                           </div>
 
                           {/* Hover Action Overlay */}
-                          <div className="absolute inset-0 bg-black/85 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-1.5 gap-1.5 z-10">
-                            <span className="text-[7px] font-mono text-[#E85D2A] font-bold uppercase tracking-wider">DRAG OR CHOOSE</span>
+                          <div className="absolute inset-0 bg-[#141413]/85 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-2 gap-1.5 z-10">
                             <button 
                               onClick={(e) => { e.stopPropagation(); handleLoadSample(sample.id as any, 'append'); }}
-                              className="w-full py-1 text-[8px] font-bold bg-[#E85D2A] text-white hover:bg-white hover:text-[#1A1A1A] transition-colors cursor-pointer uppercase font-mono tracking-wider"
+                              className="w-full py-1 text-xs font-sans font-medium bg-[#D97757] hover:bg-[#C66545] text-white rounded transition-colors cursor-pointer"
                               title="Append sample animation to timeline"
                             >
-                              + ADD CLIP
+                              Add Clip
                             </button>
                             <button 
                               onClick={(e) => { e.stopPropagation(); handleLoadSample(sample.id as any, 'replace'); }}
-                              className="w-full py-0.5 text-[7px] font-bold border border-white/40 text-white hover:bg-white hover:text-[#1A1A1A] transition-colors cursor-pointer uppercase font-mono tracking-wider"
+                              className="w-full py-0.5 text-[10px] font-sans font-medium border border-white/20 text-white/90 hover:bg-white/10 rounded transition-colors cursor-pointer"
                               title="Replace sequence with this sample animation"
                             >
-                              REPLACE
+                              Replace
                             </button>
                           </div>
                         </div>
@@ -1061,25 +1043,33 @@ function MainApp() {
               )}
 
               {mediaPoolTab === 'create' && (
-                <div className="p-4 flex-1 flex flex-col items-center justify-center text-center gap-4 border border-dashed border-[#1A1A1A]/30 m-2">
-                  <p className="text-[10px] font-mono text-[#6B6B6B]">Generate pure beat-synced kinetic typography with Apple Music fluid glass selector</p>
+                <div className="p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 border border-dashed border-[#E8E5DE] rounded-xl m-3 bg-[#FAF9F5]">
+                  <div className="w-10 h-10 rounded-full bg-[#FAF0EB] text-[#D97757] flex items-center justify-center text-lg shadow-xs">
+                    ✦
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="font-serif text-sm font-normal text-[#141413]">Kinetic Typography Studio</h3>
+                    <p className="text-xs font-sans text-[#5E5D59] leading-relaxed max-w-[210px]">
+                      Generate beat-synced 1-bit kinetic lyric animations with fluid Apple Music selector.
+                    </p>
+                  </div>
                   <button
                     onClick={() => setActiveView('lyrics-studio')}
-                    className="py-3 px-6 bg-[#E85D2A] text-[#f5f0eb] text-xs font-mono font-bold tracking-widest border-2 border-[#1A1A1A] shadow-[4px_4px_0_#1A1A1A] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#1A1A1A] transition-all cursor-pointer"
+                    className="mt-1 py-1.5 px-4 bg-[#141413] hover:bg-[#2A2926] text-[#FAF9F5] text-xs font-sans font-medium rounded-lg shadow-xs transition-colors cursor-pointer"
                   >
-                    ✨ LAUNCH KINETIC LYRICS STUDIO
+                    Open Studio
                   </button>
                 </div>
               )}
 
               {mediaPoolTab === 'recent' && (
-                <div className="p-2.5">
+                <div className="p-3">
                   {Object.values(assets).length === 0 ? (
-                    <p className="text-[9px] font-mono text-[#6B6B6B] text-center py-6 border border-dashed border-[#1A1A1A]/30">
+                    <p className="text-xs font-sans text-[#87867F] text-center py-6 border border-dashed border-[#E8E5DE] rounded-lg">
                       No recent files.
                     </p>
                   ) : (
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-2.5">
                       {Object.values(assets).map(asset => {
                         const firstFrame = asset.media.frames[0];
                         return (
@@ -1091,9 +1081,9 @@ function MainApp() {
                               e.dataTransfer.setData('text/plain', asset.id);
                             }}
                             onDoubleClick={() => handleAddAssetToTimeline(asset.id)}
-                            className="bg-[#080808] border-2 border-[#1A1A1A] hover:border-[#E85D2A] transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-sm"
+                            className="bg-[#141413] border border-[#E8E5DE] hover:border-[#D97757] rounded-lg transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-xs hover:shadow-sm"
                           >
-                            <div className="flex-1 w-full h-full relative overflow-hidden bg-[#050505]">
+                            <div className="flex-1 w-full h-full relative overflow-hidden bg-[#0A0A09]">
                               {firstFrame && (
                                 <img 
                                   src={(() => {
@@ -1108,24 +1098,24 @@ function MainApp() {
                                   alt={asset.id} 
                                 />
                               )}
-                              <span className="absolute top-1 right-1 bg-black/80 text-[7px] text-white font-mono px-1 py-0.5 border border-white/20 font-bold">
+                              <span className="absolute top-1.5 right-1.5 bg-[#141413]/80 backdrop-blur-xs text-[9px] text-[#FAF9F5] font-mono px-1.5 py-0.5 rounded border border-white/10">
                                 {asset.media.frames.length}f
                               </span>
-                              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/90 to-transparent p-1 pt-3">
-                                <p className="text-[8px] font-bold text-white font-mono truncate">{asset.media.sourceInfo.filename}</p>
+                              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-[#141413] via-[#141413]/80 to-transparent p-1.5 pt-4">
+                                <p className="text-[10px] font-sans font-medium text-[#FAF9F5] truncate">{asset.media.sourceInfo.filename}</p>
                               </div>
-                              <div className="absolute inset-0 bg-black/85 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-1.5 gap-1.5 z-10">
+                              <div className="absolute inset-0 bg-[#141413]/85 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-2 gap-1.5 z-10">
                                 <button 
                                   onClick={(e) => { e.stopPropagation(); handleAddAssetToTimeline(asset.id); }}
-                                  className="w-full py-1 text-[8px] font-bold bg-[#E85D2A] text-white hover:bg-white hover:text-[#1A1A1A] transition-colors cursor-pointer uppercase font-mono tracking-wider"
+                                  className="w-full py-1 text-xs font-sans font-medium bg-[#D97757] hover:bg-[#C66545] text-white rounded transition-colors cursor-pointer"
                                 >
-                                  + ADD CLIP
+                                  Add Clip
                                 </button>
                                 <button 
                                   onClick={(e) => { e.stopPropagation(); handleReplaceTimelineWithAsset(asset.id); }}
-                                  className="w-full py-0.5 text-[7px] font-bold border border-white/40 text-white hover:bg-white hover:text-[#1A1A1A] transition-colors cursor-pointer uppercase font-mono tracking-wider"
+                                  className="w-full py-0.5 text-[10px] font-sans font-medium border border-white/20 text-white/90 hover:bg-white/10 rounded transition-colors cursor-pointer"
                                 >
-                                  REPLACE
+                                  Replace
                                 </button>
                               </div>
                             </div>
@@ -1137,20 +1127,28 @@ function MainApp() {
                 </div>
               )}
             </div>
-          </BlueprintHoverCard>
+          </div>
 
           {/* Zone 2: Timeline & Trimming (Center) */}
-          <BlueprintHoverCard className="flex-1 min-w-0 flex flex-col overflow-hidden">
-            <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6B6B6B] px-6 py-3 border-b-2 border-[#1A1A1A] font-mono z-[2] relative flex justify-between items-center bg-[#F5F0EB] shrink-0">
+          <div className="flex-1 min-w-0 bg-white border border-[#E8E5DE] rounded-xl shadow-xs flex flex-col overflow-hidden">
+            <div className="px-5 py-3 border-b border-[#E8E5DE] flex justify-between items-center bg-[#FAF9F5]/50 shrink-0">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-[#E85D2A]"></span>
-                <span className="text-[#1A1A1A]">TIMELINE</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#D97757]"></span>
+                <h2 className="font-serif text-sm font-normal text-[#141413]">Timeline Sequence</h2>
               </div>
-              {media && <span>{media.frames.length} FRAMES | {targetFps} FPS</span>}
-            </h2>
+              {media && (
+                <div className="flex items-center gap-3 text-xs font-mono text-[#5E5D59]">
+                  <span>{media.frames.length} frames</span>
+                  <span className="text-[#D5D0C5]">•</span>
+                  <span>{targetFps} fps</span>
+                  <span className="text-[#D5D0C5]">•</span>
+                  <span>{(media.frames.length / targetFps).toFixed(2)}s</span>
+                </div>
+              )}
+            </div>
 
             {/* Timeline track — fills remaining space */}
-            <div className="flex-1 min-h-0 overflow-hidden z-[2] relative">
+            <div className="flex-1 min-h-0 overflow-hidden relative bg-white">
               <TimelineTrack 
                 clips={clips}
                 assets={assets}
@@ -1177,7 +1175,7 @@ function MainApp() {
             </div>
 
             {/* Playback bar — always at the bottom, never scrolled away */}
-            <div className="shrink-0 px-6 py-3 border-t border-[#1A1A1A]/20 bg-[#F5F0EB] z-[2]">
+            <div className="shrink-0 px-5 py-2.5 border-t border-[#E8E5DE] bg-[#FAF9F5]">
               <PlaybackBar 
                 isPlaying={isPlaying}
                 onTogglePlay={() => setIsPlaying(p => !p)}
@@ -1195,12 +1193,18 @@ function MainApp() {
                 }}
               />
             </div>
-          </BlueprintHoverCard>
+          </div>
 
           {/* Zone 3: Inspector (Right) */}
-          <BlueprintHoverCard className="w-[340px] shrink-0 min-w-0">
-            <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#E85D2A] px-4 py-3 border-b-2 border-[#1A1A1A] font-mono z-[2] relative">INSPECTOR</h2>
-            <div className="flex-1 overflow-y-auto pr-4 px-4 py-4 space-y-6 z-[2] relative">
+          <div className="w-[340px] shrink-0 min-w-0 bg-white border border-[#E8E5DE] rounded-xl shadow-xs flex flex-col overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#E8E5DE] flex items-center justify-between bg-[#FAF9F5]/50 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#D97757]"></span>
+                <h2 className="font-serif text-sm font-normal text-[#141413]">Inspector</h2>
+              </div>
+              <span className="text-[11px] font-sans text-[#87867F]">Processing & Output</span>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
               <div>
                 <DitherControls 
                   config={ditherConfig} 
@@ -1208,7 +1212,7 @@ function MainApp() {
                   disabled={!media} 
                 />
               </div>
-              <div className="border-t border-[#1A1A1A] pt-4">
+              <div className="border-t border-[#E8E5DE] pt-4">
                 <CropControls 
                   settings={cropSettings} 
                   onChange={(newSettings) => {
@@ -1224,7 +1228,7 @@ function MainApp() {
                 />
               </div>
             </div>
-          </BlueprintHoverCard>
+          </div>
 
         </aside>
       </main>

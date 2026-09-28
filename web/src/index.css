@@ -15,12 +15,9 @@
   * { box-sizing: border-box; }
   
   body {
-    font-family: 'IBM Plex Mono', ui-monospace, monospace;
-    background-color: #F5F0EB;
-    background-image:
-      repeating-linear-gradient(0deg, #e0dbd5 0 1px, transparent 1px 40px),
-      repeating-linear-gradient(90deg, #e0dbd5 0 1px, transparent 1px 40px);
-    color: #1A1A1A;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: #FAF9F5;
+    color: #141413;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

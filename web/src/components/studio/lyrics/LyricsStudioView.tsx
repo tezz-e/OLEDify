@@ -484,8 +484,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               className={`flex-1 py-2 border-b-2 transition-colors cursor-pointer ${
                 ingestTab === 'search'
                   ? themeMode === 'dark'
-                    ? 'border-[#E85D2A] bg-[#141417] text-white'
-                    : 'border-[#E85D2A] bg-white text-[#1A1A1A]'
+                    ? 'border-[#D97757] bg-[#141417] text-white'
+                    : 'border-[#D97757] bg-white text-[#1A1A1A]'
                   : themeMode === 'dark'
                   ? 'border-transparent text-white/40 hover:text-white/70'
                   : 'border-transparent text-[#6B6B6B] hover:text-[#1A1A1A]'
@@ -498,8 +498,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               className={`flex-1 py-2 border-b-2 transition-colors cursor-pointer ${
                 ingestTab === 'paste'
                   ? themeMode === 'dark'
-                    ? 'border-[#E85D2A] bg-[#141417] text-white'
-                    : 'border-[#E85D2A] bg-white text-[#1A1A1A]'
+                    ? 'border-[#D97757] bg-[#141417] text-white'
+                    : 'border-[#D97757] bg-white text-[#1A1A1A]'
                   : themeMode === 'dark'
                   ? 'border-transparent text-white/40 hover:text-white/70'
                   : 'border-transparent text-[#6B6B6B] hover:text-[#1A1A1A]'
@@ -512,8 +512,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               className={`flex-1 py-2 border-b-2 transition-colors cursor-pointer ${
                 ingestTab === 'audio'
                   ? themeMode === 'dark'
-                    ? 'border-[#E85D2A] bg-[#141417] text-white'
-                    : 'border-[#E85D2A] bg-white text-[#1A1A1A]'
+                    ? 'border-[#D97757] bg-[#141417] text-white'
+                    : 'border-[#D97757] bg-white text-[#1A1A1A]'
                   : themeMode === 'dark'
                   ? 'border-transparent text-white/40 hover:text-white/70'
                   : 'border-transparent text-[#6B6B6B] hover:text-[#1A1A1A]'
@@ -533,7 +533,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                       value={searchQuery}
                       onChange={e => setSearchQuery(e.target.value)}
                       placeholder="Search any track or artist..."
-                      className={`w-full px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#E85D2A] border ${
+                      className={`w-full px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#D97757] border ${
                         themeMode === 'dark'
                           ? 'bg-[#1C1C22] border-white/15 text-white placeholder-white/30'
                           : 'bg-[#F5F0EB] border-[#1A1A1A] text-[#1A1A1A] placeholder-[#888]'
@@ -543,7 +543,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                   <button
                     type="submit"
                     disabled={isSearching}
-                    className={`px-3 bg-[#E85D2A] text-white text-xs font-bold border hover:opacity-90 transition-opacity cursor-pointer flex items-center justify-center ${
+                    className={`px-3 bg-[#D97757] text-white text-xs font-bold border hover:opacity-90 transition-opacity cursor-pointer flex items-center justify-center ${
                       themeMode === 'dark' ? 'border-white/20' : 'border-[#1A1A1A]'
                     }`}
                   >
@@ -568,14 +568,14 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                         onClick={() => handleSelectTrack(track)}
                         className={`p-2.5 border transition-all cursor-pointer flex flex-col gap-1 shadow-sm ${
                           themeMode === 'dark'
-                            ? 'border-white/15 bg-[#1C1C22] hover:border-[#E85D2A] hover:bg-[#25252E] text-white'
-                            : 'border-[#1A1A1A] bg-[#F5F0EB] hover:border-[#E85D2A] hover:bg-white text-[#1A1A1A]'
+                            ? 'border-white/15 bg-[#1C1C22] hover:border-[#D97757] hover:bg-[#25252E] text-white'
+                            : 'border-[#1A1A1A] bg-[#F5F0EB] hover:border-[#D97757] hover:bg-white text-[#1A1A1A]'
                         }`}
                       >
                         <div className="flex justify-between items-start">
                           <span className="font-bold text-xs truncate">{track.trackName}</span>
                           {track.syncedLyrics && (
-                            <span className="bg-[#E85D2A] text-white text-[7px] font-bold px-1.5 py-0.2 uppercase">
+                            <span className="bg-[#D97757] text-white text-[7px] font-bold px-1.5 py-0.2 uppercase">
                               SYNCED
                             </span>
                           )}
@@ -599,7 +599,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                   value={pastedLrcText}
                   onChange={e => setPastedLrcText(e.target.value)}
                   placeholder="Paste raw [mm:ss.xx] LRC or plain lyrics here..."
-                  className={`flex-1 p-2.5 text-[10px] font-mono resize-none focus:outline-none focus:border-[#E85D2A] border ${
+                  className={`flex-1 p-2.5 text-[10px] font-mono resize-none focus:outline-none focus:border-[#D97757] border ${
                     themeMode === 'dark'
                       ? 'bg-[#1C1C22] border-white/15 text-white'
                       : 'bg-[#F5F0EB] border-[#1A1A1A] text-[#1A1A1A]'
@@ -609,8 +609,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                   onClick={handleApplyPastedLrc}
                   className={`w-full py-2 text-xs font-bold uppercase transition-colors cursor-pointer ${
                     themeMode === 'dark'
-                      ? 'bg-[#25252B] hover:bg-[#E85D2A] text-white border border-white/20'
-                      : 'bg-[#1A1A1A] hover:bg-[#E85D2A] text-white'
+                      ? 'bg-[#25252B] hover:bg-[#D97757] text-white border border-white/20'
+                      : 'bg-[#1A1A1A] hover:bg-[#D97757] text-white'
                   }`}
                 >
                   PARSE & LOAD LYRICS
@@ -622,7 +622,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               <div className={`flex-1 flex flex-col items-center justify-center p-4 border border-dashed text-center gap-3 ${
                 themeMode === 'dark' ? 'border-white/20 text-white' : 'border-[#1A1A1A]/40 text-[#1A1A1A]'
               }`}>
-                <Upload className="w-8 h-8 text-[#E85D2A]" />
+                <Upload className="w-8 h-8 text-[#D97757]" />
                 <p className="text-xs font-bold">DROP LOCAL MP3 / WAV</p>
                 <p className={`text-[10px] ${themeMode === 'dark' ? 'text-white/50' : 'text-[#6B6B6B]'}`}>
                   Enables 0-latency audio scrubbing and beat waveform preview
@@ -730,29 +730,29 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                       onClick={(e) => handleLineClick(idx, e)}
                       className={`p-4 md:p-5 cursor-pointer relative group transition-all ${
                         isActiveLine
-                          ? themeMode === 'dark' ? 'bg-white/[0.04]' : 'bg-[#E85D2A]/10'
+                          ? themeMode === 'dark' ? 'bg-white/[0.04]' : 'bg-[#D97757]/10'
                           : ''
                       }`}
                     >
                       {/* Selection Pin Badges */}
                       {isStartPin && (
-                        <span className="absolute -top-2.5 left-4 bg-[#E85D2A] text-white text-[8px] font-bold px-2 py-0.5 shadow-sm z-20 font-mono tracking-wider">
+                        <span className="absolute -top-2.5 left-4 bg-[#D97757] text-white text-[8px] font-bold px-2 py-0.5 shadow-sm z-20 font-mono tracking-wider">
                           START • {(line.startMs / 1000).toFixed(2)}s
                         </span>
                       )}
                       {isEndPin && (
-                        <span className="absolute -bottom-2.5 right-4 bg-[#E85D2A] text-white text-[8px] font-bold px-2 py-0.5 shadow-sm z-20 font-mono tracking-wider">
+                        <span className="absolute -bottom-2.5 right-4 bg-[#D97757] text-white text-[8px] font-bold px-2 py-0.5 shadow-sm z-20 font-mono tracking-wider">
                           END • {(line.endMs / 1000).toFixed(2)}s
                         </span>
                       )}
 
                       {/* Header Timestamp */}
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] text-[#E85D2A] font-mono font-semibold tracking-wider">
+                        <span className="text-[10px] text-[#D97757] font-mono font-semibold tracking-wider">
                           {Math.floor(line.startMs / 60000)}:{((line.startMs % 60000) / 1000).toFixed(2).padStart(5, '0')}
                         </span>
                         {isActiveLine && (
-                          <span className="text-[8px] font-bold text-white bg-[#E85D2A] px-2 py-0.5 uppercase font-mono tracking-wider">
+                          <span className="text-[8px] font-bold text-white bg-[#D97757] px-2 py-0.5 uppercase font-mono tracking-wider">
                             PLAYING
                           </span>
                         )}
@@ -771,12 +771,12 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                                 className={`text-xl md:text-2xl font-bold tracking-tight transition-colors duration-150 inline-block ${
                                   themeMode === 'dark'
                                     ? isWordActive
-                                      ? 'text-white font-black underline decoration-[#E85D2A] decoration-2'
+                                      ? 'text-white font-black underline decoration-[#D97757] decoration-2'
                                       : isWordPast
                                       ? 'text-white/90'
                                       : 'text-white/40'
                                     : isWordActive
-                                    ? 'text-[#1A1A1A] font-black underline decoration-[#E85D2A] decoration-3'
+                                    ? 'text-[#1A1A1A] font-black underline decoration-[#D97757] decoration-3'
                                     : isWordPast
                                     ? 'text-[#1A1A1A] font-bold'
                                     : 'text-[#888]'
@@ -834,7 +834,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                                 }}
                                 className={`px-2 py-0.5 text-[9px] font-mono flex items-center gap-1 transition-all cursor-pointer ${
                                   isOverridden
-                                    ? 'bg-[#E85D2A] text-white font-bold ring-1 ring-[#1A1A1A]'
+                                    ? 'bg-[#D97757] text-white font-bold ring-1 ring-[#1A1A1A]'
                                     : themeMode === 'dark'
                                     ? 'bg-white/10 hover:bg-white/20 text-white/80 hover:text-white border border-white/15'
                                     : 'bg-[#F5F0EB] hover:bg-[#1A1A1A] hover:text-white text-[#1A1A1A] border border-[#1A1A1A]/30'
@@ -896,7 +896,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             <div className="flex items-center gap-3 shrink-0">
               <button
                 onClick={togglePlay}
-                className="w-8 h-8 rounded-full bg-[#E85D2A] text-white flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
+                className="w-8 h-8 rounded-full bg-[#D97757] text-white flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
               >
                 {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
               </button>
@@ -923,7 +923,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     audioRef.current.currentTime = val / 1000;
                   }
                 }}
-                className={`w-full accent-[#E85D2A] h-1.5 cursor-pointer ${
+                className={`w-full accent-[#D97757] h-1.5 cursor-pointer ${
                   themeMode === 'dark' ? 'bg-white/15' : 'bg-[#1A1A1A]/15'
                 }`}
               />
@@ -933,7 +933,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               themeMode === 'dark' ? 'text-white/70' : 'text-[#1A1A1A]'
             }`}>
               {Object.keys(wordOverrides).length > 0 && (
-                <div className="flex items-center gap-1.5 bg-[#E85D2A]/15 border border-[#E85D2A]/40 px-2 py-0.5 rounded text-[8px] text-[#E85D2A]">
+                <div className="flex items-center gap-1.5 bg-[#D97757]/15 border border-[#D97757]/40 px-2 py-0.5 rounded text-[8px] text-[#D97757]">
                   <span>{Object.keys(wordOverrides).length} OVERRIDES</span>
                   <button
                     onClick={() => setWordOverrides({})}
@@ -943,7 +943,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                   </button>
                 </div>
               )}
-              <span className="text-[#E85D2A] font-bold">
+              <span className="text-[#D97757] font-bold">
                 {selectedLines.length} LINES
               </span>
               <span>•</span>
@@ -989,8 +989,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                 className={`p-3 border-2 transition-all cursor-pointer flex flex-col gap-1.5 rounded-sm ${
                   archetype === 'auto_semantic'
                     ? themeMode === 'dark'
-                      ? 'border-[#E85D2A] bg-[#E85D2A]/15 shadow-[3px_3px_0px_rgba(255,255,255,0.1)]'
-                      : 'border-[#E85D2A] bg-[#FFF5F0] shadow-[3px_3px_0px_#1A1A1A]'
+                      ? 'border-[#D97757] bg-[#D97757]/15 shadow-[3px_3px_0px_rgba(255,255,255,0.1)]'
+                      : 'border-[#D97757] bg-[#FFF5F0] shadow-[3px_3px_0px_#1A1A1A]'
                     : themeMode === 'dark'
                     ? 'border-white/15 hover:border-white/40 bg-[#1C1C22]'
                     : 'border-[#1A1A1A]/30 hover:border-[#1A1A1A] bg-white'
@@ -1003,7 +1003,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                       AUTO SEMANTIC DIRECTOR
                     </span>
                   </div>
-                  <span className="text-[7px] font-bold bg-[#E85D2A] text-white px-1.5 py-0.5 tracking-wider uppercase rounded-xs">
+                  <span className="text-[7px] font-bold bg-[#D97757] text-white px-1.5 py-0.5 tracking-wider uppercase rounded-xs">
                     SMART ADAPTIVE
                   </span>
                 </div>
@@ -1042,7 +1042,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                           onClick={() => setInferenceMode('ollama')}
                           className={`px-2 py-0.5 text-[8px] font-mono font-bold border transition-colors cursor-pointer flex items-center gap-1 ${
                             inferenceMode === 'ollama'
-                              ? 'bg-[#E85D2A] text-white border-[#E85D2A]'
+                              ? 'bg-[#D97757] text-white border-[#D97757]'
                               : themeMode === 'dark' ? 'border-white/20 text-white/60 hover:text-white' : 'border-[#1A1A1A]/30 text-[#6B6B6B]'
                           }`}
                         >
@@ -1092,8 +1092,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                               disabled={isAnalyzingOllama}
                               className={`w-full py-1.5 px-2 text-[9px] font-bold uppercase tracking-wider font-mono border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                                 isAnalyzingOllama
-                                  ? 'bg-[#E85D2A]/30 text-white cursor-wait border-[#E85D2A]'
-                                  : 'bg-[#E85D2A] text-white hover:bg-[#d44c1a] border-[#E85D2A]'
+                                  ? 'bg-[#D97757]/30 text-white cursor-wait border-[#D97757]'
+                                  : 'bg-[#D97757] text-white hover:bg-[#C66545] border-[#D97757]'
                               }`}
                             >
                               {isAnalyzingOllama ? (
@@ -1112,7 +1112,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                             {ollamaProgress && (
                               <div className="w-full bg-black/10 dark:bg-white/10 h-1 overflow-hidden">
                                 <div 
-                                  className="bg-[#E85D2A] h-full transition-all duration-300" 
+                                  className="bg-[#D97757] h-full transition-all duration-300" 
                                   style={{ width: `${ollamaProgress.percent}%` }}
                                 />
                               </div>
@@ -1120,7 +1120,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                           </>
                         ) : (
                           <div className="text-[8px] text-[#888] flex flex-col gap-1 leading-normal border-t border-dashed border-[#1A1A1A]/20 pt-1.5">
-                            <span className="font-bold text-[#E85D2A]">TO RUN LOCAL OLLAMA ON YOUR GTX 1650:</span>
+                            <span className="font-bold text-[#D97757]">TO RUN LOCAL OLLAMA ON YOUR GTX 1650:</span>
                             <span>1. In PowerShell: <code className="bg-black/10 dark:bg-white/10 px-1">winget install Ollama.Ollama</code></span>
                             <span>2. Launch model: <code className="bg-black/10 dark:bg-white/10 px-1">ollama run qwen2.5:3b</code> (Fits 2 GB VRAM)</span>
                             <span className="opacity-70 italic mt-0.5">Studio will automatically fall back to Fast Heuristic mode until connected.</span>
@@ -1150,8 +1150,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                       className={`p-2 border text-left transition-all cursor-pointer flex flex-col justify-between ${
                         archetype === archKey
                           ? themeMode === 'dark'
-                            ? 'border-2 border-[#E85D2A] bg-[#E85D2A]/20 shadow-[2px_2px_0px_#E85D2A]'
-                            : 'border-2 border-[#E85D2A] bg-[#F5F0EB] shadow-[2px_2px_0px_#1A1A1A]'
+                            ? 'border-2 border-[#D97757] bg-[#D97757]/20 shadow-[2px_2px_0px_#D97757]'
+                            : 'border-2 border-[#D97757] bg-[#F5F0EB] shadow-[2px_2px_0px_#1A1A1A]'
                           : themeMode === 'dark'
                           ? 'border-white/15 hover:border-white/40 bg-[#1C1C22]'
                           : 'border-[#1A1A1A]/30 hover:border-[#1A1A1A] bg-white'
@@ -1184,7 +1184,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               <select
                 value={fontFamily}
                 onChange={e => setFontFamily(e.target.value)}
-                className={`w-full p-2 text-xs font-mono focus:outline-none focus:border-[#E85D2A] cursor-pointer border ${
+                className={`w-full p-2 text-xs font-mono focus:outline-none focus:border-[#D97757] cursor-pointer border ${
                   themeMode === 'dark'
                     ? 'bg-[#1C1C22] border-white/20 text-white'
                     : 'bg-[#F5F0EB] border-[#1A1A1A] text-[#1A1A1A]'
@@ -1209,7 +1209,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               </div>
               <div className="flex justify-between">
                 <span className={themeMode === 'dark' ? 'text-white/50' : 'text-[#6B6B6B]'}>30 FPS FRAMES:</span>
-                <span className="font-bold text-[#E85D2A]">{totalFrames} frames</span>
+                <span className="font-bold text-[#D97757]">{totalFrames} frames</span>
               </div>
               <div className="flex justify-between">
                 <span className={themeMode === 'dark' ? 'text-white/50' : 'text-[#6B6B6B]'}>PROGMEM FLASH:</span>
@@ -1256,7 +1256,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           }`}>
             <div className="flex justify-between items-start">
               <div>
-                <span className="text-[9px] font-bold text-[#E85D2A] uppercase tracking-wider block">
+                <span className="text-[9px] font-bold text-[#D97757] uppercase tracking-wider block">
                   WORD MOTION OVERRIDE
                 </span>
                 <h3 className="text-base font-bold">
@@ -1300,8 +1300,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     className={`p-2 border text-left transition-all cursor-pointer flex flex-col justify-between ${
                       isSelected
                         ? themeMode === 'dark'
-                          ? 'border-2 border-[#E85D2A] bg-[#E85D2A]/20 font-bold shadow-[2px_2px_0px_#E85D2A]'
-                          : 'border-2 border-[#E85D2A] bg-[#FFF5F0] font-bold shadow-[2px_2px_0px_#1A1A1A]'
+                          ? 'border-2 border-[#D97757] bg-[#D97757]/20 font-bold shadow-[2px_2px_0px_#D97757]'
+                          : 'border-2 border-[#D97757] bg-[#FFF5F0] font-bold shadow-[2px_2px_0px_#1A1A1A]'
                         : themeMode === 'dark'
                         ? 'border-white/15 hover:border-white/40 bg-[#1C1C22]'
                         : 'border-[#1A1A1A]/30 hover:border-[#1A1A1A] bg-white'
@@ -1348,8 +1348,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                 onClick={() => setEditingWordTarget(null)}
                 className={`px-4 py-1.5 text-xs font-bold transition-colors cursor-pointer ${
                   themeMode === 'dark'
-                    ? 'bg-white text-black hover:bg-[#E85D2A] hover:text-white'
-                    : 'bg-[#1A1A1A] text-white hover:bg-[#E85D2A]'
+                    ? 'bg-white text-black hover:bg-[#D97757] hover:text-white'
+                    : 'bg-[#1A1A1A] text-white hover:bg-[#D97757]'
                 }`}
               >
                 DONE

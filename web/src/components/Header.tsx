@@ -73,90 +73,64 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       )}
       
-      <div className="flex items-center space-x-3">
+      <div className="flex items-center space-x-2.5">
         {gpuInfo && gpuInfo.webGlSupported && (
           <div
             onClick={onSettingsOpen}
-            className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 border border-[#1A1A1A] bg-[#F5F0EB] text-[9px] font-mono cursor-pointer hover:border-[#E85D2A] transition-colors"
+            className="hidden lg:flex items-center gap-2 px-2.5 py-1 border border-[#E8E5DE] bg-white rounded-lg text-xs font-sans text-[#5E5D59] cursor-pointer hover:border-[#D97757] transition-colors shadow-xs"
             title={`${gpuInfo.renderer}\nArchitecture: ${gpuInfo.isDedicated ? 'Dedicated GPU' : 'Integrated GPU'}`}
           >
             <span
               className={`w-1.5 h-1.5 rounded-full ${
-                gpuInfo.isDedicated ? 'bg-emerald-500 shadow-[0_0_5px_#10B981]' : 'bg-amber-500'
+                gpuInfo.isDedicated ? 'bg-emerald-500' : 'bg-amber-500'
               }`}
             />
-            <span className="font-bold text-[#1A1A1A]">{gpuInfo.simplifiedName}</span>
-            <span className={`text-[7px] px-1 py-0.2 font-bold uppercase rounded-xs ${
-              gpuInfo.isDedicated ? 'bg-[#1A1A1A] text-white' : 'bg-amber-100 text-amber-900 border border-amber-300'
+            <span className="font-medium text-[#141413]">{gpuInfo.simplifiedName}</span>
+            <span className={`text-[10px] font-mono px-1 py-0.2 rounded ${
+              gpuInfo.isDedicated ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
             }`}>
-              {gpuInfo.isDedicated ? 'DEDICATED' : 'INTEGRATED'}
+              {gpuInfo.isDedicated ? 'dGPU' : 'iGPU'}
             </span>
           </div>
         )}
 
         <button 
           onClick={onSettingsOpen}
-          className="p-2 bg-white border border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white transition-colors duration-150 rounded-none cursor-pointer"
-          title="Settings"
-          aria-label="Settings"
+          className="p-2 bg-white border border-[#E8E5DE] text-[#5E5D59] hover:text-[#141413] hover:bg-[#FAF9F5] transition-colors rounded-lg shadow-xs cursor-pointer"
+          title="Hardware Settings"
+          aria-label="Hardware Settings"
         >
           <Settings className="w-4 h-4" />
         </button>
 
-        <ClickSpark
-          sparkColor="#E85D2A"
-          sparkCount={8}
-          sparkSize={6}
-          sparkRadius={18}
-          duration={300}
+        <button
+          onClick={onSerialToggle}
+          className="flex items-center space-x-2 px-3 py-1.5 bg-white border border-[#E8E5DE] text-xs font-sans font-medium text-[#141413] hover:bg-[#FAF9F5] transition-colors rounded-lg shadow-xs cursor-pointer"
         >
-          <button
-            onClick={onSerialToggle}
-            className="flex items-center space-x-2 px-3 py-1.5 bg-white border border-[#1A1A1A] text-xs font-mono font-medium text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white transition-colors duration-150 rounded-none cursor-pointer"
-          >
-            <span
-              className={`w-[6px] h-[6px] shrink-0 ${
-                serialConnected ? 'bg-[#E85D2A]' : 'bg-[#6B6B6B]'
-              }`}
-            />
-            <span className="font-mono">
-              <DecryptedText
-                key={serialConnected ? 'connected' : 'disconnected'}
-                text={serialConnected ? 'Connected' : 'Connect USB'}
-                speed={30}
-                characters="0123456789ABCDEF"
-                animateOn="view"
-              />
-            </span>
-          </button>
-        </ClickSpark>
+          <span
+            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+              serialConnected ? 'bg-emerald-500' : 'bg-[#87867F]'
+            }`}
+          />
+          <span>{serialConnected ? 'USB Active' : 'Connect USB'}</span>
+        </button>
 
-        <ClickSpark
-          sparkColor="#E85D2A"
-          sparkSize={7}
-          sparkRadius={22}
-          sparkCount={12}
-          duration={350}
+        <button
+          onClick={onExportClick}
+          disabled={!hasMedia || isExporting}
+          className={`px-4 py-1.5 text-xs font-sans font-medium rounded-lg shadow-xs transition-all cursor-pointer ${
+            hasMedia && !isExporting
+              ? 'bg-[#D97757] hover:bg-[#C66545] text-white'
+              : 'bg-[#FAF9F5] border border-[#E8E5DE] text-[#87867F] opacity-60 cursor-not-allowed'
+          }`}
         >
-          <SpecularButton
-            onClick={onExportClick}
-            disabled={!hasMedia || isExporting}
-            size="sm"
-            tint={hasMedia ? "#E85D2A" : "#F5F0EB"}
-            tintOpacity={1}
-            baseColor={hasMedia ? "#E85D2A" : "#F5F0EB"}
-            lineColor="#1A1A1A"
-            textColor={hasMedia ? "#FFFFFF" : "#6B6B6B"}
-            radius={0}
-            className={`text-xs font-mono font-bold tracking-wider rounded-none border-2 border-[#1A1A1A] ${!hasMedia || isExporting ? 'opacity-60 cursor-not-allowed' : ''}`}
-          >
-            {isExporting ? `COMPILING ${exportProgress}%` : 'COMPILE'}
-          </SpecularButton>
-        </ClickSpark>
+          {isExporting ? `Compiling ${exportProgress}%` : 'Export Header'}
+        </button>
       </div>
+
       {exportError && (
-        <div role="alert" className="absolute right-6 top-full mt-2 max-w-sm border border-[#1A1A1A] bg-white px-3 py-2 text-[10px] font-mono text-[#B42318] shadow-md">
-          EXPORT FAILED: {exportError}
+        <div role="alert" className="absolute right-6 top-full mt-2 max-w-sm border border-red-200 bg-red-50 px-3 py-2 text-xs font-sans text-red-700 rounded-lg shadow-md">
+          Export failed: {exportError}
         </div>
       )}
     </header>
