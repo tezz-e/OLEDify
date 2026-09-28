@@ -1,10 +1,20 @@
 import { DecodedMedia, DecodeProgress, ExtractedFrame, DecoderOptions } from '../types/media';
 
+import { GifReader } from 'omggif';
+
 export async function decodeVideo(
   file: File,
   options: DecoderOptions = {}
 ): Promise<DecodedMedia> {
   const { targetFps = 30, onProgress } = options;
+
+  if (file.name.endsWith('.h')) {
+    return decodeHeader(file, options);
+  }
+
+  if (file.type === 'image/gif' || file.name.endsWith('.gif')) {
+    return decodeGif(file, options);
+  }
 
   if ('VideoDecoder' in window && file.type === 'video/mp4') {
     return decodeVideoWebCodecs(file, { targetFps, onProgress });
@@ -142,4 +152,145 @@ async function decodeVideoLegacy(
     
     video.onerror = () => reject(new Error('Failed to load video'));
   });
+}
+
+async function decodeGif(
+  file: File,
+  options: DecoderOptions
+): Promise<DecodedMedia> {
+  const buffer = await file.arrayBuffer();
+  const reader = new GifReader(new Uint8Array(buffer));
+  const width = reader.width;
+  const height = reader.height;
+  const frames: ExtractedFrame[] = [];
+  
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d')!;
+  const imageData = ctx.createImageData(width, height);
+  
+  let totalDurationMs = 0;
+
+  for (let i = 0; i < reader.numFrames(); i++) {
+    const frameInfo = reader.frameInfo(i);
+    
+    // omgGif decodes into RGBA array
+    reader.decodeAndBlitFrameRGBA(i, imageData.data);
+    
+    // Save state
+    const newImageData = new ImageData(
+      new Uint8ClampedArray(imageData.data),
+      width,
+      height
+    );
+    
+    const durationMs = (frameInfo.delay || 10) * 10; // delay is in hundredths of a second, default to 100ms if 0
+    frames.push({
+      index: i,
+      timestampMs: totalDurationMs,
+      durationMs: durationMs,
+      imageData: newImageData
+    });
+    totalDurationMs += durationMs;
+
+    if (options.onProgress) {
+      options.onProgress({
+        stage: 'decoding',
+        currentFrame: i,
+        totalFrames: reader.numFrames(),
+        percent: ((i + 1) / reader.numFrames()) * 100
+      });
+    }
+  }
+  
+  return {
+    sourceInfo: {
+      type: 'gif',
+      filename: file.name,
+      sourceWidth: width,
+      sourceHeight: height,
+      frameCount: frames.length,
+      fps: frames.length > 0 ? 1000 / frames[0].durationMs : 10,
+      durationMs: totalDurationMs
+    },
+    frames
+  };
+}
+
+async function decodeHeader(
+  file: File,
+  options: DecoderOptions
+): Promise<DecodedMedia> {
+  const text = await file.text();
+  
+  // Extract width, height, frames, fps
+  const widthMatch = text.match(/#define FRAME_WIDTH (\d+)/);
+  const heightMatch = text.match(/#define FRAME_HEIGHT (\d+)/);
+  const fpsMatch = text.match(/#define FRAME_FPS (\d+)/);
+  
+  const width = widthMatch ? parseInt(widthMatch[1]) : 128;
+  const height = heightMatch ? parseInt(heightMatch[1]) : 64;
+  const fps = fpsMatch ? parseInt(fpsMatch[1]) : 30;
+  
+  const frames: ExtractedFrame[] = [];
+  
+  // Match arrays of hex bytes
+  const arrayMatches = text.match(/\{\s*(0x[0-9a-fA-F]{2}[,\s]*)+\}/g);
+  
+  if (arrayMatches) {
+    let index = 0;
+    for (const arrStr of arrayMatches) {
+      const hexVals = arrStr.match(/0x[0-9a-fA-F]{2}/g);
+      if (hexVals && hexVals.length > 0) {
+        // Convert XBMP to ImageData
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d')!;
+        const imageData = ctx.createImageData(width, height);
+        const bytesPerRow = Math.ceil(width / 8);
+        
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            const byteIdx = y * bytesPerRow + Math.floor(x / 8);
+            if (byteIdx < hexVals.length) {
+              const byte = parseInt(hexVals[byteIdx], 16);
+              const bitBit = x % 8;
+              const isWhite = (byte & (1 << bitBit)) !== 0;
+              const val = isWhite ? 255 : 0;
+              const rgbaIdx = (y * width + x) * 4;
+              imageData.data[rgbaIdx] = val;
+              imageData.data[rgbaIdx + 1] = val;
+              imageData.data[rgbaIdx + 2] = val;
+              imageData.data[rgbaIdx + 3] = 255;
+            }
+          }
+        }
+        
+        frames.push({
+          index,
+          timestampMs: index * (1000 / fps),
+          durationMs: 1000 / fps,
+          imageData
+        });
+        index++;
+      }
+    }
+  } else {
+    throw new Error("Could not parse arrays from header file");
+  }
+  
+  return {
+    sourceInfo: {
+      type: 'sequence',
+      filename: file.name,
+      sourceWidth: width,
+      sourceHeight: height,
+      frameCount: frames.length,
+      fps: fps,
+      durationMs: frames.length * (1000 / fps)
+    },
+    frames
+  };
 }

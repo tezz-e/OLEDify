@@ -88,7 +88,8 @@ export class WigglyEngine {
           threshold: 128,
           contrast: 0,
           brightness: 0,
-          invert: false
+          invert: false,
+          theme: 'cyan'
         });
         
         // Sharp Outline Thresholding: restore alpha but threshold it for a 1-bit crisp edge

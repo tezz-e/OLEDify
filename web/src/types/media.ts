@@ -27,7 +27,7 @@ export interface DecodedMedia {
   frames: ExtractedFrame[];
 }
 
-export type FitMode = 'cover' | 'contain' | 'stretch';
+export type FitMode = 'cover' | 'contain' | 'stretch' | 'manual';
 
 export interface CropSettings {
   mode: FitMode;

@@ -100,3 +100,40 @@ The integration must strictly preserve the 1-2px sharp black borders, the `#F5F0
 - [ ] At least 4 distinct React Bits components are integrated and actively working in the UI.
 - [ ] The core "WaxyBit Blueprint" aesthetic remains completely intact (no accidental rounded corners, drop shadows, or generic glass panels introduced).
 - [ ] The components do not obscure critical controls or negatively impact performance/usability.
+
+## Follow-up — 2026-09-24T18:12:06Z
+
+# Teamwork Project Prompt — Draft
+
+> Status: Launched
+> Goal: Delegate to teamwork_preview
+
+Research and evaluate technical approaches for generating cute, animated 128x64 1-bit character graphics (both clean dithered and wiggly hand-drawn styles) for non-artists. Explore any technical path—AI services, local models, procedural generation, SVG manipulation, or a combination—that successfully bridges the gap for users who cannot draw.
+
+Working directory: `c:\Users\manee\Desktop\oled\ai_research`
+Integrity mode: development
+
+## Requirements
+
+### R1. Explore All Generative Approaches
+Evaluate any technical approach that allows a non-artist to generate the core assets (e.g., cloud AI, local models, procedural generation, parametric vector libraries). Do not limit the research solely to AI if a better programmatic approach exists.
+
+### R2. Solve the "Motion & Style" Problem
+Research how to programmatically apply motion and style to these assets in the browser (e.g., how to reliably apply the 3-frame "line-boil" wiggly effect to generated art, and how to apply procedural motion like bouncing or floating).
+
+### R3. Technical Design Document
+Deliver a comprehensive markdown document (`oled_content_strategy.md`) that compares these approaches, focusing on how easily they can be integrated into a React/TypeScript web video editor to create a seamless "Creation Engine".
+
+## Acceptance Criteria
+
+### Comprehensive Comparison
+- [ ] The document explores at least 3 distinct technical paths for asset generation (e.g., Cloud AI, Local AI, Procedural/Library).
+- [ ] The document includes a comparison matrix evaluating: Quality (cuteness/accuracy to style), Latency (time to generate), and UX/Feasibility.
+
+### Practical Recommendations
+- [ ] The document provides a definitive recommendation for Phase 1 implementation (the most practical approach to start with).
+- [ ] The document clearly outlines the full data pipeline from the user's idea to the final 1-bit 128x64 rendered frames.
+
+## Follow-up — 2026-09-24T18:13:18Z
+
+URGENT CORRECTION: The target working directory for your research and output document should be `D:\espprojects\oled\ai_research`, NOT the C: drive path. The actual React web application you are designing the solution for is located at `D:\espprojects\oled\web\`. Please ensure your research and the final `oled_content_strategy.md` document are contextualized for and placed in the D: drive project.

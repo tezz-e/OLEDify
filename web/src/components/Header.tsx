@@ -10,6 +10,9 @@ interface HeaderProps {
   onExportClick: () => void;
   onSettingsOpen: () => void;
   hasMedia: boolean;
+  isExporting: boolean;
+  exportProgress: number;
+  exportError: string | null;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -18,9 +21,12 @@ export const Header: React.FC<HeaderProps> = ({
   onExportClick,
   onSettingsOpen,
   hasMedia,
+  isExporting,
+  exportProgress,
+  exportError,
 }) => {
   return (
-    <header className="w-full h-14 px-6 bg-white border-b-2 border-[#1A1A1A] flex items-center justify-between shrink-0 z-20">
+    <header className="relative w-full h-14 px-6 bg-white border-b-2 border-[#1A1A1A] flex items-center justify-between shrink-0 z-20">
       <div className="flex items-center">
         <h1 className="text-base font-bold tracking-wider font-mono text-[#1A1A1A] flex items-center gap-1.5 cursor-pointer select-none">
           <span className="text-[#E85D2A]">▲</span>
@@ -81,18 +87,25 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <SpecularButton
             onClick={onExportClick}
-            disabled={!hasMedia}
+            disabled={!hasMedia || isExporting}
             size="sm"
+            tint={hasMedia ? "#E85D2A" : "#F5F0EB"}
+            tintOpacity={1}
             baseColor={hasMedia ? "#E85D2A" : "#F5F0EB"}
             lineColor="#1A1A1A"
             textColor={hasMedia ? "#FFFFFF" : "#6B6B6B"}
             radius={0}
-            className={`text-xs font-mono font-bold tracking-wider rounded-none border-2 border-[#1A1A1A] ${!hasMedia ? 'opacity-60 cursor-not-allowed' : ''}`}
+            className={`text-xs font-mono font-bold tracking-wider rounded-none border-2 border-[#1A1A1A] ${!hasMedia || isExporting ? 'opacity-60 cursor-not-allowed' : ''}`}
           >
-            COMPILE
+            {isExporting ? `COMPILING ${exportProgress}%` : 'COMPILE'}
           </SpecularButton>
         </ClickSpark>
       </div>
+      {exportError && (
+        <div role="alert" className="absolute right-6 top-full mt-2 max-w-sm border border-[#1A1A1A] bg-white px-3 py-2 text-[10px] font-mono text-[#B42318] shadow-md">
+          EXPORT FAILED: {exportError}
+        </div>
+      )}
     </header>
   );
 };

@@ -163,6 +163,7 @@ export function DecryptedText({
     if (!isAnimating) return;
 
     let currentIteration = 0;
+    let localRevealed = new Set<number>(revealedIndices);
 
     const getNextIndex = (revealedSet: Set<number>) => {
       const textLength = text.length;
@@ -191,75 +192,67 @@ export function DecryptedText({
     };
 
     intervalRef.current = setInterval(() => {
-      setRevealedIndices(prevRevealed => {
-        if (sequential) {
-          if (direction === 'forward') {
-            if (prevRevealed.size < text.length) {
-              const nextIndex = getNextIndex(prevRevealed);
-              const newRevealed = new Set(prevRevealed);
-              newRevealed.add(nextIndex);
-              setDisplayText(shuffleText(text, newRevealed));
-              return newRevealed;
-            } else {
-              if (intervalRef.current) clearInterval(intervalRef.current);
-              setIsAnimating(false);
-              setIsDecrypted(true);
-              return prevRevealed;
-            }
-          }
-          if (direction === 'reverse') {
-            if (pointerRef.current < orderRef.current.length) {
-              const idxToRemove = orderRef.current[pointerRef.current++];
-              const newRevealed = new Set(prevRevealed);
-              newRevealed.delete(idxToRemove);
-              setDisplayText(shuffleText(text, newRevealed));
-              if (newRevealed.size === 0) {
-                if (intervalRef.current) clearInterval(intervalRef.current);
-                setIsAnimating(false);
-                setIsDecrypted(false);
-              }
-              return newRevealed;
-            } else {
-              if (intervalRef.current) clearInterval(intervalRef.current);
-              setIsAnimating(false);
-              setIsDecrypted(false);
-              return prevRevealed;
-            }
+      if (sequential) {
+        if (direction === 'forward') {
+          if (localRevealed.size < text.length) {
+            const nextIndex = getNextIndex(localRevealed);
+            localRevealed = new Set(localRevealed);
+            localRevealed.add(nextIndex);
+            setRevealedIndices(localRevealed);
+            setDisplayText(shuffleText(text, localRevealed));
+          } else {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+            setIsAnimating(false);
+            setIsDecrypted(true);
+            setDisplayText(text);
           }
         } else {
-          if (direction === 'forward') {
-            setDisplayText(shuffleText(text, prevRevealed));
-            currentIteration++;
-            if (currentIteration >= maxIterations) {
-              if (intervalRef.current) clearInterval(intervalRef.current);
-              setIsAnimating(false);
-              setDisplayText(text);
-              setIsDecrypted(true);
-            }
-            return prevRevealed;
-          }
-
-          if (direction === 'reverse') {
-            let currentSet = prevRevealed;
-            if (currentSet.size === 0) {
-              currentSet = fillAllIndices();
-            }
-            const removeCount = Math.max(1, Math.ceil(text.length / Math.max(1, maxIterations)));
-            const nextSet = removeRandomIndices(currentSet, removeCount);
-            setDisplayText(shuffleText(text, nextSet));
-            currentIteration++;
-            if (nextSet.size === 0 || currentIteration >= maxIterations) {
+          // reverse
+          if (pointerRef.current < orderRef.current.length) {
+            const idxToRemove = orderRef.current[pointerRef.current++];
+            localRevealed = new Set(localRevealed);
+            localRevealed.delete(idxToRemove);
+            setRevealedIndices(localRevealed);
+            setDisplayText(shuffleText(text, localRevealed));
+            if (localRevealed.size === 0) {
               if (intervalRef.current) clearInterval(intervalRef.current);
               setIsAnimating(false);
               setIsDecrypted(false);
-              setDisplayText(shuffleText(text, new Set()));
-              return new Set();
             }
-            return nextSet;
+          } else {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+            setIsAnimating(false);
+            setIsDecrypted(false);
           }
         }
-        return prevRevealed;
-      });
+      } else {
+        if (direction === 'forward') {
+          currentIteration++;
+          setDisplayText(shuffleText(text, localRevealed));
+          if (currentIteration >= maxIterations) {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+            setIsAnimating(false);
+            setDisplayText(text);
+            setIsDecrypted(true);
+          }
+        } else {
+          // reverse
+          if (localRevealed.size === 0) {
+            localRevealed = fillAllIndices();
+          }
+          const removeCount = Math.max(1, Math.ceil(text.length / Math.max(1, maxIterations)));
+          localRevealed = removeRandomIndices(localRevealed, removeCount);
+          setRevealedIndices(localRevealed);
+          setDisplayText(shuffleText(text, localRevealed));
+          currentIteration++;
+          if (localRevealed.size === 0 || currentIteration >= maxIterations) {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+            setIsAnimating(false);
+            setIsDecrypted(false);
+            setDisplayText(shuffleText(text, new Set()));
+          }
+        }
+      }
     }, speed);
 
     return () => {
@@ -275,9 +268,7 @@ export function DecryptedText({
     shuffleText,
     direction,
     fillAllIndices,
-    removeRandomIndices,
-    characters,
-    useOriginalCharsOnly
+    removeRandomIndices
   ]);
 
   const handleClick = () => {

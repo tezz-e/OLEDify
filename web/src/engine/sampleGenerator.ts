@@ -61,6 +61,81 @@ const cactus_c = [
   0x03, 0xe0, 0x1f, 0x03, 0xe0
 ];
 
+export const DINO_RUNNER_FRAME_COUNT = 300;
+export const DINO_RUNNER_FPS = 30;
+
+const DINO_SCALE = 2;
+const DINO_X = 20 * DINO_SCALE;
+const DINO_WIDTH = TREX_W * DINO_SCALE;
+const DINO_GROUND_Y = 54 * DINO_SCALE;
+const DINO_SPEED = 4;
+const DINO_TRIGGER_X = DINO_X + DINO_WIDTH + DINO_SPEED * 11;
+const DINO_JUMP_HEIGHT = 68;
+const DINO_JUMP_RISE_FRAMES = 22;
+const DINO_JUMP_HOLD_END = 22;
+const DINO_JUMP_DURATION = 44;
+const DINO_WORLD_WIDTH = DINO_SPEED * DINO_RUNNER_FRAME_COUNT;
+
+const DINO_CACTUSES = [
+  { spawnX: 234, width: CACTUS_A_W * DINO_SCALE, type: 'single' },
+  { spawnX: 534, width: CACTUS_C_W * DINO_SCALE, type: 'cluster' },
+  { spawnX: 834, width: CACTUS_A_W * DINO_SCALE, type: 'single' },
+  { spawnX: 1134, width: CACTUS_C_W * DINO_SCALE, type: 'cluster' },
+] as const;
+
+const DINO_JUMP_STARTS = DINO_CACTUSES.map(({ spawnX }) =>
+  Math.ceil((spawnX - DINO_TRIGGER_X) / DINO_SPEED)
+);
+
+export interface DinoRunnerFrameState {
+  dino: { x: number; y: number; width: number; height: number };
+  obstacles: { x: number; y: number; width: number; height: number; type: 'single' | 'cluster' }[];
+}
+
+function positiveModulo(value: number, divisor: number): number {
+  return ((value % divisor) + divisor) % divisor;
+}
+
+export function getDinoRunnerFrameState(frame: number): DinoRunnerFrameState {
+  const frameIndex = positiveModulo(Math.floor(frame), DINO_RUNNER_FRAME_COUNT);
+  let jumpAge = -1;
+
+  for (const jumpStart of DINO_JUMP_STARTS) {
+    if (jumpStart <= frameIndex) jumpAge = frameIndex - jumpStart;
+  }
+
+  let jumpHeight = 0;
+  if (jumpAge >= 0 && jumpAge < DINO_JUMP_RISE_FRAMES) {
+    const progress = jumpAge / DINO_JUMP_RISE_FRAMES;
+    // Parabolic rise (ease-out quadratic) for true gravity feel
+    const easedProgress = 1 - (1 - progress) * (1 - progress);
+    jumpHeight = DINO_JUMP_HEIGHT * easedProgress;
+  } else if (jumpAge >= DINO_JUMP_RISE_FRAMES && jumpAge < DINO_JUMP_HOLD_END) {
+    jumpHeight = DINO_JUMP_HEIGHT;
+  } else if (jumpAge >= DINO_JUMP_HOLD_END && jumpAge < DINO_JUMP_DURATION) {
+    const progress = (jumpAge - DINO_JUMP_HOLD_END) / (DINO_JUMP_DURATION - DINO_JUMP_HOLD_END);
+    // Parabolic fall (ease-in quadratic) for true gravity feel
+    const easedProgress = progress * progress;
+    jumpHeight = DINO_JUMP_HEIGHT * (1 - easedProgress);
+  }
+
+  const dino = {
+    x: DINO_X,
+    y: DINO_GROUND_Y - TREX_H * DINO_SCALE - jumpHeight,
+    width: DINO_WIDTH,
+    height: TREX_H * DINO_SCALE,
+  };
+  const obstacles = DINO_CACTUSES.map(({ spawnX, width, type }) => ({
+    x: positiveModulo(spawnX - frameIndex * DINO_SPEED, DINO_WORLD_WIDTH),
+    y: DINO_GROUND_Y - CACTUS_A_H * DINO_SCALE,
+    width,
+    height: CACTUS_A_H * DINO_SCALE,
+    type,
+  }));
+
+  return { dino, obstacles };
+}
+
 function drawBitmap(
   ctx: CanvasRenderingContext2D,
   bytes: number[],
@@ -113,8 +188,8 @@ export type SamplePresetType =
 export function generateSampleMedia(sampleType: SamplePresetType): DecodedMedia {
   const width = 256;
   const height = 128;
-  const targetFps = 30;
-  const totalFrames = 180; // 6.0 full seconds of high-frame-rate animation @ 30 FPS
+  const targetFps = DINO_RUNNER_FPS;
+  const totalFrames = sampleType === 'dino' ? DINO_RUNNER_FRAME_COUNT : 180;
   const frames: ExtractedFrame[] = [];
 
   for (let f = 0; f < totalFrames; f++) {
@@ -130,38 +205,34 @@ export function generateSampleMedia(sampleType: SamplePresetType): DecodedMedia 
     ctx.strokeStyle = '#FFFFFF';
 
     if (sampleType === 'dino') {
-      const S = 2;
-      const groundY = 54 * S;
+      const S = DINO_SCALE;
+      const groundY = DINO_GROUND_Y;
       ctx.fillRect(0, groundY, width, 2);
 
-      for (let dot = 0; dot < 8; dot++) {
-        const dotX = (dot * 36 - f * 6 + 1000) % width;
-        ctx.fillRect(dotX, groundY + 4, 3 * S, 1 * S);
+      for (let dot = 0; dot < DINO_WORLD_WIDTH / 36; dot++) {
+        const dotX = positiveModulo(dot * 36 - f * DINO_SPEED, DINO_WORLD_WIDTH);
+        if (dotX < width) ctx.fillRect(dotX, groundY + 4, 3 * S, 1 * S);
       }
 
-      // Periodic jump cycle every 60 frames (starts at 12, peaks at 27, lands at 42)
-      const cycleF = f % 60;
-      let jumpY = 0;
-      if (cycleF >= 12 && cycleF <= 42) {
-        const progress = (cycleF - 12) / 30;
-        jumpY = Math.sin(progress * Math.PI) * 32 * S; // 64px clearance
-      }
+      const runnerState = getDinoRunnerFrameState(f);
+      const currentDinoFrame = runnerState.dino.y < DINO_GROUND_Y - TREX_H * S
+        ? trex_run1
+        : (Math.floor(f / 3) % 2 === 0 ? trex_run1 : trex_run2);
+      drawBitmap(ctx, currentDinoFrame, TREX_W, TREX_H, runnerState.dino.x, runnerState.dino.y, S);
 
-      const dinoX = 20 * S; // 40px
-      const dinoY = (54 - TREX_H) * S - jumpY;
-      const currentDinoFrame = jumpY > 0 ? trex_run1 : (Math.floor(f / 3) % 2 === 0 ? trex_run1 : trex_run2);
-      drawBitmap(ctx, currentDinoFrame, TREX_W, TREX_H, dinoX, dinoY, S);
-
-      // Cactus 1 arrives right under Dino at peak jump (cycleF = 27)
-      const cactus1X = dinoX + (27 - cycleF) * 7.5;
-      if (cactus1X > -30 && cactus1X < width + 40) {
-        drawBitmap(ctx, cactus_a, CACTUS_A_W, CACTUS_A_H, cactus1X, (54 - CACTUS_A_H) * S, S);
-      }
-
-      // Cactus 2 arrives midway in sequence
-      const cactus2X = dinoX + (57 - cycleF) * 7.5;
-      if (cactus2X > -40 && cactus2X < width + 40) {
-        drawBitmap(ctx, cactus_c, CACTUS_C_W, CACTUS_C_H, cactus2X, (54 - CACTUS_C_H) * S, S);
+      for (const obstacle of runnerState.obstacles) {
+        if (obstacle.x > -obstacle.width && obstacle.x < width) {
+          const isCluster = obstacle.type === 'cluster';
+          drawBitmap(
+            ctx,
+            isCluster ? cactus_c : cactus_a,
+            isCluster ? CACTUS_C_W : CACTUS_A_W,
+            CACTUS_A_H,
+            obstacle.x,
+            obstacle.y,
+            S
+          );
+        }
       }
 
       ctx.font = 'bold 12px monospace';

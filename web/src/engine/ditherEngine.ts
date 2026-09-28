@@ -164,13 +164,14 @@ export function applyDithering(
 /**
  * Generates a ready-to-compile C++ `src/frames.h` string for PlatformIO with hardware config setup comments.
  */
-export function generateCppHeader(
+export async function generateCppHeader(
   allXbmpFrames: Uint8Array[],
   targetFps: number = 30,
   hwConfig?: HardwareConfig,
   width: number = 128,
-  height: number = 64
-): string {
+  height: number = 64,
+  onProgress?: (progress: number) => void
+): Promise<string> {
   const numFrames = allXbmpFrames.length;
   const bytesPerFrame = width * (height / 8);
   const sda = hwConfig ? hwConfig.sdaPin : 8;
@@ -195,14 +196,17 @@ export function generateCppHeader(
   cpp += `const uint8_t reel_frames[NUM_FRAMES][FRAME_SIZE_BYTES] PROGMEM = {\n`;
 
   for (let f = 0; f < numFrames; f++) {
-    cpp += `  { `;
     const frame = allXbmpFrames[f];
     const hexArray: string[] = [];
     for (let b = 0; b < frame.length; b++) {
       hexArray.push(`0x${frame[b].toString(16).padStart(2, '0').toUpperCase()}`);
     }
-    cpp += hexArray.join(', ');
-    cpp += f < numFrames - 1 ? ` },\n` : ` }\n`;
+    cpp += `  { ${hexArray.join(', ')}${f < numFrames - 1 ? ' },\n' : ' }\n'}`;
+
+    if ((f + 1) % 12 === 0 || f === numFrames - 1) {
+      onProgress?.(numFrames === 0 ? 100 : Math.round(((f + 1) / numFrames) * 100));
+      await new Promise<void>(resolve => setTimeout(resolve, 0));
+    }
   }
 
   cpp += `};\n\n#endif // FRAMES_H\n`;

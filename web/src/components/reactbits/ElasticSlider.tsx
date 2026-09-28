@@ -150,7 +150,7 @@ const Slider: React.FC<SliderProps> = ({
           style={{
             x: useTransform(() => (region === 'left' ? -overflow.get() / scale.get() : 0))
           }}
-          className="text-[#1A1A1A] font-bold font-mono text-lg shrink-0 w-4 text-center cursor-pointer flex items-center justify-center"
+          className="text-[#1A1A1A] font-bold font-mono text-lg shrink-0 w-auto min-w-4 px-1 text-center cursor-pointer flex items-center justify-center"
         >
           {leftIcon}
         </motion.div>

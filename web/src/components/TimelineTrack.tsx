@@ -300,11 +300,11 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
 
   return (
     <div 
-      className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[#F5F0EB] relative select-none"
+      className="flex-1 flex flex-col min-h-0 bg-[#F5F0EB] relative select-none"
     >
 
       {/* Header bar */}
-      <div className="px-3 py-1.5 border-b border-[#1A1A1A]/20 flex items-center justify-between shrink-0 bg-[#EDEAE5]">
+      <div className="px-3 py-1.5 border-b border-[#1A1A1A]/20 flex items-center justify-between shrink-0 bg-[#EDEAE5] overflow-x-visible">
         <div className="flex items-center gap-2">
           <span className="text-[9px] font-mono font-bold tracking-widest text-[#1A1A1A] uppercase">
             {totalActiveFrames} frames ({clips.length} clips)
@@ -316,11 +316,10 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
           )}
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-[9px] font-mono text-[#666] font-bold uppercase tracking-wider">ZOOM</span>
-            <div className="w-56 sm:w-64">
+        <div className="ml-auto mr-16 flex min-w-0 shrink-0 items-center">
+          <div className="w-48 sm:w-52 min-w-0">
               <ElasticSlider
+                leftIcon={<span className="flex items-center gap-1"><span className="text-[9px] tracking-wider">ZOOM</span><span>-</span></span>}
                 startingValue={0}
                 maxValue={100}
                 defaultValue={Math.max(0, Math.min(100, 100 * Math.log(zoomLevel / MIN_ZOOM) / Math.log(ZOOM_RATIO)))}
@@ -330,7 +329,6 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
                   onZoomChange(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, nextZoom)));
                 }}
               />
-            </div>
           </div>
         </div>
       </div>

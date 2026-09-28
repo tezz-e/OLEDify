@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { X, Copy, Download, Save, Check, Zap } from 'lucide-react';
 import { flashAnimationToDevice } from '../engine/flasher';
-import { GlassSurface } from './reactbits/GlassSurface';
 import { CountUp } from './reactbits/CountUp';
 import { ClickSpark } from './reactbits/ClickSpark';
 import { DecryptedText } from './reactbits/DecryptedText';
@@ -27,6 +26,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const [copied, setCopied] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [flashStatus, setFlashStatus] = useState<'idle' | 'flashing' | 'flashed' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -65,8 +65,6 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     }
   };
 
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
   const handleFlash = async () => {
     try {
       setErrorMessage(null);
@@ -81,17 +79,18 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     }
   };
 
-  const previewLines = cppCode.split('\n').slice(0, 15).join('\n') + '\n... (truncated)';
+  const previewLines = cppCode ? cppCode.split('\n').slice(0, 15).join('\n') + '\n... (truncated)' : '// No code generated';
+  const validFrameCount = typeof frameCount === 'number' && !isNaN(frameCount) ? Math.max(0, frameCount) : 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-fade-in">
-      <GlassSurface borderRadius={0} className="max-w-2xl w-full flex flex-col animate-slide-up bg-white">
+      <div className="max-w-2xl w-full flex flex-col animate-slide-up bg-white border-2 border-[#1A1A1A] shadow-[8px_8px_0_0_#1A1A1A]">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b-2 border-[#1A1A1A]">
           <h3 className="text-xs font-bold tracking-widest text-[#1A1A1A] uppercase font-mono">
             <DecryptedText text="EXPORT_CPP_ARRAY" speed={30} animateOn="view" />
           </h3>
-          <button onClick={onClose} className="text-[#6B6B6B] hover:text-[#1A1A1A] transition-colors p-1 border border-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white">
+          <button onClick={onClose} className="text-[#6B6B6B] hover:text-[#1A1A1A] transition-colors p-1 border border-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white cursor-pointer">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -111,7 +110,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               <button
                 onClick={() => { setActiveTab('flash'); handleFlash(); }}
                 disabled={flashStatus === 'flashing'}
-                className={`w-full flex items-center justify-between px-3 py-2 text-[10px] font-bold tracking-widest uppercase font-mono transition-colors border ${
+                className={`w-full flex items-center justify-between px-3 py-2 text-[10px] font-bold tracking-widest uppercase font-mono transition-colors border cursor-pointer ${
                   activeTab === 'flash' 
                     ? 'bg-[#E85D2A] border-[#1A1A1A] text-white' 
                     : 'bg-white border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white'
@@ -136,10 +135,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             >
               <button
                 onClick={() => { setActiveTab('save'); handleSaveToProject(); }}
-                className={`w-full flex items-center justify-between px-3 py-2 text-[10px] font-bold tracking-widest uppercase font-mono transition-colors border ${
+                className={`w-full flex items-center justify-between px-3 py-2 text-[10px] font-bold tracking-widest uppercase font-mono transition-colors border cursor-pointer ${
                   activeTab === 'save' 
                     ? 'bg-[#1A1A1A] border-[#1A1A1A] text-white' 
-                    : 'bg-white border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white'
+                    : 'bg-[#1A1A1A] text-white hover:bg-white hover:text-[#1A1A1A]'
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -159,7 +158,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             >
               <button
                 onClick={() => { setActiveTab('download'); handleDownload(); }}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold tracking-widest uppercase font-mono transition-colors border ${
+                className={`w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold tracking-widest uppercase font-mono transition-colors border cursor-pointer ${
                   activeTab === 'download' 
                     ? 'bg-[#1A1A1A] border-[#1A1A1A] text-white' 
                     : 'bg-white border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white'
@@ -180,7 +179,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             >
               <button
                 onClick={() => { setActiveTab('copy'); handleCopy(); }}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold tracking-widest uppercase font-mono transition-colors border ${
+                className={`w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold tracking-widest uppercase font-mono transition-colors border cursor-pointer ${
                   activeTab === 'copy' 
                     ? 'bg-[#1A1A1A] border-[#1A1A1A] text-white' 
                     : 'bg-white border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white'
@@ -198,7 +197,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               <span>PREVIEW: frames.h</span>
               <span className="text-[#E85D2A] font-bold flex items-center gap-1">
                 <span>PROGMEM: ~</span>
-                <CountUp to={Math.round((frameCount * 1024) / 1024)} duration={0.8} />
+                <CountUp to={Math.round((validFrameCount * 1024) / 1024)} duration={0.8} />
                 <span>KB</span>
               </span>
             </div>
@@ -211,12 +210,12 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         {/* Footer */}
         <div className="px-4 py-3 border-t-2 border-[#1A1A1A] bg-[#F5F0EB] flex justify-between items-center text-[10px] font-mono text-[#6B6B6B]">
           <span className="flex items-center gap-1">
-            <CountUp to={frameCount} duration={0.8} />
+            <CountUp to={validFrameCount} duration={0.8} />
             <span>FRAMES_EXPORTED</span>
           </span>
           <span>FRAME_SIZE: 1024 BYTES</span>
         </div>
-      </GlassSurface>
+      </div>
     </div>
   );
 };

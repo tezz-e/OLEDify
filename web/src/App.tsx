@@ -31,7 +31,45 @@ import { serialStreamer } from './engine/webSerialStreamer';
 import { renderCropTo128x64, imageDataToCanvas, computeCoverCrop } from './engine/cropEngine';
 import { generateSampleMedia, SamplePresetType } from './engine/sampleGenerator';
 
-export default function App() {
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("React ErrorBoundary caught error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#F5F0EB] text-[#1A1A1A] p-6 font-mono">
+          <div className="bg-white border-2 border-[#1A1A1A] p-6 max-w-lg shadow-[8px_8px_0_0_#1A1A1A] flex flex-col gap-4">
+            <h2 className="text-sm font-bold text-[#E85D2A] uppercase tracking-wider">⚠️ RECOVERY MODE ACTIVATED</h2>
+            <p className="text-xs text-[#6B6B6B]">An unexpected runtime error occurred, but application state was preserved.</p>
+            <pre className="p-3 bg-[#1A1A1A] text-white text-[10px] rounded overflow-auto max-h-36">
+              {this.state.error?.message || 'Unknown error'}
+            </pre>
+            <button
+              onClick={() => { this.setState({ hasError: false, error: null }); window.location.reload(); }}
+              className="py-2 px-4 bg-[#E85D2A] text-white text-xs font-bold border border-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white transition-colors cursor-pointer"
+            >
+              RELOAD STUDIO
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function MainApp() {
   // --- STATE ---
   // Media & Playback
   const [assets, setAssets] = useState<Record<string, MediaAsset>>({});
@@ -51,12 +89,16 @@ export default function App() {
   const [serialConnected, setSerialConnected] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
+  const [exportError, setExportError] = useState<string | null>(null);
   const [rawSourceFrame, setRawSourceFrame] = useState<ImageData | null>(null);
   const [previewFitMode, setPreviewFitMode] = useState<'contain' | 'cover'>('cover');
   const [cppCode, setCppCode] = useState('');
   const [exportXbmpFrames, setExportXbmpFrames] = useState<Uint8Array[]>([]);
 
   const fullPreviewCanvasRef = useRef<HTMLCanvasElement>(null);
+  const exportInProgressRef = useRef(false);
   const lastStreamTime = useRef(0);
 
   // WebSerial Auto Disconnect Handler
@@ -107,8 +149,10 @@ export default function App() {
     
     clips.forEach(clip => {
       const asset = assets[clip.assetId];
-      if (asset && asset.media) {
-        for (let i = clip.inFrame; i <= clip.outFrame; i++) {
+      if (asset && asset.media && asset.media.frames) {
+        const start = Math.max(0, clip.inFrame);
+        const end = Math.min(asset.media.frames.length - 1, clip.outFrame);
+        for (let i = start; i <= end; i++) {
           if (asset.media.frames[i]) {
             frames.push({
                ...asset.media.frames[i],
@@ -121,7 +165,9 @@ export default function App() {
 
     if (frames.length === 0) return null;
 
-    const firstAsset = assets[clips[0].assetId];
+    const firstAsset = clips[0] ? assets[clips[0].assetId] : undefined;
+    if (!firstAsset || !firstAsset.media) return null;
+
     return {
        sourceInfo: {
           ...firstAsset.media.sourceInfo,
@@ -174,47 +220,6 @@ export default function App() {
     });
   };
 
-  const loadAshkeJson = async () => {
-    try {
-      const res = await fetch('/ashke.json');
-      const data = await res.json();
-      const frames: ExtractedFrame[] = await Promise.all(data.frames.map(async (b64: string, index: number) => {
-        const img = new Image();
-        img.src = b64;
-        await new Promise(r => img.onload = r);
-        const canvas = document.createElement('canvas');
-        canvas.width = 128; canvas.height = 64;
-        const ctx = canvas.getContext('2d')!;
-        ctx.drawImage(img, 0, 0);
-        return {
-          index,
-          timestampMs: index * (1000 / data.fps),
-          durationMs: 1000 / data.fps,
-          imageData: ctx.getImageData(0, 0, 128, 64)
-        };
-      }));
-      
-      const newMedia: DecodedMedia = {
-        sourceInfo: {
-          type: 'video', filename: 'ashke_generated', sourceWidth: 128, sourceHeight: 64,
-          frameCount: frames.length, fps: data.fps, durationMs: frames.length * (1000/data.fps)
-        },
-        frames
-      };
-      
-      const assetId = "asset_ashke_" + Date.now();
-      const clipId = "clip_" + Date.now();
-      
-      setAssets(prev => ({ ...prev, [assetId]: { id: assetId, media: newMedia } }));
-      setClipsWithHistory([{ id: clipId, assetId, inFrame: 0, outFrame: newMedia.frames.length - 1 }]);
-      setActiveFrameIndex(0);
-      setIsPlaying(false); if (data.fps) { setTargetFps(data.fps); }
-    } catch(e) {
-      console.error(e);
-      alert('Failed to load ashke.json');
-    }
-  };
-
   const handleLoadSample = useCallback((sampleType: SamplePresetType, mode: 'append' | 'replace' = 'append') => {
     const newMedia = generateSampleMedia(sampleType);
     const assetId = "asset_" + sampleType + "_" + Date.now();
@@ -225,7 +230,7 @@ export default function App() {
     if (mode === 'replace') {
       setClipsWithHistory([{ id: clipId, assetId, inFrame: 0, outFrame: newMedia.frames.length - 1 }]);
       setActiveFrameIndex(0);
-      setIsPlaying(false); if (data.fps) { setTargetFps(data.fps); }
+      setIsPlaying(false);
     } else {
       setClipsWithHistory(prev => [...prev, { id: clipId, assetId, inFrame: 0, outFrame: newMedia.frames.length - 1 }]);
     }
@@ -267,7 +272,7 @@ export default function App() {
     const clipId = "clip_" + Date.now();
     setClipsWithHistory([{ id: clipId, assetId, inFrame: 0, outFrame: asset.media.frames.length - 1 }]);
     setActiveFrameIndex(0);
-    setIsPlaying(false); if (data.fps) { setTargetFps(data.fps); }
+    setIsPlaying(false);
   }, [assets, setClipsWithHistory, handleLoadSample]);
 
   // Sample Thumbnails cache for NLE Grid Bin
@@ -410,13 +415,13 @@ export default function App() {
       // 3. Step 1 Frame Left / Right Arrow
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        setIsPlaying(false); if (data.fps) { setTargetFps(data.fps); }
+        setIsPlaying(false);
         setActiveFrameIndex(prev => Math.max(0, prev - 1));
         return;
       }
       if (e.key === 'ArrowRight') {
         e.preventDefault();
-        setIsPlaying(false); if (data.fps) { setTargetFps(data.fps); }
+        setIsPlaying(false);
         const maxLen = (timelineMedia?.frames.length ?? media?.frames.length ?? 1) - 1;
         setActiveFrameIndex(prev => Math.min(maxLen, prev + 1));
         return;
@@ -425,13 +430,13 @@ export default function App() {
       // 4. Jump to Start / End: Home / End
       if (e.key === 'Home') {
         e.preventDefault();
-        setIsPlaying(false); if (data.fps) { setTargetFps(data.fps); }
+        setIsPlaying(false);
         setActiveFrameIndex(0);
         return;
       }
       if (e.key === 'End') {
         e.preventDefault();
-        setIsPlaying(false); if (data.fps) { setTargetFps(data.fps); }
+        setIsPlaying(false);
         const maxLen = (timelineMedia?.frames.length ?? media?.frames.length ?? 1) - 1;
         setActiveFrameIndex(maxLen);
         return;
@@ -597,20 +602,63 @@ export default function App() {
     }
   };
 
-  const handleExport = () => {
-    if (!media) return;
-    const croppedAndDithered = media.frames.map((f: ExtractedFrame) => {
-      const sourceCanvas = imageDataToCanvas(f.imageData);
-      const cropped128x64 = renderCropTo128x64(sourceCanvas, cropSettings);
-      return applyDithering(cropped128x64, ditherConfig);
-    });
+  const handleExport = async () => {
+    if (!media || exportInProgressRef.current) return;
 
-    const xbmpFrames = croppedAndDithered.map((res: { ditheredImageData: ImageData, xbmpBytes: Uint8Array }) => res.xbmpBytes);
+    exportInProgressRef.current = true;
+    setIsExporting(true);
+    setExportProgress(0);
+    setExportError(null);
 
-    const code = generateCppHeader(xbmpFrames, targetFps, hardwareConfig);
-    setCppCode(code);
-    setExportXbmpFrames(xbmpFrames);
-    setExportModalOpen(true);
+    try {
+      const xbmpFrames: Uint8Array[] = [];
+      const sourceCanvas = document.createElement('canvas');
+      const croppedCanvas = document.createElement('canvas');
+      const sourceContext = sourceCanvas.getContext('2d', { willReadFrequently: true });
+      if (!sourceContext) throw new Error('Could not create a canvas for export.');
+
+      const totalFrames = media.frames.length;
+      for (let index = 0; index < totalFrames; index++) {
+        const frame = media.frames[index];
+        if (!frame || !frame.imageData) continue;
+
+        if (sourceCanvas.width !== frame.imageData.width) sourceCanvas.width = frame.imageData.width;
+        if (sourceCanvas.height !== frame.imageData.height) sourceCanvas.height = frame.imageData.height;
+        sourceContext.putImageData(frame.imageData, 0, 0);
+
+        const croppedFrame = renderCropTo128x64(sourceCanvas, cropSettings, croppedCanvas);
+        const { xbmpBytes } = applyDithering(croppedFrame, ditherConfig);
+        xbmpFrames.push(xbmpBytes);
+
+        if ((index + 1) % 10 === 0 || index === totalFrames - 1) {
+          setExportProgress(Math.round(((index + 1) / totalFrames) * 85));
+          await new Promise<void>(resolve => window.setTimeout(resolve, 0));
+        }
+      }
+
+      if (xbmpFrames.length === 0) {
+        throw new Error('No valid frames found to compile.');
+      }
+
+      const code = await generateCppHeader(
+        xbmpFrames,
+        targetFps,
+        hardwareConfig,
+        undefined,
+        undefined,
+        progress => setExportProgress(85 + Math.round(progress * 0.14))
+      );
+      setCppCode(code);
+      setExportXbmpFrames(xbmpFrames);
+      setExportProgress(100);
+      setExportModalOpen(true);
+    } catch (error) {
+      console.error('Compile/export failed:', error);
+      setExportError(error instanceof Error ? error.message : 'Export failed unexpectedly.');
+    } finally {
+      exportInProgressRef.current = false;
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -621,6 +669,9 @@ export default function App() {
         onExportClick={handleExport}
         onSettingsOpen={() => setSettingsOpen(true)}
         hasMedia={!!media}
+        isExporting={isExporting}
+        exportProgress={exportProgress}
+        exportError={exportError}
       />
 
       <main className="flex-1 flex flex-col min-h-0 z-10">
@@ -922,13 +973,6 @@ export default function App() {
                     <span className="text-[7px] font-mono text-[#888]">Double-click or drag card</span>
                   </div>
 
-                  <button 
-                    onClick={loadAshkeJson}
-                    className="w-full py-2 mb-2 bg-[#E85D2A] text-white font-mono text-[9px] font-bold tracking-widest uppercase hover:opacity-80 transition-opacity"
-                  >
-                    🔥 LOAD GENERATED "ASHKE" TEST EDIT
-                  </button>
-
                   <div className="grid grid-cols-2 gap-2">
                     {[
                       { id: 'dino', icon: '🦖', name: 'DINO RUNNER', tag: '30FPS' },
@@ -1112,7 +1156,7 @@ export default function App() {
                 onClipsChange={setClipsWithHistory}
                 activeGlobalFrame={activeFrameIndex} 
                 onFrameSelect={(i) => {
-                  setIsPlaying(false); if (data.fps) { setTargetFps(data.fps); }
+                  setIsPlaying(false);
                   setActiveFrameIndex(i);
                 }}
                 onPreviewAssetFrame={(assetId, frameIndex) => {
@@ -1141,11 +1185,11 @@ export default function App() {
                 targetFps={targetFps}
                 onFpsChange={setTargetFps}
                 onFrameSeek={(f) => {
-                  setIsPlaying(false); if (data.fps) { setTargetFps(data.fps); }
+                  setIsPlaying(false);
                   setActiveFrameIndex(f);
                 }}
                 onReset={() => {
-                  setIsPlaying(false); if (data.fps) { setTargetFps(data.fps); }
+                  setIsPlaying(false);
                   setActiveFrameIndex(0);
                 }}
               />
@@ -1174,7 +1218,8 @@ export default function App() {
                       setCropSettings(newSettings);
                     }
                   }} 
-                  disabled={!media} 
+                  disabled={!media}
+                  sourceFrame={rawSourceFrame}
                 />
               </div>
             </div>
@@ -1214,5 +1259,13 @@ export default function App() {
         />
       )}
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <MainApp />
+    </ErrorBoundary>
   );
 }

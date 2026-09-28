@@ -89,8 +89,8 @@ export const DropZone: React.FC<DropZoneProps> = ({ onMediaLoaded, currentMedia 
       >
         <UploadCloud className={`w-8 h-8 mb-2 ${isDragging ? 'text-[#E85D2A]' : 'text-[#6B6B6B]'}`} />
         <span className="text-xs font-bold tracking-widest text-[#1A1A1A] mb-1 font-mono uppercase">IMPORT_MEDIA</span>
-        <span className="text-[10px] text-[#6B6B6B] text-center uppercase tracking-widest font-mono">MP4, WEBM, GIF</span>
-        <input type="file" className="hidden" accept="video/mp4,video/webm,image/gif" onChange={handleChange} />
+        <span className="text-[10px] text-[#6B6B6B] text-center uppercase tracking-widest font-mono">MP4, WEBM, GIF, .H</span>
+        <input type="file" className="hidden" accept="video/mp4,video/webm,image/gif,.h" onChange={handleChange} />
       </label>
     </div>
   );
