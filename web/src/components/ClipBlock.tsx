@@ -282,7 +282,7 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
         <div
           className="absolute inset-0 pointer-events-none z-20"
           style={{ 
-            boxShadow: 'inset 0 0 0 2px #D97757, 0 0 6px rgba(217,119,87,0.35)',
+            boxShadow: 'inset 0 0 0 2px #E85D2A, 0 0 8px rgba(232,93,42,0.35)',
           }}
         />
       )}
@@ -294,7 +294,7 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
         style={{ height: 12, background: 'rgba(0,0,0,0.5)' }}
         title="Drag to reorder"
       >
-        <div className={`w-8 h-[2px] rounded-full transition-colors ${isSelected ? 'bg-[#D97757]' : 'bg-white/40'}`} />
+        <div className={`w-8 h-[2px] rounded-full transition-colors ${isSelected ? 'bg-[#E85D2A]' : 'bg-white/40'}`} />
       </div>
 
       {/* ---- Clip label ---- */}
@@ -302,11 +302,11 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
         className="absolute bottom-0 left-0 right-0 flex items-center px-1.5 pointer-events-none z-20 overflow-hidden"
         style={{ height: 16, background: 'rgba(0,0,0,0.7)' }}
       >
-        <span className="text-[8px] text-white/90 font-mono truncate tracking-wide flex items-center gap-1">
-          {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-[#D97757] shrink-0" />}
+        <span className="text-[7px] text-white/80 font-mono truncate tracking-wide flex items-center gap-1">
+          {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-[#E85D2A] shrink-0" />}
           <span>{asset.media.sourceInfo.filename}</span>
           {isActiveDrag && !trimDrag?.fading && (
-            <span className="text-[#D97757] ml-1">[{activeIn}–{activeOut}]</span>
+            <span className="text-[#E85D2A] ml-1">[{activeIn}–{activeOut}]</span>
           )}
         </span>
       </div>
@@ -318,7 +318,7 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
         style={{
           left: isActiveDrag ? activeIn * thumbPx : 0,
           width: HANDLE_W,
-          background: '#D97757',
+          background: '#E85D2A',
         }}
         title="Trim in-point"
       >
@@ -334,7 +334,7 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
             ? (activeOut + 1) * thumbPx - HANDLE_W
             : clipWidth - HANDLE_W,
           width: HANDLE_W,
-          background: '#D97757',
+          background: '#E85D2A',
         }}
         title="Trim out-point"
       >

@@ -53,18 +53,18 @@ export const DropZone: React.FC<DropZoneProps> = ({ onMediaLoaded, currentMedia 
   // Processing state
   if (progress) {
     return (
-      <div className="p-4 border-b border-[#E8E5DE] shrink-0 bg-white">
-        <div className="flex flex-col items-center justify-center py-2 space-y-2.5">
-          <FileVideo className="w-7 h-7 text-[#D97757] animate-pulse" />
+      <div className="p-4 border-b-2 border-[#1A1A1A] shrink-0">
+        <div className="flex flex-col items-center justify-center py-4 space-y-3">
+          <FileVideo className="w-8 h-8 text-[#E85D2A]" />
           <div className="text-center">
-            <p className="text-xs font-sans font-medium text-[#141413] mb-0.5 capitalize">{progress.stage}...</p>
-            <p className="text-[11px] font-mono text-[#5E5D59]">
+            <p className="text-xs font-bold text-[#1A1A1A] mb-1 uppercase tracking-widest font-mono">{progress.stage}...</p>
+            <p className="text-[10px] font-mono text-[#6B6B6B]">
               {progress.currentFrame} / {progress.totalFrames || '?'} frames
             </p>
           </div>
-          <div className="w-full h-1.5 bg-[#FAF9F5] border border-[#E8E5DE] rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-[#F5F0EB] border border-[#1A1A1A]">
             <div 
-              className="h-full bg-[#D97757] transition-all duration-200 rounded-full" 
+              className="h-full bg-[#E85D2A] transition-all duration-200" 
               style={{ width: `${progress.percent}%` }}
             />
           </div>
@@ -75,21 +75,21 @@ export const DropZone: React.FC<DropZoneProps> = ({ onMediaLoaded, currentMedia 
 
   // Idle dropzone (Always available to add more media)
   return (
-    <div className="p-3 border-b border-[#E8E5DE] shrink-0 bg-[#FAF9F5]/40">
+    <div className="p-3 border-b-2 border-[#1A1A1A] shrink-0">
       <label
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
-        className={`flex flex-col items-center justify-center p-3.5 border border-dashed rounded-xl cursor-pointer transition-all duration-200 ${
+        className={`flex flex-col items-center justify-center p-4 border-2 border-dashed cursor-pointer transition-colors duration-150 ${
           isDragging 
-            ? 'border-[#D97757] bg-[#FAF0EB]' 
-            : 'border-[#E8E5DE] hover:border-[#D97757] hover:bg-white'
+            ? 'border-[#E85D2A] bg-[#E85D2A]/5' 
+            : 'border-[#1A1A1A] hover:border-[#E85D2A] hover:bg-[#F5F0EB]'
         }`}
       >
-        <UploadCloud className={`w-6 h-6 mb-1.5 transition-colors ${isDragging ? 'text-[#D97757]' : 'text-[#87867F]'}`} />
-        <span className="text-xs font-sans font-medium text-[#141413] mb-0.5">Drop media or browse</span>
-        <span className="text-[10px] text-[#87867F] font-sans">MP4, WebM, animated GIF, or .h</span>
+        <UploadCloud className={`w-8 h-8 mb-2 ${isDragging ? 'text-[#E85D2A]' : 'text-[#6B6B6B]'}`} />
+        <span className="text-xs font-bold tracking-widest text-[#1A1A1A] mb-1 font-mono uppercase">IMPORT_MEDIA</span>
+        <span className="text-[10px] text-[#6B6B6B] text-center uppercase tracking-widest font-mono">MP4, WEBM, GIF, .H</span>
         <input type="file" className="hidden" accept="video/mp4,video/webm,image/gif,.h" onChange={handleChange} />
       </label>
     </div>

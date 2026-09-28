@@ -300,26 +300,26 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
 
   return (
     <div 
-      className="flex-1 flex flex-col min-h-0 bg-[#FAF9F5] relative select-none"
+      className="flex-1 flex flex-col min-h-0 bg-[#F5F0EB] relative select-none"
     >
 
       {/* Header bar */}
-      <div className="px-4 py-2 border-b border-[#E8E5DE] flex items-center justify-between shrink-0 bg-[#FAF9F5]/70 overflow-x-visible">
-        <div className="flex items-center gap-2.5">
-          <span className="text-xs font-mono text-[#5E5D59]">
-            {totalActiveFrames} frames ({clips.length} {clips.length === 1 ? 'clip' : 'clips'})
+      <div className="px-3 py-1.5 border-b border-[#1A1A1A]/20 flex items-center justify-between shrink-0 bg-[#EDEAE5] overflow-x-visible">
+        <div className="flex items-center gap-2">
+          <span className="text-[9px] font-mono font-bold tracking-widest text-[#1A1A1A] uppercase">
+            {totalActiveFrames} frames ({clips.length} clips)
           </span>
           {selectedClipIds.length > 0 && (
-            <span className="text-[10px] font-sans font-medium px-2 py-0.5 bg-[#FAF0EB] text-[#D97757] border border-[#D97757]/30 rounded-md">
-              {selectedClipIds.length} {selectedClipIds.length > 1 ? 'clips' : 'clip'} selected
+            <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 bg-[#E85D2A] text-white border border-[#1A1A1A] shadow-[1px_1px_0_0_#1A1A1A] tracking-wider uppercase">
+              SELECTED: {selectedClipIds.length} CLIP{selectedClipIds.length > 1 ? 'S' : ''}
             </span>
           )}
         </div>
 
-        <div className="ml-auto mr-12 flex min-w-0 shrink-0 items-center">
+        <div className="ml-auto mr-16 flex min-w-0 shrink-0 items-center">
           <div className="w-48 sm:w-52 min-w-0">
               <ElasticSlider
-                leftIcon={<span className="flex items-center gap-1 font-sans text-[10px] text-[#5E5D59] font-medium"><span>Zoom</span></span>}
+                leftIcon={<span className="flex items-center gap-1"><span className="text-[9px] tracking-wider">ZOOM</span><span>-</span></span>}
                 startingValue={0}
                 maxValue={100}
                 defaultValue={Math.max(0, Math.min(100, 100 * Math.log(zoomLevel / MIN_ZOOM) / Math.log(ZOOM_RATIO)))}
@@ -362,7 +362,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
           }
         }}
         className={`flex-1 overflow-auto relative transition-colors ${
-          isDropTargetOver ? 'bg-[#FAF0EB]/50' : 'bg-white'
+          isDropTargetOver ? 'bg-[#E85D2A]/10' : ''
         }`}
         style={{ minHeight: RULER_H + CLIP_HEIGHT + 40 }}
       >
@@ -374,15 +374,15 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
           {/* RULER */}
           <div
             className="ruler-area absolute top-0 left-0 right-0 select-none cursor-crosshair z-20"
-            style={{ height: RULER_H, background: '#FAF9F5', borderBottom: '1px solid #E8E5DE' }}
+            style={{ height: RULER_H, background: '#E8E4DF', borderBottom: '1px solid rgba(26,26,26,0.2)' }}
             onMouseDown={handleRulerMouseDown}
           >
             {rulerTicks.map(({ label, px }) => (
               <div key={px} className="absolute bottom-0 pointer-events-none" style={{ left: px }}>
-                <div style={{ width: 1, height: 7, background: '#E8E5DE' }} />
+                <div style={{ width: 1, height: 7, background: 'rgba(26,26,26,0.35)' }} />
                 <span
-                  className="absolute text-[9px] font-mono text-[#87867F] select-none"
-                  style={{ bottom: 8, left: 2, whiteSpace: 'nowrap' }}
+                  className="absolute text-[7px] font-mono text-[#6B6B6B] select-none"
+                  style={{ bottom: 9, left: 2, whiteSpace: 'nowrap' }}
                 >
                   {label}
                 </span>
@@ -398,7 +398,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
                 width: 0, height: 0,
                 borderLeft: '5px solid transparent',
                 borderRight: '5px solid transparent',
-                borderTop: `${RULER_H}px solid #D97757`,
+                borderTop: `${RULER_H}px solid #E85D2A`,
               }} />
             </div>
           </div>
@@ -406,18 +406,18 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
           {/* CLIP TRACK */}
           {clips.length === 0 && (
             <div className="absolute inset-x-0 top-10 bottom-0 flex flex-col items-center justify-center pointer-events-none z-10 opacity-75">
-              <span className="text-xs font-sans text-[#5E5D59] font-medium mb-1">
-                {isDropTargetOver ? 'Drop asset to add to sequence' : 'Drag & drop media from assets here'}
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#6B6B6B] font-bold mb-1">
+                {isDropTargetOver ? '+ DROP ASSET TO START TIMELINE' : 'DRAG & DROP MEDIA FROM POOL HERE'}
               </span>
-              <span className="text-[11px] font-sans text-[#87867F]">
-                or double-click any preset to start
+              <span className="text-[8px] font-mono text-[#888] uppercase tracking-wider">
+                or click + ADD on any sample or imported card
               </span>
             </div>
           )}
 
           <div
             className="absolute left-0"
-            style={{ top: RULER_H + 6, height: CLIP_HEIGHT }}
+            style={{ top: RULER_H + 4, height: CLIP_HEIGHT }}
           >
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={clips.map(c => c.id)} strategy={horizontalListSortingStrategy}>
@@ -461,18 +461,18 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
             className="absolute top-0 pointer-events-none z-30"
             style={{
               left: playheadPx,
-              width: 1.5,
+              width: 1,
               height: '100%',
-              background: '#D97757',
-              boxShadow: '0 0 6px rgba(217,119,87,0.4)',
-              transform: 'translateX(-0.75px)',
+              background: '#E85D2A',
+              boxShadow: '0 0 4px rgba(232,93,42,0.5)',
+              transform: 'translateX(-0.5px)',
             }}
           />
 
           {/* Marquee Selection Box Overlay */}
           {marqueeBox && (
             <div
-              className="absolute border border-[#D97757] bg-[#D97757]/10 pointer-events-none z-40 rounded"
+              className="absolute border-2 border-dashed border-[#E85D2A] bg-[#E85D2A]/15 pointer-events-none z-40"
               style={{
                 left: Math.min(marqueeBox.startX, marqueeBox.currentX),
                 top: Math.min(marqueeBox.startY, marqueeBox.currentY),
@@ -486,9 +486,9 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
       </div>
 
       {isDropTargetOver && (
-        <div className="absolute inset-0 bg-[#FAF0EB]/60 border-2 border-dashed border-[#D97757] pointer-events-none flex items-center justify-center z-50">
-          <div className="bg-[#141413] text-[#FAF9F5] text-xs font-sans px-4 py-2 font-medium rounded-lg shadow-lg">
-            Release to add clip to timeline
+        <div className="absolute inset-0 bg-[#E85D2A]/15 border-2 border-dashed border-[#E85D2A] pointer-events-none flex items-center justify-center z-50">
+          <div className="bg-[#1A1A1A] text-white text-[10px] font-mono px-3 py-1.5 font-bold tracking-widest uppercase shadow-lg">
+            + RELEASE TO APPEND CLIP TO TIMELINE
           </div>
         </div>
       )}

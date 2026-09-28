@@ -58,7 +58,7 @@ export const TrimControls: React.FC<TrimControlsProps> = ({
             setStartFrame(val);
             onFrameSeek(val);
           }}
-          className="w-full accent-[#D97757] cursor-pointer"
+          className="w-full accent-[#E85D2A] cursor-pointer"
         />
       </div>
 
@@ -77,13 +77,13 @@ export const TrimControls: React.FC<TrimControlsProps> = ({
             setEndFrame(val);
             onFrameSeek(val);
           }}
-          className="w-full accent-[#D97757] cursor-pointer"
+          className="w-full accent-[#E85D2A] cursor-pointer"
         />
       </div>
 
       <div className="flex gap-2">
         <ClickSpark
-          sparkColor="#D97757"
+          sparkColor="#E85D2A"
           sparkCount={10}
           sparkSize={7}
           sparkRadius={20}
@@ -105,7 +105,7 @@ export const TrimControls: React.FC<TrimControlsProps> = ({
         {isTrimmed && onResetTrim && (
           <button
             onClick={onResetTrim}
-            className="tech-btn hover:text-[#D97757] hover:border-[#D97757]"
+            className="tech-btn hover:text-[#E85D2A] hover:border-[#E85D2A]"
             title="Reset to original un-trimmed media"
           >
             Reset

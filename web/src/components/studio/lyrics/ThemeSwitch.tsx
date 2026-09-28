@@ -17,10 +17,10 @@ export const ThemeSwitch: React.FC<ThemeSwitchProps> = ({
 
   return (
     <div
-      className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full border transition-all select-none font-mono ${
+      className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full border transition-all select-none font-sans ${
         isDark
-          ? 'bg-[#18181C] border-white/20 text-white shadow-inner'
-          : 'bg-[#EAE5DF] border-[#1A1A1A] text-[#1A1A1A] shadow-xs'
+          ? 'bg-[#1E1E22] border-white/10 text-white shadow-xs'
+          : 'bg-[#F5F2EB] border-[#E8E5DE] text-[#141413] shadow-xs'
       } ${className}`}
       role="group"
       aria-label="Theme mode switcher"
@@ -29,25 +29,25 @@ export const ThemeSwitch: React.FC<ThemeSwitchProps> = ({
       <button
         type="button"
         onClick={() => onChange('light')}
-        className={`flex items-center gap-1 text-[9px] font-bold tracking-wider uppercase transition-colors cursor-pointer ${
+        className={`flex items-center gap-1 text-[11px] font-medium transition-colors cursor-pointer ${
           !isDark ? 'text-[#D97757]' : 'text-white/40 hover:text-white/70'
         }`}
         title="Switch to uniform Light Mode"
       >
         <Sun className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline">LIGHT</span>
+        <span className="hidden sm:inline">Light</span>
       </button>
 
       {/* Official React Bits Squish Switch with fluid velocity squash & stretch physics */}
       <SquishSwitch
         checked={isDark}
         onChange={(checked) => onChange(checked ? 'dark' : 'light')}
-        width={42}
-        height={22}
-        radius={11}
-        trackColor="#D4CEC5"
-        trackOnColor="#2B2B33"
-        thumbColor="#1A1A1A"
+        width={38}
+        height={20}
+        radius={10}
+        trackColor="#E8E5DE"
+        trackOnColor="#2C2B29"
+        thumbColor="#141413"
         thumbOnColor="#D97757"
         speed={55}
         stretch={40}
@@ -58,13 +58,13 @@ export const ThemeSwitch: React.FC<ThemeSwitchProps> = ({
       <button
         type="button"
         onClick={() => onChange('dark')}
-        className={`flex items-center gap-1 text-[9px] font-bold tracking-wider uppercase transition-colors cursor-pointer ${
-          isDark ? 'text-[#00F0FF]' : 'text-[#6B6B6B] hover:text-[#1A1A1A]'
+        className={`flex items-center gap-1 text-[11px] font-medium transition-colors cursor-pointer ${
+          isDark ? 'text-[#D97757]' : 'text-[#87867F] hover:text-[#141413]'
         }`}
         title="Switch to uniform Dark Mode"
       >
         <Moon className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline">DARK</span>
+        <span className="hidden sm:inline">Dark</span>
       </button>
     </div>
   );

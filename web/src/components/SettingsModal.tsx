@@ -58,34 +58,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#141413]/60 backdrop-blur-sm p-4 animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-fade-in"
       onClick={handleBackdropClick}
     >
-      <div className="max-w-md w-full animate-slide-up bg-white border border-[#E8E5DE] rounded-2xl shadow-xl overflow-hidden">
+      <GlassSurface borderRadius={0} className="max-w-md w-full animate-slide-up bg-white">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E8E5DE] bg-[#FAF9F5]/60">
-          <div className="flex items-center space-x-2.5">
-            <span className="w-2 h-2 rounded-full bg-[#D97757]" />
-            <h3 className="font-serif text-lg font-normal text-[#141413]">Hardware & Environment</h3>
+        <div className="flex items-center justify-between p-4 border-b-2 border-[#1A1A1A]">
+          <div className="flex items-center space-x-2">
+            <Settings className="w-4 h-4 text-[#1A1A1A]" />
+            <h3 className="text-xs font-bold tracking-widest text-[#1A1A1A] uppercase font-mono">SETTINGS</h3>
           </div>
-          <button 
-            onClick={onClose} 
-            className="text-[#5E5D59] hover:text-[#141413] hover:bg-[#FAF0EB] transition-colors p-1.5 rounded-lg cursor-pointer"
-          >
+          <button onClick={onClose} className="text-[#6B6B6B] hover:text-[#1A1A1A] transition-colors p-1 border border-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Content Grid */}
-        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-xs font-sans font-medium text-[#141413] flex items-center gap-1.5">
-              <Cpu className="w-3.5 h-3.5 text-[#5E5D59]" /> Microcontroller Board
+        <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono flex items-center gap-1">
+              <Cpu className="w-3 h-3 text-[#1A1A1A]" /> TARGET_BOARD
             </label>
             <select
               value={config.mcu}
               onChange={(e) => handleMcuChange(e.target.value as Microcontroller)}
-              className="w-full bg-white border border-[#E8E5DE] rounded-lg px-3 py-2 text-xs text-[#141413] font-sans focus:border-[#D97757] focus:ring-1 focus:ring-[#D97757] outline-none shadow-xs cursor-pointer"
+              className="w-full bg-white border border-[#1A1A1A] px-2.5 py-1.5 text-xs text-[#1A1A1A] font-mono focus:border-[#E85D2A] outline-none rounded-none cursor-pointer"
             >
               {mcuOptions.map(m => (
                 <option key={m.value} value={m.value}>{m.label}</option>
@@ -93,14 +90,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
             </select>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-sans font-medium text-[#141413] flex items-center gap-1.5">
-              <Monitor className="w-3.5 h-3.5 text-[#5E5D59]" /> Display Driver IC
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono flex items-center gap-1">
+              <Monitor className="w-3 h-3 text-[#1A1A1A]" /> DISPLAY_DRIVER
             </label>
             <select
               value={config.display}
               onChange={(e) => onChange({ ...config, display: e.target.value as DisplayController })}
-              className="w-full bg-white border border-[#E8E5DE] rounded-lg px-3 py-2 text-xs text-[#141413] font-sans focus:border-[#D97757] focus:ring-1 focus:ring-[#D97757] outline-none shadow-xs cursor-pointer"
+              className="w-full bg-white border border-[#1A1A1A] px-2.5 py-1.5 text-xs text-[#1A1A1A] font-mono focus:border-[#E85D2A] outline-none rounded-none cursor-pointer"
             >
               {displayOptions.map(d => (
                 <option key={d.value} value={d.value}>{d.label}</option>
@@ -108,58 +105,58 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
             </select>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-sans font-medium text-[#141413]">SDA Pin (GPIO)</label>
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">SDA_PIN_(GPIO)</label>
             <input
               type="number"
               value={config.sdaPin}
               onChange={(e) => onChange({ ...config, sdaPin: parseInt(e.target.value, 10) || 0 })}
-              className="w-full bg-white border border-[#E8E5DE] rounded-lg px-3 py-2 text-xs text-[#141413] font-mono focus:border-[#D97757] focus:ring-1 focus:ring-[#D97757] outline-none shadow-xs"
+              className="w-full bg-white border border-[#1A1A1A] px-2.5 py-1 text-xs text-[#1A1A1A] font-mono focus:border-[#E85D2A] outline-none rounded-none"
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-sans font-medium text-[#141413]">SCL Pin (GPIO)</label>
+              <div className="space-y-1">
+            <label className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">SCL_PIN_(GPIO)</label>
             <input
               type="number"
               value={config.sclPin}
               onChange={(e) => onChange({ ...config, sclPin: parseInt(e.target.value, 10) || 0 })}
-              className="w-full bg-white border border-[#E8E5DE] rounded-lg px-3 py-2 text-xs text-[#141413] font-mono focus:border-[#D97757] focus:ring-1 focus:ring-[#D97757] outline-none shadow-xs"
+              className="w-full bg-white border border-[#1A1A1A] px-2.5 py-1 text-xs text-[#1A1A1A] font-mono focus:border-[#E85D2A] outline-none rounded-none"
             />
           </div>
         </div>
 
         {/* GPU Hardware Telemetry Diagnostics */}
-        <div className="px-6 pb-6">
-          <div className="p-4 border border-[#E8E5DE] bg-[#FAF9F5] rounded-xl flex flex-col gap-2">
+        <div className="px-4 pb-4">
+          <div className="p-3 border border-[#1A1A1A] bg-[#F5F0EB]/80 flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-sans font-medium text-[#141413] flex items-center gap-1.5">
-                <Cpu className="w-3.5 h-3.5 text-[#D97757]" /> Host Video Accelerator
+              <span className="text-[10px] font-bold uppercase tracking-wider font-mono text-[#1A1A1A] flex items-center gap-1.5">
+                <Cpu className="w-3.5 h-3.5 text-[#E85D2A]" /> HOST ACCELERATOR (GPU)
               </span>
               <span
-                className={`text-[10px] font-sans font-medium px-2 py-0.5 rounded-full ${
+                className={`text-[8px] font-bold font-mono px-1.5 py-0.5 uppercase tracking-wider ${
                   gpuInfo.isDedicated
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                    : 'bg-amber-50 text-amber-700 border border-amber-200'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-amber-500 text-white'
                 }`}
               >
-                {gpuInfo.isDedicated ? 'Dedicated GPU Active' : 'Integrated GPU'}
+                {gpuInfo.isDedicated ? 'DEDICATED GPU ACTIVE' : 'INTEGRATED GPU'}
               </span>
             </div>
-            <div className="text-xs font-mono text-[#141413] font-semibold">
+            <div className="text-[11px] font-mono text-[#1A1A1A] font-bold">
               {gpuInfo.simplifiedName}
             </div>
-            <div className="text-[10px] font-mono text-[#87867F] break-all leading-relaxed">
+            <div className="text-[8px] font-mono text-[#6B6B6B] break-all leading-tight">
               {gpuInfo.renderer}
             </div>
             {!gpuInfo.isDedicated && (
-              <div className="mt-1 text-[11px] text-[#D97757] font-sans border-t border-[#E8E5DE] pt-2 leading-relaxed">
-                Rendering on low-power integrated graphics. For full hardware video decode speed, set your browser to "High performance" in Windows Graphics Settings.
+              <div className="mt-1 text-[9px] text-[#E85D2A] font-mono border-t border-[#1A1A1A]/10 pt-1 leading-snug">
+                ⚠️ Rendering on low-power iGPU. To unlock full NVDEC/hardware speed, assign Edge to "High performance" in Windows Graphics Settings.
               </div>
             )}
           </div>
         </div>
-      </div>
+      </GlassSurface>
     </div>
   );
 };

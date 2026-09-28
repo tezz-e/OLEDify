@@ -416,7 +416,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         <div className="flex items-center gap-4">
           <button
             onClick={onClose}
-            className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-medium font-sans rounded-xs transition-colors cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-medium font-sans rounded-lg transition-colors cursor-pointer shadow-xs ${
               themeMode === 'dark'
                 ? 'bg-[#232220] border-white/10 text-white/90 hover:bg-white hover:text-black'
                 : 'bg-white border-[#E8E5DE] text-[#141413] hover:bg-[#141413] hover:text-[#FAF9F5]'
@@ -444,7 +444,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
         {/* Right Badges */}
         <div className="flex items-center gap-3 text-xs font-sans">
-          <span className={`px-2 py-0.5 text-[10px] font-mono tracking-wider border rounded-xs ${
+          <span className={`px-2.5 py-0.5 text-[10px] font-mono tracking-wider border rounded-full ${
             themeMode === 'dark' ? 'bg-[#232220] text-white/80 border-white/10' : 'bg-white text-[#5E5D59] border-[#E8E5DE]'
           }`}>
             128×64 Monochrome
@@ -476,76 +476,74 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           </div>
 
           {/* Sub-tabs */}
-          <div className={`flex border-b text-[9px] font-bold ${
-            themeMode === 'dark' ? 'border-white/10 bg-[#18181C]' : 'border-[#1A1A1A]/20 bg-[#F5F0EB]'
+          <div className={`flex border-b p-1 gap-1 shrink-0 ${
+            themeMode === 'dark' ? 'border-[#2C2B29] bg-[#18181A]' : 'border-[#E8E5DE] bg-[#FAF9F5]'
           }`}>
             <button
               onClick={() => setIngestTab('search')}
-              className={`flex-1 py-2 border-b-2 transition-colors cursor-pointer ${
+              className={`flex-1 py-1.5 text-xs font-sans font-medium rounded-md transition-all cursor-pointer ${
                 ingestTab === 'search'
                   ? themeMode === 'dark'
-                    ? 'border-[#D97757] bg-[#141417] text-white'
-                    : 'border-[#D97757] bg-white text-[#1A1A1A]'
+                    ? 'bg-[#232220] text-white shadow-xs'
+                    : 'bg-white text-[#141413] shadow-xs'
                   : themeMode === 'dark'
-                  ? 'border-transparent text-white/40 hover:text-white/70'
-                  : 'border-transparent text-[#6B6B6B] hover:text-[#1A1A1A]'
+                  ? 'text-white/40 hover:text-white/80'
+                  : 'text-[#5E5D59] hover:text-[#141413]'
               }`}
             >
-              SEARCH API
+              Search
             </button>
             <button
               onClick={() => setIngestTab('paste')}
-              className={`flex-1 py-2 border-b-2 transition-colors cursor-pointer ${
+              className={`flex-1 py-1.5 text-xs font-sans font-medium rounded-md transition-all cursor-pointer ${
                 ingestTab === 'paste'
                   ? themeMode === 'dark'
-                    ? 'border-[#D97757] bg-[#141417] text-white'
-                    : 'border-[#D97757] bg-white text-[#1A1A1A]'
+                    ? 'bg-[#232220] text-white shadow-xs'
+                    : 'bg-white text-[#141413] shadow-xs'
                   : themeMode === 'dark'
-                  ? 'border-transparent text-white/40 hover:text-white/70'
-                  : 'border-transparent text-[#6B6B6B] hover:text-[#1A1A1A]'
+                  ? 'text-white/40 hover:text-white/80'
+                  : 'text-[#5E5D59] hover:text-[#141413]'
               }`}
             >
-              PASTE LRC
+              Paste LRC
             </button>
             <button
               onClick={() => setIngestTab('audio')}
-              className={`flex-1 py-2 border-b-2 transition-colors cursor-pointer ${
+              className={`flex-1 py-1.5 text-xs font-sans font-medium rounded-md transition-all cursor-pointer ${
                 ingestTab === 'audio'
                   ? themeMode === 'dark'
-                    ? 'border-[#D97757] bg-[#141417] text-white'
-                    : 'border-[#D97757] bg-white text-[#1A1A1A]'
+                    ? 'bg-[#232220] text-white shadow-xs'
+                    : 'bg-white text-[#141413] shadow-xs'
                   : themeMode === 'dark'
-                  ? 'border-transparent text-white/40 hover:text-white/70'
-                  : 'border-transparent text-[#6B6B6B] hover:text-[#1A1A1A]'
+                  ? 'text-white/40 hover:text-white/80'
+                  : 'text-[#5E5D59] hover:text-[#141413]'
               }`}
             >
-              DROP AUDIO
+              Upload Audio
             </button>
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 min-h-0">
             {ingestTab === 'search' && (
               <>
-                <form onSubmit={handleSearch} className="flex gap-1.5">
+                <form onSubmit={handleSearch} className="flex gap-2">
                   <div className="relative flex-1">
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={e => setSearchQuery(e.target.value)}
-                      placeholder="Search any track or artist..."
-                      className={`w-full px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#D97757] border ${
+                      placeholder="Search track title or artist..."
+                      className={`w-full px-3 py-2 text-xs font-sans rounded-lg focus:outline-none focus:border-[#D97757] focus:ring-1 focus:ring-[#D97757] border transition-colors shadow-xs ${
                         themeMode === 'dark'
-                          ? 'bg-[#1C1C22] border-white/15 text-white placeholder-white/30'
-                          : 'bg-[#F5F0EB] border-[#1A1A1A] text-[#1A1A1A] placeholder-[#888]'
+                          ? 'bg-[#232220] border-white/10 text-white placeholder-white/30'
+                          : 'bg-white border-[#E8E5DE] text-[#141413] placeholder-[#87867F]'
                       }`}
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={isSearching}
-                    className={`px-3 bg-[#D97757] text-white text-xs font-bold border hover:opacity-90 transition-opacity cursor-pointer flex items-center justify-center ${
-                      themeMode === 'dark' ? 'border-white/20' : 'border-[#1A1A1A]'
-                    }`}
+                    className="px-3.5 bg-[#D97757] hover:bg-[#C66545] text-white text-xs font-sans font-medium rounded-lg shadow-xs transition-colors cursor-pointer flex items-center justify-center shrink-0"
                   >
                     {isSearching ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
                   </button>
@@ -554,10 +552,10 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                 {/* Results list */}
                 <div className="flex-1 overflow-y-auto flex flex-col gap-2 min-h-0 mt-2">
                   {searchResults.length === 0 ? (
-                    <div className={`py-8 text-center text-[10px] border border-dashed p-4 ${
+                    <div className={`py-8 text-center text-xs font-sans rounded-xl border border-dashed p-4 leading-relaxed ${
                       themeMode === 'dark'
-                        ? 'border-white/15 text-white/40'
-                        : 'border-[#1A1A1A]/30 text-[#6B6B6B]'
+                        ? 'border-white/10 bg-white/[0.02] text-white/40'
+                        : 'border-[#E8E5DE] bg-[#FAF9F5] text-[#87867F]'
                     }`}>
                       Type any track name above to fetch real-time synced lyrics from LRCLIB database.
                     </div>
@@ -566,24 +564,24 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                       <div
                         key={track.id}
                         onClick={() => handleSelectTrack(track)}
-                        className={`p-2.5 border transition-all cursor-pointer flex flex-col gap-1 shadow-sm ${
+                        className={`p-3 border rounded-xl transition-all cursor-pointer flex flex-col gap-1.5 shadow-xs ${
                           themeMode === 'dark'
-                            ? 'border-white/15 bg-[#1C1C22] hover:border-[#D97757] hover:bg-[#25252E] text-white'
-                            : 'border-[#1A1A1A] bg-[#F5F0EB] hover:border-[#D97757] hover:bg-white text-[#1A1A1A]'
+                            ? 'border-white/10 bg-[#1C1C20] hover:border-[#D97757]/60 hover:bg-[#232228] text-white'
+                            : 'border-[#E8E5DE] bg-white hover:border-[#D97757]/60 hover:bg-[#FAF9F5] text-[#141413]'
                         }`}
                       >
                         <div className="flex justify-between items-start">
-                          <span className="font-bold text-xs truncate">{track.trackName}</span>
+                          <span className="font-sans font-medium text-xs truncate">{track.trackName}</span>
                           {track.syncedLyrics && (
-                            <span className="bg-[#D97757] text-white text-[7px] font-bold px-1.5 py-0.2 uppercase">
-                              SYNCED
+                            <span className="bg-[#D97757] text-white text-[9px] font-sans font-medium px-2 py-0.5 rounded-full shrink-0">
+                              Synced
                             </span>
                           )}
                         </div>
-                        <div className={`text-[10px] truncate ${themeMode === 'dark' ? 'text-white/60' : 'text-[#6B6B6B]'}`}>
+                        <div className={`text-[11px] font-sans truncate ${themeMode === 'dark' ? 'text-white/60' : 'text-[#5E5D59]'}`}>
                           {track.artistName} {track.albumName ? `• ${track.albumName}` : ''}
                         </div>
-                        <div className={`text-[8px] ${themeMode === 'dark' ? 'text-white/40' : 'text-[#888]'}`}>
+                        <div className={`text-[10px] font-mono ${themeMode === 'dark' ? 'text-white/40' : 'text-[#87867F]'}`}>
                           Duration: {Math.floor(track.duration / 60)}:{(track.duration % 60).toString().padStart(2, '0')}
                         </div>
                       </div>
@@ -594,44 +592,40 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             )}
 
             {ingestTab === 'paste' && (
-              <div className="flex-1 flex flex-col gap-2 min-h-0">
+              <div className="flex-1 flex flex-col gap-2.5 min-h-0">
                 <textarea
                   value={pastedLrcText}
                   onChange={e => setPastedLrcText(e.target.value)}
                   placeholder="Paste raw [mm:ss.xx] LRC or plain lyrics here..."
-                  className={`flex-1 p-2.5 text-[10px] font-mono resize-none focus:outline-none focus:border-[#D97757] border ${
+                  className={`flex-1 p-3 text-xs font-mono rounded-xl resize-none focus:outline-none focus:border-[#D97757] focus:ring-1 focus:ring-[#D97757] border transition-colors shadow-xs ${
                     themeMode === 'dark'
-                      ? 'bg-[#1C1C22] border-white/15 text-white'
-                      : 'bg-[#F5F0EB] border-[#1A1A1A] text-[#1A1A1A]'
+                      ? 'bg-[#1C1C20] border-white/10 text-white placeholder-white/30'
+                      : 'bg-white border-[#E8E5DE] text-[#141413] placeholder-[#87867F]'
                   }`}
                 />
                 <button
                   onClick={handleApplyPastedLrc}
-                  className={`w-full py-2 text-xs font-bold uppercase transition-colors cursor-pointer ${
-                    themeMode === 'dark'
-                      ? 'bg-[#25252B] hover:bg-[#D97757] text-white border border-white/20'
-                      : 'bg-[#1A1A1A] hover:bg-[#D97757] text-white'
-                  }`}
+                  className="w-full py-2.5 text-xs font-sans font-medium rounded-xl bg-[#D97757] hover:bg-[#C66545] text-white transition-colors cursor-pointer shadow-xs"
                 >
-                  PARSE & LOAD LYRICS
+                  Parse & Load Lyrics
                 </button>
               </div>
             )}
 
             {ingestTab === 'audio' && (
-              <div className={`flex-1 flex flex-col items-center justify-center p-4 border border-dashed text-center gap-3 ${
-                themeMode === 'dark' ? 'border-white/20 text-white' : 'border-[#1A1A1A]/40 text-[#1A1A1A]'
+              <div className={`flex-1 flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-2xl text-center gap-3 transition-colors ${
+                themeMode === 'dark' ? 'border-white/15 bg-white/[0.02] text-white' : 'border-[#E8E5DE] bg-white text-[#141413]'
               }`}>
                 <Upload className="w-8 h-8 text-[#D97757]" />
-                <p className="text-xs font-bold">DROP LOCAL MP3 / WAV</p>
-                <p className={`text-[10px] ${themeMode === 'dark' ? 'text-white/50' : 'text-[#6B6B6B]'}`}>
+                <p className="text-xs font-sans font-medium">Drop Local MP3 / WAV</p>
+                <p className={`text-[11px] font-sans ${themeMode === 'dark' ? 'text-white/50' : 'text-[#5E5D59]'}`}>
                   Enables 0-latency audio scrubbing and beat waveform preview
                 </p>
                 <input
                   type="file"
                   accept="audio/*"
                   onChange={handleAudioDrop}
-                  className="text-[10px] cursor-pointer"
+                  className="text-xs font-sans cursor-pointer mt-1"
                 />
               </div>
             )}
@@ -659,39 +653,39 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             </div>
 
             {/* Quick Selection Shortcuts */}
-            <div className="flex items-center gap-1.5 font-mono text-[9px]">
+            <div className="flex items-center gap-1.5 font-sans text-xs">
               <button
                 onClick={handleSelectAll}
-                className={`px-2.5 py-1 font-bold border transition-colors cursor-pointer ${
+                className={`px-2.5 py-1 font-medium border rounded-lg transition-colors cursor-pointer shadow-xs ${
                   themeMode === 'dark'
-                    ? 'bg-[#222228] hover:bg-white text-white/80 hover:text-black border-white/10 rounded-sm'
-                    : 'bg-[#F5F0EB] hover:bg-[#1A1A1A] text-[#1A1A1A] hover:text-white border-[#1A1A1A]'
+                    ? 'bg-[#232220] hover:bg-white text-white/80 hover:text-black border-white/10'
+                    : 'bg-white hover:bg-[#FAF9F5] text-[#5E5D59] hover:text-[#141413] border-[#E8E5DE]'
                 }`}
                 title="Select all lyrics in song"
               >
-                SELECT ALL
+                Select All
               </button>
               <button
                 onClick={() => handleExpandRange(1)}
-                className={`px-2.5 py-1 font-bold border transition-colors cursor-pointer ${
+                className={`px-2.5 py-1 font-medium border rounded-lg transition-colors cursor-pointer shadow-xs ${
                   themeMode === 'dark'
-                    ? 'bg-[#222228] hover:bg-white text-white/80 hover:text-black border-white/10 rounded-sm'
-                    : 'bg-[#F5F0EB] hover:bg-[#1A1A1A] text-[#1A1A1A] hover:text-white border-[#1A1A1A]'
+                    ? 'bg-[#232220] hover:bg-white text-white/80 hover:text-black border-white/10'
+                    : 'bg-white hover:bg-[#FAF9F5] text-[#5E5D59] hover:text-[#141413] border-[#E8E5DE]'
                 }`}
                 title="Expand selection by 1 line"
               >
-                +1 LINE
+                +1 Line
               </button>
               <button
                 onClick={() => handleExpandRange(-1)}
-                className={`px-2.5 py-1 font-bold border transition-colors cursor-pointer ${
+                className={`px-2.5 py-1 font-medium border rounded-lg transition-colors cursor-pointer shadow-xs ${
                   themeMode === 'dark'
-                    ? 'bg-[#222228] hover:bg-white text-white/80 hover:text-black border-white/10 rounded-sm'
-                    : 'bg-[#F5F0EB] hover:bg-[#1A1A1A] text-[#1A1A1A] hover:text-white border-[#1A1A1A]'
+                    ? 'bg-[#232220] hover:bg-white text-white/80 hover:text-black border-white/10'
+                    : 'bg-white hover:bg-[#FAF9F5] text-[#5E5D59] hover:text-[#141413] border-[#E8E5DE]'
                 }`}
                 title="Shrink selection by 1 line"
               >
-                -1 LINE
+                -1 Line
               </button>
             </div>
           </div>
@@ -720,10 +714,10 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     saturation={1}
                     borderWidth={0.02}
                     distortionScale={0}
-                    className={`w-full relative transition-all ${
+                    className={`w-full relative transition-all rounded-xl ${
                       themeMode === 'dark'
-                        ? 'border border-white/15 shadow-xl bg-white/[0.04]'
-                        : 'border-2 border-[#1A1A1A] shadow-[4px_4px_0px_#1A1A1A] bg-white/90'
+                        ? 'border border-white/15 shadow-xl bg-white/[0.04] ring-1 ring-[#D97757]/30'
+                        : 'border border-[#E8E5DE] shadow-md bg-white/95 ring-1 ring-[#D97757]/30'
                     }`}
                   >
                     <div
@@ -832,18 +826,18 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                                     currentArchetype: wordArch
                                   });
                                 }}
-                                className={`px-2 py-0.5 text-[9px] font-mono flex items-center gap-1 transition-all cursor-pointer ${
+                                className={`px-2 py-0.5 text-[10px] font-sans rounded-md flex items-center gap-1 transition-all cursor-pointer shadow-xs ${
                                   isOverridden
-                                    ? 'bg-[#D97757] text-white font-bold ring-1 ring-[#1A1A1A]'
+                                    ? 'bg-[#D97757] text-white font-medium ring-1 ring-[#D97757]/40'
                                     : themeMode === 'dark'
-                                    ? 'bg-white/10 hover:bg-white/20 text-white/80 hover:text-white border border-white/15'
-                                    : 'bg-[#F5F0EB] hover:bg-[#1A1A1A] hover:text-white text-[#1A1A1A] border border-[#1A1A1A]/30'
+                                    ? 'bg-white/10 hover:bg-white/20 text-white/80 hover:text-white border border-white/10'
+                                    : 'bg-[#FAF9F5] hover:bg-[#F0EEE6] text-[#5E5D59] hover:text-[#141413] border border-[#E8E5DE]'
                                 }`}
                                 title={`Customize motion style for "${w.word}"`}
                               >
                                 <span>{meta.icon}</span>
-                                <span className="font-semibold">{w.word}</span>
-                                <span className="opacity-50 text-[7px] uppercase font-mono">({meta.tag})</span>
+                                <span className="font-medium">{w.word}</span>
+                                <span className="opacity-50 text-[9px] font-mono">({meta.tag})</span>
                               </button>
                             );
                           })}
@@ -890,19 +884,19 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           {/* Minimalist Bottom Audio Scrub Bar */}
           <div className={`h-14 px-6 border-t flex items-center justify-between z-10 shrink-0 gap-4 transition-colors duration-200 ${
             themeMode === 'dark'
-              ? 'bg-[#141417] border-[#252528] text-white'
-              : 'bg-white border-t-2 border-[#1A1A1A] text-[#1A1A1A]'
+              ? 'bg-[#18181A] border-[#2C2B29] text-white'
+              : 'bg-white border-[#E8E5DE] text-[#141413]'
           }`}>
             <div className="flex items-center gap-3 shrink-0">
               <button
                 onClick={togglePlay}
-                className="w-8 h-8 rounded-full bg-[#D97757] text-white flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
+                className="w-8 h-8 rounded-full bg-[#D97757] hover:bg-[#C66545] text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs"
               >
                 {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
               </button>
 
-              <div className={`text-[10px] font-mono w-28 shrink-0 ${
-                themeMode === 'dark' ? 'text-white/90' : 'text-[#1A1A1A]'
+              <div className={`text-[11px] font-mono w-28 shrink-0 ${
+                themeMode === 'dark' ? 'text-white/80' : 'text-[#5E5D59]'
               }`}>
                 {(playheadMs / 1000).toFixed(2)}s / {(rangeEndMs / 1000).toFixed(2)}s
               </div>
@@ -923,31 +917,31 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     audioRef.current.currentTime = val / 1000;
                   }
                 }}
-                className={`w-full accent-[#D97757] h-1.5 cursor-pointer ${
-                  themeMode === 'dark' ? 'bg-white/15' : 'bg-[#1A1A1A]/15'
+                className={`w-full accent-[#D97757] h-1.5 rounded-full cursor-pointer ${
+                  themeMode === 'dark' ? 'bg-white/15' : 'bg-[#E8E5DE]'
                 }`}
               />
             </div>
 
-            <div className={`flex items-center gap-3 text-xs font-mono shrink-0 ${
-              themeMode === 'dark' ? 'text-white/70' : 'text-[#1A1A1A]'
+            <div className={`flex items-center gap-3 text-xs font-sans shrink-0 ${
+              themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'
             }`}>
               {Object.keys(wordOverrides).length > 0 && (
-                <div className="flex items-center gap-1.5 bg-[#D97757]/15 border border-[#D97757]/40 px-2 py-0.5 rounded text-[8px] text-[#D97757]">
-                  <span>{Object.keys(wordOverrides).length} OVERRIDES</span>
+                <div className="flex items-center gap-1.5 bg-[#D97757]/10 border border-[#D97757]/30 px-2.5 py-0.5 rounded-full text-[10px] text-[#D97757] font-medium">
+                  <span>{Object.keys(wordOverrides).length} overrides</span>
                   <button
                     onClick={() => setWordOverrides({})}
-                    className="hover:underline cursor-pointer"
+                    className="hover:underline cursor-pointer ml-1 opacity-80 hover:opacity-100"
                   >
-                    RESET
+                    Reset
                   </button>
                 </div>
               )}
-              <span className="text-[#D97757] font-bold">
-                {selectedLines.length} LINES
+              <span className="text-[#D97757] font-medium font-mono text-[11px]">
+                {selectedLines.length} lines
               </span>
               <span>•</span>
-              <span>{rangeDurationSec.toFixed(1)}s</span>
+              <span className="font-mono text-[11px]">{rangeDurationSec.toFixed(1)}s</span>
             </div>
           </div>
         </section>
@@ -986,29 +980,29 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             <div className="flex flex-col gap-2">
               <div
                 onClick={() => setArchetype('auto_semantic')}
-                className={`p-3 border-2 transition-all cursor-pointer flex flex-col gap-1.5 rounded-sm ${
+                className={`p-3.5 border transition-all cursor-pointer flex flex-col gap-1.5 rounded-xl ${
                   archetype === 'auto_semantic'
                     ? themeMode === 'dark'
-                      ? 'border-[#D97757] bg-[#D97757]/15 shadow-[3px_3px_0px_rgba(255,255,255,0.1)]'
-                      : 'border-[#D97757] bg-[#FFF5F0] shadow-[3px_3px_0px_#1A1A1A]'
+                      ? 'border-[#D97757] bg-[#D97757]/10 shadow-sm ring-1 ring-[#D97757]/40'
+                      : 'border-[#D97757] bg-[#FAF0EB] shadow-xs ring-1 ring-[#D97757]/30'
                     : themeMode === 'dark'
-                    ? 'border-white/15 hover:border-white/40 bg-[#1C1C22]'
-                    : 'border-[#1A1A1A]/30 hover:border-[#1A1A1A] bg-white'
+                    ? 'border-white/10 hover:border-white/25 bg-[#1C1C20]'
+                    : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-white shadow-xs'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-base">✨</span>
-                    <span className={`text-xs font-bold ${themeMode === 'dark' ? 'text-white' : 'text-[#1A1A1A]'}`}>
-                      AUTO SEMANTIC DIRECTOR
+                    <span className="text-base">✦</span>
+                    <span className={`font-serif text-sm font-normal ${themeMode === 'dark' ? 'text-white' : 'text-[#141413]'}`}>
+                      Auto Semantic Director
                     </span>
                   </div>
-                  <span className="text-[7px] font-bold bg-[#D97757] text-white px-1.5 py-0.5 tracking-wider uppercase rounded-xs">
-                    SMART ADAPTIVE
+                  <span className="text-[10px] font-sans font-medium bg-[#D97757] text-white px-2 py-0.5 rounded-full">
+                    Adaptive
                   </span>
                 </div>
-                <p className={`text-[9px] leading-tight font-sans ${
-                  themeMode === 'dark' ? 'text-white/60' : 'text-[#6B6B6B]'
+                <p className={`text-[11px] leading-relaxed font-sans ${
+                  themeMode === 'dark' ? 'text-white/60' : 'text-[#5E5D59]'
                 }`}>
                   Adapts typography style dynamically per word according to meaning, phonetics, vocal duration & beats (e.g. blade slashes for sharp words, impact slams for drops, 3D blocks for anthems).
                 </p>
@@ -1018,66 +1012,66 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                   <div 
                     onClick={(e) => e.stopPropagation()} 
                     className={`mt-2 pt-2 border-t flex flex-col gap-2 ${
-                      themeMode === 'dark' ? 'border-white/10' : 'border-[#1A1A1A]/15'
+                      themeMode === 'dark' ? 'border-white/10' : 'border-[#E8E5DE]'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-[8px] font-mono uppercase font-bold text-[#6B6B6B]">
-                        INFERENCE ENGINE:
+                      <span className={`text-[10px] font-sans font-medium ${themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}`}>
+                        Inference Engine:
                       </span>
                       <div className="flex items-center gap-1">
                         <button
                           type="button"
                           onClick={() => setInferenceMode('heuristic')}
-                          className={`px-2 py-0.5 text-[8px] font-mono font-bold border transition-colors cursor-pointer ${
+                          className={`px-2.5 py-1 text-[10px] font-sans font-medium rounded-lg border transition-colors cursor-pointer shadow-xs ${
                             inferenceMode === 'heuristic'
-                              ? 'bg-[#1A1A1A] text-white border-[#1A1A1A]'
-                              : themeMode === 'dark' ? 'border-white/20 text-white/60 hover:text-white' : 'border-[#1A1A1A]/30 text-[#6B6B6B]'
+                              ? 'bg-[#141413] text-white border-[#141413]'
+                              : themeMode === 'dark' ? 'border-white/10 text-white/60 hover:text-white bg-[#232220]' : 'border-[#E8E5DE] text-[#5E5D59] bg-white'
                           }`}
                         >
-                          ⚡ FAST HEURISTIC
+                          ⚡ Fast Heuristic
                         </button>
                         <button
                           type="button"
                           onClick={() => setInferenceMode('ollama')}
-                          className={`px-2 py-0.5 text-[8px] font-mono font-bold border transition-colors cursor-pointer flex items-center gap-1 ${
+                          className={`px-2.5 py-1 text-[10px] font-sans font-medium rounded-lg border transition-colors cursor-pointer flex items-center gap-1 shadow-xs ${
                             inferenceMode === 'ollama'
                               ? 'bg-[#D97757] text-white border-[#D97757]'
-                              : themeMode === 'dark' ? 'border-white/20 text-white/60 hover:text-white' : 'border-[#1A1A1A]/30 text-[#6B6B6B]'
+                              : themeMode === 'dark' ? 'border-white/10 text-white/60 hover:text-white bg-[#232220]' : 'border-[#E8E5DE] text-[#5E5D59] bg-white'
                           }`}
                         >
-                          <Bot className="w-2.5 h-2.5" />
-                          <span>LOCAL OLLAMA</span>
+                          <Bot className="w-3 h-3" />
+                          <span>Local Ollama</span>
                         </button>
                       </div>
                     </div>
 
                     {/* Ollama Active Panel */}
                     {inferenceMode === 'ollama' && (
-                      <div className={`p-2 border text-[9px] font-mono flex flex-col gap-1.5 ${
-                        themeMode === 'dark' ? 'bg-[#121215] border-white/10' : 'bg-white border-[#1A1A1A]/20'
+                      <div className={`p-3 border rounded-xl text-xs font-sans flex flex-col gap-2 shadow-xs ${
+                        themeMode === 'dark' ? 'bg-[#141418] border-white/10' : 'bg-[#FAF9F5] border-[#E8E5DE]'
                       }`}>
                         <div className="flex items-center justify-between">
-                          <span className="text-[8px] text-[#888] font-bold">OLLAMA STATUS:</span>
-                          <span className={`text-[8px] font-bold flex items-center gap-1 ${
+                          <span className={`text-[10px] font-medium ${themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}`}>Ollama Status:</span>
+                          <span className={`text-[10px] font-medium flex items-center gap-1.5 ${
                             ollamaStatus?.online ? 'text-emerald-500' : 'text-amber-500'
                           }`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${
                               ollamaStatus?.online ? 'bg-emerald-500 shadow-[0_0_5px_#10B981]' : 'bg-amber-500'
                             }`} />
-                            {ollamaStatus?.online ? `CONNECTED (${ollamaStatus.version || 'v0.x'})` : 'OFFLINE (http://localhost:11434)'}
+                            {ollamaStatus?.online ? `Connected (${ollamaStatus.version || 'v0.x'})` : 'Offline (http://localhost:11434)'}
                           </span>
                         </div>
 
                         {ollamaStatus?.online ? (
                           <>
                             <div className="flex items-center justify-between gap-2">
-                              <span className="text-[8px] text-[#888]">MODEL:</span>
+                              <span className={`text-[10px] font-medium ${themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}`}>Model:</span>
                               <select
                                 value={selectedOllamaModel}
                                 onChange={(e) => setSelectedOllamaModel(e.target.value)}
-                                className={`text-[8px] font-mono p-1 border outline-none ${
-                                  themeMode === 'dark' ? 'bg-[#1E1E24] text-white border-white/20' : 'bg-white text-black border-[#1A1A1A]'
+                                className={`text-xs font-sans p-1.5 rounded-lg border outline-none shadow-xs ${
+                                  themeMode === 'dark' ? 'bg-[#232220] text-white border-white/10' : 'bg-white text-[#141413] border-[#E8E5DE]'
                                 }`}
                               >
                                 {(ollamaStatus.models.length > 0 ? ollamaStatus.models : RECOMMENDED_OLLAMA_MODELS).map(m => (
@@ -1090,40 +1084,40 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                               type="button"
                               onClick={handleRunOllamaAnalysis}
                               disabled={isAnalyzingOllama}
-                              className={`w-full py-1.5 px-2 text-[9px] font-bold uppercase tracking-wider font-mono border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                              className={`w-full py-2 px-3 text-xs font-sans font-medium rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
                                 isAnalyzingOllama
-                                  ? 'bg-[#D97757]/30 text-white cursor-wait border-[#D97757]'
-                                  : 'bg-[#D97757] text-white hover:bg-[#C66545] border-[#D97757]'
+                                  ? 'bg-[#D97757]/40 text-white cursor-wait'
+                                  : 'bg-[#D97757] text-white hover:bg-[#C66545]'
                               }`}
                             >
                               {isAnalyzingOllama ? (
                                 <>
-                                  <RefreshCw className="w-3 h-3 animate-spin" />
-                                  <span>{ollamaProgress?.message || 'ANALYZING...'}</span>
+                                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                  <span>{ollamaProgress?.message || 'Analyzing...'}</span>
                                 </>
                               ) : (
                                 <>
-                                  <Sparkles className="w-3 h-3" />
-                                  <span>ANALYZE LYRICS WITH {selectedOllamaModel.toUpperCase()}</span>
+                                  <Sparkles className="w-3.5 h-3.5" />
+                                  <span>Analyze Lyrics with {selectedOllamaModel}</span>
                                 </>
                               )}
                             </button>
 
                             {ollamaProgress && (
-                              <div className="w-full bg-black/10 dark:bg-white/10 h-1 overflow-hidden">
+                              <div className="w-full bg-black/10 dark:bg-white/10 h-1 rounded-full overflow-hidden">
                                 <div 
-                                  className="bg-[#D97757] h-full transition-all duration-300" 
+                                  className="bg-[#D97757] h-full transition-all duration-300 rounded-full" 
                                   style={{ width: `${ollamaProgress.percent}%` }}
                                 />
                               </div>
                             )}
                           </>
                         ) : (
-                          <div className="text-[8px] text-[#888] flex flex-col gap-1 leading-normal border-t border-dashed border-[#1A1A1A]/20 pt-1.5">
-                            <span className="font-bold text-[#D97757]">TO RUN LOCAL OLLAMA ON YOUR GTX 1650:</span>
-                            <span>1. In PowerShell: <code className="bg-black/10 dark:bg-white/10 px-1">winget install Ollama.Ollama</code></span>
-                            <span>2. Launch model: <code className="bg-black/10 dark:bg-white/10 px-1">ollama run qwen2.5:3b</code> (Fits 2 GB VRAM)</span>
-                            <span className="opacity-70 italic mt-0.5">Studio will automatically fall back to Fast Heuristic mode until connected.</span>
+                          <div className="text-[11px] font-sans flex flex-col gap-1 leading-relaxed border-t border-[#E8E5DE] dark:border-white/10 pt-2 text-[#5E5D59] dark:text-white/60">
+                            <span className="font-medium text-[#D97757]">Run Local Ollama on your GTX 1650:</span>
+                            <span>1. In PowerShell: <code className="bg-black/5 dark:bg-white/10 px-1 py-0.5 rounded text-[10px]">winget install Ollama.Ollama</code></span>
+                            <span>2. Launch model: <code className="bg-black/5 dark:bg-white/10 px-1 py-0.5 rounded text-[10px]">ollama run qwen2.5:3b</code> (Fits 2 GB VRAM)</span>
+                            <span className="opacity-70 italic text-[10px] mt-0.5">Falls back to Fast Heuristic mode until connected.</span>
                           </div>
                         )}
                       </div>
@@ -1135,10 +1129,10 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
             {/* Manual Motion Archetypes Grid */}
             <div>
-              <label className={`text-[9px] font-bold uppercase tracking-wider block mb-2 ${
-                themeMode === 'dark' ? 'text-white/60' : 'text-[#6B6B6B]'
+              <label className={`text-[11px] font-sans font-medium block mb-2 ${
+                themeMode === 'dark' ? 'text-white/60' : 'text-[#5E5D59]'
               }`}>
-                OR LOCK UNIFORM MOTION STYLE:
+                Or lock uniform motion style:
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {MANUAL_ARCHETYPES.map(archKey => {
@@ -1147,25 +1141,25 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     <button
                       key={archKey}
                       onClick={() => setArchetype(archKey)}
-                      className={`p-2 border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      className={`p-2.5 border text-left transition-all cursor-pointer flex flex-col justify-between rounded-xl ${
                         archetype === archKey
                           ? themeMode === 'dark'
-                            ? 'border-2 border-[#D97757] bg-[#D97757]/20 shadow-[2px_2px_0px_#D97757]'
-                            : 'border-2 border-[#D97757] bg-[#F5F0EB] shadow-[2px_2px_0px_#1A1A1A]'
+                            ? 'border-[#D97757] bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs'
+                            : 'border-[#D97757] bg-[#FAF0EB] ring-1 ring-[#D97757]/30 shadow-xs'
                           : themeMode === 'dark'
-                          ? 'border-white/15 hover:border-white/40 bg-[#1C1C22]'
-                          : 'border-[#1A1A1A]/30 hover:border-[#1A1A1A] bg-white'
+                          ? 'border-white/10 hover:border-white/25 bg-[#1C1C20]'
+                          : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-white shadow-xs'
                       }`}
                     >
                       <div className="flex justify-between items-center">
-                        <span className="text-sm">{meta.icon}</span>
-                        <span className={`text-[7px] font-mono px-1 py-0.2 font-bold ${
-                          themeMode === 'dark' ? 'bg-white/20 text-white' : 'bg-[#1A1A1A] text-white'
+                        <span className="text-base">{meta.icon}</span>
+                        <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${
+                          themeMode === 'dark' ? 'bg-white/10 text-white/80' : 'bg-[#FAF9F5] text-[#5E5D59] border border-[#E8E5DE]'
                         }`}>
                           {meta.tag}
                         </span>
                       </div>
-                      <span className={`text-[9px] font-bold mt-1 ${themeMode === 'dark' ? 'text-white' : 'text-[#1A1A1A]'}`}>
+                      <span className={`text-xs font-sans font-medium mt-1.5 ${themeMode === 'dark' ? 'text-white' : 'text-[#141413]'}`}>
                         {meta.name}
                       </span>
                     </button>
@@ -1176,18 +1170,18 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
             {/* Font Selector */}
             <div>
-              <label className={`text-[9px] font-bold uppercase tracking-wider block mb-1 ${
-                themeMode === 'dark' ? 'text-white/60' : 'text-[#6B6B6B]'
+              <label className={`text-[11px] font-sans font-medium block mb-1.5 ${
+                themeMode === 'dark' ? 'text-white/60' : 'text-[#5E5D59]'
               }`}>
-                TYPOGRAPHY FONT
+                Typography Font
               </label>
               <select
                 value={fontFamily}
                 onChange={e => setFontFamily(e.target.value)}
-                className={`w-full p-2 text-xs font-mono focus:outline-none focus:border-[#D97757] cursor-pointer border ${
+                className={`w-full p-2.5 text-xs font-sans rounded-xl focus:outline-none focus:border-[#D97757] focus:ring-1 focus:ring-[#D97757] cursor-pointer border shadow-xs transition-colors ${
                   themeMode === 'dark'
-                    ? 'bg-[#1C1C22] border-white/20 text-white'
-                    : 'bg-[#F5F0EB] border-[#1A1A1A] text-[#1A1A1A]'
+                    ? 'bg-[#1C1C20] border-white/10 text-white'
+                    : 'bg-white border-[#E8E5DE] text-[#141413]'
                 }`}
               >
                 <option value='"IBM Plex Mono", monospace'>IBM Plex Mono (Classic)</option>
@@ -1198,22 +1192,22 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             </div>
 
             {/* Real-time Telemetry Card */}
-            <div className={`p-3 border text-[10px] font-mono flex flex-col gap-1 ${
+            <div className={`p-3.5 border rounded-xl text-xs font-sans space-y-1.5 shadow-xs ${
               themeMode === 'dark'
-                ? 'bg-[#18181C] border-white/15 text-white'
-                : 'bg-[#F5F0EB] border-[#1A1A1A] text-[#1A1A1A]'
+                ? 'bg-[#16161A] border-white/10 text-white'
+                : 'bg-[#FAF9F5] border-[#E8E5DE] text-[#141413]'
             }`}>
-              <div className="flex justify-between">
-                <span className={themeMode === 'dark' ? 'text-white/50' : 'text-[#6B6B6B]'}>TOTAL DURATION:</span>
-                <span className="font-bold">{rangeDurationSec.toFixed(2)}s</span>
+              <div className="flex justify-between items-center">
+                <span className={themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}>Total Duration:</span>
+                <span className="font-mono font-medium">{rangeDurationSec.toFixed(2)}s</span>
               </div>
-              <div className="flex justify-between">
-                <span className={themeMode === 'dark' ? 'text-white/50' : 'text-[#6B6B6B]'}>30 FPS FRAMES:</span>
-                <span className="font-bold text-[#D97757]">{totalFrames} frames</span>
+              <div className="flex justify-between items-center">
+                <span className={themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}>30 FPS Frames:</span>
+                <span className="font-mono font-medium text-[#D97757]">{totalFrames} frames</span>
               </div>
-              <div className="flex justify-between">
-                <span className={themeMode === 'dark' ? 'text-white/50' : 'text-[#6B6B6B]'}>PROGMEM FLASH:</span>
-                <span className="font-bold">~{estProgmemKb} KB</span>
+              <div className="flex justify-between items-center">
+                <span className={themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}>PROGMEM Flash:</span>
+                <span className="font-mono font-medium">~{estProgmemKb} KB</span>
               </div>
             </div>
 
@@ -1221,11 +1215,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             <button
               onClick={handleGenerateAndInject}
               disabled={isRendering || selectedLines.length === 0}
-              className={`w-full py-3 bg-[#D97757] text-white text-xs font-sans font-semibold tracking-wide rounded-xs border transition-all cursor-pointer mt-auto flex items-center justify-center gap-2 ${
-                themeMode === 'dark'
-                  ? 'border-white/10 shadow-[3px_3px_0px_rgba(0,0,0,0.5)] hover:shadow-[1px_1px_0px_rgba(0,0,0,0.5)] hover:bg-[#c96442]'
-                  : 'border-[#141413] shadow-[3px_3px_0px_#141413] hover:shadow-[1px_1px_0px_#141413] hover:bg-[#c96442]'
-              } hover:translate-x-[1px] hover:translate-y-[1px] ${
+              className={`w-full py-3 bg-[#D97757] hover:bg-[#C66545] text-white text-xs font-sans font-medium tracking-wide rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer mt-auto flex items-center justify-center gap-2 ${
                 isRendering ? 'opacity-70 cursor-wait' : ''
               }`}
             >
@@ -1249,37 +1239,37 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
       {/* Word Archetype Customizer Modal */}
       {editingWordTarget && (
         <div className="fixed inset-0 z-60 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className={`w-full max-w-md p-5 flex flex-col gap-4 font-mono animate-scale-in border-2 ${
+          <div className={`w-full max-w-md p-6 flex flex-col gap-4 font-sans animate-scale-in border rounded-2xl shadow-2xl ${
             themeMode === 'dark'
-              ? 'bg-[#161619] border-white/20 text-white shadow-[6px_6px_0px_rgba(0,0,0,0.8)]'
-              : 'bg-white border-[#1A1A1A] text-[#1A1A1A] shadow-[6px_6px_0px_#1A1A1A]'
+              ? 'bg-[#18181C] border-white/10 text-white'
+              : 'bg-white border-[#E8E5DE] text-[#141413]'
           }`}>
             <div className="flex justify-between items-start">
               <div>
-                <span className="text-[9px] font-bold text-[#D97757] uppercase tracking-wider block">
-                  WORD MOTION OVERRIDE
+                <span className="text-[10px] font-sans font-medium text-[#D97757] tracking-wider block">
+                  Word Motion Override
                 </span>
-                <h3 className="text-base font-bold">
+                <h3 className="font-serif text-xl font-normal tracking-tight mt-0.5">
                   "{editingWordTarget.word.word}"
                 </h3>
-                <span className={`text-[10px] ${themeMode === 'dark' ? 'text-white/50' : 'text-[#666]'}`}>
-                  Timing: {(editingWordTarget.word.startMs / 1000).toFixed(2)}s - {(editingWordTarget.word.endMs / 1000).toFixed(2)}s ({Math.round(editingWordTarget.word.endMs - editingWordTarget.word.startMs)}ms)
+                <span className={`text-xs font-mono ${themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}`}>
+                  {(editingWordTarget.word.startMs / 1000).toFixed(2)}s – {(editingWordTarget.word.endMs / 1000).toFixed(2)}s ({Math.round(editingWordTarget.word.endMs - editingWordTarget.word.startMs)}ms)
                 </span>
               </div>
               <button
                 onClick={() => setEditingWordTarget(null)}
-                className={`p-1 transition-colors cursor-pointer border ${
+                className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
                   themeMode === 'dark'
-                    ? 'border-white/20 hover:bg-white hover:text-black'
-                    : 'border-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white'
+                    ? 'border-white/10 hover:bg-white/10 text-white/80'
+                    : 'border-[#E8E5DE] hover:bg-[#FAF9F5] text-[#5E5D59]'
                 }`}
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <p className={`text-[11px] ${themeMode === 'dark' ? 'text-white/70' : 'text-[#444]'}`}>
-              Pick an explicit visual motion archetype for this word, or restore dynamic semantic detection:
+            <p className={`text-xs font-sans leading-relaxed ${themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'}`}>
+              Select an explicit motion style for this word, or restore dynamic semantic detection:
             </p>
 
             <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
@@ -1297,32 +1287,32 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                       }));
                       setEditingWordTarget(null);
                     }}
-                    className={`p-2 border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                    className={`p-2.5 border rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between ${
                       isSelected
                         ? themeMode === 'dark'
-                          ? 'border-2 border-[#D97757] bg-[#D97757]/20 font-bold shadow-[2px_2px_0px_#D97757]'
-                          : 'border-2 border-[#D97757] bg-[#FFF5F0] font-bold shadow-[2px_2px_0px_#1A1A1A]'
+                          ? 'border-[#D97757] bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs'
+                          : 'border-[#D97757] bg-[#FAF0EB] ring-1 ring-[#D97757]/30 shadow-xs'
                         : themeMode === 'dark'
-                        ? 'border-white/15 hover:border-white/40 bg-[#1C1C22]'
-                        : 'border-[#1A1A1A]/30 hover:border-[#1A1A1A] bg-white'
+                        ? 'border-white/10 hover:border-white/20 bg-[#232228]'
+                        : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-[#FAF9F5] shadow-xs'
                     }`}
                   >
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">{meta.icon}</span>
-                      <span className={`text-[7px] font-mono px-1 py-0.2 ${
-                        themeMode === 'dark' ? 'bg-white/20 text-white' : 'bg-[#1A1A1A] text-white'
+                      <span className="text-base">{meta.icon}</span>
+                      <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${
+                        themeMode === 'dark' ? 'bg-white/10 text-white/80' : 'bg-white text-[#5E5D59] border border-[#E8E5DE]'
                       }`}>
                         {meta.tag}
                       </span>
                     </div>
-                    <span className="text-[9px] font-bold mt-1">{meta.name}</span>
+                    <span className={`text-xs font-sans font-medium mt-1.5 ${themeMode === 'dark' ? 'text-white' : 'text-[#141413]'}`}>{meta.name}</span>
                   </button>
                 );
               })}
             </div>
 
-            <div className={`flex gap-2 pt-2 border-t ${
-              themeMode === 'dark' ? 'border-white/15' : 'border-[#1A1A1A]/20'
+            <div className={`flex gap-2.5 pt-3 border-t ${
+              themeMode === 'dark' ? 'border-white/10' : 'border-[#E8E5DE]'
             }`}>
               <button
                 onClick={() => {
@@ -1336,23 +1326,19 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                   });
                   setEditingWordTarget(null);
                 }}
-                className={`flex-1 py-1.5 border text-xs font-bold transition-colors cursor-pointer ${
+                className={`flex-1 py-2 rounded-xl border text-xs font-sans font-medium transition-colors cursor-pointer ${
                   themeMode === 'dark'
-                    ? 'border-white/20 hover:bg-white hover:text-black text-white'
-                    : 'border-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white text-[#1A1A1A]'
+                    ? 'border-white/10 hover:bg-white/10 text-white/90'
+                    : 'border-[#E8E5DE] hover:bg-[#FAF9F5] text-[#141413]'
                 }`}
               >
-                RESTORE AUTO SEMANTIC
+                Restore Auto Semantic
               </button>
               <button
                 onClick={() => setEditingWordTarget(null)}
-                className={`px-4 py-1.5 text-xs font-bold transition-colors cursor-pointer ${
-                  themeMode === 'dark'
-                    ? 'bg-white text-black hover:bg-[#D97757] hover:text-white'
-                    : 'bg-[#1A1A1A] text-white hover:bg-[#D97757]'
-                }`}
+                className="px-5 py-2 rounded-xl text-xs font-sans font-medium bg-[#D97757] hover:bg-[#C66545] text-white transition-colors cursor-pointer shadow-xs"
               >
-                DONE
+                Done
               </button>
             </div>
           </div>

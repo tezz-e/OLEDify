@@ -94,14 +94,14 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
   };
 
   return (
-    <div className={`space-y-4 ${disabled ? 'opacity-40 pointer-events-none' : ''}`}>
+    <div className={`space-y-6 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       
       {settings.mode === 'manual' && sourceFrame && (
         <div className="space-y-2">
-          <label className="text-xs font-sans font-medium text-[#141413] block">Manual Frame Cropping</label>
+          <label className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">Manual Crop (Move or Resize)</label>
           <div 
             ref={containerRef}
-            className="relative w-full aspect-video bg-[#141413] border border-[#E8E5DE] rounded-lg overflow-hidden flex items-center justify-center touch-none cursor-move shadow-inner"
+            className="relative w-full aspect-video bg-[#080808] border-2 border-[#1A1A1A] overflow-hidden flex items-center justify-center touch-none cursor-move"
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
@@ -138,7 +138,7 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
                   fill="black" 
                 />
               </mask>
-              <rect x="0" y="0" width={sourceFrame.width} height={sourceFrame.height} fill="black" mask="url(#cropMask)" opacity="0.65" />
+              <rect x="0" y="0" width={sourceFrame.width} height={sourceFrame.height} fill="black" mask="url(#cropMask)" opacity="0.6" />
               
               {/* Highlighted bounding box */}
               <rect 
@@ -147,7 +147,7 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
                 width={settings.width} 
                 height={settings.height} 
                 fill="none" 
-                stroke="#D97757" 
+                stroke="#E85D2A" 
                 strokeWidth={Math.max(2, sourceFrame.width / 100)} 
                 strokeDasharray={`${Math.max(4, sourceFrame.width/50)}`}
               />
@@ -180,31 +180,31 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
                     cx={cx}
                     cy={cy}
                     r={Math.max(5, sourceFrame.width / 45)}
-                    fill="#FAF9F5"
-                    stroke="#D97757"
+                    fill="#F5F0EB"
+                    stroke="#E85D2A"
                     strokeWidth={Math.max(2, sourceFrame.width / 150)}
                     pointerEvents="all"
                     className={handle === 'nw' || handle === 'se' ? 'cursor-nwse-resize' : handle === 'ne' || handle === 'sw' ? 'cursor-nesw-resize' : handle === 'n' || handle === 's' ? 'cursor-ns-resize' : 'cursor-ew-resize'}
                   />
                 );
               })}
-              <circle cx={settings.x + settings.width/2} cy={settings.y + settings.height/2} r={Math.max(2, sourceFrame.width/150)} fill="#D97757" pointerEvents="none" />
+              <circle cx={settings.x + settings.width/2} cy={settings.y + settings.height/2} r={Math.max(2, sourceFrame.width/150)} fill="#E85D2A" pointerEvents="none" />
             </svg>
           </div>
         </div>
       )}
 
       <div className="space-y-2">
-        <label className="text-xs font-sans font-medium text-[#141413] block">Fitting Aspect Mode</label>
-        <div className="bg-[#FAF9F5] border border-[#E8E5DE] p-1 rounded-lg flex gap-1">
+        <label className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">Crop Mode</label>
+        <div className="bg-[#F5F0EB] border border-[#1A1A1A] p-1 flex gap-1">
           {modes.map((mode) => (
             <button
               key={mode}
               onClick={() => handleModeChange(mode)}
-              className={`flex-1 text-[11px] font-sans py-1 rounded-md transition-all capitalize cursor-pointer ${
+              className={`flex-1 text-[10px] font-mono font-bold tracking-wide py-1.5 transition-colors duration-150 border border-[#1A1A1A] uppercase ${
                 settings.mode === mode
-                  ? 'bg-white text-[#141413] font-semibold shadow-xs border border-[#E8E5DE]'
-                  : 'text-[#5E5D59] hover:text-[#141413]'
+                  ? 'bg-[#1A1A1A] text-white'
+                  : 'bg-white text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-white'
               }`}
             >
               {mode}
@@ -213,47 +213,45 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-1">
-        <label className="text-xs font-sans font-medium text-[#141413] cursor-pointer" htmlFor="smoothing-toggle">Bicubic Smoothing</label>
+      <div className="flex items-center justify-between pt-2">
+        <label className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">Bicubic Smoothing</label>
         <input
-          id="smoothing-toggle"
           type="checkbox"
           checked={settings.smoothing}
           onChange={(e) => onChange({ ...settings, smoothing: e.target.checked })}
-          className="w-4 h-4 accent-[#D97757] cursor-pointer rounded"
+          className="w-4 h-4 accent-[#E85D2A] cursor-pointer"
         />
       </div>
 
       {settings.mode === 'manual' && (
-      <div className="flex gap-2 pt-1">
+      <div className="flex gap-2 pt-2">
         <div className="flex-1 space-y-1">
-          <label className="text-xs font-sans text-[#5E5D59]">Pan X</label>
+          <label className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">Pan X</label>
           <input
             type="number"
             value={settings.x}
             disabled={disabled || settings.mode !== 'manual'}
             onChange={(e) => onChange({ ...settings, x: parseInt(e.target.value) || 0 })}
-            className="w-full bg-white border border-[#E8E5DE] rounded-md px-2.5 py-1 text-xs font-mono text-[#141413] focus:border-[#D97757] outline-none shadow-xs disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full bg-white border border-[#1A1A1A] px-2 py-1 text-xs font-mono disabled:opacity-40 disabled:cursor-not-allowed"
           />
         </div>
         <div className="flex-1 space-y-1">
-          <label className="text-xs font-sans text-[#5E5D59]">Pan Y</label>
+          <label className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">Pan Y</label>
           <input
             type="number"
             value={settings.y}
             disabled={disabled || settings.mode !== 'manual'}
             onChange={(e) => onChange({ ...settings, y: parseInt(e.target.value) || 0 })}
-            className="w-full bg-white border border-[#E8E5DE] rounded-md px-2.5 py-1 text-xs font-mono text-[#141413] focus:border-[#D97757] outline-none shadow-xs disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full bg-white border border-[#1A1A1A] px-2 py-1 text-xs font-mono disabled:opacity-40 disabled:cursor-not-allowed"
           />
         </div>
       </div>
       )}
 
-      {settings.mode === 'manual' && (
-        <div className="text-[11px] font-mono text-[#87867F] bg-[#FAF9F5] p-2 rounded-lg border border-[#E8E5DE]">
-          Source: {settings.sourceWidth}×{settings.sourceHeight}px • Crop: {Math.round(settings.width)}×{Math.round(settings.height)}px
-        </div>
-      )}
+      {settings.mode === 'manual' && <div className="text-[10px] font-mono text-[#6B6B6B]">
+        Source: {settings.sourceWidth}×{settings.sourceHeight} <br />
+        Crop: {Math.round(settings.width)}×{Math.round(settings.height)}
+      </div>}
     </div>
   );
 };
