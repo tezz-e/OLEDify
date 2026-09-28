@@ -509,60 +509,50 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         {/* ============================================================== */}
         {/* COLUMN 2: APPLE MUSIC FLUID GLASS LYRIC SELECTOR             */}
         {/* ============================================================== */}
-        <section className="flex-1 flex flex-col bg-[#070709] relative min-h-0 overflow-hidden">
-          {/* Ambient Fluid Gradient Mesh (Apple Music fluid background) */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 opacity-45">
-            <div className="absolute -top-32 -left-32 w-[480px] h-[480px] rounded-full bg-gradient-to-br from-[#E85D2A] via-[#FF2D55] to-transparent blur-[120px] animate-pulse duration-[8000ms]" />
-            <div className="absolute top-1/4 -right-32 w-[520px] h-[520px] rounded-full bg-gradient-to-bl from-[#7928CA] via-[#0070F3] to-transparent blur-[130px] animate-pulse duration-[11000ms]" />
-            <div className="absolute -bottom-32 left-1/3 w-[550px] h-[400px] rounded-full bg-gradient-to-t from-[#00DFD8] via-[#8A2BE2] to-transparent blur-[140px] animate-pulse duration-[14000ms]" />
-          </div>
-
-          {/* Apple Music Glass Header Bar */}
-          <div className="p-3 border-b border-white/10 bg-[#121214]/70 backdrop-blur-xl flex justify-between items-center z-10">
+        <section className="flex-1 flex flex-col bg-[#111113] relative min-h-0 overflow-hidden">
+          {/* Apple Music Minimalist Header Bar */}
+          <div className="h-12 px-6 border-b border-[#222225] bg-[#161619] flex justify-between items-center z-10 shrink-0">
             <div className="flex items-center gap-3">
-              <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#E85D2A] flex items-center gap-1.5 font-mono">
-                <span className="w-2 h-2 rounded-full bg-[#E85D2A] animate-ping" />
-                <span>APPLE MUSIC FLUID GLASS SELECTOR</span>
-              </h2>
-              <span className="text-[8px] bg-white/10 text-white/70 px-2 py-0.5 rounded font-mono">
-                {isAutoScrollEnabled ? '⚡ AUTO-SYNC ON' : 'PAUSED (CLICK TO RESUME)'}
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[#E85D2A] flex items-center gap-1.5 font-mono">
+                <span>✦</span>
+                <span>LYRICS SELECTION</span>
+              </span>
+              <span className="text-[9px] text-[#777] font-mono">
+                Click line to seek • Shift+Click to expand range
               </span>
             </div>
 
             {/* Quick Selection Shortcuts */}
-            <div className="flex items-center gap-2 font-mono">
+            <div className="flex items-center gap-1.5 font-mono text-[9px]">
               <button
                 onClick={handleSelectAll}
-                className="px-2 py-1 bg-white/10 hover:bg-white/20 border border-white/20 text-[9px] font-bold text-white rounded transition-colors cursor-pointer flex items-center gap-1"
+                className="px-2.5 py-1 bg-[#222226] hover:bg-[#2A2A2E] text-white/80 hover:text-white border border-white/10 rounded transition-colors cursor-pointer font-bold"
                 title="Select all lyrics in song"
               >
-                <CheckCheck className="w-3 h-3 text-[#E85D2A]" />
-                <span>ALL</span>
+                SELECT ALL
               </button>
               <button
                 onClick={() => handleExpandRange(1)}
-                className="px-2 py-1 bg-white/10 hover:bg-white/20 border border-white/20 text-[9px] font-bold text-white rounded transition-colors cursor-pointer flex items-center gap-1"
+                className="px-2.5 py-1 bg-[#222226] hover:bg-[#2A2A2E] text-white/80 hover:text-white border border-white/10 rounded transition-colors cursor-pointer font-bold"
                 title="Expand selection by 1 line"
               >
-                <ChevronDown className="w-3 h-3" />
-                <span>+1 LINE</span>
+                +1 LINE
               </button>
               <button
                 onClick={() => handleExpandRange(-1)}
-                className="px-2 py-1 bg-white/10 hover:bg-white/20 border border-white/20 text-[9px] font-bold text-white rounded transition-colors cursor-pointer flex items-center gap-1"
+                className="px-2.5 py-1 bg-[#222226] hover:bg-[#2A2A2E] text-white/80 hover:text-white border border-white/10 rounded transition-colors cursor-pointer font-bold"
                 title="Shrink selection by 1 line"
               >
-                <ChevronUp className="w-3 h-3" />
-                <span>-1 LINE</span>
+                -1 LINE
               </button>
             </div>
           </div>
 
-          {/* Fluid Glass Lyric List */}
+          {/* Minimalist Apple Music Lyric List */}
           <div
             ref={lyricsContainerRef}
             onScroll={handleUserScroll}
-            className="flex-1 overflow-y-auto p-6 md:p-14 flex flex-col items-center gap-5 relative z-10 min-h-0 scroll-smooth"
+            className="flex-1 overflow-y-auto px-6 py-10 md:px-16 md:py-16 flex flex-col items-center gap-4 relative z-10 min-h-0 scroll-smooth"
           >
             {parsedLyrics.lines.map((line, idx) => {
               const start = Math.min(selectedStartIndex, selectedEndIndex);
@@ -573,50 +563,48 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               const isEndPin = idx === end;
 
               return isSelected ? (
-                <div key={idx} id={`lyric-line-${idx}`} className="w-full max-w-xl transition-all duration-300">
+                <div key={idx} id={`lyric-line-${idx}`} className="w-full max-w-xl transition-all duration-200">
                   <GlassSurface
-                    borderRadius={18}
-                    blur={14}
-                    brightness={38}
-                    backgroundOpacity={0.12}
-                    saturation={1.35}
-                    borderWidth={0.06}
-                    className="w-full relative shadow-[0_8px_30px_rgba(0,0,0,0.6)]"
+                    borderRadius={12}
+                    blur={16}
+                    brightness={40}
+                    backgroundOpacity={0.06}
+                    saturation={1}
+                    borderWidth={0.02}
+                    distortionScale={0}
+                    className="w-full relative border border-white/10 shadow-lg"
                   >
                     <div
                       onClick={(e) => handleLineClick(idx, e)}
-                      className={`p-4 md:p-5 cursor-pointer relative group rounded-2xl transition-all ${
-                        isActiveLine ? 'ring-1 ring-white/30' : ''
+                      className={`p-4 md:p-5 cursor-pointer relative group transition-all ${
+                        isActiveLine ? 'bg-white/[0.04]' : ''
                       }`}
                     >
-                      {/* Pin badges */}
+                      {/* Selection Pin Badges */}
                       {isStartPin && (
-                        <span className="absolute -top-2.5 left-4 bg-[#E85D2A] text-white text-[8px] font-bold px-2 py-0.5 rounded-full shadow-lg z-20 flex items-center gap-1 font-mono">
-                          <span>▲ START</span>
-                          <span>{(line.startMs / 1000).toFixed(2)}s</span>
+                        <span className="absolute -top-2.5 left-4 bg-[#E85D2A] text-white text-[8px] font-bold px-2 py-0.5 rounded shadow-sm z-20 font-mono tracking-wider">
+                          START • {(line.startMs / 1000).toFixed(2)}s
                         </span>
                       )}
                       {isEndPin && (
-                        <span className="absolute -bottom-2.5 right-4 bg-[#E85D2A] text-white text-[8px] font-bold px-2 py-0.5 rounded-full shadow-lg z-20 flex items-center gap-1 font-mono">
-                          <span>▼ END</span>
-                          <span>{(line.endMs / 1000).toFixed(2)}s</span>
+                        <span className="absolute -bottom-2.5 right-4 bg-[#E85D2A] text-white text-[8px] font-bold px-2 py-0.5 rounded shadow-sm z-20 font-mono tracking-wider">
+                          END • {(line.endMs / 1000).toFixed(2)}s
                         </span>
                       )}
 
-                      {/* Header Timestamp & Active Playing Status */}
+                      {/* Header Timestamp */}
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] text-[#E85D2A] font-mono font-bold tracking-wider">
+                        <span className="text-[10px] text-[#E85D2A] font-mono font-semibold tracking-wider">
                           {Math.floor(line.startMs / 60000)}:{((line.startMs % 60000) / 1000).toFixed(2).padStart(5, '0')}
                         </span>
                         {isActiveLine && (
-                          <span className="text-[8px] font-bold bg-[#E85D2A] text-white px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse flex items-center gap-1 font-mono">
-                            <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                            <span>PLAYING NOW</span>
+                          <span className="text-[8px] font-bold text-white/90 bg-[#E85D2A] px-2 py-0.5 rounded uppercase font-mono tracking-wider">
+                            PLAYING
                           </span>
                         )}
                       </div>
 
-                      {/* ELRC Progressive Karaoke Word-Level Lighting */}
+                      {/* Clean Apple Music Typography */}
                       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                         {line.words && line.words.length > 0 ? (
                           line.words.map((w, wIdx) => {
@@ -626,12 +614,12 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                             return (
                               <span
                                 key={wIdx}
-                                className={`text-xl md:text-2xl font-black tracking-tight transition-all duration-150 inline-block ${
+                                className={`text-xl md:text-2xl font-bold tracking-tight transition-colors duration-150 inline-block ${
                                   isWordActive
-                                    ? 'text-white scale-105 drop-shadow-[0_0_16px_rgba(255,255,255,0.95)] underline decoration-[#E85D2A] decoration-2 underline-offset-4'
+                                    ? 'text-white font-black'
                                     : isWordPast
-                                    ? 'text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]'
-                                    : 'text-white/45'
+                                    ? 'text-white/90'
+                                    : 'text-white/40'
                                 }`}
                               >
                                 {w.word}
@@ -639,17 +627,17 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                             );
                           })
                         ) : (
-                          <span className="text-xl md:text-2xl font-black text-white">
+                          <span className="text-xl md:text-2xl font-bold text-white">
                             {line.text}
                           </span>
                         )}
                       </div>
 
-                      {/* Kinetic Archetype Dynamic Badges */}
+                      {/* Word Motion Badges */}
                       {line.words && line.words.length > 0 && (
-                        <div className="mt-3.5 pt-2.5 border-t border-white/10 flex flex-wrap gap-1.5 items-center">
-                          <span className="text-[8px] text-white/50 font-bold uppercase tracking-wider mr-1 font-mono">
-                            {archetype === 'auto_semantic' ? '✨ MOTIONS:' : 'WORDS:'}
+                        <div className="mt-3 pt-2.5 border-t border-white/10 flex flex-wrap gap-1.5 items-center">
+                          <span className="text-[8px] text-white/40 font-bold uppercase tracking-wider mr-1 font-mono">
+                            {archetype === 'auto_semantic' ? 'DYNAMIC STYLES:' : 'WORDS:'}
                           </span>
                           {line.words.map((w, wIdx) => {
                             const precedingWord = wIdx > 0 ? line.words[wIdx - 1] : undefined;
@@ -678,16 +666,16 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                                     currentArchetype: wordArch
                                   });
                                 }}
-                                className={`px-2.5 py-0.5 rounded-full text-[9px] font-mono flex items-center gap-1 transition-all cursor-pointer ${
+                                className={`px-2 py-0.5 rounded text-[9px] font-mono flex items-center gap-1 transition-all cursor-pointer ${
                                   isOverridden
-                                    ? 'bg-[#E85D2A] text-white font-bold ring-2 ring-white/60 shadow-lg'
-                                    : 'bg-white/10 hover:bg-white/20 text-white/90 border border-white/15'
+                                    ? 'bg-[#E85D2A] text-white font-bold ring-1 ring-white/50'
+                                    : 'bg-white/5 hover:bg-white/15 text-white/70 hover:text-white border border-white/10'
                                 }`}
-                                title={`Click to customize kinetic style for "${w.word}"`}
+                                title={`Customize motion style for "${w.word}"`}
                               >
                                 <span>{meta.icon}</span>
                                 <span className="font-semibold">{w.word}</span>
-                                <span className="opacity-60 text-[7px] uppercase font-mono">({meta.tag})</span>
+                                <span className="opacity-50 text-[7px] uppercase font-mono">({meta.tag})</span>
                               </button>
                             );
                           })}
@@ -701,17 +689,17 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                   key={idx}
                   id={`lyric-line-${idx}`}
                   onClick={(e) => handleLineClick(idx, e)}
-                  className={`w-full max-w-xl transition-all duration-300 cursor-pointer p-4 rounded-xl relative group ${
+                  className={`w-full max-w-xl transition-all duration-200 cursor-pointer p-3.5 rounded-lg relative group ${
                     isActiveLine
-                      ? 'opacity-85 scale-100 text-white font-bold blur-none'
-                      : 'opacity-25 hover:opacity-75 blur-[1.2px] hover:blur-none scale-98 hover:scale-100'
+                      ? 'text-white font-bold opacity-90'
+                      : 'text-white/30 hover:text-white/70 opacity-40 hover:opacity-80'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-[9px] text-[#888] font-mono w-12 shrink-0">
+                    <span className="text-[9px] text-[#666] font-mono w-12 shrink-0">
                       {Math.floor(line.startMs / 60000)}:{((line.startMs % 60000) / 1000).toFixed(1).padStart(4, '0')}
                     </span>
-                    <span className="text-lg font-bold text-white/80 group-hover:text-white transition-colors">
+                    <span className="text-lg font-medium transition-colors">
                       {line.text}
                     </span>
                   </div>
@@ -720,28 +708,27 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             })}
           </div>
 
-
           {/* Hidden Audio Player for drop sync */}
           {localAudioUrl && (
             <audio ref={audioRef} src={localAudioUrl} />
           )}
 
-          {/* Bottom Audio Scrub Bar */}
-          <div className="h-16 px-6 bg-[#161618] border-t-2 border-[#1A1A1A] flex items-center justify-between z-10 shrink-0 gap-4">
+          {/* Minimalist Bottom Audio Scrub Bar */}
+          <div className="h-14 px-6 bg-[#161619] border-t border-[#222225] flex items-center justify-between z-10 shrink-0 gap-4">
             <div className="flex items-center gap-3 shrink-0">
               <button
                 onClick={togglePlay}
-                className="w-8 h-8 rounded-full bg-[#E85D2A] text-white flex items-center justify-center hover:scale-105 transition-transform cursor-pointer shadow-md"
+                className="w-8 h-8 rounded-full bg-[#E85D2A] text-white flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
               >
                 {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
               </button>
 
-              <div className="text-[10px] text-white font-mono w-28 shrink-0">
+              <div className="text-[10px] text-white/90 font-mono w-28 shrink-0">
                 {(playheadMs / 1000).toFixed(2)}s / {(rangeEndMs / 1000).toFixed(2)}s
               </div>
             </div>
 
-            {/* Interactive Timeline Scrubber Slider */}
+            {/* Minimal Timeline Scrubber */}
             <div className="flex-1 flex items-center gap-2 max-w-md">
               <input
                 type="range"
@@ -756,14 +743,14 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     audioRef.current.currentTime = val / 1000;
                   }
                 }}
-                className="w-full accent-[#E85D2A] h-1.5 bg-white/20 rounded-lg cursor-pointer"
+                className="w-full accent-[#E85D2A] h-1 bg-white/10 rounded cursor-pointer"
               />
             </div>
 
-            <div className="flex items-center gap-3 text-xs font-mono text-white/80 shrink-0">
+            <div className="flex items-center gap-3 text-xs font-mono text-white/70 shrink-0">
               {Object.keys(wordOverrides).length > 0 && (
-                <div className="flex items-center gap-1.5 bg-[#E85D2A]/20 border border-[#E85D2A]/50 px-2 py-0.5 rounded text-[8px] text-[#E85D2A]">
-                  <span>{Object.keys(wordOverrides).length} CUSTOM OVERRIDES</span>
+                <div className="flex items-center gap-1.5 bg-[#E85D2A]/15 border border-[#E85D2A]/40 px-2 py-0.5 rounded text-[8px] text-[#E85D2A]">
+                  <span>{Object.keys(wordOverrides).length} OVERRIDES</span>
                   <button
                     onClick={() => setWordOverrides({})}
                     className="hover:text-white underline cursor-pointer"
@@ -780,6 +767,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             </div>
           </div>
         </section>
+
 
         {/* ============================================================== */}
         {/* COLUMN 3: MOTION & OLED PREVIEW                               */}
