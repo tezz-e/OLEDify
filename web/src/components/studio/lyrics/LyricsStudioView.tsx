@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, Music, FileText, Upload, Play, Pause, ArrowLeft, Sparkles, Check, RefreshCw } from 'lucide-react';
+import { Search, Music, FileText, Upload, Play, Pause, ArrowLeft, Sparkles, Check, RefreshCw, X, RotateCcw } from 'lucide-react';
 import { searchLrclib, getLrclibExact, searchLyricsOvhFallback } from '../../../engine/lyrics/lrclibClient';
 import { parseLrc, parsePlainTextLyrics } from '../../../engine/lyrics/lrcParser';
-import { LrclibTrack, ParsedLyrics, LyricLine } from '../../../engine/lyrics/types';
-import { MotionArchetype } from '../../../engine/kinetic/types';
+import { LrclibTrack, ParsedLyrics, LyricLine, LyricWord } from '../../../engine/lyrics/types';
+import { MotionArchetype, ARCHETYPE_METADATA } from '../../../engine/kinetic/types';
 import { renderKineticSequence } from '../../../engine/kinetic/kineticEngine';
-import { DecodedMedia } from '../../../types/media';
+import { getWordEffectiveArchetype } from '../../../engine/kinetic/semanticClassifier';
+import { DecodedMedia, ExtractedFrame } from '../../../types/media';
 import { OledCanvas } from '../../OledCanvas';
 
 interface LyricsStudioViewProps {
@@ -20,14 +21,25 @@ const SAMPLE_FALLBACK_LRC = `[ti:OLED Kinetic Intro]
 [00:05.00] 1-BIT SYNCHRONIZED REELS
 [00:07.50] HARDWARE READY FOR ESP32`;
 
-const ARCHETYPES: { id: MotionArchetype; icon: string; name: string; tag: string }[] = [
-  { id: 'manga_impact', icon: '💥', name: 'MANGA IMPACT', tag: 'SNAP' },
-  { id: 'cyber_glitch', icon: '⚡', name: 'CYBER GLITCH', tag: 'TEAR' },
-  { id: 'smooth_fluid', icon: '🌊', name: 'SMOOTH FLUID', tag: 'GLIDE' },
-  { id: '3d_block_stack', icon: '🧊', name: '3D BLOCK STACK', tag: 'DROP' },
-  { id: 'wiggly_boil', icon: '〰️', name: 'WIGGLY BOIL', tag: 'BOIL' },
-  { id: 'inverted_badge', icon: '🏷️', name: 'INVERTED BADGE', tag: 'PUNCH' },
+const MANUAL_ARCHETYPES: MotionArchetype[] = [
+  'blade_slash',
+  'manga_impact',
+  '3d_block_stack',
+  'snake_slither',
+  'cyber_glitch',
+  'echo_stack',
+  'target_focus',
+  'smooth_fluid',
+  'inverted_badge',
+  'wiggly_boil',
 ];
+
+interface EditingWordTarget {
+  word: LyricWord;
+  lineIdx: number;
+  wordIdx: number;
+  currentArchetype: MotionArchetype;
+}
 
 export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   onClose,
@@ -52,13 +64,18 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // --- KINETIC STYLE CONFIG ---
-  const [archetype, setArchetype] = useState<MotionArchetype>('manga_impact');
+  // Default to AUTO_SEMANTIC (Dynamic Director as seen in Ashke)
+  const [archetype, setArchetype] = useState<MotionArchetype>('auto_semantic');
+  const [wordOverrides, setWordOverrides] = useState<Record<string, MotionArchetype>>({});
+  const [editingWordTarget, setEditingWordTarget] = useState<EditingWordTarget | null>(null);
   const [fontFamily, setFontFamily] = useState('"IBM Plex Mono", monospace');
   const [isRendering, setIsRendering] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
 
   // --- PREVIEW FRAME IN OLED CANVAS ---
   const [previewFrame, setPreviewFrame] = useState<ImageData | null>(null);
+  const previewFramesRef = useRef<ExtractedFrame[]>([]);
+
 
   // Auto-load sample lyrics on mount
   useEffect(() => {
@@ -157,13 +174,22 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         const miniMedia = await renderKineticSequence({
           lyrics: selectedLines,
           startMs: rangeStartMs,
-          endMs: Math.min(rangeStartMs + 3000, rangeEndMs), // Preview first 3s
+          endMs: rangeEndMs,
           targetFps: 30,
           archetype,
-          fontFamily
+          fontFamily,
+          wordOverrides
         });
-        if (active && miniMedia.frames.length > 0) {
-          setPreviewFrame(miniMedia.frames[0].imageData);
+        if (active) {
+          previewFramesRef.current = miniMedia.frames;
+          const offsetMs = Math.max(0, playheadMs - rangeStartMs);
+          const frameIdx = Math.min(
+            miniMedia.frames.length - 1,
+            Math.max(0, Math.floor((offsetMs / 1000) * 30))
+          );
+          if (miniMedia.frames[frameIdx]) {
+            setPreviewFrame(miniMedia.frames[frameIdx].imageData);
+          }
         }
       } catch (err) {
         console.error('Preview render error:', err);
@@ -172,7 +198,37 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
     renderLivePreview();
     return () => { active = false; };
-  }, [selectedLines, archetype, fontFamily, rangeStartMs, rangeEndMs]);
+  }, [selectedLines, archetype, fontFamily, rangeStartMs, rangeEndMs, wordOverrides]);
+
+  // Synchronize live preview frame when playhead updates
+  useEffect(() => {
+    const frames = previewFramesRef.current;
+    if (frames.length === 0) return;
+    const offsetMs = Math.max(0, playheadMs - rangeStartMs);
+    const frameIdx = Math.min(
+      frames.length - 1,
+      Math.max(0, Math.floor((offsetMs / 1000) * 30))
+    );
+    if (frames[frameIdx]) {
+      setPreviewFrame(frames[frameIdx].imageData);
+    }
+  }, [playheadMs, rangeStartMs]);
+
+  // Toggle audio playback
+  const togglePlay = () => {
+    if (!isPlaying) {
+      if (audioRef.current) {
+        audioRef.current.currentTime = playheadMs / 1000;
+        audioRef.current.play().catch(() => {});
+      }
+      setIsPlaying(true);
+    } else {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      setIsPlaying(false);
+    }
+  };
 
   // Audio playback loop
   useEffect(() => {
@@ -184,8 +240,14 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
       const dt = now - lastT;
       lastT = now;
       setPlayheadMs(prev => {
-        const next = prev + dt;
+        let next = prev + dt;
+        if (audioRef.current && !audioRef.current.paused) {
+          next = audioRef.current.currentTime * 1000;
+        }
         if (next > rangeEndMs) {
+          if (audioRef.current) {
+            audioRef.current.currentTime = rangeStartMs / 1000;
+          }
           return rangeStartMs;
         }
         return next;
@@ -212,7 +274,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           endMs: rangeEndMs,
           targetFps: 30,
           archetype,
-          fontFamily
+          fontFamily,
+          wordOverrides
         },
         progress => setRenderProgress(progress)
       );
@@ -227,6 +290,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
       setIsRendering(false);
     }
   };
+
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-[#F5F0EB] text-[#1A1A1A] font-mono select-none overflow-hidden animate-fade-in">
@@ -416,7 +480,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                 <div
                   key={idx}
                   onClick={(e) => handleLineClick(idx, e)}
-                  className={`w-full max-w-xl transition-all duration-200 cursor-pointer relative group rounded-md p-3 ${
+                  className={`w-full max-w-xl transition-all duration-200 cursor-pointer relative group rounded-md p-3.5 ${
                     isSelected
                       ? 'bg-white/10 backdrop-blur-md border border-white/30 shadow-[0_4px_20px_rgba(0,0,0,0.5)]'
                       : 'opacity-30 hover:opacity-75 blur-[0.4px] hover:blur-none'
@@ -444,32 +508,116 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                       {line.text}
                     </span>
                   </div>
+
+                  {/* Interactive Dynamic Word Badges & Customizer Trigger */}
+                  {isSelected && line.words && line.words.length > 0 && (
+                    <div className="mt-3 pt-2.5 border-t border-white/10 flex flex-wrap gap-1.5 items-center">
+                      <span className="text-[8px] text-[#888] font-bold uppercase tracking-wider mr-1">
+                        {archetype === 'auto_semantic' ? '⚡ DYNAMIC MOTIONS:' : 'WORDS:'}
+                      </span>
+                      {line.words.map((w, wIdx) => {
+                        const precedingWord = wIdx > 0 ? line.words[wIdx - 1] : undefined;
+                        const wordArch = getWordEffectiveArchetype(
+                          w,
+                          wIdx,
+                          archetype,
+                          wordOverrides,
+                          precedingWord
+                        );
+                        const meta = ARCHETYPE_METADATA[wordArch] || ARCHETYPE_METADATA.smooth_fluid;
+                        const specificKey = `${w.word}_${w.startMs}`;
+                        const cleanKey = w.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+                        const isOverridden = !!(wordOverrides[specificKey] || wordOverrides[cleanKey]);
+
+                        return (
+                          <button
+                            key={wIdx}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingWordTarget({
+                                word: w,
+                                lineIdx: idx,
+                                wordIdx: wIdx,
+                                currentArchetype: wordArch
+                              });
+                            }}
+                            className={`px-2 py-0.5 rounded text-[9px] font-mono flex items-center gap-1 transition-all cursor-pointer ${
+                              isOverridden
+                                ? 'bg-[#E85D2A] text-white font-bold ring-1 ring-white/50 shadow-sm'
+                                : 'bg-white/10 hover:bg-white/25 text-white/90 border border-white/20'
+                            }`}
+                            title={`Click to customize kinetic style for "${w.word}"`}
+                          >
+                            <span>{meta.icon}</span>
+                            <span className="font-semibold">{w.word}</span>
+                            <span className="opacity-60 text-[7px] uppercase font-mono">({meta.tag})</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
 
+          {/* Hidden Audio Player for drop sync */}
+          {localAudioUrl && (
+            <audio ref={audioRef} src={localAudioUrl} />
+          )}
+
           {/* Bottom Audio Scrub Bar */}
-          <div className="h-14 px-6 bg-[#161618] border-t-2 border-[#1A1A1A] flex items-center justify-between z-10 shrink-0">
-            <div className="flex items-center gap-3">
+          <div className="h-16 px-6 bg-[#161618] border-t-2 border-[#1A1A1A] flex items-center justify-between z-10 shrink-0 gap-4">
+            <div className="flex items-center gap-3 shrink-0">
               <button
-                onClick={() => setIsPlaying(!isPlaying)}
-                className="w-8 h-8 rounded-full bg-[#E85D2A] text-white flex items-center justify-center hover:scale-105 transition-transform cursor-pointer"
+                onClick={togglePlay}
+                className="w-8 h-8 rounded-full bg-[#E85D2A] text-white flex items-center justify-center hover:scale-105 transition-transform cursor-pointer shadow-md"
               >
                 {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
               </button>
 
-              <div className="text-[10px] text-white font-mono">
+              <div className="text-[10px] text-white font-mono w-28 shrink-0">
                 {(playheadMs / 1000).toFixed(2)}s / {(rangeEndMs / 1000).toFixed(2)}s
               </div>
             </div>
 
-            <div className="flex items-center gap-4 text-xs font-mono text-white/80">
+            {/* Interactive Timeline Scrubber Slider */}
+            <div className="flex-1 flex items-center gap-2 max-w-md">
+              <input
+                type="range"
+                min={rangeStartMs}
+                max={rangeEndMs}
+                step={33}
+                value={playheadMs}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  setPlayheadMs(val);
+                  if (audioRef.current) {
+                    audioRef.current.currentTime = val / 1000;
+                  }
+                }}
+                className="w-full accent-[#E85D2A] h-1.5 bg-white/20 rounded-lg cursor-pointer"
+              />
+            </div>
+
+            <div className="flex items-center gap-3 text-xs font-mono text-white/80 shrink-0">
+              {Object.keys(wordOverrides).length > 0 && (
+                <div className="flex items-center gap-1.5 bg-[#E85D2A]/20 border border-[#E85D2A]/50 px-2 py-0.5 rounded text-[8px] text-[#E85D2A]">
+                  <span>{Object.keys(wordOverrides).length} CUSTOM OVERRIDES</span>
+                  <button
+                    onClick={() => setWordOverrides({})}
+                    className="hover:text-white underline cursor-pointer"
+                  >
+                    RESET
+                  </button>
+                </div>
+              )}
               <span className="text-[#E85D2A] font-bold">
-                {selectedLines.length} LINES SELECTED
+                {selectedLines.length} LINES
               </span>
               <span>•</span>
-              <span>{rangeDurationSec.toFixed(1)}s TOTAL</span>
+              <span>{rangeDurationSec.toFixed(1)}s</span>
             </div>
           </div>
         </section>
@@ -495,31 +643,59 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               <div className="text-[#666] text-[7px] font-mono mt-1">30 FPS • 1-BIT MONOCHROME</div>
             </div>
 
-            {/* Motion Archetypes Grid */}
+            {/* Featured Dynamic Semantic Director Hero Card */}
+            <div>
+              <div
+                onClick={() => setArchetype('auto_semantic')}
+                className={`p-3 border-2 transition-all cursor-pointer flex flex-col gap-1.5 rounded-sm ${
+                  archetype === 'auto_semantic'
+                    ? 'border-[#E85D2A] bg-[#FFF5F0] shadow-[3px_3px_0px_#1A1A1A]'
+                    : 'border-[#1A1A1A]/30 hover:border-[#1A1A1A] bg-white'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">✨</span>
+                    <span className="text-xs font-bold text-[#1A1A1A]">AUTO SEMANTIC DIRECTOR</span>
+                  </div>
+                  <span className="text-[7px] font-bold bg-[#E85D2A] text-white px-1.5 py-0.5 tracking-wider uppercase rounded-xs">
+                    ASHKE DYNAMIC
+                  </span>
+                </div>
+                <p className="text-[9px] text-[#6B6B6B] leading-tight font-sans">
+                  Adapts typography style dynamically per word according to meaning, phonetics, vocal duration & beats (e.g. blade slashes for sharp words, impact slams for drops, 3D blocks for anthems).
+                </p>
+              </div>
+            </div>
+
+            {/* Manual Motion Archetypes Grid */}
             <div>
               <label className="text-[9px] font-bold uppercase tracking-wider text-[#6B6B6B] block mb-2">
-                SELECT MOTION ARCHETYPE
+                OR LOCK UNIFORM MOTION STYLE:
               </label>
               <div className="grid grid-cols-2 gap-2">
-                {ARCHETYPES.map(arch => (
-                  <button
-                    key={arch.id}
-                    onClick={() => setArchetype(arch.id)}
-                    className={`p-2 border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                      archetype === arch.id
-                        ? 'border-[#E85D2A] bg-[#F5F0EB] shadow-[2px_2px_0px_#1A1A1A]'
-                        : 'border-[#1A1A1A]/30 hover:border-[#1A1A1A] bg-white'
-                    }`}
-                  >
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">{arch.icon}</span>
-                      <span className="text-[7px] font-mono bg-[#1A1A1A] text-white px-1 py-0.2 font-bold">
-                        {arch.tag}
-                      </span>
-                    </div>
-                    <span className="text-[9px] font-bold text-[#1A1A1A] mt-1">{arch.name}</span>
-                  </button>
-                ))}
+                {MANUAL_ARCHETYPES.map(archKey => {
+                  const meta = ARCHETYPE_METADATA[archKey];
+                  return (
+                    <button
+                      key={archKey}
+                      onClick={() => setArchetype(archKey)}
+                      className={`p-2 border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        archetype === archKey
+                          ? 'border-[#E85D2A] bg-[#F5F0EB] shadow-[2px_2px_0px_#1A1A1A]'
+                          : 'border-[#1A1A1A]/30 hover:border-[#1A1A1A] bg-white'
+                      }`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">{meta.icon}</span>
+                        <span className="text-[7px] font-mono bg-[#1A1A1A] text-white px-1 py-0.2 font-bold">
+                          {meta.tag}
+                        </span>
+                      </div>
+                      <span className="text-[9px] font-bold text-[#1A1A1A] mt-1">{meta.name}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -580,8 +756,98 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         </section>
 
       </main>
+
+      {/* Word Archetype Customizer Modal */}
+      {editingWordTarget && (
+        <div className="fixed inset-0 z-60 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border-2 border-[#1A1A1A] w-full max-w-md shadow-[6px_6px_0px_#1A1A1A] p-5 flex flex-col gap-4 font-mono animate-scale-in">
+            <div className="flex justify-between items-start">
+              <div>
+                <span className="text-[9px] font-bold text-[#E85D2A] uppercase tracking-wider block">
+                  WORD MOTION OVERRIDE
+                </span>
+                <h3 className="text-base font-bold text-[#1A1A1A]">
+                  "{editingWordTarget.word.word}"
+                </h3>
+                <span className="text-[10px] text-[#666]">
+                  Timing: {(editingWordTarget.word.startMs / 1000).toFixed(2)}s - {(editingWordTarget.word.endMs / 1000).toFixed(2)}s ({Math.round(editingWordTarget.word.endMs - editingWordTarget.word.startMs)}ms)
+                </span>
+              </div>
+              <button
+                onClick={() => setEditingWordTarget(null)}
+                className="p-1 hover:bg-[#1A1A1A] hover:text-white transition-colors cursor-pointer border border-[#1A1A1A]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-[11px] text-[#444]">
+              Pick an explicit visual motion archetype for this word, or restore dynamic semantic detection:
+            </p>
+
+            <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
+              {MANUAL_ARCHETYPES.map((archKey) => {
+                const meta = ARCHETYPE_METADATA[archKey];
+                const isSelected = editingWordTarget.currentArchetype === archKey;
+                return (
+                  <button
+                    key={archKey}
+                    onClick={() => {
+                      const specificKey = `${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`;
+                      setWordOverrides(prev => ({
+                        ...prev,
+                        [specificKey]: archKey
+                      }));
+                      setEditingWordTarget(null);
+                    }}
+                    className={`p-2 border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      isSelected
+                        ? 'border-[#E85D2A] bg-[#FFF5F0] font-bold shadow-[2px_2px_0px_#1A1A1A]'
+                        : 'border-[#1A1A1A]/30 hover:border-[#1A1A1A] bg-white'
+                    }`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">{meta.icon}</span>
+                      <span className="text-[7px] font-mono bg-[#1A1A1A] text-white px-1 py-0.2">
+                        {meta.tag}
+                      </span>
+                    </div>
+                    <span className="text-[9px] font-bold text-[#1A1A1A] mt-1">{meta.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex gap-2 pt-2 border-t border-[#1A1A1A]/20">
+              <button
+                onClick={() => {
+                  const specificKey = `${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`;
+                  const cleanKey = editingWordTarget.word.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+                  setWordOverrides(prev => {
+                    const next = { ...prev };
+                    delete next[specificKey];
+                    delete next[cleanKey];
+                    return next;
+                  });
+                  setEditingWordTarget(null);
+                }}
+                className="flex-1 py-1.5 border border-[#1A1A1A] text-xs font-bold hover:bg-[#1A1A1A] hover:text-white transition-colors cursor-pointer"
+              >
+                RESTORE AUTO SEMANTIC
+              </button>
+              <button
+                onClick={() => setEditingWordTarget(null)}
+                className="px-4 py-1.5 bg-[#1A1A1A] text-white text-xs font-bold hover:bg-[#E85D2A] transition-colors cursor-pointer"
+              >
+                DONE
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default LyricsStudioView;
+

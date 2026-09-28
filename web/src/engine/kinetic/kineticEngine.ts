@@ -1,7 +1,8 @@
 import { ExtractedFrame, DecodedMedia } from '../../types/media';
-import { KineticRenderOptions } from './types';
+import { KineticRenderOptions, MotionArchetype } from './types';
 import { computeSafeTextLayout } from './kineticLayout';
 import { renderArchetypeFrame } from './kineticArchetypes';
+import { getWordEffectiveArchetype } from './semanticClassifier';
 
 /**
  * Renders synchronized kinetic typography frames at 30 FPS for a 128x64 OLED display.
@@ -16,7 +17,8 @@ export async function renderKineticSequence(
     endMs,
     targetFps = 30,
     archetype,
-    fontFamily = '"IBM Plex Mono", monospace'
+    fontFamily = '"IBM Plex Mono", monospace',
+    wordOverrides
   } = options;
 
   const durationMs = Math.max(500, endMs - startMs);
@@ -48,14 +50,31 @@ export async function renderKineticSequence(
     const currentMs = startMs + f * frameIntervalMs;
 
     // Locate active word
-    let activeWord = words.find(w => currentMs >= w.startMs && currentMs < w.endMs);
+    let activeWordIndex = words.findIndex(w => currentMs >= w.startMs && currentMs < w.endMs);
+    let activeWord = activeWordIndex !== -1 ? words[activeWordIndex] : undefined;
+
     if (!activeWord) {
       // If between words or in gap, take preceding or next word
       activeWord = words.find(w => currentMs < w.startMs) || words[words.length - 1];
+      activeWordIndex = words.indexOf(activeWord);
     }
 
     const wordDuration = Math.max(80, activeWord.endMs - activeWord.startMs);
     const tau = Math.max(0, Math.min(1, (currentMs - activeWord.startMs) / wordDuration));
+
+    // Resolve dynamic semantic motion archetype per word
+    const precedingWord = activeWordIndex > 0 ? words[activeWordIndex - 1] : undefined;
+    let effectiveArchetype = getWordEffectiveArchetype(
+      activeWord,
+      activeWordIndex,
+      archetype,
+      wordOverrides,
+      precedingWord
+    );
+
+    if (effectiveArchetype === 'auto_semantic') {
+      effectiveArchetype = 'smooth_fluid';
+    }
 
     // Clear frame to solid black (OLED off)
     ctx.globalCompositeOperation = 'source-over';
@@ -66,7 +85,7 @@ export async function renderKineticSequence(
     const layout = computeSafeTextLayout(activeWord.word, ctx, fontFamily);
 
     // Render Archetype Frame
-    renderArchetypeFrame(ctx, archetype, activeWord.word, tau, layout, f, fontFamily);
+    renderArchetypeFrame(ctx, effectiveArchetype, activeWord.word, tau, layout, f, fontFamily);
 
     // Extract 128x64 RGBA
     const rawImageData = ctx.getImageData(0, 0, 128, 64);

@@ -1,13 +1,5 @@
 import { MotionArchetype, TextLayoutResult } from './types';
 
-// Bayer 4x4 Dither Matrix for 1-bit surface shading
-const BAYER_4X4 = [
-  [0, 8, 2, 10],
-  [12, 4, 14, 6],
-  [3, 11, 1, 9],
-  [15, 7, 13, 5],
-];
-
 /**
  * Dispatches frame rendering to the selected motion archetype.
  * ctx: OffscreenCanvas 2D context (128x64)
@@ -23,6 +15,9 @@ export function renderArchetypeFrame(
   fontFamily: string = '"IBM Plex Mono", monospace'
 ) {
   switch (archetype) {
+    case 'blade_slash':
+      renderBladeSlash(ctx, text, tau, layout, frameIndex, fontFamily);
+      break;
     case 'manga_impact':
       renderMangaImpact(ctx, text, tau, layout, frameIndex, fontFamily);
       break;
@@ -34,6 +29,15 @@ export function renderArchetypeFrame(
       break;
     case '3d_block_stack':
       render3DBlockStack(ctx, text, tau, layout, frameIndex, fontFamily);
+      break;
+    case 'echo_stack':
+      renderEchoStack(ctx, text, tau, layout, frameIndex, fontFamily);
+      break;
+    case 'target_focus':
+      renderTargetFocus(ctx, text, tau, layout, frameIndex, fontFamily);
+      break;
+    case 'snake_slither':
+      renderSnakeSlither(ctx, text, tau, layout, frameIndex, fontFamily);
       break;
     case 'wiggly_boil':
       renderWigglyBoil(ctx, text, tau, layout, frameIndex, fontFamily);
@@ -48,7 +52,54 @@ export function renderArchetypeFrame(
 }
 
 /**
- * 1. MANGA IMPACT: Elastic zoom snap, radial speedlines, 1-frame inversion flash
+ * 1. BLADE SLASH: Horizontal split halves sliding apart with diagonal razor line
+ */
+function renderBladeSlash(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  text: string,
+  tau: number,
+  layout: TextLayoutResult,
+  frameIndex: number,
+  fontFamily: string
+) {
+  const tempCanvas = new OffscreenCanvas(128, 64);
+  const tCtx = tempCanvas.getContext('2d')!;
+
+  tCtx.fillStyle = '#000000';
+  tCtx.fillRect(0, 0, 128, 64);
+  tCtx.font = `bold ${layout.fontSize}px ${fontFamily}`;
+  tCtx.textAlign = 'center';
+  tCtx.fillStyle = '#FFFFFF';
+
+  for (let i = 0; i < layout.lines.length; i++) {
+    tCtx.fillText(layout.lines[i], 64, layout.yOffsets[i]);
+  }
+
+  const midY = 32;
+  const ease = Math.min(1, tau / 0.25);
+  const shift = Math.round((1 - ease) * 18);
+
+  // Upper half shifted left
+  ctx.drawImage(tempCanvas, 0, 0, 128, midY, -shift, 0, 128, midY);
+
+  // Lower half shifted right
+  ctx.drawImage(tempCanvas, 0, midY, 128, 64 - midY, shift, midY, 128, 64 - midY);
+
+  // Diagonal razor slash line during initial 30% of duration
+  if (tau < 0.3) {
+    const p = tau / 0.3;
+    const xEnd = Math.floor(p * 128);
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, midY + 4);
+    ctx.lineTo(xEnd, midY - 4);
+    ctx.stroke();
+  }
+}
+
+/**
+ * 2. MANGA IMPACT: Elastic zoom snap, radial speedlines, 1-frame inversion flash
  */
 function renderMangaImpact(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
@@ -58,7 +109,6 @@ function renderMangaImpact(
   frameIndex: number,
   fontFamily: string
 ) {
-  // Elastic scale snap from 220% down to 100%
   const scale = tau < 0.25 
     ? 1.0 + 1.2 * Math.pow(1 - tau / 0.25, 3) * Math.cos(tau * 4 * Math.PI)
     : 1.0 + Math.sin((tau - 0.25) * Math.PI * 2) * 0.03;
@@ -68,7 +118,6 @@ function renderMangaImpact(
   ctx.scale(scale, scale);
   ctx.translate(-64, -32);
 
-  // Radial speedlines bursting during initial impact
   if (tau < 0.35) {
     ctx.strokeStyle = '#FFFFFF';
     ctx.lineWidth = 1;
@@ -84,7 +133,6 @@ function renderMangaImpact(
     }
   }
 
-  // Draw hard drop shadow first (+3px offset)
   ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
   ctx.textAlign = 'center';
   ctx.fillStyle = '#000000';
@@ -97,7 +145,6 @@ function renderMangaImpact(
     ctx.strokeText(line, 64 + 2, y + 2);
   }
 
-  // Draw main white text
   ctx.fillStyle = '#FFFFFF';
   for (let i = 0; i < layout.lines.length; i++) {
     const line = layout.lines[i];
@@ -107,7 +154,6 @@ function renderMangaImpact(
 
   ctx.restore();
 
-  // Full-screen inversion flash on exact impact point
   if (tau >= 0.12 && tau <= 0.15) {
     ctx.fillStyle = '#FFFFFF';
     ctx.globalCompositeOperation = 'difference';
@@ -117,7 +163,7 @@ function renderMangaImpact(
 }
 
 /**
- * 2. CYBER GLITCH: Bitwise XOR row tearing, ASCII scramble before lock
+ * 3. CYBER GLITCH: Bitwise XOR row tearing, ASCII scramble before lock
  */
 function renderCyberGlitch(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
@@ -130,7 +176,6 @@ function renderCyberGlitch(
   ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
   ctx.textAlign = 'center';
 
-  // Scramble text with random hex/cyber symbols for first 20% of duration
   const glitchChars = '01X$#%_~<>';
   const displayLines = layout.lines.map(line => {
     if (tau < 0.2) {
@@ -142,16 +187,13 @@ function renderCyberGlitch(
     return line;
   });
 
-  // Jitter horizontal offsets
   const jitterX = (tau < 0.3 || (frameIndex % 8 === 0)) ? ((frameIndex * 17) % 7) - 3 : 0;
 
-  // Draw text
   ctx.fillStyle = '#FFFFFF';
   for (let i = 0; i < displayLines.length; i++) {
     ctx.fillText(displayLines[i], 64 + jitterX, layout.yOffsets[i]);
   }
 
-  // Row slice tearing
   if (tau < 0.35 || frameIndex % 6 === 0) {
     const sliceY = (frameIndex * 13) % 48 + 8;
     const sliceH = 4 + (frameIndex % 5);
@@ -163,7 +205,6 @@ function renderCyberGlitch(
     ctx.putImageData(slice, sliceShift, sliceY);
   }
 
-  // Subtle cyber brackets
   ctx.strokeStyle = '#FFFFFF';
   ctx.lineWidth = 1;
   ctx.strokeRect(4, 4, 6, 6);
@@ -171,7 +212,7 @@ function renderCyberGlitch(
 }
 
 /**
- * 3. SMOOTH FLUID: Cubic glide, 1-bit Bayer motion trail, harmonic idle bob
+ * 4. SMOOTH FLUID: Cubic glide, 1-bit Bayer motion trail, harmonic idle bob
  */
 function renderSmoothFluid(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
@@ -181,19 +222,16 @@ function renderSmoothFluid(
   frameIndex: number,
   fontFamily: string
 ) {
-  // Cubic ease-out vertical slide from +18px
   const easeProgress = Math.min(1, tau / 0.3);
   const slideProgress = 1 - Math.pow(1 - easeProgress, 3);
   const startYOffset = 18 * (1 - slideProgress);
 
-  // Harmonic subtle idle bob once settled
   const idleBob = tau > 0.3 ? Math.sin((tau - 0.3) * Math.PI * 4) * 1.5 : 0;
   const currentY = startYOffset + idleBob;
 
   ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
   ctx.textAlign = 'center';
 
-  // 1-Bit Motion trail during entry
   if (tau < 0.25) {
     ctx.fillStyle = '#FFFFFF';
     for (let i = 0; i < layout.lines.length; i++) {
@@ -202,14 +240,12 @@ function renderSmoothFluid(
     }
   }
 
-  // Main crisp glyph
   ctx.fillStyle = '#FFFFFF';
   for (let i = 0; i < layout.lines.length; i++) {
     const line = layout.lines[i];
     const y = layout.yOffsets[i] + currentY;
     ctx.fillText(line, 64, y);
 
-    // Expanding underline pill on active line
     if (i === layout.lines.length - 1) {
       const metrics = ctx.measureText(line);
       const pillWidth = Math.min(metrics.width + 8, (metrics.width + 8) * Math.min(1, tau / 0.4));
@@ -219,7 +255,7 @@ function renderSmoothFluid(
 }
 
 /**
- * 4. 3D BLOCK STACK: Isometric extrusion with checkerboard dither shadow
+ * 5. 3D BLOCK STACK: Isometric extrusion with checkerboard dither shadow
  */
 function render3DBlockStack(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
@@ -229,7 +265,6 @@ function render3DBlockStack(
   frameIndex: number,
   fontFamily: string
 ) {
-  // Inelastic gravity drop with squash
   let dropY = 0;
   let scaleY = 1.0;
   let scaleX = 1.0;
@@ -238,7 +273,6 @@ function render3DBlockStack(
     const p = tau / 0.25;
     dropY = (1 - p * p) * -24;
   } else if (tau < 0.35) {
-    // Landing squash
     const p = (tau - 0.25) / 0.1;
     scaleY = 1.0 - Math.sin(p * Math.PI) * 0.25;
     scaleX = 1.0 + Math.sin(p * Math.PI) * 0.15;
@@ -252,7 +286,6 @@ function render3DBlockStack(
   ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
   ctx.textAlign = 'center';
 
-  // Isometric extrusion depth (4 layers along diagonal (+1, +1))
   const depth = 4;
   for (let d = depth; d >= 1; d--) {
     ctx.fillStyle = (d % 2 === 0) ? '#FFFFFF' : '#000000';
@@ -261,7 +294,6 @@ function render3DBlockStack(
     }
   }
 
-  // Front face in crisp white with black outline
   ctx.strokeStyle = '#000000';
   ctx.lineWidth = 2;
   ctx.fillStyle = '#FFFFFF';
@@ -276,7 +308,124 @@ function render3DBlockStack(
 }
 
 /**
- * 5. WIGGLY BOIL: 3-phase line boil running at 12 FPS decoupled from 30 FPS clock
+ * 6. ECHO STACK: Multi-layer expanding outline echoes radiating outward
+ */
+function renderEchoStack(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  text: string,
+  tau: number,
+  layout: TextLayoutResult,
+  frameIndex: number,
+  fontFamily: string
+) {
+  ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
+  ctx.textAlign = 'center';
+
+  const pulseR = Math.floor((frameIndex * 2) % 24);
+
+  // Concentric expanding outline frames
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < layout.lines.length; i++) {
+    const line = layout.lines[i];
+    const y = layout.yOffsets[i];
+
+    if (tau > 0.2) {
+      // Offset echo echoes
+      ctx.strokeText(line, 64 - pulseR / 3, y - pulseR / 4);
+      ctx.strokeText(line, 64 + pulseR / 3, y + pulseR / 4);
+    }
+
+    // Main text
+    ctx.fillStyle = '#000000';
+    ctx.strokeText(line, 64, y);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText(line, 64, y);
+  }
+}
+
+/**
+ * 7. TARGET FOCUS: HUD Crosshairs locking and zooming onto the word
+ */
+function renderTargetFocus(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  text: string,
+  tau: number,
+  layout: TextLayoutResult,
+  frameIndex: number,
+  fontFamily: string
+) {
+  const ease = Math.min(1, tau / 0.25);
+  const scale = 1.8 - 0.8 * ease + Math.sin(tau * Math.PI) * 0.05;
+
+  ctx.save();
+  ctx.translate(64, 32);
+  ctx.scale(scale, scale);
+  ctx.translate(-64, -32);
+
+  ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#FFFFFF';
+
+  for (let i = 0; i < layout.lines.length; i++) {
+    ctx.fillText(layout.lines[i], 64, layout.yOffsets[i]);
+  }
+
+  ctx.restore();
+
+  // Target crosshair brackets framing the display
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+  const chLen = 8;
+  ctx.beginPath();
+  // Left crosshair
+  ctx.moveTo(6, 32); ctx.lineTo(6 + chLen, 32);
+  // Right crosshair
+  ctx.moveTo(122, 32); ctx.lineTo(122 - chLen, 32);
+  // Top crosshair
+  ctx.moveTo(64, 6); ctx.lineTo(64, 6 + chLen);
+  // Bottom crosshair
+  ctx.moveTo(64, 58); ctx.lineTo(64, 58 - chLen);
+  ctx.stroke();
+}
+
+/**
+ * 8. SNAKE SLITHER: Undulating sinusoidal wave displacement
+ */
+function renderSnakeSlither(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  text: string,
+  tau: number,
+  layout: TextLayoutResult,
+  frameIndex: number,
+  fontFamily: string
+) {
+  const tempCanvas = new OffscreenCanvas(128, 64);
+  const tCtx = tempCanvas.getContext('2d')!;
+
+  tCtx.fillStyle = '#000000';
+  tCtx.fillRect(0, 0, 128, 64);
+  tCtx.font = `bold ${layout.fontSize}px ${fontFamily}`;
+  tCtx.textAlign = 'center';
+  tCtx.fillStyle = '#FFFFFF';
+
+  for (let i = 0; i < layout.lines.length; i++) {
+    tCtx.fillText(layout.lines[i], 64, layout.yOffsets[i]);
+  }
+
+  // Slice vertical strips and sine displace
+  const stripWidth = 4;
+  const numStrips = Math.ceil(128 / stripWidth);
+
+  for (let s = 0; s < numStrips; s++) {
+    const sx = s * stripWidth;
+    const waveY = Math.round(Math.sin(s * 0.4 + tau * 6 * Math.PI) * 3);
+    ctx.drawImage(tempCanvas, sx, 0, stripWidth, 64, sx, waveY, stripWidth, 64);
+  }
+}
+
+/**
+ * 9. WIGGLY BOIL: 3-phase line boil running at 12 FPS decoupled from 30 FPS clock
  */
 function renderWigglyBoil(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
@@ -289,7 +438,6 @@ function renderWigglyBoil(
   ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
   ctx.textAlign = 'center';
 
-  // 3-Phase deterministic displacement offsets (cycled at 12 FPS)
   const boilPhase = Math.floor(frameIndex / 2.5) % 3;
   const offsetsX = [-1, 1, 0];
   const offsetsY = [0, -1, 1];
@@ -301,11 +449,8 @@ function renderWigglyBoil(
   for (let i = 0; i < layout.lines.length; i++) {
     const line = layout.lines[i];
     const y = layout.yOffsets[i];
-    
-    // Draw slightly displaced line
     ctx.fillText(line, 64 + dx, y + dy);
 
-    // Stippled hand-drawn frame border
     if (frameIndex % 3 === 0) {
       ctx.strokeStyle = '#FFFFFF';
       ctx.lineWidth = 1;
@@ -315,7 +460,7 @@ function renderWigglyBoil(
 }
 
 /**
- * 6. INVERTED BADGE: Solid white pill badge with black text cutout
+ * 10. INVERTED BADGE: Solid white pill badge with black text cutout
  */
 function renderInvertedBadge(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
@@ -328,7 +473,6 @@ function renderInvertedBadge(
   ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
   ctx.textAlign = 'center';
 
-  // Calculate bounding box across all lines
   let maxLineWidth = 0;
   for (const l of layout.lines) {
     maxLineWidth = Math.max(maxLineWidth, ctx.measureText(l).width);
@@ -339,7 +483,6 @@ function renderInvertedBadge(
   const badgeX = Math.floor((128 - badgeW) / 2);
   const badgeY = Math.floor((64 - badgeH) / 2);
 
-  // Badge entry animation: pop scale
   const scale = tau < 0.2 ? Math.min(1, tau / 0.2) : 1.0;
 
   ctx.save();
@@ -347,12 +490,10 @@ function renderInvertedBadge(
   ctx.scale(scale, scale);
   ctx.translate(-64, -32);
 
-  // Draw solid white rounded badge
   ctx.fillStyle = '#FFFFFF';
   roundRect(ctx, badgeX, badgeY, badgeW, badgeH, 4);
   ctx.fill();
 
-  // Cutout black text using destination-out
   ctx.globalCompositeOperation = 'destination-out';
   for (let i = 0; i < layout.lines.length; i++) {
     ctx.fillText(layout.lines[i], 64, layout.yOffsets[i]);
@@ -362,9 +503,6 @@ function renderInvertedBadge(
   ctx.restore();
 }
 
-/**
- * Helper to draw rounded rectangle
- */
 function roundRect(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   x: number,
