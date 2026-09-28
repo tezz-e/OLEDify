@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, Music, FileText, Upload, Play, Pause, ArrowLeft, Sparkles, Check, RefreshCw, X, RotateCcw } from 'lucide-react';
+import { Search, Music, FileText, Upload, Play, Pause, ArrowLeft, Sparkles, Check, RefreshCw, X, RotateCcw, ChevronUp, ChevronDown, CheckCheck } from 'lucide-react';
 import { searchLrclib, getLrclibExact, searchLyricsOvhFallback } from '../../../engine/lyrics/lrclibClient';
 import { parseLrc, parsePlainTextLyrics } from '../../../engine/lyrics/lrcParser';
 import { LrclibTrack, ParsedLyrics, LyricLine, LyricWord } from '../../../engine/lyrics/types';
@@ -8,6 +8,7 @@ import { renderKineticSequence } from '../../../engine/kinetic/kineticEngine';
 import { getWordEffectiveArchetype } from '../../../engine/kinetic/semanticClassifier';
 import { DecodedMedia, ExtractedFrame } from '../../../types/media';
 import { OledCanvas } from '../../OledCanvas';
+import { GlassSurface } from '../../reactbits/GlassSurface';
 
 interface LyricsStudioViewProps {
   onClose: () => void;
@@ -165,8 +166,61 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     }
   };
 
+  // Active currently sung line index based on playheadMs
+  const activeLineIndex = useMemo(() => {
+    if (parsedLyrics.lines.length === 0) return 0;
+    const idx = parsedLyrics.lines.findIndex(
+      l => playheadMs >= l.startMs && playheadMs < l.endMs
+    );
+    if (idx !== -1) return idx;
+    for (let i = parsedLyrics.lines.length - 1; i >= 0; i--) {
+      if (playheadMs >= parsedLyrics.lines[i].startMs) return i;
+    }
+    return 0;
+  }, [parsedLyrics.lines, playheadMs]);
+
+  // Auto-scroll ref and smooth centering
+  const lyricsContainerRef = useRef<HTMLDivElement | null>(null);
+  const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
+  const userScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleUserScroll = () => {
+    if (userScrollTimeoutRef.current) {
+      clearTimeout(userScrollTimeoutRef.current);
+    }
+    setIsAutoScrollEnabled(false);
+    userScrollTimeoutRef.current = setTimeout(() => {
+      setIsAutoScrollEnabled(true);
+    }, 4500);
+  };
+
+  useEffect(() => {
+    if (!isPlaying || !isAutoScrollEnabled) return;
+    const el = document.getElementById(`lyric-line-${activeLineIndex}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [activeLineIndex, isPlaying, isAutoScrollEnabled]);
+
+  // Quick range helpers
+  const handleSelectAll = () => {
+    setSelectedStartIndex(0);
+    setSelectedEndIndex(Math.max(0, parsedLyrics.lines.length - 1));
+  };
+
+  const handleExpandRange = (delta: number) => {
+    const start = Math.min(selectedStartIndex, selectedEndIndex);
+    const end = Math.max(selectedStartIndex, selectedEndIndex);
+    if (delta > 0) {
+      setSelectedEndIndex(Math.min(parsedLyrics.lines.length - 1, end + 1));
+    } else if (delta < 0 && end > start) {
+      setSelectedEndIndex(end - 1);
+    }
+  };
+
   // Live real-time OLED Preview rendering
   useEffect(() => {
+
     let active = true;
     const renderLivePreview = async () => {
       if (selectedLines.length === 0) return;
@@ -455,112 +509,217 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         {/* ============================================================== */}
         {/* COLUMN 2: APPLE MUSIC FLUID GLASS LYRIC SELECTOR             */}
         {/* ============================================================== */}
-        <section className="flex-1 flex flex-col bg-[#0D0D0E] relative min-h-0 overflow-hidden">
-          {/* Header */}
-          <div className="p-3 border-b-2 border-[#1A1A1A] bg-[#161618] flex justify-between items-center z-10">
-            <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#E85D2A] flex items-center gap-1.5">
-              <span>✦</span>
-              <span>2. APPLE MUSIC FLUID GLASS SELECTOR</span>
-            </h2>
-            <span className="text-[9px] text-[#888] font-mono">
-              Click to seek • Shift+Click to expand range
-            </span>
+        <section className="flex-1 flex flex-col bg-[#070709] relative min-h-0 overflow-hidden">
+          {/* Ambient Fluid Gradient Mesh (Apple Music fluid background) */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 opacity-45">
+            <div className="absolute -top-32 -left-32 w-[480px] h-[480px] rounded-full bg-gradient-to-br from-[#E85D2A] via-[#FF2D55] to-transparent blur-[120px] animate-pulse duration-[8000ms]" />
+            <div className="absolute top-1/4 -right-32 w-[520px] h-[520px] rounded-full bg-gradient-to-bl from-[#7928CA] via-[#0070F3] to-transparent blur-[130px] animate-pulse duration-[11000ms]" />
+            <div className="absolute -bottom-32 left-1/3 w-[550px] h-[400px] rounded-full bg-gradient-to-t from-[#00DFD8] via-[#8A2BE2] to-transparent blur-[140px] animate-pulse duration-[14000ms]" />
+          </div>
+
+          {/* Apple Music Glass Header Bar */}
+          <div className="p-3 border-b border-white/10 bg-[#121214]/70 backdrop-blur-xl flex justify-between items-center z-10">
+            <div className="flex items-center gap-3">
+              <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#E85D2A] flex items-center gap-1.5 font-mono">
+                <span className="w-2 h-2 rounded-full bg-[#E85D2A] animate-ping" />
+                <span>APPLE MUSIC FLUID GLASS SELECTOR</span>
+              </h2>
+              <span className="text-[8px] bg-white/10 text-white/70 px-2 py-0.5 rounded font-mono">
+                {isAutoScrollEnabled ? '⚡ AUTO-SYNC ON' : 'PAUSED (CLICK TO RESUME)'}
+              </span>
+            </div>
+
+            {/* Quick Selection Shortcuts */}
+            <div className="flex items-center gap-2 font-mono">
+              <button
+                onClick={handleSelectAll}
+                className="px-2 py-1 bg-white/10 hover:bg-white/20 border border-white/20 text-[9px] font-bold text-white rounded transition-colors cursor-pointer flex items-center gap-1"
+                title="Select all lyrics in song"
+              >
+                <CheckCheck className="w-3 h-3 text-[#E85D2A]" />
+                <span>ALL</span>
+              </button>
+              <button
+                onClick={() => handleExpandRange(1)}
+                className="px-2 py-1 bg-white/10 hover:bg-white/20 border border-white/20 text-[9px] font-bold text-white rounded transition-colors cursor-pointer flex items-center gap-1"
+                title="Expand selection by 1 line"
+              >
+                <ChevronDown className="w-3 h-3" />
+                <span>+1 LINE</span>
+              </button>
+              <button
+                onClick={() => handleExpandRange(-1)}
+                className="px-2 py-1 bg-white/10 hover:bg-white/20 border border-white/20 text-[9px] font-bold text-white rounded transition-colors cursor-pointer flex items-center gap-1"
+                title="Shrink selection by 1 line"
+              >
+                <ChevronUp className="w-3 h-3" />
+                <span>-1 LINE</span>
+              </button>
+            </div>
           </div>
 
           {/* Fluid Glass Lyric List */}
-          <div className="flex-1 overflow-y-auto p-6 md:p-12 flex flex-col items-center gap-4 relative z-10 min-h-0">
+          <div
+            ref={lyricsContainerRef}
+            onScroll={handleUserScroll}
+            className="flex-1 overflow-y-auto p-6 md:p-14 flex flex-col items-center gap-5 relative z-10 min-h-0 scroll-smooth"
+          >
             {parsedLyrics.lines.map((line, idx) => {
               const start = Math.min(selectedStartIndex, selectedEndIndex);
               const end = Math.max(selectedStartIndex, selectedEndIndex);
               const isSelected = idx >= start && idx <= end;
+              const isActiveLine = idx === activeLineIndex;
               const isStartPin = idx === start;
               const isEndPin = idx === end;
 
-              return (
+              return isSelected ? (
+                <div key={idx} id={`lyric-line-${idx}`} className="w-full max-w-xl transition-all duration-300">
+                  <GlassSurface
+                    borderRadius={18}
+                    blur={14}
+                    brightness={38}
+                    backgroundOpacity={0.12}
+                    saturation={1.35}
+                    borderWidth={0.06}
+                    className="w-full relative shadow-[0_8px_30px_rgba(0,0,0,0.6)]"
+                  >
+                    <div
+                      onClick={(e) => handleLineClick(idx, e)}
+                      className={`p-4 md:p-5 cursor-pointer relative group rounded-2xl transition-all ${
+                        isActiveLine ? 'ring-1 ring-white/30' : ''
+                      }`}
+                    >
+                      {/* Pin badges */}
+                      {isStartPin && (
+                        <span className="absolute -top-2.5 left-4 bg-[#E85D2A] text-white text-[8px] font-bold px-2 py-0.5 rounded-full shadow-lg z-20 flex items-center gap-1 font-mono">
+                          <span>▲ START</span>
+                          <span>{(line.startMs / 1000).toFixed(2)}s</span>
+                        </span>
+                      )}
+                      {isEndPin && (
+                        <span className="absolute -bottom-2.5 right-4 bg-[#E85D2A] text-white text-[8px] font-bold px-2 py-0.5 rounded-full shadow-lg z-20 flex items-center gap-1 font-mono">
+                          <span>▼ END</span>
+                          <span>{(line.endMs / 1000).toFixed(2)}s</span>
+                        </span>
+                      )}
+
+                      {/* Header Timestamp & Active Playing Status */}
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] text-[#E85D2A] font-mono font-bold tracking-wider">
+                          {Math.floor(line.startMs / 60000)}:{((line.startMs % 60000) / 1000).toFixed(2).padStart(5, '0')}
+                        </span>
+                        {isActiveLine && (
+                          <span className="text-[8px] font-bold bg-[#E85D2A] text-white px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse flex items-center gap-1 font-mono">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                            <span>PLAYING NOW</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {/* ELRC Progressive Karaoke Word-Level Lighting */}
+                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                        {line.words && line.words.length > 0 ? (
+                          line.words.map((w, wIdx) => {
+                            const isWordActive = isActiveLine && playheadMs >= w.startMs && playheadMs < w.endMs;
+                            const isWordPast = isActiveLine ? playheadMs >= w.endMs : idx < activeLineIndex;
+
+                            return (
+                              <span
+                                key={wIdx}
+                                className={`text-xl md:text-2xl font-black tracking-tight transition-all duration-150 inline-block ${
+                                  isWordActive
+                                    ? 'text-white scale-105 drop-shadow-[0_0_16px_rgba(255,255,255,0.95)] underline decoration-[#E85D2A] decoration-2 underline-offset-4'
+                                    : isWordPast
+                                    ? 'text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]'
+                                    : 'text-white/45'
+                                }`}
+                              >
+                                {w.word}
+                              </span>
+                            );
+                          })
+                        ) : (
+                          <span className="text-xl md:text-2xl font-black text-white">
+                            {line.text}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Kinetic Archetype Dynamic Badges */}
+                      {line.words && line.words.length > 0 && (
+                        <div className="mt-3.5 pt-2.5 border-t border-white/10 flex flex-wrap gap-1.5 items-center">
+                          <span className="text-[8px] text-white/50 font-bold uppercase tracking-wider mr-1 font-mono">
+                            {archetype === 'auto_semantic' ? '✨ MOTIONS:' : 'WORDS:'}
+                          </span>
+                          {line.words.map((w, wIdx) => {
+                            const precedingWord = wIdx > 0 ? line.words[wIdx - 1] : undefined;
+                            const wordArch = getWordEffectiveArchetype(
+                              w,
+                              wIdx,
+                              archetype,
+                              wordOverrides,
+                              precedingWord
+                            );
+                            const meta = ARCHETYPE_METADATA[wordArch] || ARCHETYPE_METADATA.smooth_fluid;
+                            const specificKey = `${w.word}_${w.startMs}`;
+                            const cleanKey = w.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+                            const isOverridden = !!(wordOverrides[specificKey] || wordOverrides[cleanKey]);
+
+                            return (
+                              <button
+                                key={wIdx}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingWordTarget({
+                                    word: w,
+                                    lineIdx: idx,
+                                    wordIdx: wIdx,
+                                    currentArchetype: wordArch
+                                  });
+                                }}
+                                className={`px-2.5 py-0.5 rounded-full text-[9px] font-mono flex items-center gap-1 transition-all cursor-pointer ${
+                                  isOverridden
+                                    ? 'bg-[#E85D2A] text-white font-bold ring-2 ring-white/60 shadow-lg'
+                                    : 'bg-white/10 hover:bg-white/20 text-white/90 border border-white/15'
+                                }`}
+                                title={`Click to customize kinetic style for "${w.word}"`}
+                              >
+                                <span>{meta.icon}</span>
+                                <span className="font-semibold">{w.word}</span>
+                                <span className="opacity-60 text-[7px] uppercase font-mono">({meta.tag})</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </GlassSurface>
+                </div>
+              ) : (
                 <div
                   key={idx}
+                  id={`lyric-line-${idx}`}
                   onClick={(e) => handleLineClick(idx, e)}
-                  className={`w-full max-w-xl transition-all duration-200 cursor-pointer relative group rounded-md p-3.5 ${
-                    isSelected
-                      ? 'bg-white/10 backdrop-blur-md border border-white/30 shadow-[0_4px_20px_rgba(0,0,0,0.5)]'
-                      : 'opacity-30 hover:opacity-75 blur-[0.4px] hover:blur-none'
+                  className={`w-full max-w-xl transition-all duration-300 cursor-pointer p-4 rounded-xl relative group ${
+                    isActiveLine
+                      ? 'opacity-85 scale-100 text-white font-bold blur-none'
+                      : 'opacity-25 hover:opacity-75 blur-[1.2px] hover:blur-none scale-98 hover:scale-100'
                   }`}
                 >
-                  {/* Pin badges */}
-                  {isStartPin && (
-                    <span className="absolute -top-2.5 left-3 bg-[#E85D2A] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-sm shadow-md">
-                      ▲ START {(line.startMs / 1000).toFixed(2)}s
-                    </span>
-                  )}
-                  {isEndPin && (
-                    <span className="absolute -bottom-2.5 right-3 bg-[#E85D2A] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-sm shadow-md">
-                      ▼ END {(line.endMs / 1000).toFixed(2)}s
-                    </span>
-                  )}
-
                   <div className="flex items-center gap-3">
-                    <span className="text-[9px] text-[#E85D2A] font-mono w-12 shrink-0">
+                    <span className="text-[9px] text-[#888] font-mono w-12 shrink-0">
                       {Math.floor(line.startMs / 60000)}:{((line.startMs % 60000) / 1000).toFixed(1).padStart(4, '0')}
                     </span>
-                    <span className={`text-base font-bold tracking-wide transition-colors ${
-                      isSelected ? 'text-white' : 'text-[#888]'
-                    }`}>
+                    <span className="text-lg font-bold text-white/80 group-hover:text-white transition-colors">
                       {line.text}
                     </span>
                   </div>
-
-                  {/* Interactive Dynamic Word Badges & Customizer Trigger */}
-                  {isSelected && line.words && line.words.length > 0 && (
-                    <div className="mt-3 pt-2.5 border-t border-white/10 flex flex-wrap gap-1.5 items-center">
-                      <span className="text-[8px] text-[#888] font-bold uppercase tracking-wider mr-1">
-                        {archetype === 'auto_semantic' ? '⚡ DYNAMIC MOTIONS:' : 'WORDS:'}
-                      </span>
-                      {line.words.map((w, wIdx) => {
-                        const precedingWord = wIdx > 0 ? line.words[wIdx - 1] : undefined;
-                        const wordArch = getWordEffectiveArchetype(
-                          w,
-                          wIdx,
-                          archetype,
-                          wordOverrides,
-                          precedingWord
-                        );
-                        const meta = ARCHETYPE_METADATA[wordArch] || ARCHETYPE_METADATA.smooth_fluid;
-                        const specificKey = `${w.word}_${w.startMs}`;
-                        const cleanKey = w.word.toLowerCase().replace(/[^a-z0-9]/g, '');
-                        const isOverridden = !!(wordOverrides[specificKey] || wordOverrides[cleanKey]);
-
-                        return (
-                          <button
-                            key={wIdx}
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingWordTarget({
-                                word: w,
-                                lineIdx: idx,
-                                wordIdx: wIdx,
-                                currentArchetype: wordArch
-                              });
-                            }}
-                            className={`px-2 py-0.5 rounded text-[9px] font-mono flex items-center gap-1 transition-all cursor-pointer ${
-                              isOverridden
-                                ? 'bg-[#E85D2A] text-white font-bold ring-1 ring-white/50 shadow-sm'
-                                : 'bg-white/10 hover:bg-white/25 text-white/90 border border-white/20'
-                            }`}
-                            title={`Click to customize kinetic style for "${w.word}"`}
-                          >
-                            <span>{meta.icon}</span>
-                            <span className="font-semibold">{w.word}</span>
-                            <span className="opacity-60 text-[7px] uppercase font-mono">({meta.tag})</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
                 </div>
               );
             })}
           </div>
+
 
           {/* Hidden Audio Player for drop sync */}
           {localAudioUrl && (
