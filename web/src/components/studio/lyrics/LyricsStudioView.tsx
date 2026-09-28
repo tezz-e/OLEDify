@@ -407,68 +407,71 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
   return (
     <div className={`fixed inset-0 z-50 flex flex-col font-mono select-none overflow-hidden transition-colors duration-200 ${
-      themeMode === 'dark' ? 'bg-[#0E0E10] text-[#E5E5E5]' : 'bg-[#F5F0EB] text-[#1A1A1A]'
+      themeMode === 'dark' ? 'bg-[#141413] text-[#FAF9F5]' : 'bg-[#FAF9F5] text-[#141413]'
     }`}>
       {/* Studio Top Navigation Bar */}
-      <header className={`h-14 px-6 border-b-2 flex items-center justify-between shrink-0 z-20 transition-colors duration-200 ${
-        themeMode === 'dark' ? 'bg-[#141417] border-[#252528] text-white' : 'bg-white border-[#1A1A1A] text-[#1A1A1A]'
+      <header className={`h-14 px-6 border-b flex items-center justify-between shrink-0 z-20 transition-colors duration-200 ${
+        themeMode === 'dark' ? 'bg-[#18181A] border-[#2C2B29] text-[#FAF9F5]' : 'bg-[#FAF9F5] border-[#E8E5DE] text-[#141413]'
       }`}>
         <div className="flex items-center gap-4">
           <button
             onClick={onClose}
-            className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-bold transition-colors cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-medium font-sans rounded-xs transition-colors cursor-pointer ${
               themeMode === 'dark'
-                ? 'bg-[#1E1E24] border-white/20 text-white hover:bg-white hover:text-black'
-                : 'bg-white border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white'
+                ? 'bg-[#232220] border-white/10 text-white/90 hover:bg-white hover:text-black'
+                : 'bg-white border-[#E8E5DE] text-[#141413] hover:bg-[#141413] hover:text-[#FAF9F5]'
             }`}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>BACK TO EDITOR</span>
+            <span>Timeline</span>
           </button>
 
-          <div className={`h-5 w-px ${themeMode === 'dark' ? 'bg-white/20' : 'bg-[#1A1A1A]/30'}`} />
+          <div className={`h-4 w-px ${themeMode === 'dark' ? 'bg-white/10' : 'bg-[#E8E5DE]'}`} />
 
-          <h1 className="text-sm font-bold tracking-widest flex items-center gap-2">
-            <span className="text-[#E85D2A]">✦</span>
-            <span>KINETIC LYRICS STUDIO</span>
-          </h1>
+          <div className="flex items-center gap-2.5">
+            <span className="w-2 h-2 rounded-full bg-[#D97757]" />
+            <h1 className="font-serif text-lg font-normal tracking-tight flex items-center gap-1.5">
+              <span>Kinetic Typography</span>
+              <span className="italic font-normal opacity-60 text-base">Studio</span>
+            </h1>
+          </div>
         </div>
 
-        {/* Center: React Bits Squish Switch Theme Controller */}
+        {/* Center: Theme Controller */}
         <div className="flex items-center gap-4">
           <ThemeSwitch theme={themeMode} onChange={setThemeMode} />
         </div>
 
         {/* Right Badges */}
-        <div className="flex items-center gap-4 text-xs font-bold">
-          <span className={`px-2 py-0.5 text-[9px] uppercase tracking-wider ${
-            themeMode === 'dark' ? 'bg-[#222228] text-white/90 border border-white/10' : 'bg-[#1A1A1A] text-white'
+        <div className="flex items-center gap-3 text-xs font-sans">
+          <span className={`px-2 py-0.5 text-[10px] font-mono tracking-wider border rounded-xs ${
+            themeMode === 'dark' ? 'bg-[#232220] text-white/80 border-white/10' : 'bg-white text-[#5E5D59] border-[#E8E5DE]'
           }`}>
-            128×64 MONO OLED
+            128×64 Monochrome
           </span>
-          <span className="text-[#E85D2A]">30 FPS ENGINE</span>
+          <span className="text-[#D97757] font-mono text-[10px] font-semibold">30 FPS Clock</span>
         </div>
       </header>
 
       {/* Main 3-Pane Workspace */}
-      <main className={`flex-1 flex min-h-0 divide-x-2 transition-colors duration-200 ${
-        themeMode === 'dark' ? 'divide-[#252528] bg-[#0E0E10]' : 'divide-[#1A1A1A] bg-[#F5F0EB]'
+      <main className={`flex-1 flex min-h-0 divide-x transition-colors duration-200 ${
+        themeMode === 'dark' ? 'divide-[#2C2B29] bg-[#141413]' : 'divide-[#E8E5DE] bg-[#FAF9F5]'
       }`}>
         
         {/* ============================================================== */}
         {/* COLUMN 1: INGESTION & SEARCH                                  */}
         {/* ============================================================== */}
         <section className={`w-[340px] flex flex-col shrink-0 min-h-0 transition-colors duration-200 ${
-          themeMode === 'dark' ? 'bg-[#141417] text-white' : 'bg-white text-[#1A1A1A]'
+          themeMode === 'dark' ? 'bg-[#18181A] text-white' : 'bg-white text-[#141413]'
         }`}>
-          <div className={`p-3 border-b-2 ${
-            themeMode === 'dark' ? 'border-[#252528] bg-[#18181C]' : 'border-[#1A1A1A] bg-[#F5F0EB]'
+          <div className={`p-3 border-b ${
+            themeMode === 'dark' ? 'border-[#2C2B29] bg-[#1E1E20]' : 'border-[#E8E5DE] bg-[#F5F2EB]'
           }`}>
-            <h2 className={`text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 ${
-              themeMode === 'dark' ? 'text-white/60' : 'text-[#6B6B6B]'
+            <h2 className={`text-[11px] font-sans font-semibold tracking-wide flex items-center gap-2 ${
+              themeMode === 'dark' ? 'text-white/80' : 'text-[#141413]'
             }`}>
-              <span className="w-2 h-2 bg-[#E85D2A]" />
-              <span>1. SONG & LYRICS INGESTION</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#D97757]" />
+              <span>1. Song & Lyrics Ingestion</span>
             </h2>
           </div>
 
@@ -639,19 +642,19 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         {/* COLUMN 2: APPLE MUSIC FLUID GLASS LYRIC SELECTOR             */}
         {/* ============================================================== */}
         <section className={`flex-1 flex flex-col relative min-h-0 overflow-hidden transition-colors duration-200 ${
-          themeMode === 'dark' ? 'bg-[#0E0E10]' : 'bg-[#F5F0EB]'
+          themeMode === 'dark' ? 'bg-[#141413]' : 'bg-[#FAF9F5]'
         }`}>
-          {/* Apple Music Minimalist Header Bar */}
+          {/* Editorial Lyrics Header Bar */}
           <div className={`h-12 px-6 border-b flex justify-between items-center z-10 shrink-0 transition-colors duration-200 ${
-            themeMode === 'dark' ? 'border-[#252528] bg-[#141417]' : 'border-b-2 border-[#1A1A1A] bg-white'
+            themeMode === 'dark' ? 'border-[#2C2B29] bg-[#18181A]' : 'border-[#E8E5DE] bg-white'
           }`}>
             <div className="flex items-center gap-3">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#E85D2A] flex items-center gap-1.5 font-mono">
+              <span className="text-[12px] font-sans font-semibold tracking-wide text-[#D97757] flex items-center gap-1.5">
                 <span>✦</span>
-                <span>LYRICS SELECTION</span>
+                <span className={themeMode === 'dark' ? 'text-white' : 'text-[#141413]'}>Lyrics Sequence</span>
               </span>
-              <span className={`text-[9px] font-mono ${themeMode === 'dark' ? 'text-white/40' : 'text-[#777]'}`}>
-                Click line to seek • Shift+Click to expand range
+              <span className={`text-[10px] font-sans ${themeMode === 'dark' ? 'text-white/40' : 'text-[#777]'}`}>
+                Click line to focus • Shift+Click to expand range
               </span>
             </div>
 
@@ -954,16 +957,16 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         {/* COLUMN 3: MOTION & OLED PREVIEW                               */}
         {/* ============================================================== */}
         <section className={`w-[360px] flex flex-col shrink-0 min-h-0 transition-colors duration-200 ${
-          themeMode === 'dark' ? 'bg-[#141417] text-white' : 'bg-white text-[#1A1A1A]'
+          themeMode === 'dark' ? 'bg-[#18181A] text-white' : 'bg-white text-[#141413]'
         }`}>
-          <div className={`p-3 border-b-2 ${
-            themeMode === 'dark' ? 'border-[#252528] bg-[#18181C]' : 'border-[#1A1A1A] bg-[#F5F0EB]'
+          <div className={`p-3 border-b ${
+            themeMode === 'dark' ? 'border-[#2C2B29] bg-[#1E1E20]' : 'border-[#E8E5DE] bg-[#F5F2EB]'
           }`}>
-            <h2 className={`text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 ${
-              themeMode === 'dark' ? 'text-white/60' : 'text-[#6B6B6B]'
+            <h2 className={`text-[11px] font-sans font-semibold tracking-wide flex items-center gap-2 ${
+              themeMode === 'dark' ? 'text-white/80' : 'text-[#141413]'
             }`}>
-              <span className="w-2 h-2 bg-[#E85D2A]" />
-              <span>3. MOTION & OLED PREVIEW</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#D97757]" />
+              <span>3. Motion Archetypes & OLED Preview</span>
             </h2>
           </div>
 
@@ -1218,10 +1221,10 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             <button
               onClick={handleGenerateAndInject}
               disabled={isRendering || selectedLines.length === 0}
-              className={`w-full py-3 bg-[#E85D2A] text-white text-xs font-bold tracking-widest uppercase border-2 transition-all cursor-pointer mt-auto flex items-center justify-center gap-2 ${
+              className={`w-full py-3 bg-[#D97757] text-white text-xs font-sans font-semibold tracking-wide rounded-xs border transition-all cursor-pointer mt-auto flex items-center justify-center gap-2 ${
                 themeMode === 'dark'
-                  ? 'border-white/20 shadow-[4px_4px_0px_rgba(0,0,0,0.6)] hover:shadow-[2px_2px_0px_rgba(0,0,0,0.6)]'
-                  : 'border-[#1A1A1A] shadow-[4px_4px_0px_#1A1A1A] hover:shadow-[2px_2px_0px_#1A1A1A]'
+                  ? 'border-white/10 shadow-[3px_3px_0px_rgba(0,0,0,0.5)] hover:shadow-[1px_1px_0px_rgba(0,0,0,0.5)] hover:bg-[#c96442]'
+                  : 'border-[#141413] shadow-[3px_3px_0px_#141413] hover:shadow-[1px_1px_0px_#141413] hover:bg-[#c96442]'
               } hover:translate-x-[1px] hover:translate-y-[1px] ${
                 isRendering ? 'opacity-70 cursor-wait' : ''
               }`}
@@ -1229,12 +1232,12 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               {isRendering ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>RENDERING {renderProgress}%</span>
+                  <span>Rendering sequence ({renderProgress}%)...</span>
                 </>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4" />
-                  <span>GENERATE & SEND TO NLE</span>
+                  <span>Render & Add to Timeline</span>
                 </>
               )}
             </button>

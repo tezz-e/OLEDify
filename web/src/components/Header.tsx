@@ -36,43 +36,39 @@ export const Header: React.FC<HeaderProps> = ({
     setGpuInfo(detectGpu());
   }, []);
   return (
-    <header className="relative w-full h-14 px-6 bg-white border-b-2 border-[#1A1A1A] flex items-center justify-between shrink-0 z-20">
-      <div className="flex items-center">
-        <h1 className="text-base font-bold tracking-wider font-mono text-[#1A1A1A] flex items-center gap-1.5 cursor-pointer select-none">
-          <span className="text-[#E85D2A]">▲</span>
-          <DecryptedText
-            text="OLED_STUDIO"
-            speed={35}
-            characters="0123456789ABCDEF_~<>[]"
-            animateOn="hover"
-            className="font-mono tracking-widest font-bold"
-          />
+    <header className="relative w-full h-14 px-6 bg-[#FAF9F5] border-b border-[#E8E5DE] flex items-center justify-between shrink-0 z-20">
+      <div className="flex items-center gap-3">
+        <h1 className="text-xl font-serif text-[#141413] flex items-center gap-2.5 cursor-pointer select-none">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#D97757]" />
+          <span className="font-serif italic tracking-tight font-normal text-xl">OLEDify</span>
+          <span className="text-[9px] font-mono tracking-widest text-[#5E5D59] uppercase px-1.5 py-0.5 border border-[#E8E5DE] bg-white not-italic font-semibold">
+            STUDIO
+          </span>
         </h1>
       </div>
 
       {/* Center View Mode Switcher */}
       {onViewChange && (
-        <div className="hidden md:flex items-center border border-[#1A1A1A] bg-[#F5F0EB] p-0.5 font-mono text-[10px] font-bold">
+        <div className="hidden md:flex items-center border border-[#E8E5DE] bg-[#F0ECE1]/80 p-0.5 font-sans text-[11px] font-medium rounded-xs">
           <button
             onClick={() => onViewChange('editor')}
-            className={`px-3 py-1 transition-colors cursor-pointer ${
+            className={`px-3.5 py-1 transition-all cursor-pointer rounded-xs flex items-center gap-1.5 ${
               activeView === 'editor'
-                ? 'bg-[#1A1A1A] text-white shadow-sm'
-                : 'text-[#6B6B6B] hover:text-[#1A1A1A]'
+                ? 'bg-[#141413] text-[#FAF9F5] shadow-xs font-semibold'
+                : 'text-[#5E5D59] hover:text-[#141413]'
             }`}
           >
-            🎞️ NLE TIMELINE
+            <span>Timeline</span>
           </button>
           <button
             onClick={() => onViewChange('lyrics-studio')}
-            className={`px-3 py-1 transition-colors cursor-pointer flex items-center gap-1 ${
+            className={`px-3.5 py-1 transition-all cursor-pointer flex items-center gap-1.5 rounded-xs ${
               activeView === 'lyrics-studio'
-                ? 'bg-[#E85D2A] text-white shadow-sm'
-                : 'text-[#6B6B6B] hover:text-[#E85D2A]'
+                ? 'bg-[#D97757] text-white shadow-xs font-semibold'
+                : 'text-[#5E5D59] hover:text-[#D97757]'
             }`}
           >
-            <span>✨</span>
-            <span>KINETIC LYRICS STUDIO</span>
+            <span>Kinetic Typography</span>
           </button>
         </div>
       )}
