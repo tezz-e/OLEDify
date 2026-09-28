@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Header } from './components/Header';
 import { SettingsModal } from './components/SettingsModal';
 import { CharacterStudioModal } from './components/studio/CharacterStudioModal';
+import { LyricsStudioView } from './components/studio/lyrics/LyricsStudioView';
 import { DropZone } from './components/DropZone';
 import { TimelineTrack } from './components/TimelineTrack';
 import { OledCanvas } from './components/OledCanvas';
@@ -84,6 +85,7 @@ function MainApp() {
   const [historyIndex, setHistoryIndex] = useState(0);
 
   // UI State
+  const [activeView, setActiveView] = useState<'editor' | 'lyrics-studio'>('editor');
   const [mediaPoolTab, setMediaPoolTab] = useState<'import' | 'samples' | 'recent' | 'create'>('import');
   const [studioOpen, setStudioOpen] = useState(false);
   const [serialConnected, setSerialConnected] = useState(false);
@@ -672,6 +674,8 @@ function MainApp() {
         isExporting={isExporting}
         exportProgress={exportProgress}
         exportError={exportError}
+        activeView={activeView}
+        onViewChange={setActiveView}
       />
 
       <main className="flex-1 flex flex-col min-h-0 z-10">
@@ -1061,12 +1065,12 @@ function MainApp() {
 
               {mediaPoolTab === 'create' && (
                 <div className="p-4 flex-1 flex flex-col items-center justify-center text-center gap-4 border border-dashed border-[#1A1A1A]/30 m-2">
-                  <p className="text-[10px] font-mono text-[#6B6B6B]">Generate parametric characters with automated line-boil</p>
+                  <p className="text-[10px] font-mono text-[#6B6B6B]">Generate pure beat-synced kinetic typography with Apple Music fluid glass selector</p>
                   <button
-                    onClick={() => setStudioOpen(true)}
+                    onClick={() => setActiveView('lyrics-studio')}
                     className="py-3 px-6 bg-[#E85D2A] text-[#f5f0eb] text-xs font-mono font-bold tracking-widest border-2 border-[#1A1A1A] shadow-[4px_4px_0_#1A1A1A] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#1A1A1A] transition-all cursor-pointer"
                   >
-                    ✨ LAUNCH CHARACTER STUDIO
+                    ✨ LAUNCH KINETIC LYRICS STUDIO
                   </button>
                 </div>
               )}
@@ -1255,6 +1259,21 @@ function MainApp() {
               { id: clipId, assetId, inFrame: 0, outFrame: charMedia.frames.length - 1 }
             ]);
             setStudioOpen(false);
+          }}
+        />
+      )}
+      {activeView === 'lyrics-studio' && (
+        <LyricsStudioView 
+          onClose={() => setActiveView('editor')}
+          onInjectToTimeline={(kineticMedia) => {
+            const assetId = "asset_kinetic_" + Date.now();
+            const clipId = "clip_" + Date.now();
+            setAssets(prev => ({ ...prev, [assetId]: { id: assetId, media: kineticMedia } }));
+            setClipsWithHistory(prev => [
+              ...prev,
+              { id: clipId, assetId, inFrame: 0, outFrame: kineticMedia.frames.length - 1 }
+            ]);
+            setActiveView('editor');
           }}
         />
       )}

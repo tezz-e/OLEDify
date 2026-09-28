@@ -13,6 +13,8 @@ interface HeaderProps {
   isExporting: boolean;
   exportProgress: number;
   exportError: string | null;
+  activeView?: 'editor' | 'lyrics-studio';
+  onViewChange?: (view: 'editor' | 'lyrics-studio') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -24,6 +26,8 @@ export const Header: React.FC<HeaderProps> = ({
   isExporting,
   exportProgress,
   exportError,
+  activeView = 'editor',
+  onViewChange,
 }) => {
   return (
     <header className="relative w-full h-14 px-6 bg-white border-b-2 border-[#1A1A1A] flex items-center justify-between shrink-0 z-20">
@@ -39,6 +43,33 @@ export const Header: React.FC<HeaderProps> = ({
           />
         </h1>
       </div>
+
+      {/* Center View Mode Switcher */}
+      {onViewChange && (
+        <div className="hidden md:flex items-center border border-[#1A1A1A] bg-[#F5F0EB] p-0.5 font-mono text-[10px] font-bold">
+          <button
+            onClick={() => onViewChange('editor')}
+            className={`px-3 py-1 transition-colors cursor-pointer ${
+              activeView === 'editor'
+                ? 'bg-[#1A1A1A] text-white shadow-sm'
+                : 'text-[#6B6B6B] hover:text-[#1A1A1A]'
+            }`}
+          >
+            🎞️ NLE TIMELINE
+          </button>
+          <button
+            onClick={() => onViewChange('lyrics-studio')}
+            className={`px-3 py-1 transition-colors cursor-pointer flex items-center gap-1 ${
+              activeView === 'lyrics-studio'
+                ? 'bg-[#E85D2A] text-white shadow-sm'
+                : 'text-[#6B6B6B] hover:text-[#E85D2A]'
+            }`}
+          >
+            <span>✨</span>
+            <span>KINETIC LYRICS STUDIO</span>
+          </button>
+        </div>
+      )}
       
       <div className="flex items-center space-x-3">
         <button 
