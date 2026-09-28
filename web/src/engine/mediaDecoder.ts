@@ -17,7 +17,12 @@ export async function decodeVideo(
   }
 
   if ('VideoDecoder' in window && file.type === 'video/mp4') {
-    return decodeVideoWebCodecs(file, { targetFps, onProgress });
+    try {
+      return await decodeVideoWebCodecs(file, { targetFps, onProgress });
+    } catch (err) {
+      console.warn('WebCodecs failed, gracefully falling back to native video decoder:', err);
+      return decodeVideoLegacy(file, { targetFps, onProgress });
+    }
   } else {
     // Fallback to legacy <video> seek for non-mp4 or browsers without WebCodecs
     return decodeVideoLegacy(file, { targetFps, onProgress });
@@ -35,6 +40,11 @@ async function decodeVideoWebCodecs(
   return new Promise((resolve, reject) => {
     // Vite specific worker URL
     const worker = new Worker(new URL('./decodeWorker.ts', import.meta.url), { type: 'module' });
+
+    worker.onerror = (err) => {
+      worker.terminate();
+      reject(new Error(err.message || 'Worker decoding error'));
+    };
 
     worker.onmessage = (e) => {
       const msg = e.data;
@@ -94,7 +104,7 @@ async function decodeVideoLegacy(
       const duration = video.duration;
       const width = video.videoWidth;
       const height = video.videoHeight;
-      const MAX_DIM = 400;
+      const MAX_DIM = 256;
       let w = width;
       let h = height;
       if (w > MAX_DIM || h > MAX_DIM) {

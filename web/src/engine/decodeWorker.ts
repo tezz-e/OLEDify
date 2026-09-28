@@ -22,20 +22,26 @@ self.onmessage = async (e: MessageEvent<DecodeWorkerMessage>) => {
   };
 
   const initDecoder = (track: any) => {
+    let canvas: OffscreenCanvas | null = null;
+    let ctx: OffscreenCanvasRenderingContext2D | null = null;
+
     decoder = new VideoDecoder({
       output: (frame) => {
         let w = frame.codedWidth;
         let h = frame.codedHeight;
-        const MAX_DIM = 400;
+        const MAX_DIM = 256; // High-detail supersampling for 128x64 display (avoids tab OOM)
         if (w > MAX_DIM || h > MAX_DIM) {
            const scale = Math.min(MAX_DIM / w, MAX_DIM / h);
            w = Math.floor(w * scale);
            h = Math.floor(h * scale);
         }
 
-        // Convert VideoFrame to ImageData to send back to main thread
-        const canvas = new OffscreenCanvas(w, h);
-        const ctx = canvas.getContext('2d');
+        // Reuse canvas to avoid allocating thousands of GPU surfaces
+        if (!canvas || canvas.width !== w || canvas.height !== h) {
+          canvas = new OffscreenCanvas(w, h);
+          ctx = canvas.getContext('2d', { willReadFrequently: true });
+        }
+
         if (ctx) {
           ctx.drawImage(frame, 0, 0, w, h);
           const imageData = ctx.getImageData(0, 0, w, h);
@@ -48,8 +54,8 @@ self.onmessage = async (e: MessageEvent<DecodeWorkerMessage>) => {
         frame.close();
         
         framesProcessed++;
-        if (framesProcessed % 10 === 0) {
-          postProgress('decoding', (framesProcessed / totalFrames) * 100);
+        if (framesProcessed % 5 === 0 || framesProcessed >= totalFrames) {
+          postProgress('decoding', Math.min(100, (framesProcessed / totalFrames) * 100));
         }
       },
       error: (e) => {
@@ -58,20 +64,8 @@ self.onmessage = async (e: MessageEvent<DecodeWorkerMessage>) => {
       }
     });
 
-    // Configure decoder with hardware acceleration hint
-    // We need to extract the avcC or hvcC box for the description
-    // mp4box.js puts this in track.codec
+    // Extract description from avcC / hvcC box
     let description: Uint8Array | undefined = undefined;
-    
-    // MP4Box.js puts the AVC/HEVC config record in the avcC/hvcC box inside the sample description
-    // This part can be tricky. For a simple implementation, if the browser supports it without description, it might work,
-    // but usually avcC is required for avc1.
-    // Fortunately, mp4box.js usually exposes it via track info, but the exact path varies.
-    // For now, we rely on the codec string. If `description` is required and fails, we'll need to parse the STSD box.
-    // Let's assume a modern browser can sometimes handle just the codec string for baseline.
-    // Actually, WebCodecs requires `description` (AVCDecoderConfigurationRecord) for avc1.
-    
-    // Let's grab the description from the track's first avcC box if available
     const trak = mp4boxfile.getTrackById(track.id);
     if (trak && trak.mdia && trak.mdia.minf && trak.mdia.minf.stbl && trak.mdia.minf.stbl.stsd) {
       const stsd = trak.mdia.minf.stbl.stsd.entries[0];
@@ -81,24 +75,36 @@ self.onmessage = async (e: MessageEvent<DecodeWorkerMessage>) => {
         const stream = new MP4Box.DataStream(undefined, 0, MP4Box.DataStream.BIG_ENDIAN);
         // @ts-ignore
         stsd.avcC.write(stream);
-        description = new Uint8Array(stream.buffer, 8); // Skip box header
+        if (stream.buffer.byteLength >= 8) {
+          description = new Uint8Array(stream.buffer.slice(8, (stream as any).position || stream.buffer.byteLength));
+        }
       // @ts-ignore
       } else if (stsd.hvcC) {
         // @ts-ignore
         const stream = new MP4Box.DataStream(undefined, 0, MP4Box.DataStream.BIG_ENDIAN);
         // @ts-ignore
         stsd.hvcC.write(stream);
-        description = new Uint8Array(stream.buffer, 8);
+        if (stream.buffer.byteLength >= 8) {
+          description = new Uint8Array(stream.buffer.slice(8, (stream as any).position || stream.buffer.byteLength));
+        }
       }
     }
 
-    decoder.configure({
-      codec: track.codec.startsWith('avc1') ? track.codec : 'avc1.42E01E', // Fallback to baseline if weird
+    const config: VideoDecoderConfig = {
+      codec: track.codec.startsWith('avc1') ? track.codec : 'avc1.42E01E',
       codedWidth: track.video.width,
       codedHeight: track.video.height,
       hardwareAcceleration: 'prefer-hardware',
       description: description
-    });
+    };
+
+    try {
+      decoder.configure(config);
+    } catch (e) {
+      console.warn('Hardware acceleration configure failed, falling back to software:', e);
+      config.hardwareAcceleration = 'prefer-software';
+      decoder.configure(config);
+    }
   };
 
   mp4boxfile.onReady = (info: any) => {
@@ -120,19 +126,25 @@ self.onmessage = async (e: MessageEvent<DecodeWorkerMessage>) => {
   let samplesFed = 0;
   mp4boxfile.onSamples = async (id: number, user: any, samples: any[]) => {
     for (const sample of samples) {
+      // BACKPRESSURE: Wait if hardware NVDEC queue is busy
+      // NVIDIA drivers fail and crash the GPU process if flooded with unthrottled frames
+      while (decoder && decoder.state === 'configured' && decoder.decodeQueueSize > 4) {
+        await new Promise(r => setTimeout(r, 4));
+      }
+
+      if (!decoder || decoder.state !== 'configured') break;
+
       const chunk = new EncodedVideoChunk({
         type: sample.is_sync ? 'key' : 'delta',
         timestamp: (sample.cts * 1000000) / sample.timescale,
         duration: (sample.duration * 1000000) / sample.timescale,
         data: sample.data
       });
-      if (decoder && decoder.state === 'configured') {
-        decoder.decode(chunk);
-      }
+      decoder.decode(chunk);
       samplesFed++;
     }
 
-    if (samplesFed === totalFrames && decoder && decoder.state === 'configured') {
+    if (samplesFed >= totalFrames && decoder && decoder.state === 'configured') {
       try {
         await decoder.flush();
       } catch (e) {
