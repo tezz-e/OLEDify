@@ -85,7 +85,13 @@ export interface OllamaInspectionLog {
   linesAnalyzed: string[];
   prompt: string;
   rawResponse: string;
-  parsedClassifications: Array<{ word: string; startMs: number; archetype: MotionArchetype }>;
+  parsedClassifications: Array<{
+    word: string;
+    startMs: number;
+    archetype: MotionArchetype;
+    meaning?: string;
+    reason?: string;
+  }>;
   evalCount?: number;
   promptEvalCount?: number;
   totalDurationMs?: number;
@@ -141,8 +147,8 @@ export function normalizeArchetype(
 export function extractClassificationsFromResponse(
   rawResponse: string,
   validArchetypes: MotionArchetype[] = VALID_MOTION_ARCHETYPES
-): Array<{ word: string; startMs?: number; archetype: MotionArchetype }> {
-  const results: Array<{ word: string; startMs?: number; archetype: MotionArchetype }> = [];
+): Array<{ word: string; startMs?: number; archetype: MotionArchetype; meaning?: string; reason?: string }> {
+  const results: Array<{ word: string; startMs?: number; archetype: MotionArchetype; meaning?: string; reason?: string }> = [];
   if (!rawResponse || typeof rawResponse !== 'string') return results;
 
   let cleaned = rawResponse.trim();
@@ -169,16 +175,20 @@ export function extractClassificationsFromResponse(
         const word = (item.word || item.text || item.token || '').trim();
         const rawArch = (item.archetype || item.style || item.motion || '').toString();
         const arch = normalizeArchetype(rawArch, validArchetypes);
+        const meaning = (item.meaning || item.punjabiMeaning || item.translation || '').toString().trim() || undefined;
+        const reason = (item.reason || item.rationale || item.explanation || '').toString().trim() || undefined;
         if (word && arch) {
           results.push({
             word,
             startMs: typeof item.startMs === 'number' ? item.startMs : undefined,
             archetype: arch,
+            meaning,
+            reason,
           });
         }
       }
     } else if (typeof parsed === 'object' && parsed !== null) {
-      // Key-value map: { "word": "archetype" }
+      // Key-value map: { "word": "archetype" } or { "word": { archetype, meaning, reason } }
       for (const [key, val] of Object.entries(parsed)) {
         if (['classifications', 'words', 'analysis', 'notes'].includes(key.toLowerCase())) continue;
         if (typeof val === 'string') {
@@ -186,7 +196,9 @@ export function extractClassificationsFromResponse(
           if (arch) results.push({ word: key.trim(), archetype: arch });
         } else if (typeof val === 'object' && val !== null && 'archetype' in val) {
           const arch = normalizeArchetype((val as any).archetype, validArchetypes);
-          if (arch) results.push({ word: key.trim(), archetype: arch });
+          const meaning = (val as any).meaning || (val as any).translation || undefined;
+          const reason = (val as any).reason || (val as any).rationale || undefined;
+          if (arch) results.push({ word: key.trim(), archetype: arch, meaning, reason });
         }
       }
     }
@@ -196,38 +208,50 @@ export function extractClassificationsFromResponse(
     // Truncated or malformed JSON — proceed to regex extraction
   }
 
-  // Strategy 2: Robust Regex Extraction for truncated JSON arrays
-  const objectRegex = /"word"\s*:\s*"([^"]+)"[\s\S]*?"archetype"\s*:\s*"([a-zA-Z0-9_\-\s]+)"/gi;
-  let match: RegExpExecArray | null;
-  while ((match = objectRegex.exec(cleaned)) !== null) {
-    const word = match[1].trim();
-    const arch = normalizeArchetype(match[2], validArchetypes);
-    if (word && arch) {
-      results.push({ word, archetype: arch });
+  // Strategy 2: Robust Regex Extraction for individual JSON object blocks with meaning/reason
+  const blockRegex = /\{[^{}]*"word"\s*:\s*"([^"]+)"[^{}]*\}/gi;
+  let blockMatch: RegExpExecArray | null;
+  while ((blockMatch = blockRegex.exec(cleaned)) !== null) {
+    const block = blockMatch[0];
+    const wordMatch = /"word"\s*:\s*"([^"]+)"/i.exec(block);
+    const archMatch = /"archetype"\s*:\s*"([^"]+)"/i.exec(block);
+    const meaningMatch = /"meaning"\s*:\s*"([^"]+)"/i.exec(block);
+    const reasonMatch = /"reason"\s*:\s*"([^"]+)"/i.exec(block);
+    if (wordMatch && archMatch) {
+      const arch = normalizeArchetype(archMatch[1], validArchetypes);
+      if (arch) {
+        results.push({
+          word: wordMatch[1].trim(),
+          archetype: arch,
+          meaning: meaningMatch ? meaningMatch[1].trim() : undefined,
+          reason: reasonMatch ? reasonMatch[1].trim() : undefined,
+        });
+      }
     }
   }
 
-  // Strategy 3: Inverted key order ("archetype" before "word")
+  // Strategy 3: Loose word-archetype pair regex if object blocks were not matched
   if (results.length === 0) {
-    const invertedRegex = /"archetype"\s*:\s*"([a-zA-Z0-9_\-\s]+)"[\s\S]*?"word"\s*:\s*"([^"]+)"/gi;
-    while ((match = invertedRegex.exec(cleaned)) !== null) {
-      const arch = normalizeArchetype(match[1], validArchetypes);
-      const word = match[2].trim();
+    const objectRegex = /"word"\s*:\s*"([^"]+)"[\s\S]*?"archetype"\s*:\s*"([a-zA-Z0-9_\-\s]+)"/gi;
+    let match: RegExpExecArray | null;
+    while ((match = objectRegex.exec(cleaned)) !== null) {
+      const word = match[1].trim();
+      const arch = normalizeArchetype(match[2], validArchetypes);
       if (word && arch) {
         results.push({ word, archetype: arch });
       }
     }
   }
 
-  // Strategy 4: Dictionary key-values: "word": "manga_impact"
+  // Strategy 4: Inverted key order ("archetype" before "word")
   if (results.length === 0) {
-    const kvRegex = /"([^"\n\r:]+)"\s*:\s*"([a-zA-Z0-9_\-\s]+)"/gi;
-    while ((match = kvRegex.exec(cleaned)) !== null) {
-      const key = match[1].trim();
-      if (['classifications', 'word', 'archetype', 'style', 'text'].includes(key.toLowerCase())) continue;
-      const arch = normalizeArchetype(match[2], validArchetypes);
-      if (key && arch) {
-        results.push({ word: key, archetype: arch });
+    const invertedRegex = /"archetype"\s*:\s*"([a-zA-Z0-9_\-\s]+)"[\s\S]*?"word"\s*:\s*"([^"]+)"/gi;
+    let match: RegExpExecArray | null;
+    while ((match = invertedRegex.exec(cleaned)) !== null) {
+      const arch = normalizeArchetype(match[1], validArchetypes);
+      const word = match[2].trim();
+      if (word && arch) {
+        results.push({ word, archetype: arch });
       }
     }
   }
@@ -247,13 +271,18 @@ export function buildOllamaLyricsPrompt(
     return `Line ${i + 1}: "${l.text}"`;
   }).join('\n');
 
-  return `You are a creative motion design typography director for high-energy 1-bit OLED kinetic lyrics.
+  return `You are an elite motion typography director for high-energy 1-bit OLED kinetic lyrics.
 Song Context: "${songTitle}" by ${artist}.
 
-Analyze the emotions, intensity, and rhythm of these lines:
+Analyze the emotions, language, and rhythm of these lines:
 ${formattedLines}
 
-Choose the single best visual archetype for each key impactful word from these 10 styles:
+CRITICAL RULES:
+1. ONLY select 1 to 2 high-impact punchline words per line (e.g. key nouns, weapons, powerful verbs, emotional climaxes, shouting words).
+2. NEVER classify filler words, prepositions, conjunctions, or pronouns. Specifically DO NOT classify: "te", "de", "naal", "mera", "ni", "ki", "tainu", "and", "the", "with", "of", "to", "in", "it", "my", "you", "me".
+3. For each selected word, provide its translated meaning/definition and your artistic reasoning for choosing that visual archetype so we can verify you understand the lyrics.
+
+Choose from these 10 visual archetypes:
 - "manga_impact": explosive hits, punches, loud shouts, beat drops
 - "cyber_glitch": high-tech speed, rapid flows, digital panic, lightning
 - "3d_block_stack": royalty, power, anthems, pride, heavy boss energy, solid blocks
@@ -268,7 +297,12 @@ Choose the single best visual archetype for each key impactful word from these 1
 Output JSON strictly matching this format:
 {
   "classifications": [
-    { "word": "example", "archetype": "manga_impact" }
+    {
+      "word": "SHASHTAR",
+      "meaning": "weapons / guns (Punjabi)",
+      "archetype": "3d_block_stack",
+      "reason": "heavy impactful weapon punchline"
+    }
   ]
 }`;
 }
@@ -367,6 +401,8 @@ export async function classifyLyricsWithOllama(
           word: item.word,
           startMs: item.startMs ?? 0,
           archetype: item.archetype,
+          meaning: item.meaning,
+          reason: item.reason,
         });
 
         // Clean target string
@@ -510,6 +546,8 @@ export async function testSinglePromptWithOllama(
         word: item.word,
         startMs: sMs ?? 0,
         archetype: item.archetype,
+        meaning: item.meaning,
+        reason: item.reason,
       });
     }
 
