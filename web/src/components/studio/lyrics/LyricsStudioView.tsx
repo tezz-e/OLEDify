@@ -1895,6 +1895,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         selectedModel={selectedOllamaModel}
         isOnline={Boolean(ollamaStatus?.online)}
         sessionLogs={ollamaInspectionLogs}
+        availableModels={ollamaStatus?.models?.length ? ollamaStatus.models : undefined}
+        onSelectModel={(model) => setSelectedOllamaModel(model)}
       />
     </div>
   );

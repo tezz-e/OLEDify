@@ -29,6 +29,8 @@ interface OllamaInspectorModalProps {
   selectedModel: string;
   isOnline: boolean;
   sessionLogs: OllamaInspectionLog[];
+  availableModels?: string[];
+  onSelectModel?: (model: string) => void;
 }
 
 const PRESET_TEST_LYRICS = [
@@ -56,8 +58,16 @@ export const OllamaInspectorModal: React.FC<OllamaInspectorModalProps> = ({
   selectedModel,
   isOnline,
   sessionLogs,
+  availableModels,
+  onSelectModel,
 }) => {
   const [activeTab, setActiveTab] = useState<'sandbox' | 'logs'>('sandbox');
+  const [activeModel, setActiveModel] = useState<string>(selectedModel);
+
+  React.useEffect(() => {
+    if (selectedModel) setActiveModel(selectedModel);
+  }, [selectedModel]);
+
   const [customText, setCustomText] = useState(PRESET_TEST_LYRICS[0].lyrics);
   const [songTitle, setSongTitle] = useState(PRESET_TEST_LYRICS[0].title);
   const [artist, setArtist] = useState(PRESET_TEST_LYRICS[0].artist);
@@ -79,7 +89,7 @@ export const OllamaInspectorModal: React.FC<OllamaInspectorModalProps> = ({
     setIsTesting(true);
     try {
       const res = await testSinglePromptWithOllama(customText, {
-        model: selectedModel,
+        model: activeModel,
         songTitle,
         artist,
       });
@@ -140,8 +150,27 @@ const ARCHETYPE_COLORS: Record<MotionArchetype, string> = {
                     : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                 }`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-                  {selectedModel} ({isOnline ? 'GPU Ready' : 'Offline'})
+                  {isOnline ? 'GPU Ready' : 'Offline'}
                 </span>
+
+                {availableModels && availableModels.length > 0 && (
+                  <select
+                    value={activeModel}
+                    onChange={(e) => {
+                      setActiveModel(e.target.value);
+                      onSelectModel?.(e.target.value);
+                    }}
+                    className={`text-[11px] font-mono px-2 py-0.5 rounded-md border outline-none cursor-pointer ${
+                      themeMode === 'dark' 
+                        ? 'bg-[#18181B] text-white border-white/10' 
+                        : 'bg-[#FAF9F5] text-[#141413] border-[#E8E5DE]'
+                    }`}
+                  >
+                    {availableModels.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                )}
               </div>
               <p className={`text-xs ${themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}`}>
                 Inspect the prompt payloads sent to your local Ollama daemon and monitor token throughput.
@@ -283,12 +312,12 @@ const ARCHETYPE_COLORS: Record<MotionArchetype, string> = {
                     {isTesting ? (
                       <>
                         <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        <span>Generating with {selectedModel}...</span>
+                        <span>Generating with {activeModel}...</span>
                       </>
                     ) : (
                       <>
                         <Send className="w-3.5 h-3.5" />
-                        <span>Send Test Prompt to {selectedModel}</span>
+                        <span>Send Test Prompt to {activeModel}</span>
                       </>
                     )}
                   </button>
@@ -420,7 +449,7 @@ const ARCHETYPE_COLORS: Record<MotionArchetype, string> = {
                     {viewSubTab === 'parsed' && (
                       <div className="space-y-2">
                         <span className="text-[11px] text-[#87867F] block">
-                          Visual motion archetype decisions made by <strong className="text-[#D97757]">{selectedModel}</strong>:
+                          Visual motion archetype decisions made by <strong className="text-[#D97757]">{activeTestResult.model || activeModel}</strong>:
                         </span>
                         {activeTestResult.parsedClassifications.length > 0 ? (
                           <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-1">
@@ -488,7 +517,7 @@ const ARCHETYPE_COLORS: Record<MotionArchetype, string> = {
                     <Code2 className="w-10 h-10 mb-2 opacity-50 text-[#D97757]" />
                     <p className="font-serif text-sm font-medium mb-1">Ready for Test Run</p>
                     <p className="text-xs max-w-sm">
-                      Click <strong>"Send Test Prompt"</strong> to execute live inference with <code>{selectedModel}</code> on your GTX 1650 and inspect the raw prompt and response.
+                      Click <strong>"Send Test Prompt"</strong> to execute live inference with <code>{activeModel}</code> on your GTX 1650 and inspect the raw prompt and response.
                     </p>
                   </div>
                 )}
