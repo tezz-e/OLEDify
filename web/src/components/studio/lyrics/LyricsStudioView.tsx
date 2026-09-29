@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, Music, FileText, Upload, Play, Pause, ArrowLeft, Sparkles, Check, RefreshCw, X, RotateCcw, ChevronUp, ChevronDown, CheckCheck, Bot, Cpu, Activity, Zap, Volume2 } from 'lucide-react';
+import { Search, Music, FileText, Upload, Play, Pause, ArrowLeft, Sparkles, Check, RefreshCw, X, RotateCcw, ChevronUp, ChevronDown, CheckCheck, Bot, Cpu, Activity, Zap, Volume2, Terminal } from 'lucide-react';
 import { searchLrclib, getLrclibExact, searchLyricsOvhFallback } from '../../../engine/lyrics/lrclibClient';
 import { parseLrc, parsePlainTextLyrics } from '../../../engine/lyrics/lrcParser';
 import { LrclibTrack, ParsedLyrics, LyricLine, LyricWord } from '../../../engine/lyrics/types';
@@ -11,12 +11,14 @@ import {
   checkOllamaHealth,
   classifyLyricsWithOllama,
   OllamaHealthStatus,
-  RECOMMENDED_OLLAMA_MODELS
+  RECOMMENDED_OLLAMA_MODELS,
+  OllamaInspectionLog,
 } from '../../../engine/kinetic/ollamaClassifier';
 import { DecodedMedia, ExtractedFrame } from '../../../types/media';
 import { OledCanvas } from '../../OledCanvas';
 import { GlassSurface } from '../../reactbits/GlassSurface';
 import { ThemeSwitch } from './ThemeSwitch';
+import { OllamaInspectorModal } from './OllamaInspectorModal';
 
 interface LyricsStudioViewProps {
   onClose: () => void;
@@ -94,6 +96,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const [selectedOllamaModel, setSelectedOllamaModel] = useState<string>('qwen2.5:3b');
   const [isAnalyzingOllama, setIsAnalyzingOllama] = useState<boolean>(false);
   const [ollamaProgress, setOllamaProgress] = useState<{ percent: number; message: string } | null>(null);
+  const [showOllamaInspector, setShowOllamaInspector] = useState<boolean>(false);
+  const [ollamaInspectionLogs, setOllamaInspectionLogs] = useState<OllamaInspectionLog[]>([]);
 
   // Check Ollama status when user toggles to Ollama mode
   useEffect(() => {
@@ -122,6 +126,9 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           artist: parsedLyrics.artist,
           onProgress: (percent, message) => {
             setOllamaProgress({ percent, message });
+          },
+          onInspectionLog: (log) => {
+            setOllamaInspectionLogs(prev => [log, ...prev]);
           },
         }
       );
@@ -1621,13 +1628,38 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                                 />
                               </div>
                             )}
+
+                            <button
+                              type="button"
+                              onClick={() => setShowOllamaInspector(true)}
+                              className={`w-full py-1.5 px-2.5 text-[11px] font-sans font-medium rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
+                                themeMode === 'dark' 
+                                  ? 'border-white/10 hover:bg-white/5 text-white/80' 
+                                  : 'border-[#E8E5DE] hover:bg-[#F2EFE9] text-[#5E5D59]'
+                              }`}
+                            >
+                              <Terminal className="w-3.5 h-3.5 text-[#D97757]" />
+                              <span>Inspect Prompts & Responses {ollamaInspectionLogs.length > 0 ? `(${ollamaInspectionLogs.length})` : ''}</span>
+                            </button>
                           </>
                         ) : (
-                          <div className="text-[11px] font-sans flex flex-col gap-1 leading-relaxed border-t border-[#E8E5DE] dark:border-white/10 pt-2 text-[#5E5D59] dark:text-white/60">
+                          <div className="text-[11px] font-sans flex flex-col gap-2 leading-relaxed border-t border-[#E8E5DE] dark:border-white/10 pt-2 text-[#5E5D59] dark:text-white/60">
                             <span className="font-medium text-[#D97757]">Run Local Ollama on your GTX 1650:</span>
                             <span>1. In PowerShell: <code className="bg-black/5 dark:bg-white/10 px-1 py-0.5 rounded text-[10px]">winget install Ollama.Ollama</code></span>
                             <span>2. Launch model: <code className="bg-black/5 dark:bg-white/10 px-1 py-0.5 rounded text-[10px]">ollama run qwen2.5:3b</code> (Fits 2 GB VRAM)</span>
                             <span className="opacity-70 italic text-[10px] mt-0.5">Falls back to Fast Heuristic mode until connected.</span>
+                            <button
+                              type="button"
+                              onClick={() => setShowOllamaInspector(true)}
+                              className={`w-full py-1.5 px-2 text-[11px] font-sans font-medium rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1.5 mt-1 shadow-xs ${
+                                themeMode === 'dark' 
+                                  ? 'border-white/10 hover:bg-white/5 text-white/80' 
+                                  : 'border-[#E8E5DE] hover:bg-[#F2EFE9] text-[#5E5D59]'
+                              }`}
+                            >
+                              <Terminal className="w-3.5 h-3.5 text-[#D97757]" />
+                              <span>Open Prompt Inspector & Test Sandbox</span>
+                            </button>
                           </div>
                         )}
                       </div>
@@ -1854,6 +1886,16 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Ollama LLM Telemetry & Test Inspector Modal */}
+      <OllamaInspectorModal
+        isOpen={showOllamaInspector}
+        onClose={() => setShowOllamaInspector(false)}
+        themeMode={themeMode}
+        selectedModel={selectedOllamaModel}
+        isOnline={Boolean(ollamaStatus?.online)}
+        sessionLogs={ollamaInspectionLogs}
+      />
     </div>
   );
 };
