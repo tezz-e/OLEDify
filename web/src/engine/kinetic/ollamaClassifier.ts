@@ -24,52 +24,54 @@ export const RECOMMENDED_OLLAMA_MODELS = [
 ];
 
 const DEFAULT_ENDPOINT = 'http://localhost:11434';
+export let resolvedOllamaEndpoint = DEFAULT_ENDPOINT;
 
 /**
  * Checks connectivity to local Ollama service and enumerates installed models.
+ * Tries direct port 11434 first, then falls back to /ollama-proxy to bypass any CORS restrictions.
  */
 export async function checkOllamaHealth(endpoint: string = DEFAULT_ENDPOINT): Promise<OllamaHealthStatus> {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 2000);
+  const endpointsToTry = endpoint === DEFAULT_ENDPOINT ? [DEFAULT_ENDPOINT, '/ollama-proxy'] : [endpoint];
 
-    const [verRes, tagsRes] = await Promise.all([
-      fetch(`${endpoint}/api/version`, { signal: controller.signal }).catch(() => null),
-      fetch(`${endpoint}/api/tags`, { signal: controller.signal }).catch(() => null),
-    ]);
-    clearTimeout(timeout);
+  for (const ep of endpointsToTry) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 2000);
 
-    if (!tagsRes || !tagsRes.ok) {
-      return {
-        online: false,
-        models: [],
-        recommendedModel: 'qwen2.5:3b',
-        error: 'Ollama is offline or unreachable on http://localhost:11434',
-      };
+      const [verRes, tagsRes] = await Promise.all([
+        fetch(`${ep}/api/version`, { signal: controller.signal }).catch(() => null),
+        fetch(`${ep}/api/tags`, { signal: controller.signal }).catch(() => null),
+      ]);
+      clearTimeout(timeout);
+
+      if (tagsRes && tagsRes.ok) {
+        resolvedOllamaEndpoint = ep;
+        const tagsData = await tagsRes.json();
+        const verData = verRes && verRes.ok ? await verRes.json() : { version: 'unknown' };
+
+        const installedModels: string[] = (tagsData.models || []).map((m: any) => m.name || m.model);
+        const recommended = installedModels.find(m => RECOMMENDED_OLLAMA_MODELS.some(r => m.startsWith(r.split(':')[0]))) 
+          || installedModels[0] 
+          || 'qwen2.5:3b';
+
+        return {
+          online: true,
+          version: verData.version,
+          models: installedModels,
+          recommendedModel: recommended,
+        };
+      }
+    } catch {
+      // Continue to next endpoint
     }
-
-    const tagsData = await tagsRes.json();
-    const verData = verRes && verRes.ok ? await verRes.json() : { version: 'unknown' };
-
-    const installedModels: string[] = (tagsData.models || []).map((m: any) => m.name || m.model);
-    const recommended = installedModels.find(m => RECOMMENDED_OLLAMA_MODELS.some(r => m.startsWith(r.split(':')[0]))) 
-      || installedModels[0] 
-      || 'qwen2.5:3b';
-
-    return {
-      online: true,
-      version: verData.version,
-      models: installedModels,
-      recommendedModel: recommended,
-    };
-  } catch (err: any) {
-    return {
-      online: false,
-      models: [],
-      recommendedModel: 'qwen2.5:3b',
-      error: err.name === 'AbortError' ? 'Ollama connection timed out' : err.message,
-    };
   }
+
+  return {
+    online: false,
+    models: [],
+    recommendedModel: 'qwen2.5:3b',
+    error: 'Ollama is offline or unreachable on http://localhost:11434',
+  };
 }
 
 /**
@@ -85,7 +87,7 @@ export async function classifyLyricsWithOllama(
     onProgress?: (percent: number, message: string) => void;
   } = {}
 ): Promise<Record<string, MotionArchetype>> {
-  const endpoint = options.endpoint || DEFAULT_ENDPOINT;
+  const endpoint = options.endpoint || resolvedOllamaEndpoint || DEFAULT_ENDPOINT;
   const model = options.model || 'qwen2.5:3b';
   const archetypeOverrides: Record<string, MotionArchetype> = {};
 
