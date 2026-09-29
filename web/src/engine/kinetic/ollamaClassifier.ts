@@ -107,6 +107,135 @@ export const VALID_MOTION_ARCHETYPES: MotionArchetype[] = [
 ];
 
 /**
+ * Normalizes loose or fuzzy archetype strings returned by smaller LLMs.
+ */
+export function normalizeArchetype(
+  raw: string,
+  valid: MotionArchetype[] = VALID_MOTION_ARCHETYPES
+): MotionArchetype | null {
+  if (!raw || typeof raw !== 'string') return null;
+  const clean = raw.toLowerCase().replace(/[-\s]/g, '_').trim();
+  if (valid.includes(clean as MotionArchetype)) return clean as MotionArchetype;
+
+  // Fuzzy keyword matching
+  if (clean.includes('manga') || clean.includes('impact') || clean.includes('punch') || clean.includes('boom')) return 'manga_impact';
+  if (clean.includes('glitch') || clean.includes('cyber') || clean.includes('static') || clean.includes('electric')) return 'cyber_glitch';
+  if (clean.includes('block') || clean.includes('3d') || clean.includes('stack') || clean.includes('cube')) return '3d_block_stack';
+  if (clean.includes('blade') || clean.includes('slash') || clean.includes('razor') || clean.includes('knife') || clean.includes('cut') || clean.includes('sword') || clean.includes('shashtar')) return 'blade_slash';
+  if (clean.includes('target') || clean.includes('focus') || clean.includes('aim') || clean.includes('eye')) return 'target_focus';
+  if (clean.includes('snake') || clean.includes('slither') || clean.includes('venom') || clean.includes('poison') || clean.includes('crawl')) return 'snake_slither';
+  if (clean.includes('echo') || clean.includes('chant') || clean.includes('reverb') || clean.includes('vocal')) return 'echo_stack';
+  if (clean.includes('badge') || clean.includes('invert') || clean.includes('stamp') || clean.includes('rule') || clean.includes('stop')) return 'inverted_badge';
+  if (clean.includes('fluid') || clean.includes('smooth') || clean.includes('float') || clean.includes('glide')) return 'smooth_fluid';
+  if (clean.includes('boil') || clean.includes('wiggly') || clean.includes('shake') || clean.includes('jitter') || clean.includes('chaos')) return 'wiggly_boil';
+
+  return null;
+}
+
+/**
+ * Resilient multi-strategy extractor that recovers classifications from:
+ * 1. Valid JSON arrays { classifications: [...] }
+ * 2. Key-value JSON maps { "word": "archetype" }
+ * 3. Truncated JSON streams (recovers all completed objects via regex)
+ */
+export function extractClassificationsFromResponse(
+  rawResponse: string,
+  validArchetypes: MotionArchetype[] = VALID_MOTION_ARCHETYPES
+): Array<{ word: string; startMs?: number; archetype: MotionArchetype }> {
+  const results: Array<{ word: string; startMs?: number; archetype: MotionArchetype }> = [];
+  if (!rawResponse || typeof rawResponse !== 'string') return results;
+
+  let cleaned = rawResponse.trim();
+  // Strip markdown codeblocks if model enclosed output in ```json ... ```
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+  }
+
+  // Strategy 1: Strict JSON Parse
+  try {
+    const parsed = JSON.parse(cleaned);
+
+    const list = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray(parsed.classifications)
+      ? parsed.classifications
+      : Array.isArray(parsed.words)
+      ? parsed.words
+      : null;
+
+    if (list) {
+      for (const item of list) {
+        if (!item) continue;
+        const word = (item.word || item.text || item.token || '').trim();
+        const rawArch = (item.archetype || item.style || item.motion || '').toString();
+        const arch = normalizeArchetype(rawArch, validArchetypes);
+        if (word && arch) {
+          results.push({
+            word,
+            startMs: typeof item.startMs === 'number' ? item.startMs : undefined,
+            archetype: arch,
+          });
+        }
+      }
+    } else if (typeof parsed === 'object' && parsed !== null) {
+      // Key-value map: { "word": "archetype" }
+      for (const [key, val] of Object.entries(parsed)) {
+        if (['classifications', 'words', 'analysis', 'notes'].includes(key.toLowerCase())) continue;
+        if (typeof val === 'string') {
+          const arch = normalizeArchetype(val, validArchetypes);
+          if (arch) results.push({ word: key.trim(), archetype: arch });
+        } else if (typeof val === 'object' && val !== null && 'archetype' in val) {
+          const arch = normalizeArchetype((val as any).archetype, validArchetypes);
+          if (arch) results.push({ word: key.trim(), archetype: arch });
+        }
+      }
+    }
+
+    if (results.length > 0) return results;
+  } catch {
+    // Truncated or malformed JSON — proceed to regex extraction
+  }
+
+  // Strategy 2: Robust Regex Extraction for truncated JSON arrays
+  const objectRegex = /"word"\s*:\s*"([^"]+)"[\s\S]*?"archetype"\s*:\s*"([a-zA-Z0-9_\-\s]+)"/gi;
+  let match: RegExpExecArray | null;
+  while ((match = objectRegex.exec(cleaned)) !== null) {
+    const word = match[1].trim();
+    const arch = normalizeArchetype(match[2], validArchetypes);
+    if (word && arch) {
+      results.push({ word, archetype: arch });
+    }
+  }
+
+  // Strategy 3: Inverted key order ("archetype" before "word")
+  if (results.length === 0) {
+    const invertedRegex = /"archetype"\s*:\s*"([a-zA-Z0-9_\-\s]+)"[\s\S]*?"word"\s*:\s*"([^"]+)"/gi;
+    while ((match = invertedRegex.exec(cleaned)) !== null) {
+      const arch = normalizeArchetype(match[1], validArchetypes);
+      const word = match[2].trim();
+      if (word && arch) {
+        results.push({ word, archetype: arch });
+      }
+    }
+  }
+
+  // Strategy 4: Dictionary key-values: "word": "manga_impact"
+  if (results.length === 0) {
+    const kvRegex = /"([^"\n\r:]+)"\s*:\s*"([a-zA-Z0-9_\-\s]+)"/gi;
+    while ((match = kvRegex.exec(cleaned)) !== null) {
+      const key = match[1].trim();
+      if (['classifications', 'word', 'archetype', 'style', 'text'].includes(key.toLowerCase())) continue;
+      const arch = normalizeArchetype(match[2], validArchetypes);
+      if (key && arch) {
+        results.push({ word: key, archetype: arch });
+      }
+    }
+  }
+
+  return results;
+}
+
+/**
  * Builds the exact prompt sent to Ollama for a given list of lyric lines.
  */
 export function buildOllamaLyricsPrompt(
@@ -115,8 +244,7 @@ export function buildOllamaLyricsPrompt(
   artist: string = 'Unknown'
 ): string {
   const formattedLines = lines.map((l: LyricLine, i: number) => {
-    const wordsList = l.words.map((w: LyricWord) => `"${w.word}" (${w.startMs}ms)`).join(', ');
-    return `Line ${i + 1}: "${l.text}" | Words: [${wordsList}]`;
+    return `Line ${i + 1}: "${l.text}"`;
   }).join('\n');
 
   return `You are a creative motion design typography director for high-energy 1-bit OLED kinetic lyrics.
@@ -125,22 +253,22 @@ Song Context: "${songTitle}" by ${artist}.
 Analyze the emotions, intensity, and rhythm of these lines:
 ${formattedLines}
 
-Choose the single best visual archetype for each key word from these 10 styles:
-- "manga_impact": Explosive punches, violent hits, sudden loud shouts, beat drops
-- "cyber_glitch": High-tech speed, rapid flows, digital panic, lightning, urgency
-- "3d_block_stack": Royalty, power, anthems, pride, heavy boss energy, solid blocks
-- "target_focus": Eye contact, pointing, questions ("who", "you", "why"), aiming
-- "blade_slash": Sharp slicing, cut, edge, danger, razor blades, conflict
-- "snake_slither": Sinister, poison, dark crawl, toxic, venom, eerie mystery
-- "echo_stack": Prolonged vocal notes, chants, reverberating shouting, infinite space
-- "inverted_badge": Declarations, "NO", stops, rules, verification stamps, warnings
-- "smooth_fluid": Floating, love, breeze, calm sky/water, romantic drift, gentle
-- "wiggly_boil": Wild dancing, boiling jitter, chaos, fun, quirky shaking
+Choose the single best visual archetype for each key impactful word from these 10 styles:
+- "manga_impact": explosive hits, punches, loud shouts, beat drops
+- "cyber_glitch": high-tech speed, rapid flows, digital panic, lightning
+- "3d_block_stack": royalty, power, anthems, pride, heavy boss energy, solid blocks
+- "target_focus": eye contact, pointing, questions ("who", "you", "why"), aiming
+- "blade_slash": sharp slicing, weapons, danger, razor blades, conflict
+- "snake_slither": sinister, poison, dark crawl, toxic, venom, eerie mystery
+- "echo_stack": prolonged vocal notes, chants, reverberating shouting
+- "inverted_badge": declarations, "NO", stops, rules, verification stamps, warnings
+- "smooth_fluid": floating, love, breeze, calm sky/water, romantic drift, gentle
+- "wiggly_boil": wild dancing, boiling jitter, chaos, fun, quirky shaking
 
 Output JSON strictly matching this format:
 {
   "classifications": [
-    { "word": "example", "startMs": 1200, "archetype": "manga_impact" }
+    { "word": "example", "archetype": "manga_impact" }
   ]
 }`;
 }
@@ -160,7 +288,7 @@ export async function classifyLyricsWithOllama(
   } = {}
 ): Promise<Record<string, MotionArchetype>> {
   const endpoint = options.endpoint || resolvedOllamaEndpoint || DEFAULT_ENDPOINT;
-  const model = options.model || 'qwen2.5:3b';
+  const model = options.model || 'qwen2.5:1.5b';
   const archetypeOverrides: Record<string, MotionArchetype> = {};
 
   // Batch lines into stanzas of up to 4 lines for optimal context window & throughput
@@ -208,8 +336,8 @@ export async function classifyLyricsWithOllama(
           format: 'json',
           stream: false,
           options: {
-            temperature: 0.2,
-            num_predict: 512,
+            temperature: 0.1,
+            num_predict: 1024,
           },
         }),
       });
@@ -232,18 +360,28 @@ export async function classifyLyricsWithOllama(
         logEntry.tokensPerSecond = Math.round((data.eval_count / (data.eval_duration / 1e9)) * 10) / 10;
       }
 
-      const parsed = JSON.parse(data.response);
+      const extracted = extractClassificationsFromResponse(data.response, VALID_MOTION_ARCHETYPES);
 
-      if (parsed && Array.isArray(parsed.classifications)) {
-        for (const item of parsed.classifications) {
-          if (item && item.word && VALID_MOTION_ARCHETYPES.includes(item.archetype)) {
-            const key = `${item.word}_${item.startMs}`;
-            archetypeOverrides[key] = item.archetype;
-            logEntry.parsedClassifications.push({
-              word: item.word,
-              startMs: item.startMs,
-              archetype: item.archetype,
-            });
+      for (const item of extracted) {
+        logEntry.parsedClassifications.push({
+          word: item.word,
+          startMs: item.startMs ?? 0,
+          archetype: item.archetype,
+        });
+
+        // Clean target string
+        const cleanTarget = item.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (!cleanTarget) continue;
+
+        // Apply to any matching words in the batch lines
+        for (const line of batchLines) {
+          for (const w of line.words) {
+            const cleanWord = w.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (cleanWord === cleanTarget || (cleanTarget.length > 3 && cleanTarget.includes(cleanWord))) {
+              const specificKey = `${w.word}_${w.startMs}`;
+              archetypeOverrides[specificKey] = item.archetype;
+              archetypeOverrides[cleanWord] = item.archetype;
+            }
           }
         }
       }
@@ -332,8 +470,8 @@ export async function testSinglePromptWithOllama(
         format: 'json',
         stream: false,
         options: {
-          temperature: 0.2,
-          num_predict: 512,
+          temperature: 0.1,
+          num_predict: 1024,
         },
       }),
     });
@@ -354,17 +492,25 @@ export async function testSinglePromptWithOllama(
       logEntry.tokensPerSecond = Math.round((data.eval_count / (data.eval_duration / 1e9)) * 10) / 10;
     }
 
-    const parsed = JSON.parse(data.response);
-    if (parsed && Array.isArray(parsed.classifications)) {
-      for (const item of parsed.classifications) {
-        if (item && item.word && VALID_MOTION_ARCHETYPES.includes(item.archetype)) {
-          logEntry.parsedClassifications.push({
-            word: item.word,
-            startMs: item.startMs,
-            archetype: item.archetype,
-          });
+    const extracted = extractClassificationsFromResponse(data.response, VALID_MOTION_ARCHETYPES);
+    for (const item of extracted) {
+      // Find timestamp from synthetic lines if not provided
+      let sMs = item.startMs;
+      if (sMs === undefined) {
+        const cleanT = item.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+        for (const line of syntheticLines) {
+          const matchW = line.words.find(w => w.word.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanT);
+          if (matchW) {
+            sMs = matchW.startMs;
+            break;
+          }
         }
       }
+      logEntry.parsedClassifications.push({
+        word: item.word,
+        startMs: sMs ?? 0,
+        archetype: item.archetype,
+      });
     }
 
     return logEntry;

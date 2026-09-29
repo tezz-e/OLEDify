@@ -84,7 +84,7 @@ export const OllamaInspectorModal: React.FC<OllamaInspectorModalProps> = ({
         artist,
       });
       setActiveTestResult(res);
-      setViewSubTab('parsed');
+      setViewSubTab(res.parsedClassifications.length > 0 ? 'parsed' : 'raw');
     } finally {
       setIsTesting(false);
     }
@@ -344,6 +344,13 @@ const ARCHETYPE_COLORS: Record<MotionArchetype, string> = {
                         </p>
                       </div>
                     </div>
+
+                    {activeTestResult.parsedClassifications.length === 0 && (
+                      <div className="flex items-center gap-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <span>No archetypes could be parsed from output. Showing <strong>Raw LLM Output</strong> below for debugging.</span>
+                      </div>
+                    )}
 
                     {/* Sub-Tabs: Parsed Archetypes | Exact Prompt | Raw JSON */}
                     <div className="flex items-center justify-between">
