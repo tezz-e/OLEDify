@@ -64,7 +64,31 @@ export async function analyzeAudioFile(
   
   let audioBuffer: AudioBuffer;
   try {
-    audioBuffer = await audioCtx.decodeAudioData(arrayBuffer.slice(0));
+    audioBuffer = await new Promise<AudioBuffer>((resolve, reject) => {
+      const copy = arrayBuffer.slice(0);
+      let settled = false;
+      const onDecoded = (buf: AudioBuffer) => {
+        if (!settled) {
+          settled = true;
+          resolve(buf);
+        }
+      };
+      const onError = (err: unknown) => {
+        if (!settled) {
+          settled = true;
+          reject(err instanceof Error ? err : new Error('Audio decoding failed'));
+        }
+      };
+
+      try {
+        const promise = audioCtx.decodeAudioData(copy, onDecoded, onError);
+        if (promise && typeof promise.then === 'function') {
+          promise.then(onDecoded).catch(onError);
+        }
+      } catch (err) {
+        onError(err);
+      }
+    });
   } finally {
     audioCtx.close().catch(() => {});
   }
@@ -284,26 +308,47 @@ export async function analyzeAudioFile(
 
   // Lookup helper
   const getFrameAtTime = (timeMs: number): AudioFrameData => {
-    if (frames.length === 0) {
+    if (frames.length === 0 || timeMs < 0 || timeMs > durationMs) {
       return { timeMs, rms: 0, bass: 0, flux: 0, isBeat: false, onsetStrength: 0 };
     }
     const idx = Math.max(0, Math.min(frames.length - 1, Math.round((timeMs / 1000) * fps)));
     return frames[idx];
   };
 
-  // Beat snapping helper
+  // Beat snapping helper (O(log N) binary search)
   const snapToNearestBeat = (timeMs: number, maxToleranceMs = 160): number => {
     if (beatsMs.length === 0) return timeMs;
+
+    let low = 0;
+    let high = beatsMs.length - 1;
+
+    while (low <= high) {
+      const mid = (low + high) >> 1;
+      const b = beatsMs[mid];
+      if (b === timeMs) return timeMs;
+      if (b < timeMs) {
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+
     let closest = timeMs;
     let minDiff = Infinity;
 
-    for (const b of beatsMs) {
-      const diff = Math.abs(b - timeMs);
+    if (high >= 0) {
+      const diff = Math.abs(beatsMs[high] - timeMs);
       if (diff < minDiff) {
         minDiff = diff;
-        closest = b;
+        closest = beatsMs[high];
       }
-      if (b > timeMs + maxToleranceMs) break;
+    }
+    if (low < beatsMs.length) {
+      const diff = Math.abs(beatsMs[low] - timeMs);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closest = beatsMs[low];
+      }
     }
 
     return minDiff <= maxToleranceMs ? closest : timeMs;

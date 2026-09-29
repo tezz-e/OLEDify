@@ -16,3 +16,6 @@ src/previews/
 *.mp4
 *.mov
 *.avi
+
+# Personal Experiments & Test Builds
+experiments/

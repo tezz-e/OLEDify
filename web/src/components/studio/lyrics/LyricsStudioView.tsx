@@ -195,15 +195,24 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
   const [snapFeedback, setSnapFeedback] = useState(false);
   const [isDraggingAudio, setIsDraggingAudio] = useState(false);
-  const [, setWaveformResizeTick] = useState(0);
+  const [audioAnalysisError, setAudioAnalysisError] = useState<string | null>(null);
+  const [waveformResizeTick, setWaveformResizeTick] = useState(0);
   const waveformCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const localAudioUrlRef = useRef<string | null>(null);
+
+  // Clean up object URLs on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (localAudioUrlRef.current) {
+        URL.revokeObjectURL(localAudioUrlRef.current);
+      }
+    };
+  }, []);
 
   // Handle local audio file processing & analysis
   const handleAudioFile = async (file: File) => {
     try {
-      const url = URL.createObjectURL(file);
-      setLocalAudioUrl(url);
-      setAudioFileName(file.name);
+      setAudioAnalysisError(null);
       setIsAnalyzingAudio(true);
       setAudioAnalysisStatus('Reading audio file (10%)...');
 
@@ -211,19 +220,38 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         setAudioAnalysisStatus(`${status} (${percent}%)`);
       });
 
+      // Revoke previous audio URL before allocating new one
+      if (localAudioUrlRef.current) {
+        URL.revokeObjectURL(localAudioUrlRef.current);
+      }
+      const url = URL.createObjectURL(file);
+      localAudioUrlRef.current = url;
+      setLocalAudioUrl(url);
+      setAudioFileName(file.name);
       setAudioAnalysis(result);
       setAudioAnalysisStatus('');
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Audio analysis failed:', err);
-      setAudioAnalysisStatus('Failed to analyze audio file');
+      const errMsg = err instanceof Error ? err.message : 'Failed to analyze audio file. Unsupported or corrupt format.';
+      setAudioAnalysisError(errMsg);
+      setAudioAnalysisStatus(errMsg);
     } finally {
       setIsAnalyzingAudio(false);
     }
   };
 
   // Handle local audio file drop or file input select
-  const handleAudioDrop = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleAudioDrop = (e: React.ChangeEvent<HTMLInputElement> | React.DragEvent) => {
+    let file: File | undefined;
+    if ('dataTransfer' in e) {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDraggingAudio(false);
+      file = e.dataTransfer.files?.[0];
+    } else if ('target' in e && e.target.files) {
+      file = e.target.files[0];
+      e.target.value = '';
+    }
     if (file) {
       handleAudioFile(file);
     }
@@ -243,13 +271,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   };
 
   const handleAudioFileDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingAudio(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file && (file.type.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(file.name))) {
-      handleAudioFile(file);
-    }
+    handleAudioDrop(e);
   };
 
   // Magnetically align lyric lines and individual word timestamps to nearest detected drum onsets
@@ -257,18 +279,45 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     if (!audioAnalysis) return;
 
     setParsedLyrics(prev => {
-      const updatedLines = prev.lines.map(line => {
-        const snappedLineStart = audioAnalysis.snapToNearestBeat(line.startMs);
-        const snappedLineEnd = audioAnalysis.snapToNearestBeat(line.endMs);
+      let lastLineEnd = 0;
+      const updatedLines = prev.lines.map((line, lIdx) => {
+        let snappedLineStart = audioAnalysis.snapToNearestBeat(line.startMs);
+        let snappedLineEnd = audioAnalysis.snapToNearestBeat(line.endMs);
+
+        // Ensure lines remain strictly ordered and non-overlapping
+        if (lIdx > 0 && snappedLineStart < lastLineEnd) {
+          snappedLineStart = Math.max(snappedLineStart, lastLineEnd);
+        }
+
         const finalLineStart = Math.min(snappedLineStart, snappedLineEnd - 100);
         const finalLineEnd = Math.max(snappedLineEnd, finalLineStart + 100);
+        lastLineEnd = finalLineEnd;
 
-        const updatedWords = line.words.map(w => {
+        let wordPrevEnd = finalLineStart;
+        const wordsCount = line.words.length;
+
+        const updatedWords = line.words.map((w, wIdx) => {
           let s = audioAnalysis.snapToNearestBeat(w.startMs);
           let e = audioAnalysis.snapToNearestBeat(w.endMs);
+
+          // Guarantee first word starts with line, last word terminates with line
+          if (wIdx === 0) {
+            s = finalLineStart;
+          } else {
+            s = Math.max(wordPrevEnd, Math.min(finalLineEnd - 60, s));
+          }
+
+          if (wIdx === wordsCount - 1) {
+            e = finalLineEnd;
+          } else {
+            e = Math.max(s + 60, Math.min(finalLineEnd, e));
+          }
+
           if (e <= s) {
             e = s + Math.max(60, w.endMs - w.startMs);
           }
+
+          wordPrevEnd = e;
           return {
             ...w,
             startMs: s,
@@ -442,11 +491,25 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     }
   }, [playheadMs, rangeStartMs]);
 
-  // Window resize listener to keep waveform canvas sharp
+  // Clamp playhead if lyric range changes
   useEffect(() => {
-    const handleResize = () => setWaveformResizeTick(t => t + 1);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    if (playheadMs < rangeStartMs || playheadMs > rangeEndMs) {
+      setPlayheadMs(rangeStartMs);
+      if (audioRef.current) {
+        audioRef.current.currentTime = rangeStartMs / 1000;
+      }
+    }
+  }, [rangeStartMs, rangeEndMs]);
+
+  // Canvas resize observer to keep waveform sharp on any layout or window size change
+  useEffect(() => {
+    const canvas = waveformCanvasRef.current;
+    if (!canvas) return;
+    const observer = new ResizeObserver(() => {
+      setWaveformResizeTick(t => t + 1);
+    });
+    observer.observe(canvas);
+    return () => observer.disconnect();
   }, []);
 
   // Redraw audio scrubber waveform and beat markers
@@ -497,11 +560,14 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         const barTimeMs = rangeStartMs + barRatio * rangeDuration;
         const barX = barRatio * width;
 
-        const wfIdx = Math.max(0, Math.min(waveform.length - 1, Math.floor((barTimeMs / totalAudioDuration) * waveform.length)));
-        const point = waveform[wfIdx] || { min: 0, max: 0 };
-        const amplitude = Math.max(0.08, Math.min(1, Math.max(Math.abs(point.min), Math.abs(point.max))));
+        let amplitude = 0.04;
+        if (barTimeMs >= 0 && barTimeMs <= totalAudioDuration) {
+          const wfIdx = Math.max(0, Math.min(waveform.length - 1, Math.floor((barTimeMs / totalAudioDuration) * waveform.length)));
+          const point = waveform[wfIdx] || { min: 0, max: 0 };
+          amplitude = Math.max(0.08, Math.min(1, Math.max(Math.abs(point.min), Math.abs(point.max))));
+        }
 
-        const barHeight = Math.max(4, amplitude * (height - 8));
+        const barHeight = Math.max(3, amplitude * (height - 8));
         const barY = (height - barHeight) / 2;
 
         const isPlayed = barX <= playheadX;
@@ -521,19 +587,36 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         }
       }
 
-      // Render Beat Onset Marker Ticks
+      // Render Beat Onset Marker Ticks with high contrast
       if (audioAnalysis.beatsMs && audioAnalysis.beatsMs.length > 0) {
         for (const beatMs of audioAnalysis.beatsMs) {
           if (beatMs >= rangeStartMs && beatMs <= rangeEndMs) {
             const beatX = ((beatMs - rangeStartMs) / rangeDuration) * width;
-            const isNearPlayhead = Math.abs(beatX - playheadX) < 4;
+            const isNearPlayhead = Math.abs(beatX - playheadX) < 5;
+            const isPlayed = beatX <= playheadX;
 
-            ctx.fillStyle = isNearPlayhead
-              ? '#D97757'
-              : (themeMode === 'dark' ? 'rgba(217, 119, 87, 0.65)' : 'rgba(217, 119, 87, 0.5)');
-            ctx.beginPath();
-            ctx.arc(beatX, height - 3, 1.5, 0, Math.PI * 2);
-            ctx.fill();
+            if (isNearPlayhead) {
+              // Active hit: prominent gold/amber flash
+              ctx.fillStyle = '#FFE58F';
+              ctx.beginPath();
+              ctx.arc(beatX, height / 2, 3.5, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.strokeStyle = '#D97757';
+              ctx.lineWidth = 1.5;
+              ctx.stroke();
+            } else if (isPlayed) {
+              // High-contrast clean white dot against terracotta played bars
+              ctx.fillStyle = '#FFFFFF';
+              ctx.beginPath();
+              ctx.arc(beatX, height - 3.5, 1.8, 0, Math.PI * 2);
+              ctx.fill();
+            } else {
+              // Terracotta onset tick on unplayed track
+              ctx.fillStyle = themeMode === 'dark' ? 'rgba(217, 119, 87, 0.85)' : 'rgba(217, 119, 87, 0.7)';
+              ctx.beginPath();
+              ctx.arc(beatX, height - 3.5, 1.8, 0, Math.PI * 2);
+              ctx.fill();
+            }
           }
         }
       }
@@ -574,13 +657,18 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     ctx.stroke();
 
     ctx.restore();
-  }, [audioAnalysis, rangeStartMs, rangeEndMs, playheadMs, themeMode]);
+  }, [audioAnalysis, rangeStartMs, rangeEndMs, playheadMs, themeMode, waveformResizeTick]);
 
   // Toggle audio playback
   const togglePlay = () => {
     if (!isPlaying) {
+      let startFromMs = playheadMs;
+      if (startFromMs >= rangeEndMs - 50) {
+        startFromMs = rangeStartMs;
+        setPlayheadMs(rangeStartMs);
+      }
       if (audioRef.current) {
-        audioRef.current.currentTime = playheadMs / 1000;
+        audioRef.current.currentTime = startFromMs / 1000;
         audioRef.current.play().catch(() => {});
       }
       setIsPlaying(true);
@@ -606,9 +694,10 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         if (audioRef.current && !audioRef.current.paused) {
           next = audioRef.current.currentTime * 1000;
         }
-        if (next > rangeEndMs) {
+        if (next >= rangeEndMs) {
           if (audioRef.current) {
             audioRef.current.currentTime = rangeStartMs / 1000;
+            audioRef.current.play().catch(() => {});
           }
           return rangeStartMs;
         }
@@ -983,6 +1072,11 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     <p className={`text-[11px] font-sans ${themeMode === 'dark' ? 'text-white/50' : 'text-[#5E5D59]'}`}>
                       Enables 0-latency audio scrubbing, live beat sync and waveform preview
                     </p>
+                    {audioAnalysisError && (
+                      <div className="px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-500 text-[11px] font-sans text-center max-w-xs">
+                        {audioAnalysisError}
+                      </div>
+                    )}
                     <label className="mt-1 px-3 py-1.5 rounded-lg bg-[#D97757] hover:bg-[#C66545] text-white text-xs font-sans font-medium cursor-pointer transition-colors shadow-xs">
                       Choose Audio File
                       <input
@@ -1245,7 +1339,16 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
           {/* Hidden Audio Player for drop sync */}
           {localAudioUrl && (
-            <audio ref={audioRef} src={localAudioUrl} />
+            <audio
+              ref={audioRef}
+              src={localAudioUrl}
+              onEnded={() => {
+                if (audioRef.current) {
+                  audioRef.current.currentTime = rangeStartMs / 1000;
+                  audioRef.current.play().catch(() => {});
+                }
+              }}
+            />
           )}
 
           {/* Minimalist Bottom Audio Scrub Bar */}
