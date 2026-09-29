@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, Music, FileText, Upload, Play, Pause, ArrowLeft, Sparkles, Check, RefreshCw, X, RotateCcw, ChevronUp, ChevronDown, CheckCheck, Bot, Cpu } from 'lucide-react';
+import { Search, Music, FileText, Upload, Play, Pause, ArrowLeft, Sparkles, Check, RefreshCw, X, RotateCcw, ChevronUp, ChevronDown, CheckCheck, Bot, Cpu, Activity, Zap, Volume2 } from 'lucide-react';
 import { searchLrclib, getLrclibExact, searchLyricsOvhFallback } from '../../../engine/lyrics/lrclibClient';
 import { parseLrc, parsePlainTextLyrics } from '../../../engine/lyrics/lrcParser';
 import { LrclibTrack, ParsedLyrics, LyricLine, LyricWord } from '../../../engine/lyrics/types';
 import { MotionArchetype, ARCHETYPE_METADATA } from '../../../engine/kinetic/types';
 import { renderKineticSequence } from '../../../engine/kinetic/kineticEngine';
 import { getWordEffectiveArchetype } from '../../../engine/kinetic/semanticClassifier';
+import { analyzeAudioFile, AudioAnalysisResult } from '../../../engine/kinetic/audioAnalysisEngine';
 import {
   checkOllamaHealth,
   classifyLyricsWithOllama,
@@ -72,6 +73,10 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [playheadMs, setPlayheadMs] = useState(0);
   const [localAudioUrl, setLocalAudioUrl] = useState<string | null>(null);
+  const [audioFileName, setAudioFileName] = useState<string | null>(null);
+  const [audioAnalysis, setAudioAnalysis] = useState<AudioAnalysisResult | null>(null);
+  const [isAnalyzingAudio, setIsAnalyzingAudio] = useState(false);
+  const [audioAnalysisStatus, setAudioAnalysisStatus] = useState<string>('');
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // --- KINETIC STYLE CONFIG ---
@@ -188,14 +193,123 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     setPlayheadMs(parsed.lines[0]?.startMs || 0);
   };
 
-  // Handle local audio file drop
+  const [snapFeedback, setSnapFeedback] = useState(false);
+  const [isDraggingAudio, setIsDraggingAudio] = useState(false);
+  const [, setWaveformResizeTick] = useState(0);
+  const waveformCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // Handle local audio file processing & analysis
+  const handleAudioFile = async (file: File) => {
+    try {
+      const url = URL.createObjectURL(file);
+      setLocalAudioUrl(url);
+      setAudioFileName(file.name);
+      setIsAnalyzingAudio(true);
+      setAudioAnalysisStatus('Reading audio file (10%)...');
+
+      const result = await analyzeAudioFile(file, (percent, status) => {
+        setAudioAnalysisStatus(`${status} (${percent}%)`);
+      });
+
+      setAudioAnalysis(result);
+      setAudioAnalysisStatus('');
+    } catch (err) {
+      console.error('Audio analysis failed:', err);
+      setAudioAnalysisStatus('Failed to analyze audio file');
+    } finally {
+      setIsAnalyzingAudio(false);
+    }
+  };
+
+  // Handle local audio file drop or file input select
   const handleAudioDrop = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      setLocalAudioUrl(url);
+      handleAudioFile(file);
     }
   };
+
+  // Drag and drop events for audio upload area
+  const handleAudioDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingAudio(true);
+  };
+
+  const handleAudioDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingAudio(false);
+  };
+
+  const handleAudioFileDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingAudio(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && (file.type.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(file.name))) {
+      handleAudioFile(file);
+    }
+  };
+
+  // Magnetically align lyric lines and individual word timestamps to nearest detected drum onsets
+  const handleSnapToNearestBeats = () => {
+    if (!audioAnalysis) return;
+
+    setParsedLyrics(prev => {
+      const updatedLines = prev.lines.map(line => {
+        const snappedLineStart = audioAnalysis.snapToNearestBeat(line.startMs);
+        const snappedLineEnd = audioAnalysis.snapToNearestBeat(line.endMs);
+        const finalLineStart = Math.min(snappedLineStart, snappedLineEnd - 100);
+        const finalLineEnd = Math.max(snappedLineEnd, finalLineStart + 100);
+
+        const updatedWords = line.words.map(w => {
+          let s = audioAnalysis.snapToNearestBeat(w.startMs);
+          let e = audioAnalysis.snapToNearestBeat(w.endMs);
+          if (e <= s) {
+            e = s + Math.max(60, w.endMs - w.startMs);
+          }
+          return {
+            ...w,
+            startMs: s,
+            endMs: e
+          };
+        });
+
+        return {
+          ...line,
+          startMs: finalLineStart,
+          endMs: finalLineEnd,
+          words: updatedWords
+        };
+      });
+
+      return {
+        ...prev,
+        lines: updatedLines
+      };
+    });
+
+    setSnapFeedback(true);
+    setTimeout(() => setSnapFeedback(false), 2500);
+  };
+
+  // Live beat detector: checks whether playhead is within ~85ms of any detected drum onset
+  const isLiveBeat = useMemo(() => {
+    if (!isPlaying || !audioAnalysis || audioAnalysis.beatsMs.length === 0) return false;
+    const beats = audioAnalysis.beatsMs;
+    let low = 0, high = beats.length - 1;
+    while (low <= high) {
+      const mid = (low + high) >> 1;
+      const diff = beats[mid] - playheadMs;
+      if (Math.abs(diff) <= 85) return true;
+      if (diff < 0) low = mid + 1;
+      else high = mid - 1;
+    }
+    if (low < beats.length && Math.abs(beats[low] - playheadMs) <= 85) return true;
+    if (high >= 0 && Math.abs(beats[high] - playheadMs) <= 85) return true;
+    return false;
+  }, [isPlaying, audioAnalysis, playheadMs]);
 
   // Selected lines range calculation
   const selectedLines = useMemo(() => {
@@ -291,7 +405,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           targetFps: 30,
           archetype,
           fontFamily,
-          wordOverrides
+          wordOverrides,
+          audioAnalysis: audioAnalysis || undefined
         });
         if (active) {
           previewFramesRef.current = miniMedia.frames;
@@ -311,7 +426,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
     renderLivePreview();
     return () => { active = false; };
-  }, [selectedLines, archetype, fontFamily, rangeStartMs, rangeEndMs, wordOverrides]);
+  }, [selectedLines, archetype, fontFamily, rangeStartMs, rangeEndMs, wordOverrides, audioAnalysis]);
 
   // Synchronize live preview frame when playhead updates
   useEffect(() => {
@@ -326,6 +441,140 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
       setPreviewFrame(frames[frameIdx].imageData);
     }
   }, [playheadMs, rangeStartMs]);
+
+  // Window resize listener to keep waveform canvas sharp
+  useEffect(() => {
+    const handleResize = () => setWaveformResizeTick(t => t + 1);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Redraw audio scrubber waveform and beat markers
+  useEffect(() => {
+    const canvas = waveformCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width || canvas.clientWidth || 300;
+    const height = rect.height || canvas.clientHeight || 32;
+
+    const dpr = window.devicePixelRatio || 1;
+    if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+    }
+
+    ctx.save();
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, width, height);
+
+    // Subtle track background
+    ctx.fillStyle = themeMode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.03)';
+    if (ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(0, 0, width, height, 6);
+      ctx.fill();
+    } else {
+      ctx.fillRect(0, 0, width, height);
+    }
+
+    const rangeDuration = Math.max(1, rangeEndMs - rangeStartMs);
+    const playheadRatio = Math.max(0, Math.min(1, (playheadMs - rangeStartMs) / rangeDuration));
+    const playheadX = playheadRatio * width;
+
+    if (audioAnalysis && audioAnalysis.waveform && audioAnalysis.waveform.length > 0) {
+      const waveform = audioAnalysis.waveform;
+      const totalAudioDuration = Math.max(1, audioAnalysis.durationMs);
+
+      // Render vertical waveform bars across range
+      const numBars = Math.min(90, Math.max(28, Math.floor(width / 5)));
+      const barWidth = Math.max(1.5, (width / numBars) - 1.5);
+
+      for (let i = 0; i < numBars; i++) {
+        const barRatio = i / numBars;
+        const barTimeMs = rangeStartMs + barRatio * rangeDuration;
+        const barX = barRatio * width;
+
+        const wfIdx = Math.max(0, Math.min(waveform.length - 1, Math.floor((barTimeMs / totalAudioDuration) * waveform.length)));
+        const point = waveform[wfIdx] || { min: 0, max: 0 };
+        const amplitude = Math.max(0.08, Math.min(1, Math.max(Math.abs(point.min), Math.abs(point.max))));
+
+        const barHeight = Math.max(4, amplitude * (height - 8));
+        const barY = (height - barHeight) / 2;
+
+        const isPlayed = barX <= playheadX;
+
+        if (isPlayed) {
+          ctx.fillStyle = '#D97757';
+        } else {
+          ctx.fillStyle = themeMode === 'dark' ? 'rgba(255, 255, 255, 0.22)' : 'rgba(0, 0, 0, 0.16)';
+        }
+
+        if (ctx.roundRect) {
+          ctx.beginPath();
+          ctx.roundRect(barX, barY, barWidth, barHeight, 1);
+          ctx.fill();
+        } else {
+          ctx.fillRect(barX, barY, barWidth, barHeight);
+        }
+      }
+
+      // Render Beat Onset Marker Ticks
+      if (audioAnalysis.beatsMs && audioAnalysis.beatsMs.length > 0) {
+        for (const beatMs of audioAnalysis.beatsMs) {
+          if (beatMs >= rangeStartMs && beatMs <= rangeEndMs) {
+            const beatX = ((beatMs - rangeStartMs) / rangeDuration) * width;
+            const isNearPlayhead = Math.abs(beatX - playheadX) < 4;
+
+            ctx.fillStyle = isNearPlayhead
+              ? '#D97757'
+              : (themeMode === 'dark' ? 'rgba(217, 119, 87, 0.65)' : 'rgba(217, 119, 87, 0.5)');
+            ctx.beginPath();
+            ctx.arc(beatX, height - 3, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+    } else {
+      // Default flat line when no audio loaded
+      const centerY = height / 2;
+      ctx.strokeStyle = themeMode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.12)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, centerY);
+      ctx.lineTo(width, centerY);
+      ctx.stroke();
+
+      if (playheadX > 0) {
+        ctx.strokeStyle = '#D97757';
+        ctx.beginPath();
+        ctx.moveTo(0, centerY);
+        ctx.lineTo(playheadX, centerY);
+        ctx.stroke();
+      }
+    }
+
+    // Playhead needle line
+    ctx.strokeStyle = '#D97757';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(playheadX, 0);
+    ctx.lineTo(playheadX, height);
+    ctx.stroke();
+
+    // Playhead glowing center handle
+    ctx.fillStyle = '#FAF9F5';
+    ctx.beginPath();
+    ctx.arc(playheadX, height / 2, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#D97757';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.restore();
+  }, [audioAnalysis, rangeStartMs, rangeEndMs, playheadMs, themeMode]);
 
   // Toggle audio playback
   const togglePlay = () => {
@@ -388,7 +637,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           targetFps: 30,
           archetype,
           fontFamily,
-          wordOverrides
+          wordOverrides,
+          audioAnalysis: audioAnalysis || undefined
         },
         progress => setRenderProgress(progress)
       );
@@ -613,21 +863,138 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             )}
 
             {ingestTab === 'audio' && (
-              <div className={`flex-1 flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-2xl text-center gap-3 transition-colors ${
-                themeMode === 'dark' ? 'border-white/15 bg-white/[0.02] text-white' : 'border-[#E8E5DE] bg-white text-[#141413]'
-              }`}>
-                <Upload className="w-8 h-8 text-[#D97757]" />
-                <p className="text-xs font-sans font-medium">Drop Local MP3 / WAV</p>
-                <p className={`text-[11px] font-sans ${themeMode === 'dark' ? 'text-white/50' : 'text-[#5E5D59]'}`}>
-                  Enables 0-latency audio scrubbing and beat waveform preview
-                </p>
-                <input
-                  type="file"
-                  accept="audio/*"
-                  onChange={handleAudioDrop}
-                  className="text-xs font-sans cursor-pointer mt-1"
-                />
-              </div>
+              <>
+                {isAnalyzingAudio ? (
+                  <div className={`flex-1 flex flex-col items-center justify-center p-6 border rounded-2xl text-center gap-3 transition-colors ${
+                    themeMode === 'dark' ? 'border-white/10 bg-[#1C1C20] text-white' : 'border-[#E8E5DE] bg-white text-[#141413]'
+                  }`}>
+                    <RefreshCw className="w-8 h-8 text-[#D97757] animate-spin" />
+                    <p className="text-xs font-sans font-medium">Analyzing Audio Telemetry...</p>
+                    <p className={`text-[11px] font-mono ${themeMode === 'dark' ? 'text-white/60' : 'text-[#5E5D59]'}`}>
+                      {audioAnalysisStatus || 'Computing sub-bass transients & onsets...'}
+                    </p>
+                    <div className="w-48 bg-black/10 dark:bg-white/10 h-1.5 rounded-full overflow-hidden mt-2">
+                      <div className="bg-[#D97757] h-full w-2/3 animate-pulse rounded-full" />
+                    </div>
+                  </div>
+                ) : audioAnalysis ? (
+                  <div className={`flex-1 flex flex-col p-4 border rounded-2xl gap-3.5 transition-colors overflow-y-auto ${
+                    themeMode === 'dark' ? 'border-white/10 bg-[#1C1C20] text-white' : 'border-[#E8E5DE] bg-white text-[#141413]'
+                  }`}>
+                    {/* Track Info Header */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-[#D97757]/15 flex items-center justify-center shrink-0 text-[#D97757]">
+                          <Music className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-sans font-medium text-xs truncate" title={audioFileName || 'Audio Track'}>
+                            {audioFileName || 'Local Audio Track'}
+                          </div>
+                          <div className={`text-[10px] font-mono ${themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}`}>
+                            {(audioAnalysis.durationMs / 1000).toFixed(1)}s • {audioAnalysis.sampleRate} Hz
+                          </div>
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full bg-[#D97757]/15 text-[#D97757] font-mono text-[10px] font-semibold shrink-0">
+                        LOADED
+                      </span>
+                    </div>
+
+                    {/* Metrics Badges */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className={`p-2.5 rounded-xl border flex flex-col gap-0.5 ${
+                        themeMode === 'dark' ? 'border-white/10 bg-[#232228]' : 'border-[#E8E5DE] bg-[#FAF9F5]'
+                      }`}>
+                        <span className={`text-[9px] font-sans ${themeMode === 'dark' ? 'text-white/40' : 'text-[#87867F]'}`}>
+                          DETECTED TEMPO
+                        </span>
+                        <span className="font-mono text-xs font-bold text-[#D97757] flex items-center gap-1">
+                          <Zap className="w-3 h-3" />
+                          {audioAnalysis.bpm} BPM
+                        </span>
+                      </div>
+
+                      <div className={`p-2.5 rounded-xl border flex flex-col gap-0.5 ${
+                        themeMode === 'dark' ? 'border-white/10 bg-[#232228]' : 'border-[#E8E5DE] bg-[#FAF9F5]'
+                      }`}>
+                        <span className={`text-[9px] font-sans ${themeMode === 'dark' ? 'text-white/40' : 'text-[#87867F]'}`}>
+                          BEAT ONSETS
+                        </span>
+                        <span className="font-mono text-xs font-bold flex items-center gap-1">
+                          <Activity className="w-3 h-3 text-[#D97757]" />
+                          {audioAnalysis.beatsMs.length} Hits
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Snap Lyrics to Beats Action */}
+                    <button
+                      type="button"
+                      onClick={handleSnapToNearestBeats}
+                      className="w-full py-2.5 px-3 rounded-xl bg-[#D97757] hover:bg-[#C66545] text-white text-xs font-sans font-medium transition-all cursor-pointer shadow-xs flex items-center justify-center gap-2"
+                    >
+                      {snapFeedback ? <Check className="w-3.5 h-3.5" /> : <Activity className="w-3.5 h-3.5" />}
+                      <span>{snapFeedback ? 'Lyrics Snapped to Beats!' : 'Snap Lyrics to Beats'}</span>
+                    </button>
+
+                    {snapFeedback && (
+                      <div className="text-center text-[10px] font-sans text-emerald-500 font-medium flex items-center justify-center gap-1">
+                        <Check className="w-3 h-3" />
+                        <span>Timestamps magnetically locked to 808/kick hits</span>
+                      </div>
+                    )}
+
+                    {/* Change/Re-upload Audio */}
+                    <div className={`mt-auto pt-3 border-t border-dashed ${
+                      themeMode === 'dark' ? 'border-white/10' : 'border-[#E8E5DE]'
+                    }`}>
+                      <label className={`w-full py-2 border rounded-xl text-center text-[11px] font-sans font-medium block transition-colors cursor-pointer ${
+                        themeMode === 'dark'
+                          ? 'border-white/10 hover:bg-white/5 text-white/70 hover:text-white'
+                          : 'border-[#E8E5DE] hover:bg-[#FAF9F5] text-[#5E5D59] hover:text-[#141413]'
+                      }`}>
+                        <Upload className="w-3 h-3 inline-block mr-1.5" />
+                        Replace Audio File
+                        <input
+                          type="file"
+                          accept="audio/*"
+                          onChange={handleAudioDrop}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onDragOver={handleAudioDragOver}
+                    onDragLeave={handleAudioDragLeave}
+                    onDrop={handleAudioFileDrop}
+                    className={`flex-1 flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-2xl text-center gap-3 transition-colors ${
+                      isDraggingAudio
+                        ? 'border-[#D97757] bg-[#D97757]/10'
+                        : themeMode === 'dark'
+                        ? 'border-white/15 bg-white/[0.02] text-white'
+                        : 'border-[#E8E5DE] bg-white text-[#141413]'
+                    }`}
+                  >
+                    <Upload className="w-8 h-8 text-[#D97757]" />
+                    <p className="text-xs font-sans font-medium">Drop Local MP3 / WAV</p>
+                    <p className={`text-[11px] font-sans ${themeMode === 'dark' ? 'text-white/50' : 'text-[#5E5D59]'}`}>
+                      Enables 0-latency audio scrubbing, live beat sync and waveform preview
+                    </p>
+                    <label className="mt-1 px-3 py-1.5 rounded-lg bg-[#D97757] hover:bg-[#C66545] text-white text-xs font-sans font-medium cursor-pointer transition-colors shadow-xs">
+                      Choose Audio File
+                      <input
+                        type="file"
+                        accept="audio/*"
+                        onChange={handleAudioDrop}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </section>
@@ -882,7 +1249,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           )}
 
           {/* Minimalist Bottom Audio Scrub Bar */}
-          <div className={`h-14 px-6 border-t flex items-center justify-between z-10 shrink-0 gap-4 transition-colors duration-200 ${
+          <div className={`h-16 px-6 border-t flex items-center justify-between z-10 shrink-0 gap-4 transition-colors duration-200 ${
             themeMode === 'dark'
               ? 'bg-[#18181A] border-[#2C2B29] text-white'
               : 'bg-white border-[#E8E5DE] text-[#141413]'
@@ -891,6 +1258,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               <button
                 onClick={togglePlay}
                 className="w-8 h-8 rounded-full bg-[#D97757] hover:bg-[#C66545] text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs"
+                title={isPlaying ? 'Pause Preview' : 'Play Preview'}
               >
                 {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
               </button>
@@ -900,10 +1268,31 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               }`}>
                 {(playheadMs / 1000).toFixed(2)}s / {(rangeEndMs / 1000).toFixed(2)}s
               </div>
+
+              {/* Live Beat Pulse Indicator */}
+              {audioAnalysis && (
+                <div
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold transition-all duration-75 select-none shrink-0 ${
+                    isLiveBeat
+                      ? 'bg-[#D97757] text-white scale-105 shadow-[0_0_12px_rgba(217,119,87,0.7)]'
+                      : themeMode === 'dark'
+                      ? 'bg-[#232220] text-[#D97757] border border-[#D97757]/30'
+                      : 'bg-[#FAF0EB] text-[#D97757] border border-[#D97757]/30'
+                  }`}
+                  title={`Detected Tempo: ${audioAnalysis.bpm} BPM (Flashing on drum hits)`}
+                >
+                  <Zap className={`w-3.5 h-3.5 transition-transform ${isLiveBeat ? 'scale-125 fill-current' : ''}`} />
+                  <span>⚡ {audioAnalysis.bpm} BPM</span>
+                </div>
+              )}
             </div>
 
-            {/* Minimal Timeline Scrubber */}
-            <div className="flex-1 flex items-center gap-2 max-w-md">
+            {/* Audio Waveform Scrubber */}
+            <div className="flex-1 flex items-center max-w-xl mx-2 relative h-9">
+              <canvas
+                ref={waveformCanvasRef}
+                className="w-full h-8 rounded-lg pointer-events-none"
+              />
               <input
                 type="range"
                 min={rangeStartMs}
@@ -917,15 +1306,33 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     audioRef.current.currentTime = val / 1000;
                   }
                 }}
-                className={`w-full accent-[#D97757] h-1.5 rounded-full cursor-pointer ${
-                  themeMode === 'dark' ? 'bg-white/15' : 'bg-[#E8E5DE]'
-                }`}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                title="Scrub timeline"
               />
             </div>
 
             <div className={`flex items-center gap-3 text-xs font-sans shrink-0 ${
               themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'
             }`}>
+              {/* Snap Beats Button */}
+              {audioAnalysis && (
+                <button
+                  type="button"
+                  onClick={handleSnapToNearestBeats}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-sans font-medium border transition-all cursor-pointer shadow-xs ${
+                    snapFeedback
+                      ? 'bg-emerald-600 border-emerald-600 text-white'
+                      : themeMode === 'dark'
+                      ? 'bg-[#232220] hover:bg-[#2c2b28] border-white/10 text-white/90 hover:text-white'
+                      : 'bg-white hover:bg-[#FAF9F5] border-[#E8E5DE] text-[#141413]'
+                  }`}
+                  title="Magnetically snap lyric and word timestamps to nearest detected beats"
+                >
+                  {snapFeedback ? <Check className="w-3.5 h-3.5" /> : <Activity className="w-3.5 h-3.5 text-[#D97757]" />}
+                  <span>{snapFeedback ? 'Snapped!' : 'Snap Beats'}</span>
+                </button>
+              )}
+
               {Object.keys(wordOverrides).length > 0 && (
                 <div className="flex items-center gap-1.5 bg-[#D97757]/10 border border-[#D97757]/30 px-2.5 py-0.5 rounded-full text-[10px] text-[#D97757] font-medium">
                   <span>{Object.keys(wordOverrides).length} overrides</span>

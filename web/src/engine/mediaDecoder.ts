@@ -12,6 +12,10 @@ export async function decodeVideo(
     return decodeHeader(file, options);
   }
 
+  if (file.name.endsWith('.json') || file.type === 'application/json') {
+    return decodeJsonSequence(file, options);
+  }
+
   if (file.type === 'image/gif' || file.name.endsWith('.gif')) {
     return decodeGif(file, options);
   }
@@ -304,3 +308,91 @@ async function decodeHeader(
     frames
   };
 }
+
+async function decodeJsonSequence(
+  file: File,
+  options: DecoderOptions = {}
+): Promise<DecodedMedia> {
+  const { onProgress } = options;
+  const text = await file.text();
+  const data = JSON.parse(text);
+
+  const fps = data.fps || data.sourceInfo?.fps || 30;
+  const frameIntervalMs = 1000 / fps;
+  const rawFrames: any[] = Array.isArray(data) ? data : (data.frames || []);
+  const total = rawFrames.length;
+  if (total === 0) throw new Error("JSON animation file contains no frames");
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+
+  const frames: ExtractedFrame[] = [];
+
+  for (let i = 0; i < total; i++) {
+    const raw = rawFrames[i];
+    let imgData: ImageData;
+
+    if (typeof raw === 'string') {
+      const src = raw.startsWith('data:') ? raw : `data:image/png;base64,${raw}`;
+      try {
+        const resp = await fetch(src);
+        const blob = await resp.blob();
+        const bitmap = await createImageBitmap(blob);
+        ctx.clearRect(0, 0, 128, 64);
+        ctx.drawImage(bitmap, 0, 0, 128, 64);
+        imgData = ctx.getImageData(0, 0, 128, 64);
+        bitmap.close();
+      } catch {
+        const img = new Image();
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = () => reject(new Error(`Failed to load frame ${i}`));
+          img.src = src;
+        });
+        ctx.clearRect(0, 0, 128, 64);
+        ctx.drawImage(img, 0, 0, 128, 64);
+        imgData = ctx.getImageData(0, 0, 128, 64);
+      }
+    } else if (raw.imageData && raw.imageData.data) {
+      const w = raw.imageData.width || 128;
+      const h = raw.imageData.height || 64;
+      const arr = new Uint8ClampedArray(Object.values(raw.imageData.data));
+      imgData = new ImageData(arr, w, h);
+    } else {
+      continue;
+    }
+
+    frames.push({
+      index: i,
+      timestampMs: i * frameIntervalMs,
+      durationMs: frameIntervalMs,
+      imageData: imgData
+    });
+
+    if (onProgress && (i % 25 === 0 || i === total - 1)) {
+      onProgress({
+        stage: 'reading',
+        currentFrame: i + 1,
+        totalFrames: total,
+        percent: Math.round(((i + 1) / total) * 100)
+      });
+      await new Promise<void>(r => setTimeout(r, 0));
+    }
+  }
+
+  return {
+    sourceInfo: {
+      type: 'sequence',
+      filename: file.name,
+      sourceWidth: 128,
+      sourceHeight: 64,
+      frameCount: frames.length,
+      fps,
+      durationMs: frames.length * frameIntervalMs
+    },
+    frames
+  };
+}
+

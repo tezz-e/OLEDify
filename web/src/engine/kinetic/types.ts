@@ -110,6 +110,8 @@ export interface TextLayoutResult {
   yOffsets: number[];
 }
 
+import { AudioAnalysisResult } from './audioAnalysisEngine';
+
 export interface KineticRenderOptions {
   lyrics: LyricLine[];
   startMs: number;
@@ -119,4 +121,5 @@ export interface KineticRenderOptions {
   fontFamily?: string;
   theme?: 'cyan' | 'white' | 'amber' | 'green';
   wordOverrides?: Record<string, MotionArchetype>;
+  audioAnalysis?: AudioAnalysisResult;
 }

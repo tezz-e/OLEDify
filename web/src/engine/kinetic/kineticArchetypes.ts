@@ -1,9 +1,11 @@
 import { MotionArchetype, TextLayoutResult } from './types';
+import { AudioFrameData } from './audioAnalysisEngine';
 
 /**
  * Dispatches frame rendering to the selected motion archetype.
  * ctx: OffscreenCanvas 2D context (128x64)
  * tau: Normalized temporal progress of active word/line [0..1]
+ * audioFrame: Optional real-time audio telemetry (RMS, bass transients, beats)
  */
 export function renderArchetypeFrame(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
@@ -12,41 +14,42 @@ export function renderArchetypeFrame(
   tau: number,
   layout: TextLayoutResult,
   frameIndex: number,
-  fontFamily: string = '"IBM Plex Mono", monospace'
+  fontFamily: string = '"IBM Plex Mono", monospace',
+  audioFrame?: AudioFrameData
 ) {
   switch (archetype) {
     case 'blade_slash':
-      renderBladeSlash(ctx, text, tau, layout, frameIndex, fontFamily);
+      renderBladeSlash(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
       break;
     case 'manga_impact':
-      renderMangaImpact(ctx, text, tau, layout, frameIndex, fontFamily);
+      renderMangaImpact(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
       break;
     case 'cyber_glitch':
-      renderCyberGlitch(ctx, text, tau, layout, frameIndex, fontFamily);
+      renderCyberGlitch(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
       break;
     case 'smooth_fluid':
-      renderSmoothFluid(ctx, text, tau, layout, frameIndex, fontFamily);
+      renderSmoothFluid(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
       break;
     case '3d_block_stack':
-      render3DBlockStack(ctx, text, tau, layout, frameIndex, fontFamily);
+      render3DBlockStack(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
       break;
     case 'echo_stack':
-      renderEchoStack(ctx, text, tau, layout, frameIndex, fontFamily);
+      renderEchoStack(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
       break;
     case 'target_focus':
-      renderTargetFocus(ctx, text, tau, layout, frameIndex, fontFamily);
+      renderTargetFocus(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
       break;
     case 'snake_slither':
-      renderSnakeSlither(ctx, text, tau, layout, frameIndex, fontFamily);
+      renderSnakeSlither(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
       break;
     case 'wiggly_boil':
-      renderWigglyBoil(ctx, text, tau, layout, frameIndex, fontFamily);
+      renderWigglyBoil(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
       break;
     case 'inverted_badge':
-      renderInvertedBadge(ctx, text, tau, layout, frameIndex, fontFamily);
+      renderInvertedBadge(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
       break;
     default:
-      renderSmoothFluid(ctx, text, tau, layout, frameIndex, fontFamily);
+      renderSmoothFluid(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
       break;
   }
 }
@@ -60,7 +63,8 @@ function renderBladeSlash(
   tau: number,
   layout: TextLayoutResult,
   frameIndex: number,
-  fontFamily: string
+  fontFamily: string,
+  audioFrame?: AudioFrameData
 ) {
   const tempCanvas = new OffscreenCanvas(128, 64);
   const tCtx = tempCanvas.getContext('2d')!;
@@ -77,7 +81,9 @@ function renderBladeSlash(
 
   const midY = 32;
   const ease = Math.min(1, tau / 0.25);
-  const shift = Math.round((1 - ease) * 18);
+  // Audio flux or beat adds extra kick to the split
+  const audioKick = audioFrame ? (audioFrame.isBeat ? 6 : audioFrame.flux * 4) : 0;
+  const shift = Math.round((1 - ease) * 18 + audioKick);
 
   // Upper half shifted left
   ctx.drawImage(tempCanvas, 0, 0, 128, midY, -shift, 0, 128, midY);
@@ -85,12 +91,12 @@ function renderBladeSlash(
   // Lower half shifted right
   ctx.drawImage(tempCanvas, 0, midY, 128, 64 - midY, shift, midY, 128, 64 - midY);
 
-  // Diagonal razor slash line during initial 30% of duration
-  if (tau < 0.3) {
-    const p = tau / 0.3;
+  // Diagonal razor slash line during initial 30% of duration or on beat onset
+  if (tau < 0.3 || audioFrame?.isBeat) {
+    const p = tau < 0.3 ? tau / 0.3 : 1.0;
     const xEnd = Math.floor(p * 128);
     ctx.strokeStyle = '#FFFFFF';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = audioFrame?.isBeat ? 3 : 2;
     ctx.beginPath();
     ctx.moveTo(0, midY + 4);
     ctx.lineTo(xEnd, midY - 4);
@@ -107,25 +113,31 @@ function renderMangaImpact(
   tau: number,
   layout: TextLayoutResult,
   frameIndex: number,
-  fontFamily: string
+  fontFamily: string,
+  audioFrame?: AudioFrameData
 ) {
-  const scale = tau < 0.25 
+  const baseScale = tau < 0.25 
     ? 1.0 + 1.2 * Math.pow(1 - tau / 0.25, 3) * Math.cos(tau * 4 * Math.PI)
     : 1.0 + Math.sin((tau - 0.25) * Math.PI * 2) * 0.03;
+
+  // Audio bass punch boosts zoom scale
+  const bassPunch = audioFrame ? (audioFrame.isBeat ? 0.35 : audioFrame.bass * 0.2) : 0;
+  const scale = baseScale + bassPunch;
 
   ctx.save();
   ctx.translate(64, 32);
   ctx.scale(scale, scale);
   ctx.translate(-64, -32);
 
-  if (tau < 0.35) {
+  // Speedlines trigger during entry or on any drum hit
+  if (tau < 0.35 || audioFrame?.isBeat || (audioFrame && audioFrame.bass > 0.7)) {
     ctx.strokeStyle = '#FFFFFF';
     ctx.lineWidth = 1;
-    const numRays = 16;
+    const numRays = audioFrame?.isBeat ? 24 : 16;
     for (let r = 0; r < numRays; r++) {
       const angle = (r / numRays) * Math.PI * 2 + (frameIndex % 3) * 0.1;
-      const innerR = 40 + (frameIndex % 4) * 4;
-      const outerR = 90;
+      const innerR = 38 + (frameIndex % 4) * 4;
+      const outerR = 95;
       ctx.beginPath();
       ctx.moveTo(64 + Math.cos(angle) * innerR, 32 + Math.sin(angle) * innerR);
       ctx.lineTo(64 + Math.cos(angle) * outerR, 32 + Math.sin(angle) * outerR);
@@ -154,7 +166,9 @@ function renderMangaImpact(
 
   ctx.restore();
 
-  if (tau >= 0.12 && tau <= 0.15) {
+  // Inversion flash on impact or massive drum drop
+  const shouldInvert = (tau >= 0.12 && tau <= 0.15) || (audioFrame?.isBeat && audioFrame.onsetStrength > 0.75);
+  if (shouldInvert) {
     ctx.fillStyle = '#FFFFFF';
     ctx.globalCompositeOperation = 'difference';
     ctx.fillRect(0, 0, 128, 64);
@@ -171,33 +185,38 @@ function renderCyberGlitch(
   tau: number,
   layout: TextLayoutResult,
   frameIndex: number,
-  fontFamily: string
+  fontFamily: string,
+  audioFrame?: AudioFrameData
 ) {
   ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
   ctx.textAlign = 'center';
 
+  const isGlitchBurst = (tau < 0.2) || (audioFrame && audioFrame.flux > 0.5) || audioFrame?.isBeat;
   const glitchChars = '01X$#%_~<>';
   const displayLines = layout.lines.map(line => {
-    if (tau < 0.2) {
+    if (isGlitchBurst) {
       return line.split('').map(ch => {
         if (ch === ' ' || ch === '-') return ch;
-        return Math.random() > 0.4 ? glitchChars[Math.floor(Math.random() * glitchChars.length)] : ch;
+        return Math.random() > 0.35 ? glitchChars[Math.floor(Math.random() * glitchChars.length)] : ch;
       }).join('');
     }
     return line;
   });
 
-  const jitterX = (tau < 0.3 || (frameIndex % 8 === 0)) ? ((frameIndex * 17) % 7) - 3 : 0;
+  const jitterAmp = audioFrame?.isBeat ? 6 : (audioFrame ? Math.round(audioFrame.flux * 4) : 0);
+  const jitterX = (tau < 0.3 || frameIndex % 8 === 0 || audioFrame?.isBeat) 
+    ? ((frameIndex * 17) % 7) - 3 + (Math.random() > 0.5 ? jitterAmp : -jitterAmp) 
+    : 0;
 
   ctx.fillStyle = '#FFFFFF';
   for (let i = 0; i < displayLines.length; i++) {
     ctx.fillText(displayLines[i], 64 + jitterX, layout.yOffsets[i]);
   }
 
-  if (tau < 0.35 || frameIndex % 6 === 0) {
+  if (tau < 0.35 || frameIndex % 6 === 0 || audioFrame?.isBeat) {
     const sliceY = (frameIndex * 13) % 48 + 8;
-    const sliceH = 4 + (frameIndex % 5);
-    const sliceShift = ((frameIndex * 7) % 11) - 5;
+    const sliceH = 4 + (frameIndex % 5) + (audioFrame?.isBeat ? 4 : 0);
+    const sliceShift = ((frameIndex * 7) % 11) - 5 + (audioFrame?.isBeat ? (frameIndex % 2 === 0 ? 8 : -8) : 0);
 
     const slice = ctx.getImageData(0, sliceY, 128, sliceH);
     ctx.fillStyle = '#000000';
@@ -220,13 +239,16 @@ function renderSmoothFluid(
   tau: number,
   layout: TextLayoutResult,
   frameIndex: number,
-  fontFamily: string
+  fontFamily: string,
+  audioFrame?: AudioFrameData
 ) {
   const easeProgress = Math.min(1, tau / 0.3);
   const slideProgress = 1 - Math.pow(1 - easeProgress, 3);
   const startYOffset = 18 * (1 - slideProgress);
 
-  const idleBob = tau > 0.3 ? Math.sin((tau - 0.3) * Math.PI * 4) * 1.5 : 0;
+  // Audio energy modulates the idle floating bob
+  const audioBob = audioFrame ? audioFrame.bass * 2.5 : 0;
+  const idleBob = tau > 0.3 ? (Math.sin((tau - 0.3) * Math.PI * 4) * 1.5 - audioBob) : 0;
   const currentY = startYOffset + idleBob;
 
   ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
@@ -248,7 +270,9 @@ function renderSmoothFluid(
 
     if (i === layout.lines.length - 1) {
       const metrics = ctx.measureText(line);
-      const pillWidth = Math.min(metrics.width + 8, (metrics.width + 8) * Math.min(1, tau / 0.4));
+      const baseWidth = metrics.width + 8;
+      const energyPulse = audioFrame ? audioFrame.rms * 12 : 0;
+      const pillWidth = Math.min(120, Math.min(baseWidth + energyPulse, (baseWidth + energyPulse) * Math.min(1, tau / 0.4)));
       ctx.fillRect(Math.floor(64 - pillWidth / 2), Math.min(61, Math.floor(y + 3)), Math.floor(pillWidth), 2);
     }
   }
@@ -263,7 +287,8 @@ function render3DBlockStack(
   tau: number,
   layout: TextLayoutResult,
   frameIndex: number,
-  fontFamily: string
+  fontFamily: string,
+  audioFrame?: AudioFrameData
 ) {
   let dropY = 0;
   let scaleY = 1.0;
@@ -278,6 +303,12 @@ function render3DBlockStack(
     scaleX = 1.0 + Math.sin(p * Math.PI) * 0.15;
   }
 
+  // Audio bass bounce on 808s / kick drums
+  if (audioFrame?.isBeat) {
+    scaleY *= 1.15;
+    scaleX *= 0.92;
+  }
+
   ctx.save();
   ctx.translate(64, 32);
   ctx.scale(scaleX, scaleY);
@@ -286,7 +317,9 @@ function render3DBlockStack(
   ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
   ctx.textAlign = 'center';
 
-  const depth = 4;
+  // Depth expands with bass energy
+  const extraDepth = audioFrame ? Math.round(audioFrame.bass * 3) : 0;
+  const depth = 4 + extraDepth;
   for (let d = depth; d >= 1; d--) {
     ctx.fillStyle = (d % 2 === 0) ? '#FFFFFF' : '#000000';
     for (let i = 0; i < layout.lines.length; i++) {
@@ -316,12 +349,14 @@ function renderEchoStack(
   tau: number,
   layout: TextLayoutResult,
   frameIndex: number,
-  fontFamily: string
+  fontFamily: string,
+  audioFrame?: AudioFrameData
 ) {
   ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
   ctx.textAlign = 'center';
 
-  const pulseR = Math.floor((frameIndex * 2) % 24);
+  const pulseMultiplier = audioFrame ? 1.0 + audioFrame.rms * 0.8 : 1.0;
+  const pulseR = Math.floor(((frameIndex * 2) % 24) * pulseMultiplier);
 
   // Concentric expanding outline frames
   ctx.strokeStyle = '#FFFFFF';
@@ -330,10 +365,13 @@ function renderEchoStack(
     const line = layout.lines[i];
     const y = layout.yOffsets[i];
 
-    if (tau > 0.2) {
+    if (tau > 0.2 || audioFrame?.isBeat) {
       // Offset echo echoes
       ctx.strokeText(line, 64 - pulseR / 3, y - pulseR / 4);
       ctx.strokeText(line, 64 + pulseR / 3, y + pulseR / 4);
+      if (audioFrame?.isBeat) {
+        ctx.strokeText(line, 64, y - pulseR / 2);
+      }
     }
 
     // Main text
@@ -353,10 +391,12 @@ function renderTargetFocus(
   tau: number,
   layout: TextLayoutResult,
   frameIndex: number,
-  fontFamily: string
+  fontFamily: string,
+  audioFrame?: AudioFrameData
 ) {
   const ease = Math.min(1, tau / 0.25);
-  const scale = 1.8 - 0.8 * ease + Math.sin(tau * Math.PI) * 0.05;
+  const beatSnap = audioFrame?.isBeat ? 0.15 : 0;
+  const scale = 1.8 - 0.8 * ease + Math.sin(tau * Math.PI) * 0.05 + beatSnap;
 
   ctx.save();
   ctx.translate(64, 32);
@@ -375,8 +415,8 @@ function renderTargetFocus(
 
   // Target crosshair brackets framing the display
   ctx.strokeStyle = '#FFFFFF';
-  ctx.lineWidth = 1;
-  const chLen = 8;
+  ctx.lineWidth = audioFrame?.isBeat ? 2 : 1;
+  const chLen = 8 + (audioFrame ? Math.round(audioFrame.bass * 4) : 0);
   ctx.beginPath();
   // Left crosshair
   ctx.moveTo(6, 32); ctx.lineTo(6 + chLen, 32);
@@ -398,7 +438,8 @@ function renderSnakeSlither(
   tau: number,
   layout: TextLayoutResult,
   frameIndex: number,
-  fontFamily: string
+  fontFamily: string,
+  audioFrame?: AudioFrameData
 ) {
   const tempCanvas = new OffscreenCanvas(128, 64);
   const tCtx = tempCanvas.getContext('2d')!;
@@ -416,10 +457,11 @@ function renderSnakeSlither(
   // Slice vertical strips and sine displace
   const stripWidth = 4;
   const numStrips = Math.ceil(128 / stripWidth);
+  const waveAmp = 3 + (audioFrame ? audioFrame.bass * 3 : 0);
 
   for (let s = 0; s < numStrips; s++) {
     const sx = s * stripWidth;
-    const waveY = Math.round(Math.sin(s * 0.4 + tau * 6 * Math.PI) * 3);
+    const waveY = Math.round(Math.sin(s * 0.4 + tau * 6 * Math.PI) * waveAmp);
     ctx.drawImage(tempCanvas, sx, 0, stripWidth, 64, sx, waveY, stripWidth, 64);
   }
 }
@@ -433,17 +475,19 @@ function renderWigglyBoil(
   tau: number,
   layout: TextLayoutResult,
   frameIndex: number,
-  fontFamily: string
+  fontFamily: string,
+  audioFrame?: AudioFrameData
 ) {
   ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
   ctx.textAlign = 'center';
 
-  const boilPhase = Math.floor(frameIndex / 2.5) % 3;
+  const boilSpeed = audioFrame && audioFrame.rms > 0.5 ? 1.8 : 2.5;
+  const boilPhase = Math.floor(frameIndex / boilSpeed) % 3;
   const offsetsX = [-1, 1, 0];
   const offsetsY = [0, -1, 1];
 
-  const dx = offsetsX[boilPhase];
-  const dy = offsetsY[boilPhase];
+  const dx = offsetsX[boilPhase] * (audioFrame?.isBeat ? 2 : 1);
+  const dy = offsetsY[boilPhase] * (audioFrame?.isBeat ? 2 : 1);
 
   ctx.fillStyle = '#FFFFFF';
   for (let i = 0; i < layout.lines.length; i++) {
@@ -451,7 +495,7 @@ function renderWigglyBoil(
     const y = layout.yOffsets[i];
     ctx.fillText(line, 64 + dx, y + dy);
 
-    if (frameIndex % 3 === 0) {
+    if (frameIndex % 3 === 0 || audioFrame?.isBeat) {
       ctx.strokeStyle = '#FFFFFF';
       ctx.lineWidth = 1;
       ctx.strokeRect(2 + dx, 2 + dy, 124, 60);
@@ -468,7 +512,8 @@ function renderInvertedBadge(
   tau: number,
   layout: TextLayoutResult,
   frameIndex: number,
-  fontFamily: string
+  fontFamily: string,
+  audioFrame?: AudioFrameData
 ) {
   ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
   ctx.textAlign = 'center';
@@ -484,10 +529,11 @@ function renderInvertedBadge(
   const badgeY = Math.floor((64 - badgeH) / 2);
 
   const scale = tau < 0.2 ? Math.min(1, tau / 0.2) : 1.0;
+  const beatBump = audioFrame?.isBeat ? 0.08 : 0;
 
   ctx.save();
   ctx.translate(64, 32);
-  ctx.scale(scale, scale);
+  ctx.scale(scale + beatBump, scale + beatBump);
   ctx.translate(-64, -32);
 
   ctx.fillStyle = '#FFFFFF';
@@ -501,6 +547,14 @@ function renderInvertedBadge(
 
   ctx.globalCompositeOperation = 'source-over';
   ctx.restore();
+
+  // Brief inversion flash on hard drum hit
+  if (audioFrame?.isBeat && audioFrame.onsetStrength > 0.65) {
+    ctx.fillStyle = '#FFFFFF';
+    ctx.globalCompositeOperation = 'difference';
+    ctx.fillRect(0, 0, 128, 64);
+    ctx.globalCompositeOperation = 'source-over';
+  }
 }
 
 function roundRect(

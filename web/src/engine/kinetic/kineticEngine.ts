@@ -18,7 +18,8 @@ export async function renderKineticSequence(
     targetFps = 30,
     archetype,
     fontFamily = '"IBM Plex Mono", monospace',
-    wordOverrides
+    wordOverrides,
+    audioAnalysis
   } = options;
 
   const durationMs = Math.max(500, endMs - startMs);
@@ -48,6 +49,7 @@ export async function renderKineticSequence(
 
   for (let f = 0; f < frameCount; f++) {
     const currentMs = startMs + f * frameIntervalMs;
+    const audioFrame = audioAnalysis ? audioAnalysis.getFrameAtTime(currentMs) : undefined;
 
     // Locate active word
     let activeWordIndex = words.findIndex(w => currentMs >= w.startMs && currentMs < w.endMs);
@@ -84,13 +86,21 @@ export async function renderKineticSequence(
     // Compute Zero-Clip Layout
     const layout = computeSafeTextLayout(activeWord.word, ctx, fontFamily);
 
+    // Apply micro camera shake on heavy bass kicks / transients
+    ctx.save();
+    if (audioFrame?.isBeat || (audioFrame && audioFrame.bass > 0.8)) {
+      const punchAmp = audioFrame.isBeat ? (audioFrame.onsetStrength > 0.6 ? 2 : 1) : 1;
+      const shakeX = (f % 2 === 0 ? 1 : -1) * punchAmp;
+      const shakeY = (f % 3 === 0 ? -1 : 1) * punchAmp;
+      ctx.translate(shakeX, shakeY);
+    }
+
     // Render Archetype Frame
-    renderArchetypeFrame(ctx, effectiveArchetype, activeWord.word, tau, layout, f, fontFamily);
+    renderArchetypeFrame(ctx, effectiveArchetype, activeWord.word, tau, layout, f, fontFamily, audioFrame);
+    ctx.restore();
 
     // Extract 128x64 RGBA
     const rawImageData = ctx.getImageData(0, 0, 128, 64);
-
-    // 1-Bit Sharp Quantization to avoid shimmering artifacts
     const ditheredData = ctx.createImageData(128, 64);
     const src = rawImageData.data;
     const dest = ditheredData.data;
