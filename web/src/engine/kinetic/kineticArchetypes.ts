@@ -1,6 +1,25 @@
 import { MotionArchetype, TextLayoutResult } from './types';
 import { AudioFrameData } from './audioAnalysisEngine';
 
+// Pooled scratch canvas to eliminate per-frame GC allocations
+let cachedScratchCanvas: OffscreenCanvas | HTMLCanvasElement | null = null;
+let cachedScratchCtx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null = null;
+
+function getScratchCanvas(): { canvas: OffscreenCanvas | HTMLCanvasElement; ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D } {
+  if (!cachedScratchCanvas || !cachedScratchCtx) {
+    if (typeof OffscreenCanvas !== 'undefined') {
+      cachedScratchCanvas = new OffscreenCanvas(128, 64);
+      cachedScratchCtx = cachedScratchCanvas.getContext('2d')!;
+    } else {
+      cachedScratchCanvas = document.createElement('canvas');
+      cachedScratchCanvas.width = 128;
+      cachedScratchCanvas.height = 64;
+      cachedScratchCtx = cachedScratchCanvas.getContext('2d')!;
+    }
+  }
+  return { canvas: cachedScratchCanvas, ctx: cachedScratchCtx };
+}
+
 /**
  * Dispatches frame rendering to the selected motion archetype.
  * ctx: OffscreenCanvas 2D context (128x64)
@@ -66,8 +85,7 @@ function renderBladeSlash(
   fontFamily: string,
   audioFrame?: AudioFrameData
 ) {
-  const tempCanvas = new OffscreenCanvas(128, 64);
-  const tCtx = tempCanvas.getContext('2d')!;
+  const { canvas: tempCanvas, ctx: tCtx } = getScratchCanvas();
 
   tCtx.fillStyle = '#000000';
   tCtx.fillRect(0, 0, 128, 64);
@@ -441,8 +459,7 @@ function renderSnakeSlither(
   fontFamily: string,
   audioFrame?: AudioFrameData
 ) {
-  const tempCanvas = new OffscreenCanvas(128, 64);
-  const tCtx = tempCanvas.getContext('2d')!;
+  const { canvas: tempCanvas, ctx: tCtx } = getScratchCanvas();
 
   tCtx.fillStyle = '#000000';
   tCtx.fillRect(0, 0, 128, 64);

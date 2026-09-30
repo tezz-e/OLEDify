@@ -3,9 +3,9 @@ import { Search, Music, FileText, Upload, Play, Pause, ArrowLeft, Sparkles, Chec
 import { searchLrclib, getLrclibExact, searchLyricsOvhFallback } from '../../../engine/lyrics/lrclibClient';
 import { parseLrc, parsePlainTextLyrics } from '../../../engine/lyrics/lrcParser';
 import { LrclibTrack, ParsedLyrics, LyricLine, LyricWord } from '../../../engine/lyrics/types';
-import { MotionArchetype, ARCHETYPE_METADATA } from '../../../engine/kinetic/types';
+import { MotionArchetype, ARCHETYPE_METADATA, STYLE_PACKS, StylePackId } from '../../../engine/kinetic/types';
 import { renderKineticSequence } from '../../../engine/kinetic/kineticEngine';
-import { getWordEffectiveArchetype } from '../../../engine/kinetic/semanticClassifier';
+import { getWordEffectiveArchetype, getWordEffectiveFont, getWordFontRole } from '../../../engine/kinetic/semanticClassifier';
 import { analyzeAudioFile, AudioAnalysisResult } from '../../../engine/kinetic/audioAnalysisEngine';
 import {
   checkOllamaHealth,
@@ -52,7 +52,9 @@ interface EditingWordTarget {
   lineIdx: number;
   wordIdx: number;
   currentArchetype: MotionArchetype;
+  currentFont: string;
 }
+
 
 export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   onClose,
@@ -86,9 +88,11 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   // --- KINETIC STYLE CONFIG ---
   // Default to AUTO_SEMANTIC (Smart Adaptive Director)
   const [archetype, setArchetype] = useState<MotionArchetype>('auto_semantic');
+  const [stylePack, setStylePack] = useState<StylePackId>('trap_drill');
   const [wordOverrides, setWordOverrides] = useState<Record<string, MotionArchetype>>({});
+  const [wordFontOverrides, setWordFontOverrides] = useState<Record<string, string>>({});
   const [editingWordTarget, setEditingWordTarget] = useState<EditingWordTarget | null>(null);
-  const [fontFamily, setFontFamily] = useState('"IBM Plex Mono", monospace');
+  const [fontFamily, setFontFamily] = useState<string>("'Wilhelm Gotisch', sans-serif");
   const [isRendering, setIsRendering] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
 
@@ -470,7 +474,9 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           targetFps: 30,
           archetype,
           fontFamily,
+          stylePack,
           wordOverrides,
+          wordFontOverrides,
           audioAnalysis: audioAnalysis || undefined
         });
         if (active) {
@@ -491,7 +497,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
     renderLivePreview();
     return () => { active = false; };
-  }, [selectedLines, archetype, fontFamily, rangeStartMs, rangeEndMs, wordOverrides, audioAnalysis]);
+  }, [selectedLines, archetype, fontFamily, stylePack, rangeStartMs, rangeEndMs, wordOverrides, wordFontOverrides, audioAnalysis]);
 
   // Synchronize live preview frame when playhead updates
   useEffect(() => {
@@ -742,7 +748,9 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           targetFps: 30,
           archetype,
           fontFamily,
+          stylePack,
           wordOverrides,
+          wordFontOverrides,
           audioAnalysis: audioAnalysis || undefined
         },
         progress => setRenderProgress(progress)
@@ -1285,10 +1293,22 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                               wordOverrides,
                               precedingWord
                             );
+                            const packConfig = STYLE_PACKS[stylePack] || STYLE_PACKS.trap_drill;
+                            const wordFont = getWordEffectiveFont(
+                              w,
+                              wordArch,
+                              packConfig,
+                              wordFontOverrides,
+                              fontFamily
+                            );
                             const meta = ARCHETYPE_METADATA[wordArch] || ARCHETYPE_METADATA.smooth_fluid;
                             const specificKey = `${w.word}_${w.startMs}`;
                             const cleanKey = w.word.toLowerCase().replace(/[^a-z0-9]/g, '');
-                            const isOverridden = !!(wordOverrides[specificKey] || wordOverrides[cleanKey]);
+                            const isOverridden = !!(
+                              wordOverrides[specificKey] || wordOverrides[cleanKey] ||
+                              wordFontOverrides[specificKey] || wordFontOverrides[cleanKey]
+                            );
+                            const fontShortName = wordFont.split(',')[0].replace(/['"]/g, '');
 
                             return (
                               <button
@@ -1300,7 +1320,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                                     word: w,
                                     lineIdx: idx,
                                     wordIdx: wIdx,
-                                    currentArchetype: wordArch
+                                    currentArchetype: wordArch,
+                                    currentFont: wordFont
                                   });
                                 }}
                                 className={`px-2 py-0.5 text-[10px] font-sans rounded-md flex items-center gap-1 transition-all cursor-pointer shadow-xs ${
@@ -1310,11 +1331,11 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                                     ? 'bg-white/10 hover:bg-white/20 text-white/80 hover:text-white border border-white/10'
                                     : 'bg-[#FAF9F5] hover:bg-[#F0EEE6] text-[#5E5D59] hover:text-[#141413] border border-[#E8E5DE]'
                                 }`}
-                                title={`Customize motion style for "${w.word}"`}
+                                title={`Customize motion style & font for "${w.word}" (Style: ${meta.name}, Font: ${fontShortName})`}
                               >
                                 <span>{meta.icon}</span>
                                 <span className="font-medium">{w.word}</span>
-                                <span className="opacity-50 text-[9px] font-mono">({meta.tag})</span>
+                                <span className="opacity-50 text-[9px] font-mono">[{fontShortName}]</span>
                               </button>
                             );
                           })}
@@ -1769,12 +1790,101 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               </div>
             </div>
 
+            {/* Thematic 4-Font Style Pack Selector */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className={`text-[11px] font-sans font-medium block ${
+                  themeMode === 'dark' ? 'text-white/60' : 'text-[#5E5D59]'
+                }`}>
+                  Thematic 4-Font Style Pack
+                </label>
+                <span className="text-[9px] font-mono text-[#D97757] font-semibold">
+                  SEMANTIC MATRIX
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5 mb-2">
+                {(['trap_drill', 'shonen_comic', 'cartoon_bounce', 'cyber_industrial'] as StylePackId[]).map(packId => {
+                  const pack = STYLE_PACKS[packId];
+                  const isSelected = stylePack === packId;
+                  return (
+                    <button
+                      key={packId}
+                      type="button"
+                      onClick={() => {
+                        setStylePack(packId);
+                        setFontFamily(pack.fonts.hero);
+                      }}
+                      className={`p-2 border rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        isSelected
+                          ? themeMode === 'dark'
+                            ? 'border-[#D97757] bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs'
+                            : 'border-[#D97757] bg-[#FAF0EB] ring-1 ring-[#D97757]/30 shadow-xs'
+                          : themeMode === 'dark'
+                          ? 'border-white/10 hover:border-white/20 bg-[#1C1C20]'
+                          : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-white shadow-xs'
+                      }`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">{pack.icon}</span>
+                        <span className={`text-[8px] font-mono px-1 py-0.5 rounded ${
+                          themeMode === 'dark' ? 'bg-white/10 text-white/80' : 'bg-[#FAF9F5] text-[#5E5D59] border border-[#E8E5DE]'
+                        }`}>
+                          {pack.tag}
+                        </span>
+                      </div>
+                      <span className={`text-[11px] font-sans font-medium mt-1 truncate ${
+                        themeMode === 'dark' ? 'text-white' : 'text-[#141413]'
+                      }`}>
+                        {pack.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Active Pack Font Matrix Visualizer */}
+              {stylePack && STYLE_PACKS[stylePack] && (
+                <div className={`p-2.5 rounded-xl border text-[10px] font-mono space-y-1 mb-3 ${
+                  themeMode === 'dark' ? 'bg-[#18181C] border-white/10 text-white/70' : 'bg-[#FAF9F5] border-[#E8E5DE] text-[#5E5D59]'
+                }`}>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#D97757] font-semibold flex items-center gap-1">
+                      <span>👑</span>
+                      <span>Hero (Drop/Punch):</span>
+                    </span>
+                    <span className="truncate max-w-[130px] text-right font-medium">{STYLE_PACKS[stylePack].fonts.hero.split(',')[0].replace(/'/g, '')}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-amber-500 font-semibold flex items-center gap-1">
+                      <span>⚔️</span>
+                      <span>Action (Slash/Cut):</span>
+                    </span>
+                    <span className="truncate max-w-[130px] text-right font-medium">{STYLE_PACKS[stylePack].fonts.action.split(',')[0].replace(/'/g, '')}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-cyan-400 font-semibold flex items-center gap-1">
+                      <span>⚡</span>
+                      <span>Novelty (Glitch/Bounce):</span>
+                    </span>
+                    <span className="truncate max-w-[130px] text-right font-medium">{STYLE_PACKS[stylePack].fonts.novelty.split(',')[0].replace(/'/g, '')}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-emerald-500 font-semibold flex items-center gap-1">
+                      <span>⚓</span>
+                      <span>Anchor (Connectors):</span>
+                    </span>
+                    <span className="truncate max-w-[130px] text-right font-medium">{STYLE_PACKS[stylePack].fonts.anchor.split(',')[0].replace(/['"]/g, '')}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Font Selector */}
             <div>
               <label className={`text-[11px] font-sans font-medium block mb-1.5 ${
                 themeMode === 'dark' ? 'text-white/60' : 'text-[#5E5D59]'
               }`}>
-                Typography Font
+                Hero Typography Font (Override)
               </label>
               <select
                 value={fontFamily}
@@ -1899,7 +2009,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               Select an explicit motion style for this word, or restore dynamic semantic detection:
             </p>
 
-            <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
+            <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
               {MANUAL_ARCHETYPES.map((archKey) => {
                 const meta = ARCHETYPE_METADATA[archKey];
                 const isSelected = editingWordTarget.currentArchetype === archKey;
@@ -1912,7 +2022,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                         ...prev,
                         [specificKey]: archKey
                       }));
-                      setEditingWordTarget(null);
+                      setEditingWordTarget(prev => prev ? { ...prev, currentArchetype: archKey } : null);
                     }}
                     className={`p-2.5 border rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between ${
                       isSelected
@@ -1938,6 +2048,56 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               })}
             </div>
 
+            {/* Typography Font for this specific word */}
+            <div className="pt-2 border-t border-white/10 dark:border-white/10">
+              <label className={`text-[11px] font-sans font-medium block mb-1 ${
+                themeMode === 'dark' ? 'text-white/60' : 'text-[#5E5D59]'
+              }`}>
+                Typography Font for this Word:
+              </label>
+              <select
+                value={
+                  wordFontOverrides[`${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`] ||
+                  wordFontOverrides[editingWordTarget.word.word.toLowerCase().replace(/[^a-z0-9]/g, '')] ||
+                  editingWordTarget.currentFont
+                }
+                onChange={(e) => {
+                  const specificKey = `${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`;
+                  setWordFontOverrides(prev => ({
+                    ...prev,
+                    [specificKey]: e.target.value
+                  }));
+                  setEditingWordTarget(prev => prev ? { ...prev, currentFont: e.target.value } : null);
+                }}
+                className={`w-full p-2 text-xs font-sans rounded-xl focus:outline-none focus:border-[#D97757] focus:ring-1 focus:ring-[#D97757] cursor-pointer border shadow-xs transition-colors ${
+                  themeMode === 'dark'
+                    ? 'bg-[#1C1C20] border-white/10 text-white'
+                    : 'bg-white border-[#E8E5DE] text-[#141413]'
+                }`}
+              >
+                <optgroup label="Style Pack Presets">
+                  <option value={STYLE_PACKS[stylePack].fonts.hero}>👑 Hero: {STYLE_PACKS[stylePack].fonts.hero.split(',')[0].replace(/'/g, '')}</option>
+                  <option value={STYLE_PACKS[stylePack].fonts.action}>⚔️ Action: {STYLE_PACKS[stylePack].fonts.action.split(',')[0].replace(/'/g, '')}</option>
+                  <option value={STYLE_PACKS[stylePack].fonts.novelty}>⚡ Novelty: {STYLE_PACKS[stylePack].fonts.novelty.split(',')[0].replace(/'/g, '')}</option>
+                  <option value={STYLE_PACKS[stylePack].fonts.anchor}>⚓ Anchor: {STYLE_PACKS[stylePack].fonts.anchor.split(',')[0].replace(/['"]/g, '')}</option>
+                </optgroup>
+                <optgroup label="All Curated Fonts">
+                  <option value="'Wilhelm Gotisch', sans-serif">𝕾𝖍𝖆𝖘𝖍𝖙𝖆𝖗 Gotisch (Trap)</option>
+                  <option value="'Molot', sans-serif">Molot (Brutalist 3D)</option>
+                  <option value="'Vendetta', cursive">Vendetta (Blade Razor)</option>
+                  <option value="'Bangers', cursive">Bangers (Comic)</option>
+                  <option value="'Luckiest Guy', cursive">Luckiest Guy (Bubbly)</option>
+                  <option value="'Wicked Mouse', cursive">Wicked Mouse (1930s)</option>
+                  <option value="'Kraash Black', cursive">Kraash Black (Punk)</option>
+                  <option value="'Super Comic', sans-serif">Super Comic (Heavy)</option>
+                  <option value="'Bubblegum', cursive">Bubblegum (Bubble)</option>
+                  <option value="VT323, monospace">VT323 (8-Bit)</option>
+                  <option value='"IBM Plex Mono", monospace'>IBM Plex Mono (Clean)</option>
+                  <option value='"Space Mono", monospace'>Space Mono (Modern Tech)</option>
+                </optgroup>
+              </select>
+            </div>
+
             <div className={`flex gap-2.5 pt-3 border-t ${
               themeMode === 'dark' ? 'border-white/10' : 'border-[#E8E5DE]'
             }`}>
@@ -1951,6 +2111,12 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     delete next[cleanKey];
                     return next;
                   });
+                  setWordFontOverrides(prev => {
+                    const next = { ...prev };
+                    delete next[specificKey];
+                    delete next[cleanKey];
+                    return next;
+                  });
                   setEditingWordTarget(null);
                 }}
                 className={`flex-1 py-2 rounded-xl border text-xs font-sans font-medium transition-colors cursor-pointer ${
@@ -1959,7 +2125,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     : 'border-[#E8E5DE] hover:bg-[#FAF9F5] text-[#141413]'
                 }`}
               >
-                Restore Auto Semantic
+                Reset to Auto Semantic
               </button>
               <button
                 onClick={() => setEditingWordTarget(null)}

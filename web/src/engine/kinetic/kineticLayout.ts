@@ -1,4 +1,5 @@
 import { TextLayoutResult } from './types';
+import { isFillerWord } from './semanticClassifier';
 
 /**
  * Computes safe text layout guaranteed to never clip outside 128x64 display.
@@ -24,6 +25,21 @@ export function computeSafeTextLayout(
     };
   }
 
+  // Tier 0: Filler / Connective word ("THE", "IN", "A", "TO", "AND", "TE", "DE")
+  // Subordinated to clean, conversational scale (14px to 18px) so hero words have punch
+  if (isFillerWord(clean) && !clean.includes(' ')) {
+    const size = 16;
+    ctx.font = `bold ${size}px ${fontFamily}`;
+    return {
+      lines: [clean],
+      fontSize: size,
+      lineHeight: size,
+      letterSpacing: 1,
+      totalHeight: size,
+      yOffsets: [Math.floor((64 - size) / 2 + size * 0.85)]
+    };
+  }
+
   // Tier 1: Single short hero word (1 to 4 chars) -> Huge Display Font (32px to 48px)
   if (charCount <= 4 && !clean.includes(' ')) {
     let size = 48;
@@ -45,6 +61,7 @@ export function computeSafeTextLayout(
       size -= 2;
     }
   }
+
 
   // Tier 2: Medium word (5 to 10 chars) -> Scaled single line (14px to 26px)
   if (charCount <= 10 && !clean.includes(' ')) {

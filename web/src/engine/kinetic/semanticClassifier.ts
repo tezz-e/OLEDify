@@ -1,5 +1,24 @@
-import { MotionArchetype } from './types';
+import { MotionArchetype, StylePackConfig, WordFontRole, STYLE_PACKS } from './types';
 import { LyricWord } from '../lyrics/types';
+
+// Common English, Punjabi & Hindi Filler / Connective Words
+export const FILLER_WORDS = new Set([
+  // English
+  'a', 'an', 'the', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'up', 
+  'about', 'into', 'over', 'after', 'and', 'but', 'or', 'so', 'yet', 'it', 'its', 
+  'my', 'your', 'his', 'her', 'their', 'our', 'is', 'am', 'are', 'was', 'were', 'be',
+  'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'that', 'this', 'these', 'those',
+  'i', 'im', "i'm", 'you', 'he', 'she', 'we', 'they', 'me', 'him', 'us', 'them',
+  // Punjabi & Hindi
+  'te', 'de', 'da', 'di', 'ne', 'nu', 'ch', 'vich', 'se', 'ko', 'ka', 'ki', 'ke',
+  'aur', 'par', 'bhi', 'naal', 'mera', 'meri', 'mere', 'tera', 'teri', 'tere', 
+  'asi', 'tussi', 'oh', 'ae', 'hai', 'si', 'han', 'main', 'tu', 'jo', 'woh', 'yeh'
+]);
+
+export function isFillerWord(word: string): boolean {
+  const clean = word.toLowerCase().replace(/[^a-z0-9']/g, '');
+  return FILLER_WORDS.has(clean);
+}
 
 // Semantic Keyword Dictionaries
 const BLADE_KEYWORDS = new Set([
@@ -107,7 +126,12 @@ export function classifyWordArchetype(
     return 'target_focus';
   }
 
-  // 3. Rhythmic & Duration Heuristics
+  // 3. Connective / Filler words stay clean and non-distracting
+  if (isFillerWord(clean)) {
+    return 'smooth_fluid';
+  }
+
+  // 4. Rhythmic & Duration Heuristics
   // Long sustained notes (>650ms) need active hold motion (Echo Stack or 3D Block)
   if (durationMs > 650) {
     return (wordIndex % 2 === 0) ? 'echo_stack' : '3d_block_stack';
@@ -123,7 +147,7 @@ export function classifyWordArchetype(
     return (wordIndex % 2 === 0) ? 'cyber_glitch' : 'smooth_fluid';
   }
 
-  // 4. Dynamic Variety Rotation for neutral words (never monotonous)
+  // 5. Dynamic Variety Rotation for neutral words (never monotonous)
   const neutralPalette: MotionArchetype[] = [
     'smooth_fluid',
     'inverted_badge',
@@ -165,4 +189,79 @@ export function getWordEffectiveArchetype(
 
   return globalArchetype;
 }
+
+/**
+ * Maps a motion archetype and word content to one of the 4 typographic roles:
+ * - 'hero': 808 drop, punchline, major noun, anthem
+ * - 'action': blade, slash, razor, speed
+ * - 'novelty': glitch, tech, bounce, echo chant
+ * - 'anchor': connective, preposition, conversational
+ */
+export function getWordFontRole(
+  archetype: MotionArchetype,
+  word: string
+): WordFontRole {
+  if (isFillerWord(word)) {
+    return 'anchor';
+  }
+
+  switch (archetype) {
+    case 'manga_impact':
+    case '3d_block_stack':
+    case 'inverted_badge':
+      return 'hero';
+    case 'blade_slash':
+    case 'snake_slither':
+      return 'action';
+    case 'cyber_glitch':
+    case 'target_focus':
+    case 'wiggly_boil':
+    case 'echo_stack':
+      return 'novelty';
+    case 'smooth_fluid':
+    default:
+      return 'anchor';
+  }
+}
+
+/**
+ * Resolves the final font family for a word, respecting manual overrides,
+ * the active StylePack, and word semantic role.
+ */
+export function getWordEffectiveFont(
+  word: LyricWord,
+  archetype: MotionArchetype,
+  packConfig: StylePackConfig = STYLE_PACKS.trap_drill,
+  wordFontOverrides?: Record<string, string>,
+  globalFont?: string
+): string {
+  const specificKey = `${word.word}_${word.startMs}`;
+  const cleanKey = word.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  // 1. Explicit user override for this word takes absolute priority
+  if (wordFontOverrides && wordFontOverrides[specificKey]) {
+    return wordFontOverrides[specificKey];
+  }
+  if (wordFontOverrides && wordFontOverrides[cleanKey]) {
+    return wordFontOverrides[cleanKey];
+  }
+
+  // 2. Resolve semantic role in the style pack
+  const role = getWordFontRole(archetype, word.word);
+  const fonts = packConfig.fonts;
+
+  switch (role) {
+    case 'hero':
+      // If user selected a custom font dropdown, use it as hero font
+      return globalFont || fonts.hero;
+    case 'action':
+      return fonts.action;
+    case 'novelty':
+      return fonts.novelty;
+    case 'anchor':
+    default:
+      return fonts.anchor;
+  }
+}
+
 

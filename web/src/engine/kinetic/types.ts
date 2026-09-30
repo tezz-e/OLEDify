@@ -110,6 +110,97 @@ export interface TextLayoutResult {
   yOffsets: number[];
 }
 
+export type WordFontRole = 'hero' | 'action' | 'novelty' | 'anchor';
+
+export type StylePackId = 
+  | 'trap_drill'
+  | 'shonen_comic'
+  | 'cartoon_bounce'
+  | 'cyber_industrial'
+  | 'custom';
+
+export interface StylePackConfig {
+  id: StylePackId;
+  name: string;
+  icon: string;
+  tag: string;
+  description: string;
+  fonts: {
+    hero: string;      // Punchline, bass drop, 808, major noun
+    action: string;    // Blade slash, razor, speed, aggressive
+    novelty: string;   // Glitch, bounce, ad-libs, sound FX
+    anchor: string;    // Connective words, conversational flow
+  };
+}
+
+export const STYLE_PACKS: Record<StylePackId, StylePackConfig> = {
+  trap_drill: {
+    id: 'trap_drill',
+    name: 'Trap & Drill Opium',
+    icon: '🗡️',
+    tag: 'TRAP',
+    description: 'Wilhelm Gotisch hero with razor Vendetta slashes, brutalist Molot punch, and clean mono connectors',
+    fonts: {
+      hero: "'Wilhelm Gotisch', sans-serif",
+      action: "'Vendetta', cursive",
+      novelty: "'Molot', sans-serif",
+      anchor: '"IBM Plex Mono", monospace'
+    }
+  },
+  shonen_comic: {
+    id: 'shonen_comic',
+    name: 'Shonen Manga Action',
+    icon: '💥',
+    tag: 'COMIC',
+    description: 'Bangers hero impact, Kraash punk slashes, Super Comic blocks, and mono conversational flow',
+    fonts: {
+      hero: "'Bangers', cursive",
+      action: "'Kraash Black', cursive",
+      novelty: "'Super Comic', sans-serif",
+      anchor: '"IBM Plex Mono", monospace'
+    }
+  },
+  cartoon_bounce: {
+    id: 'cartoon_bounce',
+    name: 'Y2K Cartoon Bounce',
+    icon: '🎈',
+    tag: 'BOUNCE',
+    description: '1930s Wicked Mouse hero, bubbly Luckiest Guy actions, puffy Bubblegum, and clean modern tech mono',
+    fonts: {
+      hero: "'Wicked Mouse', cursive",
+      action: "'Luckiest Guy', cursive",
+      novelty: "'Bubblegum', cursive",
+      anchor: '"Space Mono", monospace'
+    }
+  },
+  cyber_industrial: {
+    id: 'cyber_industrial',
+    name: 'Cyberpunk Industrial',
+    icon: '⚡',
+    tag: 'CYBER',
+    description: 'Brutalist Molot hero, VT323 retro pixel glitch, Space Mono speed, and IBM Plex anchor',
+    fonts: {
+      hero: "'Molot', sans-serif",
+      action: "VT323, monospace",
+      novelty: '"Space Mono", monospace',
+      anchor: '"IBM Plex Mono", monospace'
+    }
+  },
+  custom: {
+    id: 'custom',
+    name: 'Custom Curated',
+    icon: '⚙️',
+    tag: 'CUSTOM',
+    description: 'User-selected custom Hero typography with automatically tuned semantic companion fonts',
+    fonts: {
+      hero: '"IBM Plex Mono", monospace',
+      action: "'Vendetta', cursive",
+      novelty: "'Molot', sans-serif",
+      anchor: '"IBM Plex Mono", monospace'
+    }
+  }
+};
+
 import { AudioAnalysisResult } from './audioAnalysisEngine';
 
 export interface KineticRenderOptions {
@@ -121,5 +212,9 @@ export interface KineticRenderOptions {
   fontFamily?: string;
   theme?: 'cyan' | 'white' | 'amber' | 'green';
   wordOverrides?: Record<string, MotionArchetype>;
+  wordFontOverrides?: Record<string, string>;
+  stylePack?: StylePackId;
+  customPalette?: StylePackConfig['fonts'];
   audioAnalysis?: AudioAnalysisResult;
 }
+

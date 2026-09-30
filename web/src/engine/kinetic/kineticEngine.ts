@@ -1,8 +1,18 @@
 import { ExtractedFrame, DecodedMedia } from '../../types/media';
-import { KineticRenderOptions, MotionArchetype } from './types';
+import { KineticRenderOptions, MotionArchetype, STYLE_PACKS } from './types';
 import { computeSafeTextLayout } from './kineticLayout';
 import { renderArchetypeFrame } from './kineticArchetypes';
-import { getWordEffectiveArchetype } from './semanticClassifier';
+import { getWordEffectiveArchetype, getWordEffectiveFont } from './semanticClassifier';
+import { LyricWord } from '../lyrics/types';
+
+function findLastEndedWord(wordsList: LyricWord[], timeMs: number): { word?: LyricWord; index: number } {
+  for (let i = wordsList.length - 1; i >= 0; i--) {
+    if (wordsList[i].endMs <= timeMs) {
+      return { word: wordsList[i], index: i };
+    }
+  }
+  return { word: undefined, index: -1 };
+}
 
 /**
  * Renders synchronized kinetic typography frames at 30 FPS for a 128x64 OLED display.
@@ -63,28 +73,17 @@ export async function renderKineticSequence(
     // Locate active word
     let activeWordIndex = words.findIndex(w => currentMs >= w.startMs && currentMs < w.endMs);
     let activeWord = activeWordIndex !== -1 ? words[activeWordIndex] : undefined;
+    let isPauseState = false;
 
     if (!activeWord) {
-      // If between words or in gap, take preceding or next word
-      activeWord = words.find(w => currentMs < w.startMs) || words[words.length - 1];
-      activeWordIndex = words.indexOf(activeWord);
-    }
-
-    const wordDuration = Math.max(80, activeWord.endMs - activeWord.startMs);
-    const tau = Math.max(0, Math.min(1, (currentMs - activeWord.startMs) / wordDuration));
-
-    // Resolve dynamic semantic motion archetype per word
-    const precedingWord = activeWordIndex > 0 ? words[activeWordIndex - 1] : undefined;
-    let effectiveArchetype = getWordEffectiveArchetype(
-      activeWord,
-      activeWordIndex,
-      archetype,
-      wordOverrides,
-      precedingWord
-    );
-
-    if (effectiveArchetype === 'auto_semantic') {
-      effectiveArchetype = 'smooth_fluid';
+      // Check if preceding word just ended within 140ms tail hold
+      const { word: prevWord, index: prevIndex } = findLastEndedWord(words, currentMs);
+      if (prevWord && (currentMs - prevWord.endMs) <= 140) {
+        activeWord = prevWord;
+        activeWordIndex = prevIndex;
+      } else {
+        isPauseState = true;
+      }
     }
 
     // Clear frame to solid black (OLED off)
@@ -92,21 +91,74 @@ export async function renderKineticSequence(
     ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, 128, 64);
 
-    // Compute Zero-Clip Layout
-    const layout = computeSafeTextLayout(activeWord.word, ctx, fontFamily);
+    if (isPauseState || !activeWord) {
+      // REST STATE (Instrumental Pause / Vocal Gap)
+      // Render subtle beat-reactive minimal OLED phosphor pulse instead of frozen future text
+      ctx.save();
+      if (audioFrame) {
+        const pulseWidth = Math.floor(Math.max(6, Math.min(44, audioFrame.rms * 50 + (audioFrame.isBeat ? 16 : 0))));
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(Math.floor(64 - pulseWidth / 2), 31, pulseWidth, 2);
+        if (audioFrame.isBeat) {
+          ctx.fillRect(63, 27, 2, 10);
+        }
+      } else {
+        // Minimal idle breathing dot
+        const dotAlpha = 0.4 + 0.3 * Math.sin((f / 30) * Math.PI * 2);
+        if (dotAlpha > 0.45) {
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(63, 31, 2, 2);
+        }
+      }
+      ctx.restore();
+    } else {
+      const wordDuration = Math.max(80, activeWord.endMs - activeWord.startMs);
+      const tau = Math.max(0, Math.min(1, (currentMs - activeWord.startMs) / wordDuration));
 
-    // Apply micro camera shake on heavy bass kicks / transients
-    ctx.save();
-    if (audioFrame?.isBeat || (audioFrame && audioFrame.bass > 0.8)) {
-      const punchAmp = audioFrame.isBeat ? (audioFrame.onsetStrength > 0.6 ? 2 : 1) : 1;
-      const shakeX = (f % 2 === 0 ? 1 : -1) * punchAmp;
-      const shakeY = (f % 3 === 0 ? -1 : 1) * punchAmp;
-      ctx.translate(shakeX, shakeY);
+      // Resolve dynamic semantic motion archetype per word
+      const precedingWord = activeWordIndex > 0 ? words[activeWordIndex - 1] : undefined;
+      let effectiveArchetype = getWordEffectiveArchetype(
+        activeWord,
+        activeWordIndex,
+        archetype,
+        wordOverrides,
+        precedingWord
+      );
+
+      if (effectiveArchetype === 'auto_semantic') {
+        effectiveArchetype = 'smooth_fluid';
+      }
+
+      // Resolve active style pack
+      const activePackConfig = options.customPalette
+        ? { id: 'custom' as const, name: 'Custom', icon: '⚙️', tag: 'CUSTOM', description: '', fonts: options.customPalette }
+        : (options.stylePack && STYLE_PACKS[options.stylePack]) ? STYLE_PACKS[options.stylePack] : STYLE_PACKS.trap_drill;
+
+      // Resolve dynamic font per word matching semantic role & pack
+      const effectiveFont = getWordEffectiveFont(
+        activeWord,
+        effectiveArchetype,
+        activePackConfig,
+        options.wordFontOverrides,
+        fontFamily
+      );
+
+      // Compute Zero-Clip Layout with the effective font
+      const layout = computeSafeTextLayout(activeWord.word, ctx, effectiveFont);
+
+      // Apply micro camera shake on heavy bass kicks / transients
+      ctx.save();
+      if (audioFrame?.isBeat || (audioFrame && audioFrame.bass > 0.8)) {
+        const punchAmp = audioFrame.isBeat ? (audioFrame.onsetStrength > 0.6 ? 2 : 1) : 1;
+        const shakeX = (f % 2 === 0 ? 1 : -1) * punchAmp;
+        const shakeY = (f % 3 === 0 ? -1 : 1) * punchAmp;
+        ctx.translate(shakeX, shakeY);
+      }
+
+      // Render Archetype Frame with effective font
+      renderArchetypeFrame(ctx, effectiveArchetype, activeWord.word, tau, layout, f, effectiveFont, audioFrame);
+      ctx.restore();
     }
-
-    // Render Archetype Frame
-    renderArchetypeFrame(ctx, effectiveArchetype, activeWord.word, tau, layout, f, fontFamily, audioFrame);
-    ctx.restore();
 
     // Extract 128x64 RGBA
     const rawImageData = ctx.getImageData(0, 0, 128, 64);
