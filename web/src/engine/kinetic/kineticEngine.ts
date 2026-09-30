@@ -26,6 +26,15 @@ export async function renderKineticSequence(
   const frameCount = Math.max(1, Math.round((durationMs / 1000) * targetFps));
   const frameIntervalMs = 1000 / targetFps;
 
+  // Ensure custom @font-face assets are loaded into memory before measuring text
+  if (typeof document !== 'undefined' && document.fonts?.ready) {
+    try {
+      await document.fonts.ready;
+    } catch {
+      // Continue if font loading promise fails or in test env
+    }
+  }
+
   // Use standard canvas or OffscreenCanvas
   const canvas = typeof OffscreenCanvas !== 'undefined'
     ? new OffscreenCanvas(128, 64)
