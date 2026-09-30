@@ -1,4 +1,82 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+/* Custom Studio Display & Kinetic Typography Fonts */
+@font-face {
+  font-family: 'Wilhelm Gotisch';
+  src: url('/fonts/WilhelmKlingsporGotisch.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Molot';
+  src: url('/fonts/Molot.otf') format('opentype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Helvetica Compressed';
+  src: url('/fonts/HelveticaCompressed.otf') format('opentype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Vendetta';
+  src: url('/fonts/Vendetta.otf') format('opentype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Luckiest Guy';
+  src: url('/fonts/LuckiestGuy.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Bubblegum';
+  src: url('/fonts/Bubblegum.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Bangers';
+  src: url('/fonts/Bangers.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Kraash Black';
+  src: url('/fonts/KraashBlack.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Lemon Milk';
+  src: url('/fonts/LemonMilkBold.otf') format('opentype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Cinzel Decorative';
+  src: url('/fonts/CinzelDecorativeBlack.otf') format('opentype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Wicked Mouse';
+  src: url('/fonts/WickedMouse.otf') format('opentype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Supersonic Rocketship';
+  src: url('/fonts/SupersonicRocketship.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Dinosaur';
+  src: url('/fonts/Dinosaur.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Super Comic';
+  src: url('/fonts/SuperComic.otf') format('opentype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Plumpfull';
+  src: url('/fonts/Plumpfull.ttf') format('truetype');
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

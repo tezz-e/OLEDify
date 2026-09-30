@@ -1785,10 +1785,36 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     : 'bg-white border-[#E8E5DE] text-[#141413]'
                 }`}
               >
-                <option value='"IBM Plex Mono", monospace'>IBM Plex Mono (Classic)</option>
-                <option value='VT323, monospace'>VT323 (Retro Arcade)</option>
-                <option value='"Space Mono", monospace'>Space Mono (Modern Tech)</option>
-                <option value='Impact, sans-serif'>Impact (Heavy Bold)</option>
+                <optgroup label="🔥 Trap, Gothic & Streetwear">
+                  <option value="'Wilhelm Gotisch', sans-serif">𝕾𝖍𝖆𝖘𝖍𝖙𝖆𝖗 Gotisch (Trap / Opium Vibe)</option>
+                  <option value="'Molot', sans-serif">Molot (Brutalist 3D Block)</option>
+                  <option value="'Helvetica Compressed', sans-serif">Helvetica Compressed (Tall Rap Tour Poster)</option>
+                  <option value="'Vendetta', cursive">Vendetta (Slanted Razor Brush)</option>
+                  <option value="'Lemon Milk', sans-serif">Lemon Milk (Clean Streetwear Sans)</option>
+                  <option value="'Cinzel Decorative', serif">Cinzel Decorative (Imperial Gothic Royalty)</option>
+                </optgroup>
+
+                <optgroup label="🎈 Cartoony, Bubbly & Fun">
+                  <option value="'Luckiest Guy', cursive">Luckiest Guy (Punchy Bubbly Title)</option>
+                  <option value="'Wicked Mouse', cursive">Wicked Mouse (1930s Cuphead / Disney)</option>
+                  <option value="'Bubblegum', cursive">Bubblegum (Puffy Round Bubble)</option>
+                  <option value="'Supersonic Rocketship', cursive">Supersonic Rocketship (Retro 60s Atomic)</option>
+                  <option value="'Plumpfull', sans-serif">Plumpfull (Ultra Chonky Fat)</option>
+                  <option value="'Dinosaur', cursive">Dinosaur (Playful Block Cartoon)</option>
+                </optgroup>
+
+                <optgroup label="💥 Shonen Manga & Comic Action">
+                  <option value="'Bangers', cursive">Bangers (Shonen Manga Impact)</option>
+                  <option value="'Kraash Black', cursive">Kraash Black (Jittery Cutout Punk)</option>
+                  <option value="'Super Comic', sans-serif">Super Comic (Heavy Action Comic)</option>
+                </optgroup>
+
+                <optgroup label="💻 Classic & Monospace">
+                  <option value='"IBM Plex Mono", monospace'>IBM Plex Mono (Classic Clean)</option>
+                  <option value="VT323, monospace">VT323 (Retro 8-Bit Arcade)</option>
+                  <option value='"Space Mono", monospace'>Space Mono (Modern Tech)</option>
+                  <option value="Impact, sans-serif">Impact (Standard Heavy)</option>
+                </optgroup>
               </select>
             </div>
 
