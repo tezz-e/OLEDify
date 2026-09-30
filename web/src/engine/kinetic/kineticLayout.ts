@@ -112,14 +112,14 @@ export function computeSafeTextLayout(
 
   // Compute optimal font size for multi-line block using binary search
   let lowSize = 8;
-  let highSize = Math.floor(maxH / splitLines.length);
+  let highSize = Math.max(8, Math.floor(maxH / splitLines.length) - 2);
   let bestSize = lowSize;
 
   while (lowSize <= highSize) {
     const midSize = Math.floor((lowSize + highSize) / 2);
     ctx.font = `bold ${midSize}px ${fontFamily}`;
     const allFit = splitLines.every(l => ctx.measureText(l).width <= maxW);
-    const heightFits = midSize * splitLines.length + (splitLines.length - 1) * 2 <= maxH;
+    const heightFits = (midSize + 2) * splitLines.length <= maxH;
 
     if (allFit && heightFits) {
       bestSize = midSize;

@@ -8,7 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
-    "test": "npx tsx test/verify-m1.ts"
+    "test": "npx tsx test/test-kinetic-engine.ts && npx tsx test/test-beat-sync.ts"
   },
   "dependencies": {
     "@dicebear/collection": "^9.4.2",

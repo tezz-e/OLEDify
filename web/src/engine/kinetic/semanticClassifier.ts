@@ -45,9 +45,9 @@ const ANTHEM_KEYWORDS = new Set([
 ]);
 
 const TARGET_KEYWORDS = new Set([
-  'you', 'tainu', 'look', 'see', 'watch', 'eyes', 'aim', 'target', 'sight', 'locked',
-  'view', 'focus', 'check', 'akhan', 'dekh', 'point', 'spot', 'me', 'mera', 'meri',
-  'tere', 'meri', 'face', 'stare', 'gaze', 'takk', 'nazar', 'dhyan', 'scope', 'reddot',
+  'look', 'see', 'watch', 'eyes', 'aim', 'target', 'sight', 'locked',
+  'view', 'focus', 'check', 'akhan', 'dekh', 'point', 'spot',
+  'face', 'stare', 'gaze', 'takk', 'nazar', 'dhyan', 'scope', 'reddot',
   'bullseye', 'hunt', 'prey', 'watchout', 'locate', 'track', 'found'
 ]);
 
@@ -106,7 +106,20 @@ export function classifyWordArchetype(
 ): MotionArchetype {
   const clean = word.toLowerCase().replace(/[^a-z0-9']/g, '');
 
-  // 1. Direct Semantic Keyword Matching
+  // 1. Punctuation & Structural Markers (Shouts or questions)
+  if (word.includes('!') || word.endsWith('!!')) {
+    return 'manga_impact';
+  }
+  if (word.includes('?') || word.includes('...')) {
+    return 'target_focus';
+  }
+
+  // 2. Connective / Filler words stay clean and non-distracting
+  if (isFillerWord(clean)) {
+    return 'smooth_fluid';
+  }
+
+  // 3. Direct Semantic Keyword Matching
   if (BLADE_KEYWORDS.has(clean)) return 'blade_slash';
   if (IMPACT_KEYWORDS.has(clean)) return 'manga_impact';
   if (ANTHEM_KEYWORDS.has(clean)) return '3d_block_stack';
@@ -117,19 +130,6 @@ export function classifyWordArchetype(
   if (BADGE_KEYWORDS.has(clean)) return 'inverted_badge';
   if (FLUID_KEYWORDS.has(clean)) return 'smooth_fluid';
   if (WIGGLY_KEYWORDS.has(clean)) return 'wiggly_boil';
-
-  // 2. Punctuation & Structural Markers
-  if (word.includes('!') || word.endsWith('!!')) {
-    return 'manga_impact';
-  }
-  if (word.includes('?') || word.includes('...')) {
-    return 'target_focus';
-  }
-
-  // 3. Connective / Filler words stay clean and non-distracting
-  if (isFillerWord(clean)) {
-    return 'smooth_fluid';
-  }
 
   // 4. Rhythmic & Duration Heuristics
   // Long sustained notes (>650ms) need active hold motion (Echo Stack or 3D Block)
