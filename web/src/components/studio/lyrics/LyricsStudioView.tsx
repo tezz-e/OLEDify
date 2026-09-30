@@ -13,6 +13,8 @@ import {
   OllamaHealthStatus,
   RECOMMENDED_OLLAMA_MODELS,
   OllamaInspectionLog,
+  LLMProvider,
+  getEffectiveGroqApiKey,
 } from '../../../engine/kinetic/ollamaClassifier';
 import { DecodedMedia, ExtractedFrame } from '../../../types/media';
 import { OledCanvas } from '../../OledCanvas';
@@ -90,10 +92,13 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const [isRendering, setIsRendering] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
 
-  // --- LOCAL OLLAMA INFERENCE STATE ---
+  // --- LLM INFERENCE STATE (Groq Cloud & Local Ollama) ---
   const [inferenceMode, setInferenceMode] = useState<'heuristic' | 'ollama'>('heuristic');
+  const [llmProvider, setLlmProvider] = useState<LLMProvider>(() => {
+    return getEffectiveGroqApiKey() ? 'groq' : 'ollama';
+  });
   const [ollamaStatus, setOllamaStatus] = useState<OllamaHealthStatus | null>(null);
-  const [selectedOllamaModel, setSelectedOllamaModel] = useState<string>('qwen2.5:3b');
+  const [selectedOllamaModel, setSelectedOllamaModel] = useState<string>('qwen3.5:2b-q4_K_M');
   const [isAnalyzingOllama, setIsAnalyzingOllama] = useState<boolean>(false);
   const [ollamaProgress, setOllamaProgress] = useState<{ percent: number; message: string } | null>(null);
   const [showOllamaInspector, setShowOllamaInspector] = useState<boolean>(false);
@@ -114,14 +119,18 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const handleRunOllamaAnalysis = async () => {
     if (!parsedLyrics || parsedLyrics.lines.length === 0) return;
     setIsAnalyzingOllama(true);
-    setOllamaProgress({ percent: 0, message: 'Connecting to Ollama...' });
+    setOllamaProgress({ 
+      percent: 0, 
+      message: llmProvider === 'groq' ? 'Calling Groq 120B Cloud...' : 'Connecting to local Ollama...' 
+    });
 
     try {
       const selectedLines = parsedLyrics.lines.slice(selectedStartIndex, selectedEndIndex + 1);
       const results = await classifyLyricsWithOllama(
         selectedLines.length > 0 ? selectedLines : parsedLyrics.lines,
         {
-          model: selectedOllamaModel,
+          provider: llmProvider,
+          model: llmProvider === 'groq' ? 'openai/gpt-oss-120b' : selectedOllamaModel,
           songTitle: parsedLyrics.title || searchQuery,
           artist: parsedLyrics.artist,
           onProgress: (percent, message) => {
@@ -137,7 +146,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         setWordOverrides(prev => ({ ...prev, ...results }));
       }
     } catch (err: any) {
-      console.error('Ollama analysis failed:', err);
+      console.error('LLM analysis failed:', err);
     } finally {
       setIsAnalyzingOllama(false);
       setTimeout(() => setOllamaProgress(null), 3500);
@@ -1558,43 +1567,54 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                           }`}
                         >
                           <Bot className="w-3 h-3" />
-                          <span>Local Ollama</span>
+                          <span>AI LLM Director</span>
                         </button>
                       </div>
                     </div>
 
-                    {/* Ollama Active Panel */}
+                    {/* AI LLM Active Panel */}
                     {inferenceMode === 'ollama' && (
-                      <div className={`p-3 border rounded-xl text-xs font-sans flex flex-col gap-2 shadow-xs ${
+                      <div className={`p-3 border rounded-xl text-xs font-sans flex flex-col gap-2.5 shadow-xs ${
                         themeMode === 'dark' ? 'bg-[#141418] border-white/10' : 'bg-[#FAF9F5] border-[#E8E5DE]'
                       }`}>
-                        <div className="flex items-center justify-between">
-                          <span className={`text-[10px] font-medium ${themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}`}>Ollama Status:</span>
-                          <span className={`text-[10px] font-medium flex items-center gap-1.5 ${
-                            ollamaStatus?.online ? 'text-emerald-500' : 'text-amber-500'
-                          }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${
-                              ollamaStatus?.online ? 'bg-emerald-500 shadow-[0_0_5px_#10B981]' : 'bg-amber-500'
-                            }`} />
-                            {ollamaStatus?.online ? `Connected (${ollamaStatus.version || 'v0.x'})` : 'Offline (http://localhost:11434)'}
-                          </span>
+                        {/* Provider Switcher Tabs */}
+                        <div className={`flex items-center p-0.5 rounded-lg border text-[10px] font-sans font-medium ${
+                          themeMode === 'dark' ? 'bg-[#18181B] border-white/10' : 'bg-white border-[#E8E5DE]'
+                        }`}>
+                          <button
+                            type="button"
+                            onClick={() => setLlmProvider('groq')}
+                            className={`flex-1 py-1 rounded-md transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                              llmProvider === 'groq'
+                                ? 'bg-[#D97757] text-white shadow-xs font-semibold'
+                                : 'text-[#87867F] hover:text-[#141413] dark:hover:text-white'
+                            }`}
+                          >
+                            <Zap className="w-3 h-3" />
+                            <span>Groq 120B (Punjabi/Slang)</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setLlmProvider('ollama')}
+                            className={`flex-1 py-1 rounded-md transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                              llmProvider === 'ollama'
+                                ? 'bg-[#D97757] text-white shadow-xs font-semibold'
+                                : 'text-[#87867F] hover:text-[#141413] dark:hover:text-white'
+                            }`}
+                          >
+                            <Cpu className="w-3 h-3" />
+                            <span>Local GPU (Offline)</span>
+                          </button>
                         </div>
 
-                        {ollamaStatus?.online ? (
+                        {llmProvider === 'groq' ? (
                           <>
-                            <div className="flex items-center justify-between gap-2">
-                              <span className={`text-[10px] font-medium ${themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}`}>Model:</span>
-                              <select
-                                value={selectedOllamaModel}
-                                onChange={(e) => setSelectedOllamaModel(e.target.value)}
-                                className={`text-xs font-sans p-1.5 rounded-lg border outline-none shadow-xs ${
-                                  themeMode === 'dark' ? 'bg-[#232220] text-white border-white/10' : 'bg-white text-[#141413] border-[#E8E5DE]'
-                                }`}
-                              >
-                                {(ollamaStatus.models.length > 0 ? ollamaStatus.models : RECOMMENDED_OLLAMA_MODELS).map(m => (
-                                  <option key={m} value={m}>{m} {m === 'qwen2.5:3b' ? '★ Recommended (2GB VRAM)' : ''}</option>
-                                ))}
-                              </select>
+                            <div className="flex items-center justify-between">
+                              <span className={`text-[10px] font-medium ${themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}`}>Provider:</span>
+                              <span className="text-[10px] font-mono text-emerald-500 font-medium flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                Groq Cloud LPU (~1.5s)
+                              </span>
                             </div>
 
                             <button
@@ -1610,58 +1630,97 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                               {isAnalyzingOllama ? (
                                 <>
                                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                  <span>{ollamaProgress?.message || 'Analyzing...'}</span>
+                                  <span>{ollamaProgress?.message || 'Analyzing with Groq...'}</span>
                                 </>
                               ) : (
                                 <>
                                   <Sparkles className="w-3.5 h-3.5" />
-                                  <span>Analyze Lyrics with {selectedOllamaModel}</span>
+                                  <span>Analyze with Groq 120B Cloud</span>
                                 </>
                               )}
                             </button>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-center justify-between">
+                              <span className={`text-[10px] font-medium ${themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}`}>Local GPU Status:</span>
+                              <span className={`text-[10px] font-medium flex items-center gap-1.5 ${
+                                ollamaStatus?.online ? 'text-emerald-500' : 'text-amber-500'
+                              }`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${
+                                  ollamaStatus?.online ? 'bg-emerald-500 shadow-[0_0_5px_#10B981]' : 'bg-amber-500'
+                                }`} />
+                                {ollamaStatus?.online ? `100% GPU Ready (${selectedOllamaModel})` : 'Offline (http://localhost:11434)'}
+                              </span>
+                            </div>
 
-                            {ollamaProgress && (
-                              <div className="w-full bg-black/10 dark:bg-white/10 h-1 rounded-full overflow-hidden">
-                                <div 
-                                  className="bg-[#D97757] h-full transition-all duration-300 rounded-full" 
-                                  style={{ width: `${ollamaProgress.percent}%` }}
-                                />
+                            {ollamaStatus?.online && (
+                              <div className="flex items-center justify-between gap-2">
+                                <span className={`text-[10px] font-medium ${themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}`}>Model:</span>
+                                <select
+                                  value={selectedOllamaModel}
+                                  onChange={(e) => setSelectedOllamaModel(e.target.value)}
+                                  className={`text-xs font-sans p-1.5 rounded-lg border outline-none shadow-xs ${
+                                    themeMode === 'dark' ? 'bg-[#232220] text-white border-white/10' : 'bg-white text-[#141413] border-[#E8E5DE]'
+                                  }`}
+                                >
+                                  {(ollamaStatus.models.length > 0 ? ollamaStatus.models : RECOMMENDED_OLLAMA_MODELS).map(m => (
+                                    <option key={m} value={m}>
+                                      {m} {m.includes('qwen3.5:2b-q4_K_M') ? '⚡ 66 tok/s (100% GPU)' : ''}
+                                    </option>
+                                  ))}
+                                </select>
                               </div>
                             )}
 
                             <button
                               type="button"
-                              onClick={() => setShowOllamaInspector(true)}
-                              className={`w-full py-1.5 px-2.5 text-[11px] font-sans font-medium rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
-                                themeMode === 'dark' 
-                                  ? 'border-white/10 hover:bg-white/5 text-white/80' 
-                                  : 'border-[#E8E5DE] hover:bg-[#F2EFE9] text-[#5E5D59]'
+                              onClick={handleRunOllamaAnalysis}
+                              disabled={isAnalyzingOllama || !ollamaStatus?.online}
+                              className={`w-full py-2 px-3 text-xs font-sans font-medium rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
+                                isAnalyzingOllama
+                                  ? 'bg-[#D97757]/40 text-white cursor-wait'
+                                  : ollamaStatus?.online
+                                  ? 'bg-[#D97757] text-white hover:bg-[#C66545]'
+                                  : 'bg-black/10 dark:bg-white/10 text-[#87867F] cursor-not-allowed'
                               }`}
                             >
-                              <Terminal className="w-3.5 h-3.5 text-[#D97757]" />
-                              <span>Inspect Prompts & Responses {ollamaInspectionLogs.length > 0 ? `(${ollamaInspectionLogs.length})` : ''}</span>
+                              {isAnalyzingOllama ? (
+                                <>
+                                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                  <span>{ollamaProgress?.message || 'Analyzing...'}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="w-3.5 h-3.5" />
+                                  <span>Analyze with {selectedOllamaModel}</span>
+                                </>
+                              )}
                             </button>
                           </>
-                        ) : (
-                          <div className="text-[11px] font-sans flex flex-col gap-2 leading-relaxed border-t border-[#E8E5DE] dark:border-white/10 pt-2 text-[#5E5D59] dark:text-white/60">
-                            <span className="font-medium text-[#D97757]">Run Local Ollama on your GTX 1650:</span>
-                            <span>1. In PowerShell: <code className="bg-black/5 dark:bg-white/10 px-1 py-0.5 rounded text-[10px]">winget install Ollama.Ollama</code></span>
-                            <span>2. Launch model: <code className="bg-black/5 dark:bg-white/10 px-1 py-0.5 rounded text-[10px]">ollama run qwen2.5:3b</code> (Fits 2 GB VRAM)</span>
-                            <span className="opacity-70 italic text-[10px] mt-0.5">Falls back to Fast Heuristic mode until connected.</span>
-                            <button
-                              type="button"
-                              onClick={() => setShowOllamaInspector(true)}
-                              className={`w-full py-1.5 px-2 text-[11px] font-sans font-medium rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1.5 mt-1 shadow-xs ${
-                                themeMode === 'dark' 
-                                  ? 'border-white/10 hover:bg-white/5 text-white/80' 
-                                  : 'border-[#E8E5DE] hover:bg-[#F2EFE9] text-[#5E5D59]'
-                              }`}
-                            >
-                              <Terminal className="w-3.5 h-3.5 text-[#D97757]" />
-                              <span>Open Prompt Inspector & Test Sandbox</span>
-                            </button>
+                        )}
+
+                        {ollamaProgress && (
+                          <div className="w-full bg-black/10 dark:bg-white/10 h-1 rounded-full overflow-hidden">
+                            <div 
+                              className="bg-[#D97757] h-full transition-all duration-300 rounded-full" 
+                              style={{ width: `${ollamaProgress.percent}%` }}
+                            />
                           </div>
                         )}
+
+                        <button
+                          type="button"
+                          onClick={() => setShowOllamaInspector(true)}
+                          className={`w-full py-1.5 px-2.5 text-[11px] font-sans font-medium rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
+                            themeMode === 'dark' 
+                              ? 'border-white/10 hover:bg-white/5 text-white/80' 
+                              : 'border-[#E8E5DE] hover:bg-[#F2EFE9] text-[#5E5D59]'
+                          }`}
+                        >
+                          <Terminal className="w-3.5 h-3.5 text-[#D97757]" />
+                          <span>Inspect Prompts & Responses {ollamaInspectionLogs.length > 0 ? `(${ollamaInspectionLogs.length})` : ''}</span>
+                        </button>
                       </div>
                     )}
                   </div>
@@ -1887,7 +1946,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         </div>
       )}
 
-      {/* Ollama LLM Telemetry & Test Inspector Modal */}
+      {/* Ollama & Groq LLM Telemetry & Test Inspector Modal */}
       <OllamaInspectorModal
         isOpen={showOllamaInspector}
         onClose={() => setShowOllamaInspector(false)}
@@ -1897,6 +1956,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         sessionLogs={ollamaInspectionLogs}
         availableModels={ollamaStatus?.models?.length ? ollamaStatus.models : undefined}
         onSelectModel={(model) => setSelectedOllamaModel(model)}
+        selectedProvider={llmProvider}
+        onSelectProvider={(p) => setLlmProvider(p)}
       />
     </div>
   );

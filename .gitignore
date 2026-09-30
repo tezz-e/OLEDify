@@ -19,3 +19,9 @@ src/previews/
 
 # Personal Experiments & Test Builds
 experiments/
+
+# Environment Variables & Secrets
+.env
+.env.*
+*.local
+

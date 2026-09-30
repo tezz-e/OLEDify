@@ -13,12 +13,21 @@ import {
   AlertCircle, 
   FileText, 
   Code2, 
-  Layers 
+  Layers,
+  Cloud,
+  Key,
+  Eye,
+  EyeOff,
+  BookOpen
 } from 'lucide-react';
 import { 
   OllamaInspectionLog, 
   testSinglePromptWithOllama, 
-  VALID_MOTION_ARCHETYPES 
+  VALID_MOTION_ARCHETYPES,
+  LLMProvider,
+  GROQ_MODELS,
+  getEffectiveGroqApiKey,
+  saveGroqApiKey
 } from '../../../engine/kinetic/ollamaClassifier';
 import { ARCHETYPE_METADATA, MotionArchetype } from '../../../engine/kinetic/types';
 
@@ -31,13 +40,20 @@ interface OllamaInspectorModalProps {
   sessionLogs: OllamaInspectionLog[];
   availableModels?: string[];
   onSelectModel?: (model: string) => void;
+  selectedProvider?: LLMProvider;
+  onSelectProvider?: (provider: LLMProvider) => void;
 }
 
 const PRESET_TEST_LYRICS = [
   {
-    title: 'Ashke - Karan Aujla',
+    title: 'Ashke - Karan Aujla (Punjabi Slang)',
     artist: 'Karan Aujla',
     lyrics: `Bebe kehndi tainu vihauna\nTe mera shashtar de naal thaaka\nSHASHTAR\nDas ki kar laina kaava'n ni mera baaja aala rakha`,
+  },
+  {
+    title: 'Lose Yourself - Eminem (Fast Rap Flow)',
+    artist: 'Eminem',
+    lyrics: `His palms are sweaty, knees weak, arms are heavy\nThere's vomit on his sweater already, mom's spaghetti\nHe's nervous, but on the surface he looks calm and ready\nTo drop bombs, but he keeps on forgettin'`,
   },
   {
     title: 'Harder Better Faster - Daft Punk',
@@ -60,13 +76,23 @@ export const OllamaInspectorModal: React.FC<OllamaInspectorModalProps> = ({
   sessionLogs,
   availableModels,
   onSelectModel,
+  selectedProvider,
+  onSelectProvider,
 }) => {
   const [activeTab, setActiveTab] = useState<'sandbox' | 'logs'>('sandbox');
+  const [provider, setProvider] = useState<LLMProvider>(selectedProvider || (getEffectiveGroqApiKey() ? 'groq' : 'ollama'));
+  const [groqApiKey, setGroqApiKey] = useState<string>(getEffectiveGroqApiKey());
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [selectedGroqModel, setSelectedGroqModel] = useState<string>('openai/gpt-oss-120b');
   const [activeModel, setActiveModel] = useState<string>(selectedModel);
 
   React.useEffect(() => {
     if (selectedModel) setActiveModel(selectedModel);
   }, [selectedModel]);
+
+  React.useEffect(() => {
+    if (selectedProvider) setProvider(selectedProvider);
+  }, [selectedProvider]);
 
   const [customText, setCustomText] = useState(PRESET_TEST_LYRICS[0].lyrics);
   const [songTitle, setSongTitle] = useState(PRESET_TEST_LYRICS[0].title);
@@ -84,12 +110,19 @@ export const OllamaInspectorModal: React.FC<OllamaInspectorModalProps> = ({
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
+  const handleApiKeyChange = (val: string) => {
+    setGroqApiKey(val);
+    saveGroqApiKey(val);
+  };
+
   const handleRunTest = async () => {
     if (!customText.trim() || isTesting) return;
     setIsTesting(true);
     try {
       const res = await testSinglePromptWithOllama(customText, {
-        model: activeModel,
+        provider,
+        model: provider === 'groq' ? selectedGroqModel : activeModel,
+        groqApiKey,
         songTitle,
         artist,
       });
@@ -142,38 +175,68 @@ const ARCHETYPE_COLORS: Record<MotionArchetype, string> = {
               <Terminal className="w-4 h-4" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="font-serif text-base tracking-tight font-medium">Local LLM Telemetry & Test Inspector</h2>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-medium flex items-center gap-1 ${
-                  isOnline 
-                    ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
-                    : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
-                }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-                  {isOnline ? 'GPU Ready' : 'Offline'}
-                </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="font-serif text-base tracking-tight font-medium">LLM Kinetic Telemetry & Inspector</h2>
 
-                {availableModels && availableModels.length > 0 && (
-                  <select
-                    value={activeModel}
-                    onChange={(e) => {
-                      setActiveModel(e.target.value);
-                      onSelectModel?.(e.target.value);
+                {/* Provider Switcher */}
+                <div className={`flex items-center p-0.5 rounded-lg border text-[11px] font-sans font-medium ${
+                  themeMode === 'dark' ? 'bg-[#141418] border-white/10' : 'bg-[#F2EFE9] border-[#E8E5DE]'
+                }`}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProvider('groq');
+                      onSelectProvider?.('groq');
                     }}
-                    className={`text-[11px] font-mono px-2 py-0.5 rounded-md border outline-none cursor-pointer ${
-                      themeMode === 'dark' 
-                        ? 'bg-[#18181B] text-white border-white/10' 
-                        : 'bg-[#FAF9F5] text-[#141413] border-[#E8E5DE]'
+                    className={`px-2 py-0.5 rounded-md transition-all cursor-pointer flex items-center gap-1 ${
+                      provider === 'groq'
+                        ? 'bg-[#D97757] text-white shadow-xs'
+                        : 'text-[#87867F] hover:text-[#141413] dark:hover:text-white'
                     }`}
                   >
-                    {availableModels.map((m) => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
+                    <Zap className="w-3 h-3" />
+                    <span>Groq Cloud (120B)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProvider('ollama');
+                      onSelectProvider?.('ollama');
+                    }}
+                    className={`px-2 py-0.5 rounded-md transition-all cursor-pointer flex items-center gap-1 ${
+                      provider === 'ollama'
+                        ? 'bg-[#D97757] text-white shadow-xs'
+                        : 'text-[#87867F] hover:text-[#141413] dark:hover:text-white'
+                    }`}
+                  >
+                    <Cpu className="w-3 h-3" />
+                    <span>Local Ollama</span>
+                  </button>
+                </div>
+
+                {/* Status Badges */}
+                {provider === 'groq' ? (
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-medium flex items-center gap-1 ${
+                    groqApiKey 
+                      ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
+                      : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${groqApiKey ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                    {groqApiKey ? 'Groq LPU Active' : 'API Key Required'}
+                  </span>
+                ) : (
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-medium flex items-center gap-1 ${
+                    isOnline 
+                      ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
+                      : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                    {isOnline ? 'GPU Ready (66 tok/s)' : 'Offline'}
+                  </span>
                 )}
               </div>
               <p className={`text-xs ${themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}`}>
-                Inspect the prompt payloads sent to your local Ollama daemon and monitor token throughput.
+                Compare kinetic motion classification between Groq Cloud (best for Punjabi slang) and local GTX 1650 Ollama.
               </p>
             </div>
           </div>
@@ -232,7 +295,76 @@ const ARCHETYPE_COLORS: Record<MotionArchetype, string> = {
                 <div className={`p-3.5 rounded-xl border space-y-3 ${
                   themeMode === 'dark' ? 'bg-[#202024] border-white/10' : 'bg-white border-[#E8E5DE]'
                 }`}>
-                  <div className="flex items-center justify-between">
+                  {/* Provider Configuration Section */}
+                  {provider === 'groq' ? (
+                    <div className="space-y-2.5 pb-2 border-b border-[#E8E5DE] dark:border-white/10">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] text-[#87867F] font-medium flex items-center gap-1">
+                            <Key className="w-3 h-3 text-[#D97757]" /> Groq API Key
+                          </label>
+                          <span className="text-[9px] text-emerald-500 font-medium">Auto-saved</span>
+                        </div>
+                        <div className="relative flex items-center">
+                          <input
+                            type={showApiKey ? "text" : "password"}
+                            value={groqApiKey}
+                            onChange={(e) => handleApiKeyChange(e.target.value)}
+                            placeholder="gsk_..."
+                            className={`w-full text-xs p-2 pr-8 rounded-lg border outline-none font-mono ${
+                              themeMode === 'dark' ? 'bg-[#18181B] border-white/10 text-white' : 'bg-[#FAF9F5] border-[#E8E5DE] text-[#141413]'
+                            }`}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowApiKey(!showApiKey)}
+                            className="absolute right-2 text-[#87867F] hover:text-[#D97757] cursor-pointer"
+                          >
+                            {showApiKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] text-[#87867F] block mb-0.5 font-medium">Groq Cloud Model</label>
+                        <select
+                          value={selectedGroqModel}
+                          onChange={(e) => setSelectedGroqModel(e.target.value)}
+                          className={`w-full text-xs p-1.5 rounded-lg border outline-none font-sans cursor-pointer ${
+                            themeMode === 'dark' ? 'bg-[#18181B] text-white border-white/10' : 'bg-[#FAF9F5] text-[#141413] border-[#E8E5DE]'
+                          }`}
+                        >
+                          {GROQ_MODELS.map((m) => (
+                            <option key={m.id} value={m.id}>{m.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 pb-2 border-b border-[#E8E5DE] dark:border-white/10">
+                      <div>
+                        <label className="text-[10px] text-[#87867F] block mb-0.5 font-medium">Local GPU Model (GTX 1650)</label>
+                        <select
+                          value={activeModel}
+                          onChange={(e) => {
+                            setActiveModel(e.target.value);
+                            onSelectModel?.(e.target.value);
+                          }}
+                          className={`w-full text-xs p-1.5 rounded-lg border outline-none font-sans cursor-pointer ${
+                            themeMode === 'dark' ? 'bg-[#18181B] text-white border-white/10' : 'bg-[#FAF9F5] text-[#141413] border-[#E8E5DE]'
+                          }`}
+                        >
+                          {(availableModels && availableModels.length > 0 ? availableModels : ['qwen3.5:2b-q4_K_M', 'qwen2.5:3b']).map((m) => (
+                            <option key={m} value={m}>
+                              {m} {m.includes('qwen3.5:2b-q4_K_M') ? '⚡ 66.5 tok/s (100% GPU)' : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between pt-1">
                     <span className="text-xs font-semibold uppercase tracking-wider text-[#D97757]">
                       Test Lyrics Input
                     </span>
@@ -297,35 +429,48 @@ const ARCHETYPE_COLORS: Record<MotionArchetype, string> = {
                     />
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleRunTest}
-                    disabled={isTesting || !isOnline}
-                    className={`w-full py-2.5 px-4 text-xs font-medium rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs ${
-                      isTesting
-                        ? 'bg-[#D97757]/40 text-white cursor-wait'
-                        : isOnline
-                        ? 'bg-[#D97757] text-white hover:bg-[#C66545]'
-                        : 'bg-black/10 dark:bg-white/10 text-[#87867F] cursor-not-allowed'
-                    }`}
-                  >
-                    {isTesting ? (
+                  {(() => {
+                    const isReadyToRun = provider === 'groq' ? Boolean(groqApiKey.trim()) : isOnline;
+                    const modelLabel = provider === 'groq' 
+                      ? selectedGroqModel.split('/')[1] || selectedGroqModel
+                      : activeModel;
+
+                    return (
                       <>
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        <span>Generating with {activeModel}...</span>
+                        <button
+                          type="button"
+                          onClick={handleRunTest}
+                          disabled={isTesting || !isReadyToRun}
+                          className={`w-full py-2.5 px-4 text-xs font-medium rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs ${
+                            isTesting
+                              ? 'bg-[#D97757]/40 text-white cursor-wait'
+                              : isReadyToRun
+                              ? 'bg-[#D97757] text-white hover:bg-[#C66545]'
+                              : 'bg-black/10 dark:bg-white/10 text-[#87867F] cursor-not-allowed'
+                          }`}
+                        >
+                          {isTesting ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>Generating with {modelLabel}...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Send className="w-3.5 h-3.5" />
+                              <span>Send Test Prompt to {modelLabel}</span>
+                            </>
+                          )}
+                        </button>
+                        {!isReadyToRun && (
+                          <p className="text-[11px] text-amber-500 text-center font-medium">
+                            {provider === 'groq' 
+                              ? 'Please paste your Groq API Key above to run cloud tests.'
+                              : 'Ollama is offline on http://localhost:11434. Start Ollama to run test.'}
+                          </p>
+                        )}
                       </>
-                    ) : (
-                      <>
-                        <Send className="w-3.5 h-3.5" />
-                        <span>Send Test Prompt to {activeModel}</span>
-                      </>
-                    )}
-                  </button>
-                  {!isOnline && (
-                    <p className="text-[11px] text-amber-500 text-center font-medium">
-                      Ollama is currently offline on http://localhost:11434. Start Ollama to run test.
-                    </p>
-                  )}
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -452,32 +597,56 @@ const ARCHETYPE_COLORS: Record<MotionArchetype, string> = {
                           Visual motion archetype decisions made by <strong className="text-[#D97757]">{activeTestResult.model || activeModel}</strong>:
                         </span>
                         {activeTestResult.parsedClassifications.length > 0 ? (
-                          <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-1">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[340px] overflow-y-auto pr-1">
                             {activeTestResult.parsedClassifications.map((item, idx) => {
                               const meta = ARCHETYPE_METADATA[item.archetype];
                               const color = getArchetypeColor(item.archetype);
                               return (
                                 <div
                                   key={idx}
-                                  className={`p-2 rounded-lg border flex items-center justify-between text-xs ${
-                                    themeMode === 'dark' ? 'bg-[#18181B] border-white/5' : 'bg-[#FAF9F5] border-[#E8E5DE]'
+                                  className={`p-2.5 rounded-xl border flex flex-col gap-1.5 transition-all text-xs ${
+                                    themeMode === 'dark' 
+                                      ? 'bg-[#18181B] border-white/10 hover:border-white/20' 
+                                      : 'bg-[#FAF9F5] border-[#E8E5DE] hover:border-[#D97757]/40'
                                   }`}
                                 >
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-mono font-bold text-sm text-[#D97757]">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="font-mono font-bold text-sm text-[#D97757] tracking-tight">
                                       "{item.word}"
                                     </span>
+                                    <div 
+                                      className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold whitespace-nowrap"
+                                      style={{
+                                        backgroundColor: `${color}18`,
+                                        color: color,
+                                        border: `1px solid ${color}40`,
+                                      }}
+                                    >
+                                      {meta?.name || item.archetype}
+                                    </div>
                                   </div>
-                                  <div 
-                                    className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold"
-                                    style={{
-                                      backgroundColor: `${color}18`,
-                                      color: color,
-                                      border: `1px solid ${color}40`,
-                                    }}
-                                  >
-                                    {meta?.name || item.archetype}
-                                  </div>
+
+                                  {item.meaning && (
+                                    <div className={`text-[11px] italic font-serif flex items-start gap-1 leading-snug ${
+                                      themeMode === 'dark' ? 'text-white/80' : 'text-[#3E3C38]'
+                                    }`}>
+                                      <span className="text-[#D97757] font-sans not-italic text-[9px] font-bold uppercase tracking-wider shrink-0 mt-0.5">
+                                        Def:
+                                      </span>
+                                      <span>"{item.meaning}"</span>
+                                    </div>
+                                  )}
+
+                                  {item.reason && (
+                                    <div className={`text-[10px] leading-snug flex items-start gap-1 ${
+                                      themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'
+                                    }`}>
+                                      <span className="text-white/70 dark:text-white/70 font-semibold shrink-0">
+                                        ⚡ Motion:
+                                      </span>
+                                      <span>{item.reason}</span>
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}
@@ -549,6 +718,13 @@ const ARCHETYPE_COLORS: Record<MotionArchetype, string> = {
                           <span className="text-xs font-serif font-medium text-[#D97757]">
                             Stanza Batch {log.batchIndex} of {log.totalBatches}
                           </span>
+                          <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
+                            log.provider === 'groq'
+                              ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                              : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                          }`}>
+                            {log.provider === 'groq' ? '⚡ Groq Cloud' : '💻 Local Ollama'}
+                          </span>
                           <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
                             {log.model}
                           </span>
@@ -582,7 +758,8 @@ const ARCHETYPE_COLORS: Record<MotionArchetype, string> = {
                           return (
                             <span
                               key={cIdx}
-                              className="text-[10px] font-mono px-2 py-0.5 rounded-md flex items-center gap-1"
+                              title={item.meaning ? `"${item.word}": ${item.meaning} (${item.reason || ''})` : undefined}
+                              className="text-[10px] font-mono px-2 py-0.5 rounded-md flex items-center gap-1 cursor-default"
                               style={{
                                 backgroundColor: `${color}18`,
                                 color: color,
@@ -590,6 +767,7 @@ const ARCHETYPE_COLORS: Record<MotionArchetype, string> = {
                               }}
                             >
                               <strong>{item.word}</strong>: {meta?.name || item.archetype}
+                              {item.meaning && <span className="opacity-70 italic font-serif">({item.meaning})</span>}
                             </span>
                           );
                         })}

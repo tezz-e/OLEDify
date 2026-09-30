@@ -15,9 +15,59 @@ export interface OllamaHealthStatus {
   error?: string;
 }
 
+export type LLMProvider = 'ollama' | 'groq';
+
+export interface GroqModelConfig {
+  id: string;
+  name: string;
+  description: string;
+  isDefault?: boolean;
+}
+
+export const GROQ_MODELS: GroqModelConfig[] = [
+  { 
+    id: 'openai/gpt-oss-120b', 
+    name: 'GPT OSS 120B (Best for Punjabi, Slang & Reasoning)', 
+    description: '120B parameter reasoning model with native Indic / Punjabi fluency and kinetic mapping.',
+    isDefault: true 
+  },
+  { 
+    id: 'qwen/qwen3.8-27b', 
+    name: 'Qwen 3.8 27B (High-Speed Multilingual)', 
+    description: '27B multilingual powerhouse running at ultra-low latency on Groq LPU.' 
+  },
+  { 
+    id: 'openai/gpt-oss-20b', 
+    name: 'GPT OSS 20B (Ultralight & Fast)', 
+    description: '20B compact model for near-instant inference.' 
+  },
+];
+
+export function getEffectiveGroqApiKey(explicitKey?: string): string {
+  if (explicitKey && explicitKey.trim()) return explicitKey.trim();
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('oled_groq_api_key');
+    if (saved && saved.trim()) return saved.trim();
+  }
+  const envKey = (import.meta as any).env?.VITE_GROQ_API_KEY;
+  if (envKey && typeof envKey === 'string' && envKey.trim()) return envKey.trim();
+  return '';
+}
+
+export function saveGroqApiKey(key: string): void {
+  if (typeof window !== 'undefined') {
+    if (key.trim()) {
+      localStorage.setItem('oled_groq_api_key', key.trim());
+    } else {
+      localStorage.removeItem('oled_groq_api_key');
+    }
+  }
+}
+
 export const RECOMMENDED_OLLAMA_MODELS = [
+  'qwen3.5:2b-q4_K_M',
   'qwen2.5:3b',
-  'qwen2.5:1.5b',
+  'qwen3.5:2b',
   'llama3.2:3b',
   'llama3.2:1b',
   'phi3:mini',
@@ -77,6 +127,7 @@ export async function checkOllamaHealth(endpoint: string = DEFAULT_ENDPOINT): Pr
 export interface OllamaInspectionLog {
   id: string;
   timestamp: number;
+  provider?: LLMProvider;
   batchIndex: number;
   totalBatches: number;
   model: string;
@@ -308,11 +359,13 @@ Output JSON strictly matching this format:
 }
 
 /**
- * Classifies kinetic archetypes for lyric words using context-aware local Ollama inference.
+ * Classifies kinetic archetypes for lyric words using local Ollama or cloud Groq inference.
  */
 export async function classifyLyricsWithOllama(
   lines: LyricLine[],
   options: {
+    provider?: LLMProvider;
+    groqApiKey?: string;
     model?: string;
     endpoint?: string;
     songTitle?: string;
@@ -321,8 +374,9 @@ export async function classifyLyricsWithOllama(
     onInspectionLog?: (log: OllamaInspectionLog) => void;
   } = {}
 ): Promise<Record<string, MotionArchetype>> {
+  const provider = options.provider || 'ollama';
   const endpoint = options.endpoint || resolvedOllamaEndpoint || DEFAULT_ENDPOINT;
-  const model = options.model || 'qwen2.5:1.5b';
+  const model = options.model || (provider === 'groq' ? 'openai/gpt-oss-120b' : 'qwen3.5:2b-q4_K_M');
   const archetypeOverrides: Record<string, MotionArchetype> = {};
 
   // Batch lines into stanzas of up to 4 lines for optimal context window & throughput
@@ -336,7 +390,7 @@ export async function classifyLyricsWithOllama(
     if (options.onProgress) {
       options.onProgress(
         Math.round((batchIdx / totalBatches) * 100),
-        `Analyzing stanza ${batchIdx + 1}/${totalBatches} with ${model}...`
+        `Analyzing stanza ${batchIdx + 1}/${totalBatches} with ${model} (${provider === 'groq' ? 'Groq Cloud' : 'Local Ollama'})...`
       );
     }
 
@@ -349,6 +403,7 @@ export async function classifyLyricsWithOllama(
     const logEntry: OllamaInspectionLog = {
       id: `log-${Date.now()}-${batchIdx}`,
       timestamp: Date.now(),
+      provider,
       batchIndex: batchIdx + 1,
       totalBatches,
       model,
@@ -360,73 +415,154 @@ export async function classifyLyricsWithOllama(
       parsedClassifications: [],
     };
 
+    const startTime = performance.now();
+
     try {
-      const res = await fetch(`${endpoint}/api/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model,
-          prompt,
-          format: 'json',
-          stream: false,
-          options: {
-            temperature: 0.1,
-            num_predict: 1024,
+      if (provider === 'groq') {
+        const apiKey = getEffectiveGroqApiKey(options.groqApiKey);
+        if (!apiKey) {
+          throw new Error('Groq API Key missing. Please provide a key in the modal or web/.env.local');
+        }
+
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
           },
-        }),
-      });
-
-      if (!res.ok) {
-        logEntry.error = `Ollama returned HTTP ${res.status}: ${res.statusText}`;
-        console.warn(`Ollama batch ${batchIdx} failed with status:`, res.status);
-        options.onInspectionLog?.(logEntry);
-        continue;
-      }
-
-      const data = await res.json();
-      logEntry.rawResponse = data.response || '';
-      logEntry.evalCount = data.eval_count;
-      logEntry.promptEvalCount = data.prompt_eval_count;
-      if (data.total_duration) {
-        logEntry.totalDurationMs = Math.round(data.total_duration / 1e6);
-      }
-      if (data.eval_count && data.eval_duration) {
-        logEntry.tokensPerSecond = Math.round((data.eval_count / (data.eval_duration / 1e9)) * 10) / 10;
-      }
-
-      const extracted = extractClassificationsFromResponse(data.response, VALID_MOTION_ARCHETYPES);
-
-      for (const item of extracted) {
-        logEntry.parsedClassifications.push({
-          word: item.word,
-          startMs: item.startMs ?? 0,
-          archetype: item.archetype,
-          meaning: item.meaning,
-          reason: item.reason,
+          body: JSON.stringify({
+            model,
+            messages: [
+              {
+                role: 'system',
+                content: 'You are an elite motion typography director for high-energy 1-bit OLED kinetic lyrics. Output strictly valid JSON matching the schema.',
+              },
+              {
+                role: 'user',
+                content: prompt,
+              },
+            ],
+            temperature: 0.1,
+            response_format: { type: 'json_object' },
+          }),
         });
 
-        // Clean target string
-        const cleanTarget = item.word.toLowerCase().replace(/[^a-z0-9]/g, '');
-        if (!cleanTarget) continue;
+        if (!res.ok) {
+          const errText = await res.text().catch(() => res.statusText);
+          logEntry.error = `Groq HTTP ${res.status}: ${errText}`;
+          console.warn(`Groq batch ${batchIdx} failed:`, errText);
+          options.onInspectionLog?.(logEntry);
+          continue;
+        }
 
-        // Apply to any matching words in the batch lines
-        for (const line of batchLines) {
-          for (const w of line.words) {
-            const cleanWord = w.word.toLowerCase().replace(/[^a-z0-9]/g, '');
-            if (cleanWord === cleanTarget || (cleanTarget.length > 3 && cleanTarget.includes(cleanWord))) {
-              const specificKey = `${w.word}_${w.startMs}`;
-              archetypeOverrides[specificKey] = item.archetype;
-              archetypeOverrides[cleanWord] = item.archetype;
+        const data = await res.json();
+        const durationMs = Math.round(performance.now() - startTime);
+        logEntry.totalDurationMs = durationMs;
+        const textResponse = data.choices?.[0]?.message?.content || '';
+        logEntry.rawResponse = textResponse;
+        if (data.usage) {
+          logEntry.evalCount = data.usage.completion_tokens;
+          logEntry.promptEvalCount = data.usage.prompt_tokens;
+          if (data.usage.completion_time) {
+            logEntry.tokensPerSecond = Math.round((data.usage.completion_tokens / data.usage.completion_time) * 10) / 10;
+          } else if (durationMs > 0 && data.usage.completion_tokens) {
+            logEntry.tokensPerSecond = Math.round((data.usage.completion_tokens / (durationMs / 1000)) * 10) / 10;
+          }
+        }
+
+        const extracted = extractClassificationsFromResponse(textResponse, VALID_MOTION_ARCHETYPES);
+        for (const item of extracted) {
+          logEntry.parsedClassifications.push({
+            word: item.word,
+            startMs: item.startMs ?? 0,
+            archetype: item.archetype,
+            meaning: item.meaning,
+            reason: item.reason,
+          });
+
+          const cleanTarget = item.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (!cleanTarget) continue;
+
+          for (const line of batchLines) {
+            for (const w of line.words) {
+              const cleanWord = w.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+              if (cleanWord === cleanTarget || (cleanTarget.length > 3 && cleanTarget.includes(cleanWord))) {
+                const specificKey = `${w.word}_${w.startMs}`;
+                archetypeOverrides[specificKey] = item.archetype;
+                archetypeOverrides[cleanWord] = item.archetype;
+              }
             }
           }
         }
-      }
 
-      options.onInspectionLog?.(logEntry);
+        options.onInspectionLog?.(logEntry);
+      } else {
+        // Ollama Local Provider
+        const res = await fetch(`${endpoint}/api/generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model,
+            prompt,
+            format: 'json',
+            stream: false,
+            options: {
+              temperature: 0.1,
+              num_predict: 1024,
+            },
+          }),
+        });
+
+        if (!res.ok) {
+          logEntry.error = `Ollama returned HTTP ${res.status}: ${res.statusText}`;
+          console.warn(`Ollama batch ${batchIdx} failed with status:`, res.status);
+          options.onInspectionLog?.(logEntry);
+          continue;
+        }
+
+        const data = await res.json();
+        logEntry.rawResponse = data.response || '';
+        logEntry.evalCount = data.eval_count;
+        logEntry.promptEvalCount = data.prompt_eval_count;
+        if (data.total_duration) {
+          logEntry.totalDurationMs = Math.round(data.total_duration / 1e6);
+        }
+        if (data.eval_count && data.eval_duration) {
+          logEntry.tokensPerSecond = Math.round((data.eval_count / (data.eval_duration / 1e9)) * 10) / 10;
+        }
+
+        const extracted = extractClassificationsFromResponse(data.response, VALID_MOTION_ARCHETYPES);
+
+        for (const item of extracted) {
+          logEntry.parsedClassifications.push({
+            word: item.word,
+            startMs: item.startMs ?? 0,
+            archetype: item.archetype,
+            meaning: item.meaning,
+            reason: item.reason,
+          });
+
+          const cleanTarget = item.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (!cleanTarget) continue;
+
+          for (const line of batchLines) {
+            for (const w of line.words) {
+              const cleanWord = w.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+              if (cleanWord === cleanTarget || (cleanTarget.length > 3 && cleanTarget.includes(cleanWord))) {
+                const specificKey = `${w.word}_${w.startMs}`;
+                archetypeOverrides[specificKey] = item.archetype;
+                archetypeOverrides[cleanWord] = item.archetype;
+              }
+            }
+          }
+        }
+
+        options.onInspectionLog?.(logEntry);
+      }
     } catch (err: any) {
       logEntry.error = err.message || 'Unknown network or parsing error';
       options.onInspectionLog?.(logEntry);
-      console.warn(`Ollama inference batch ${batchIdx} error:`, err);
+      console.warn(`LLM inference batch ${batchIdx} error:`, err);
     }
   }
 
@@ -438,20 +574,23 @@ export async function classifyLyricsWithOllama(
 }
 
 /**
- * Executes a standalone test prompt to Ollama with arbitrary custom text,
- * returning full timing, raw response, tokens/second, and parsed archetypes.
+ * Executes a standalone test prompt with arbitrary custom text to either
+ * local Ollama or Groq Cloud, returning timing, raw response, tokens/s, and parsed archetypes.
  */
 export async function testSinglePromptWithOllama(
   rawInput: string,
   options: {
+    provider?: LLMProvider;
+    groqApiKey?: string;
     model?: string;
     endpoint?: string;
     songTitle?: string;
     artist?: string;
   } = {}
 ): Promise<OllamaInspectionLog> {
+  const provider = options.provider || 'ollama';
   const endpoint = options.endpoint || resolvedOllamaEndpoint || DEFAULT_ENDPOINT;
-  const model = options.model || 'qwen2.5:1.5b';
+  const model = options.model || (provider === 'groq' ? 'openai/gpt-oss-120b' : 'qwen3.5:2b-q4_K_M');
 
   // Parse lines and words
   const rawLines = rawInput.split('\n').map(s => s.trim()).filter(Boolean);
@@ -485,6 +624,7 @@ export async function testSinglePromptWithOllama(
   const logEntry: OllamaInspectionLog = {
     id: `test-${Date.now()}`,
     timestamp: Date.now(),
+    provider,
     batchIndex: 1,
     totalBatches: 1,
     model,
@@ -496,64 +636,147 @@ export async function testSinglePromptWithOllama(
     parsedClassifications: [],
   };
 
+  const startTime = performance.now();
+
   try {
-    const res = await fetch(`${endpoint}/api/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model,
-        prompt,
-        format: 'json',
-        stream: false,
-        options: {
-          temperature: 0.1,
-          num_predict: 1024,
+    if (provider === 'groq') {
+      const apiKey = getEffectiveGroqApiKey(options.groqApiKey);
+      if (!apiKey) {
+        logEntry.error = 'Groq API Key is missing. Please provide a key in the modal or web/.env.local';
+        return logEntry;
+      }
+
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
         },
-      }),
-    });
+        body: JSON.stringify({
+          model,
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an elite motion typography director for high-energy 1-bit OLED kinetic lyrics. Output strictly valid JSON matching the schema.',
+            },
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+          temperature: 0.1,
+          response_format: { type: 'json_object' },
+        }),
+      });
 
-    if (!res.ok) {
-      logEntry.error = `Ollama HTTP ${res.status}: ${res.statusText}`;
-      return logEntry;
-    }
+      if (!res.ok) {
+        const errText = await res.text().catch(() => res.statusText);
+        logEntry.error = `Groq HTTP ${res.status}: ${errText}`;
+        return logEntry;
+      }
 
-    const data = await res.json();
-    logEntry.rawResponse = data.response || '';
-    logEntry.evalCount = data.eval_count;
-    logEntry.promptEvalCount = data.prompt_eval_count;
-    if (data.total_duration) {
-      logEntry.totalDurationMs = Math.round(data.total_duration / 1e6);
-    }
-    if (data.eval_count && data.eval_duration) {
-      logEntry.tokensPerSecond = Math.round((data.eval_count / (data.eval_duration / 1e9)) * 10) / 10;
-    }
+      const data = await res.json();
+      const durationMs = Math.round(performance.now() - startTime);
+      logEntry.totalDurationMs = durationMs;
+      const textResponse = data.choices?.[0]?.message?.content || '';
+      logEntry.rawResponse = textResponse;
 
-    const extracted = extractClassificationsFromResponse(data.response, VALID_MOTION_ARCHETYPES);
-    for (const item of extracted) {
-      // Find timestamp from synthetic lines if not provided
-      let sMs = item.startMs;
-      if (sMs === undefined) {
-        const cleanT = item.word.toLowerCase().replace(/[^a-z0-9]/g, '');
-        for (const line of syntheticLines) {
-          const matchW = line.words.find(w => w.word.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanT);
-          if (matchW) {
-            sMs = matchW.startMs;
-            break;
-          }
+      if (data.usage) {
+        logEntry.evalCount = data.usage.completion_tokens;
+        logEntry.promptEvalCount = data.usage.prompt_tokens;
+        if (data.usage.completion_time) {
+          logEntry.tokensPerSecond = Math.round((data.usage.completion_tokens / data.usage.completion_time) * 10) / 10;
+        } else if (durationMs > 0 && data.usage.completion_tokens) {
+          logEntry.tokensPerSecond = Math.round((data.usage.completion_tokens / (durationMs / 1000)) * 10) / 10;
         }
       }
-      logEntry.parsedClassifications.push({
-        word: item.word,
-        startMs: sMs ?? 0,
-        archetype: item.archetype,
-        meaning: item.meaning,
-        reason: item.reason,
-      });
-    }
 
-    return logEntry;
+      const extracted = extractClassificationsFromResponse(textResponse, VALID_MOTION_ARCHETYPES);
+      for (const item of extracted) {
+        let sMs = item.startMs;
+        if (sMs === undefined) {
+          const cleanT = item.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+          for (const line of syntheticLines) {
+            const matchW = line.words.find(w => w.word.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanT);
+            if (matchW) {
+              sMs = matchW.startMs;
+              break;
+            }
+          }
+        }
+        logEntry.parsedClassifications.push({
+          word: item.word,
+          startMs: sMs ?? 0,
+          archetype: item.archetype,
+          meaning: item.meaning,
+          reason: item.reason,
+        });
+      }
+
+      return logEntry;
+    } else {
+      // Ollama Local Provider
+      const res = await fetch(`${endpoint}/api/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          prompt,
+          format: 'json',
+          stream: false,
+          options: {
+            temperature: 0.1,
+            num_predict: 1024,
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        logEntry.error = `Ollama HTTP ${res.status}: ${res.statusText}`;
+        return logEntry;
+      }
+
+      const data = await res.json();
+      logEntry.rawResponse = data.response || '';
+      logEntry.evalCount = data.eval_count;
+      logEntry.promptEvalCount = data.prompt_eval_count;
+      if (data.total_duration) {
+        logEntry.totalDurationMs = Math.round(data.total_duration / 1e6);
+      }
+      if (data.eval_count && data.eval_duration) {
+        logEntry.tokensPerSecond = Math.round((data.eval_count / (data.eval_duration / 1e9)) * 10) / 10;
+      }
+
+      const extracted = extractClassificationsFromResponse(data.response, VALID_MOTION_ARCHETYPES);
+      for (const item of extracted) {
+        let sMs = item.startMs;
+        if (sMs === undefined) {
+          const cleanT = item.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+          for (const line of syntheticLines) {
+            const matchW = line.words.find(w => w.word.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanT);
+            if (matchW) {
+              sMs = matchW.startMs;
+              break;
+            }
+          }
+        }
+        logEntry.parsedClassifications.push({
+          word: item.word,
+          startMs: sMs ?? 0,
+          archetype: item.archetype,
+          meaning: item.meaning,
+          reason: item.reason,
+        });
+      }
+
+      return logEntry;
+    }
   } catch (err: any) {
-    logEntry.error = err.message || 'Unknown network error connecting to Ollama';
+    logEntry.error = err.message || `Unknown network error connecting to ${provider}`;
     return logEntry;
   }
 }
+
+export const classifyLyricsWithLLM = classifyLyricsWithOllama;
+export const testSinglePromptWithLLM = testSinglePromptWithOllama;
+
