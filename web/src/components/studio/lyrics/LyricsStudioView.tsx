@@ -21,6 +21,8 @@ import { OledCanvas } from '../../OledCanvas';
 import { GlassSurface } from '../../reactbits/GlassSurface';
 import { ThemeSwitch } from './ThemeSwitch';
 import { OllamaInspectorModal } from './OllamaInspectorModal';
+import { motion, AnimatePresence } from 'framer-motion';
+import { NumberFlow } from './NumberFlow';
 
 interface LyricsStudioViewProps {
   onClose: () => void;
@@ -404,6 +406,25 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const rangeDurationSec = Math.max(0.5, (rangeEndMs - rangeStartMs) / 1000);
   const totalFrames = Math.round(rangeDurationSec * 30);
   const estProgmemKb = Math.round((totalFrames * 1024) / 1024);
+
+  // Live timeline frame counter and playback duration clock
+  const currentFrameIndex = useMemo(() => {
+    if (totalFrames <= 0) return 0;
+    const offsetMs = Math.max(0, playheadMs - rangeStartMs);
+    const rangeDurationMs = Math.max(1, rangeEndMs - rangeStartMs);
+    const ratio = Math.min(1, Math.max(0, offsetMs / rangeDurationMs));
+    return Math.min(totalFrames, Math.floor(ratio * totalFrames));
+  }, [playheadMs, rangeStartMs, rangeEndMs, totalFrames]);
+
+  const frameCounterStr = useMemo(() => {
+    return `${String(currentFrameIndex).padStart(4, '0')} / ${String(totalFrames).padStart(4, '0')} FRAMES`;
+  }, [currentFrameIndex, totalFrames]);
+
+  const playbackClockStr = useMemo(() => {
+    const mins = Math.floor(playheadMs / 60000).toString().padStart(2, '0');
+    const secs = ((playheadMs % 60000) / 1000).toFixed(1).padStart(4, '0');
+    return `${mins}:${secs}s`;
+  }, [playheadMs]);
 
   // Line selection click handler
   const handleLineClick = (idx: number, e: React.MouseEvent) => {
@@ -852,52 +873,46 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             </h2>
           </div>
 
-          {/* Sub-tabs */}
-          <div className={`flex border-b p-1 gap-1 shrink-0 ${
+          {/* Sub-tabs with Framer Motion sliding pill physics */}
+          <div className={`flex border-b p-1 gap-1 shrink-0 relative ${
             themeMode === 'dark' ? 'border-[#2C2B29] bg-[#18181A]' : 'border-[#E8E5DE] bg-[#FAF9F5]'
           }`}>
-            <button
-              onClick={() => setIngestTab('search')}
-              className={`flex-1 py-1.5 text-xs font-sans font-medium rounded-md transition-all cursor-pointer ${
-                ingestTab === 'search'
-                  ? themeMode === 'dark'
-                    ? 'bg-[#232220] text-white shadow-xs'
-                    : 'bg-white text-[#141413] shadow-xs'
-                  : themeMode === 'dark'
-                  ? 'text-white/40 hover:text-white/80'
-                  : 'text-[#5E5D59] hover:text-[#141413]'
-              }`}
-            >
-              Search
-            </button>
-            <button
-              onClick={() => setIngestTab('paste')}
-              className={`flex-1 py-1.5 text-xs font-sans font-medium rounded-md transition-all cursor-pointer ${
-                ingestTab === 'paste'
-                  ? themeMode === 'dark'
-                    ? 'bg-[#232220] text-white shadow-xs'
-                    : 'bg-white text-[#141413] shadow-xs'
-                  : themeMode === 'dark'
-                  ? 'text-white/40 hover:text-white/80'
-                  : 'text-[#5E5D59] hover:text-[#141413]'
-              }`}
-            >
-              Paste LRC
-            </button>
-            <button
-              onClick={() => setIngestTab('audio')}
-              className={`flex-1 py-1.5 text-xs font-sans font-medium rounded-md transition-all cursor-pointer ${
-                ingestTab === 'audio'
-                  ? themeMode === 'dark'
-                    ? 'bg-[#232220] text-white shadow-xs'
-                    : 'bg-white text-[#141413] shadow-xs'
-                  : themeMode === 'dark'
-                  ? 'text-white/40 hover:text-white/80'
-                  : 'text-[#5E5D59] hover:text-[#141413]'
-              }`}
-            >
-              Upload Audio
-            </button>
+            {[
+              { id: 'search' as const, label: 'LRCLIB Search', Icon: Search },
+              { id: 'paste' as const, label: 'Paste LRC', Icon: FileText },
+              { id: 'audio' as const, label: 'Audio Beat Sync', Icon: Music },
+            ].map(tab => {
+              const isActive = ingestTab === tab.id;
+              const TabIcon = tab.Icon;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setIngestTab(tab.id)}
+                  className={`relative flex-1 py-1.5 px-2 text-xs font-sans rounded-md transition-colors cursor-pointer flex items-center justify-center gap-1.5 z-10 ${
+                    isActive
+                      ? themeMode === 'dark'
+                        ? 'text-white font-semibold'
+                        : 'text-[#141413] font-semibold'
+                      : themeMode === 'dark'
+                      ? 'text-white/50 hover:text-white/80'
+                      : 'text-[#5E5D59] hover:text-[#141413]'
+                  }`}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="ingest-tab-pill"
+                      className={`absolute inset-0 rounded-md shadow-xs -z-10 ${
+                        themeMode === 'dark' ? 'bg-[#232220]' : 'bg-white'
+                      }`}
+                      transition={{ type: 'spring', bounce: 0.16, duration: 0.35 }}
+                    />
+                  )}
+                  <TabIcon className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 min-h-0">
@@ -1205,12 +1220,22 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             </div>
           </div>
 
-          {/* Minimalist Apple Music Lyric List */}
-          <div
-            ref={lyricsContainerRef}
-            onScroll={handleUserScroll}
-            className="flex-1 overflow-y-auto px-6 py-10 md:px-16 md:py-16 flex flex-col items-center gap-4 relative z-10 min-h-0 scroll-smooth"
-          >
+          {/* Minimalist Apple Music Lyric List with Skiper #41 Progressive Blur Optical Mask Fade */}
+          <div className="flex-1 relative min-h-0 flex flex-col overflow-hidden">
+            {/* Top Optical Mask Fade Gradient Overlay */}
+            <div className={`absolute top-0 left-0 right-0 h-10 pointer-events-none z-20 bg-gradient-to-b ${
+              themeMode === 'dark' ? 'from-[#141413] via-[#141413]/70 to-transparent' : 'from-[#FAF9F5] via-[#FAF9F5]/70 to-transparent'
+            }`} />
+
+            <div
+              ref={lyricsContainerRef}
+              onScroll={handleUserScroll}
+              className="flex-1 overflow-y-auto px-6 py-10 md:px-16 md:py-16 flex flex-col items-center gap-4 relative z-10 min-h-0 scroll-smooth"
+              style={{
+                maskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.4) 3%, rgba(0, 0, 0, 0.95) 7%, black 12%, black 88%, rgba(0, 0, 0, 0.95) 93%, rgba(0, 0, 0, 0.4) 97%, transparent 100%)',
+                WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.4) 3%, rgba(0, 0, 0, 0.95) 7%, black 12%, black 88%, rgba(0, 0, 0, 0.95) 93%, rgba(0, 0, 0, 0.4) 97%, transparent 100%)'
+              }}
+            >
             {parsedLyrics.lines.map((line, idx) => {
               const start = Math.min(selectedStartIndex, selectedEndIndex);
               const end = Math.max(selectedStartIndex, selectedEndIndex);
@@ -1427,6 +1452,12 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                 </div>
               );
             })}
+            </div>
+
+            {/* Bottom Optical Mask Fade Gradient Overlay */}
+            <div className={`absolute bottom-0 left-0 right-0 h-10 pointer-events-none z-20 bg-gradient-to-t ${
+              themeMode === 'dark' ? 'from-[#141413] via-[#141413]/70 to-transparent' : 'from-[#FAF9F5] via-[#FAF9F5]/70 to-transparent'
+            }`} />
           </div>
 
           {/* Hidden Audio Player for drop sync */}
@@ -1443,108 +1474,150 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             />
           )}
 
-          {/* Minimalist Bottom Audio Scrub Bar */}
-          <div className={`h-16 px-6 border-t flex items-center justify-between z-10 shrink-0 gap-4 transition-colors duration-200 ${
-            themeMode === 'dark'
-              ? 'bg-[#18181A] border-[#2C2B29] text-white'
-              : 'bg-white border-[#E8E5DE] text-[#141413]'
-          }`}>
-            <div className="flex items-center gap-3 shrink-0">
-              <button
-                onClick={togglePlay}
-                className="w-8 h-8 rounded-full bg-[#D97757] hover:bg-[#C66545] text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs"
-                title={isPlaying ? 'Pause Preview' : 'Play Preview'}
-              >
-                {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
-              </button>
+          {/* Floating Dynamic Audio Transport Capsule (Skiper UI #02 Dynamic Island + #03 Apple Play Button) */}
+          <div className="p-3.5 z-20 shrink-0 flex justify-center w-full relative">
+            <motion.div
+              layout
+              transition={{ type: "spring", bounce: 0.16, duration: 0.4 }}
+              className={`w-full max-w-4xl px-4 py-2.5 rounded-2xl border flex items-center justify-between gap-4 shadow-xl backdrop-blur-md transition-colors duration-200 ${
+                themeMode === 'dark'
+                  ? 'bg-[#18181A]/95 border-[#2C2B29] text-white shadow-black/40'
+                  : 'bg-white/95 border-[#E8E5DE] text-[#141413] shadow-stone-200/50'
+              }`}
+            >
+              <div className="flex items-center gap-3 shrink-0">
+                {/* Tactile Circular Play/Pause Button (Skiper #03 Apple Play Button) */}
+                <motion.button
+                  type="button"
+                  onClick={togglePlay}
+                  whileHover={{ scale: 1.08 }}
+                  whileTap={{ scale: 0.92 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                  className="w-9 h-9 rounded-full bg-[#D97757] hover:bg-[#C66545] text-white flex items-center justify-center cursor-pointer shadow-md ring-2 ring-[#D97757]/30 transition-all shrink-0"
+                  title={isPlaying ? 'Pause Preview' : 'Play Preview'}
+                >
+                  <AnimatePresence mode="wait" initial={false}>
+                    {isPlaying ? (
+                      <motion.span
+                        key="pause"
+                        initial={{ scale: 0.6, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.6, opacity: 0 }}
+                        transition={{ duration: 0.12 }}
+                        className="flex items-center justify-center"
+                      >
+                        <Pause className="w-4 h-4 fill-current" />
+                      </motion.span>
+                    ) : (
+                      <motion.span
+                        key="play"
+                        initial={{ scale: 0.6, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.6, opacity: 0 }}
+                        transition={{ duration: 0.12 }}
+                        className="flex items-center justify-center ml-0.5"
+                      >
+                        <Play className="w-4 h-4 fill-current" />
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
 
-              <div className={`text-[11px] font-mono w-28 shrink-0 ${
-                themeMode === 'dark' ? 'text-white/80' : 'text-[#5E5D59]'
-              }`}>
-                {(playheadMs / 1000).toFixed(2)}s / {(rangeEndMs / 1000).toFixed(2)}s
+                {/* Rolling Timecode Display */}
+                <div className={`text-[11px] font-mono shrink-0 flex items-center gap-1 ${
+                  themeMode === 'dark' ? 'text-white/80' : 'text-[#5E5D59]'
+                }`}>
+                  <NumberFlow value={(playheadMs / 1000).toFixed(2) + 's'} />
+                  <span className="opacity-40">/</span>
+                  <NumberFlow value={(rangeEndMs / 1000).toFixed(2) + 's'} />
+                </div>
+
+                {/* Live Beat Pulse Badge (Skiper #02 Dynamic Island) */}
+                {audioAnalysis && (
+                  <motion.div
+                    layout
+                    animate={isLiveBeat ? { scale: [1, 1.15, 1] } : { scale: 1 }}
+                    transition={{ duration: 0.12 }}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold transition-all select-none shrink-0 ${
+                      isLiveBeat
+                        ? 'bg-[#D97757] text-white shadow-[0_0_12px_rgba(217,119,87,0.7)]'
+                        : themeMode === 'dark'
+                        ? 'bg-[#232220] text-[#D97757] border border-[#D97757]/30'
+                        : 'bg-[#FAF0EB] text-[#D97757] border border-[#D97757]/30'
+                    }`}
+                    title={`Detected Tempo: ${audioAnalysis.bpm} BPM (Flashing on drum hits)`}
+                  >
+                    <Zap className={`w-3.5 h-3.5 transition-transform ${isLiveBeat ? 'scale-125 fill-current' : ''}`} />
+                    <span>⚡ {audioAnalysis.bpm} BPM</span>
+                  </motion.div>
+                )}
               </div>
 
-              {/* Live Beat Pulse Indicator */}
-              {audioAnalysis && (
-                <div
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold transition-all duration-75 select-none shrink-0 ${
-                    isLiveBeat
-                      ? 'bg-[#D97757] text-white scale-105 shadow-[0_0_12px_rgba(217,119,87,0.7)]'
-                      : themeMode === 'dark'
-                      ? 'bg-[#232220] text-[#D97757] border border-[#D97757]/30'
-                      : 'bg-[#FAF0EB] text-[#D97757] border border-[#D97757]/30'
-                  }`}
-                  title={`Detected Tempo: ${audioAnalysis.bpm} BPM (Flashing on drum hits)`}
-                >
-                  <Zap className={`w-3.5 h-3.5 transition-transform ${isLiveBeat ? 'scale-125 fill-current' : ''}`} />
-                  <span>⚡ {audioAnalysis.bpm} BPM</span>
-                </div>
-              )}
-            </div>
+              {/* Interactive Downsampled Mini-Waveform Scrubber */}
+              <motion.div layout transition={{ type: "spring", bounce: 0.16 }} className="flex-1 flex items-center max-w-xl mx-2 relative h-9">
+                <canvas
+                  ref={waveformCanvasRef}
+                  className="w-full h-8 rounded-lg pointer-events-none"
+                />
+                <input
+                  type="range"
+                  min={rangeStartMs}
+                  max={rangeEndMs}
+                  step={33}
+                  value={playheadMs}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    setPlayheadMs(val);
+                    if (audioRef.current) {
+                      audioRef.current.currentTime = val / 1000;
+                    }
+                  }}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  title="Scrub timeline"
+                />
+              </motion.div>
 
-            {/* Audio Waveform Scrubber */}
-            <div className="flex-1 flex items-center max-w-xl mx-2 relative h-9">
-              <canvas
-                ref={waveformCanvasRef}
-                className="w-full h-8 rounded-lg pointer-events-none"
-              />
-              <input
-                type="range"
-                min={rangeStartMs}
-                max={rangeEndMs}
-                step={33}
-                value={playheadMs}
-                onChange={(e) => {
-                  const val = parseFloat(e.target.value);
-                  setPlayheadMs(val);
-                  if (audioRef.current) {
-                    audioRef.current.currentTime = val / 1000;
-                  }
-                }}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                title="Scrub timeline"
-              />
-            </div>
-
-            <div className={`flex items-center gap-3 text-xs font-sans shrink-0 ${
-              themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'
-            }`}>
-              {/* Snap Beats Button */}
-              {audioAnalysis && (
-                <button
-                  type="button"
-                  onClick={handleSnapToNearestBeats}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-sans font-medium border transition-all cursor-pointer shadow-xs ${
-                    snapFeedback
-                      ? 'bg-emerald-600 border-emerald-600 text-white'
-                      : themeMode === 'dark'
-                      ? 'bg-[#232220] hover:bg-[#2c2b28] border-white/10 text-white/90 hover:text-white'
-                      : 'bg-white hover:bg-[#FAF9F5] border-[#E8E5DE] text-[#141413]'
-                  }`}
-                  title="Magnetically snap lyric and word timestamps to nearest detected beats"
-                >
-                  {snapFeedback ? <Check className="w-3.5 h-3.5" /> : <Activity className="w-3.5 h-3.5 text-[#D97757]" />}
-                  <span>{snapFeedback ? 'Snapped!' : 'Snap Beats'}</span>
-                </button>
-              )}
-
-              {Object.keys(wordOverrides).length > 0 && (
-                <div className="flex items-center gap-1.5 bg-[#D97757]/10 border border-[#D97757]/30 px-2.5 py-0.5 rounded-full text-[10px] text-[#D97757] font-medium">
-                  <span>{Object.keys(wordOverrides).length} overrides</span>
+              {/* Controls and Selection Info */}
+              <div className={`flex items-center gap-3 text-xs font-sans shrink-0 ${
+                themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'
+              }`}>
+                {/* Snap Beats Button */}
+                {audioAnalysis && (
                   <button
-                    onClick={() => setWordOverrides({})}
-                    className="hover:underline cursor-pointer ml-1 opacity-80 hover:opacity-100"
+                    type="button"
+                    onClick={handleSnapToNearestBeats}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-sans font-medium border transition-all cursor-pointer shadow-xs ${
+                      snapFeedback
+                        ? 'bg-emerald-600 border-emerald-600 text-white'
+                        : themeMode === 'dark'
+                        ? 'bg-[#232220] hover:bg-[#2c2b28] border-white/10 text-white/90 hover:text-white'
+                        : 'bg-white hover:bg-[#FAF9F5] border-[#E8E5DE] text-[#141413]'
+                    }`}
+                    title="Magnetically snap lyric and word timestamps to nearest detected beats"
                   >
-                    Reset
+                    {snapFeedback ? <Check className="w-3.5 h-3.5" /> : <Activity className="w-3.5 h-3.5 text-[#D97757]" />}
+                    <span>{snapFeedback ? 'Snapped!' : 'Snap Beats'}</span>
                   </button>
-                </div>
-              )}
-              <span className="text-[#D97757] font-medium font-mono text-[11px]">
-                {selectedLines.length} lines
-              </span>
-              <span>•</span>
-              <span className="font-mono text-[11px]">{rangeDurationSec.toFixed(1)}s</span>
-            </div>
+                )}
+
+                {Object.keys(wordOverrides).length > 0 && (
+                  <div className="flex items-center gap-1.5 bg-[#D97757]/10 border border-[#D97757]/30 px-2.5 py-0.5 rounded-full text-[10px] text-[#D97757] font-medium">
+                    <span>{Object.keys(wordOverrides).length} overrides</span>
+                    <button
+                      onClick={() => setWordOverrides({})}
+                      className="hover:underline cursor-pointer ml-1 opacity-80 hover:opacity-100"
+                    >
+                      Reset
+                    </button>
+                  </div>
+                )}
+                <span className="text-[#D97757] font-medium font-mono text-[11px]">
+                  {selectedLines.length} lines
+                </span>
+                <span>•</span>
+                <span className="font-mono text-[11px]">{rangeDurationSec.toFixed(1)}s</span>
+              </div>
+            </motion.div>
           </div>
         </section>
 
@@ -1566,24 +1639,58 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             </h2>
           </div>
 
-          {/* Fixed Live OLED Display Preview */}
-          <div className={`p-3 border-b flex flex-col items-center shrink-0 ${
+          {/* Fixed Live OLED Display Preview with Technical HUD Knockout Brackets */}
+          <div className={`p-3.5 border-b flex flex-col items-center shrink-0 ${
             themeMode === 'dark' ? 'bg-[#141418] border-[#2C2B29]' : 'bg-[#FAF9F5] border-[#E8E5DE]'
           }`}>
-            <div className="flex justify-between items-center w-full px-1 mb-1.5 text-[10px] font-mono">
-              <span className="opacity-50">128×64 MONOCHROME</span>
-              <span className="text-[#D97757] font-semibold">30 FPS LIVE</span>
+            <div className="flex justify-between items-center w-full px-1 mb-2 text-[10px] font-mono">
+              <span className="opacity-60 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>128×64 SSD1306</span>
+              </span>
+              <span className="text-[#D97757] font-semibold tracking-wider">30 FPS LIVE</span>
             </div>
-            <div className="bg-black p-1 rounded-lg shadow-inner flex items-center justify-center">
-              <OledCanvas frameData={previewFrame} theme="cyan" scale={8} />
+
+            {/* OLED Monitor with Skiper #107 Knockout Corner L-Brackets */}
+            <div className="relative p-2 flex items-center justify-center">
+              {/* Corner L-Brackets */}
+              <div className={`absolute top-0 left-0 w-3.5 h-3.5 border-t-2 border-l-2 transition-all duration-150 pointer-events-none ${
+                isLiveBeat ? 'border-[#D97757] scale-110 shadow-[0_0_8px_rgba(217,119,87,0.9)]' : 'border-[#D97757]/70'
+              }`} />
+              <div className={`absolute top-0 right-0 w-3.5 h-3.5 border-t-2 border-r-2 transition-all duration-150 pointer-events-none ${
+                isLiveBeat ? 'border-[#D97757] scale-110 shadow-[0_0_8px_rgba(217,119,87,0.9)]' : 'border-[#D97757]/70'
+              }`} />
+              <div className={`absolute bottom-0 left-0 w-3.5 h-3.5 border-b-2 border-l-2 transition-all duration-150 pointer-events-none ${
+                isLiveBeat ? 'border-[#D97757] scale-110 shadow-[0_0_8px_rgba(217,119,87,0.9)]' : 'border-[#D97757]/70'
+              }`} />
+              <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 border-b-2 border-r-2 transition-all duration-150 pointer-events-none ${
+                isLiveBeat ? 'border-[#D97757] scale-110 shadow-[0_0_8px_rgba(217,119,87,0.9)]' : 'border-[#D97757]/70'
+              }`} />
+
+              {/* Hardware Display Box */}
+              <div className="bg-black p-1 rounded-md shadow-inner flex items-center justify-center border border-white/10 ring-1 ring-black/80">
+                <OledCanvas frameData={previewFrame} theme="cyan" scale={8} />
+              </div>
+            </div>
+
+            {/* Hardware Telemetry Rolling Counters */}
+            <div className="flex justify-between items-center w-full px-1 mt-2 text-[10px] font-mono">
+              <NumberFlow
+                value={frameCounterStr}
+                className="text-[#D97757] font-semibold"
+              />
+              <NumberFlow
+                value={playbackClockStr}
+                className={themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'}
+              />
             </div>
           </div>
 
-          {/* Director Mode Segmented Tabs (Skiper-UI inspired) */}
+          {/* Director Mode Segmented Tabs with Sliding Pill Physics */}
           <div className={`p-2.5 border-b shrink-0 ${
             themeMode === 'dark' ? 'border-[#2C2B29] bg-[#18181A]' : 'border-[#E8E5DE] bg-white'
           }`}>
-            <div className={`flex p-1 rounded-xl border gap-1 ${
+            <div className={`flex p-1 rounded-xl border gap-1 relative ${
               themeMode === 'dark' ? 'bg-[#141418] border-white/10' : 'bg-[#FAF9F5] border-[#E8E5DE]'
             }`}>
               <button
@@ -1592,12 +1699,19 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                   setDirectorModeTab('auto');
                   setArchetype('auto_semantic');
                 }}
-                className={`flex-1 py-1.5 text-xs font-sans font-medium rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                className={`relative flex-1 py-1.5 text-xs font-sans rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1.5 z-10 ${
                   directorModeTab === 'auto'
-                    ? 'bg-[#D97757] text-white shadow-xs font-semibold'
+                    ? 'text-white font-semibold'
                     : themeMode === 'dark' ? 'text-white/50 hover:text-white' : 'text-[#5E5D59] hover:text-[#141413]'
                 }`}
               >
+                {directorModeTab === 'auto' && (
+                  <motion.div
+                    layoutId="director-tab-pill"
+                    className="absolute inset-0 bg-[#D97757] rounded-lg shadow-xs -z-10"
+                    transition={{ type: 'spring', bounce: 0.16, duration: 0.35 }}
+                  />
+                )}
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Smart Director</span>
               </button>
@@ -1607,12 +1721,19 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                   setDirectorModeTab('manual');
                   if (archetype === 'auto_semantic') setArchetype('blade_slash');
                 }}
-                className={`flex-1 py-1.5 text-xs font-sans font-medium rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                className={`relative flex-1 py-1.5 text-xs font-sans rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1.5 z-10 ${
                   directorModeTab === 'manual'
-                    ? 'bg-[#D97757] text-white shadow-xs font-semibold'
+                    ? 'text-white font-semibold'
                     : themeMode === 'dark' ? 'text-white/50 hover:text-white' : 'text-[#5E5D59] hover:text-[#141413]'
                 }`}
               >
+                {directorModeTab === 'manual' && (
+                  <motion.div
+                    layoutId="director-tab-pill"
+                    className="absolute inset-0 bg-[#D97757] rounded-lg shadow-xs -z-10"
+                    transition={{ type: 'spring', bounce: 0.16, duration: 0.35 }}
+                  />
+                )}
                 <Sliders className="w-3.5 h-3.5" />
                 <span>Manual Lock</span>
               </button>
@@ -2082,43 +2203,38 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               </button>
             </div>
 
-            {/* Segmented Inspector Tabs */}
-            <div className={`flex p-1 rounded-xl border gap-1 ${
+            {/* Segmented Inspector Tabs with Sliding Pill Physics */}
+            <div className={`flex p-1 rounded-xl border gap-1 relative ${
               themeMode === 'dark' ? 'bg-[#141418] border-white/10' : 'bg-[#FAF9F5] border-[#E8E5DE]'
             }`}>
-              <button
-                type="button"
-                onClick={() => setWordCustomizerTab('archetype')}
-                className={`flex-1 py-1.5 text-xs font-sans font-medium rounded-lg transition-all cursor-pointer ${
-                  wordCustomizerTab === 'archetype'
-                    ? 'bg-[#D97757] text-white shadow-xs font-semibold'
-                    : themeMode === 'dark' ? 'text-white/50 hover:text-white' : 'text-[#5E5D59] hover:text-[#141413]'
-                }`}
-              >
-                Motion Style
-              </button>
-              <button
-                type="button"
-                onClick={() => setWordCustomizerTab('font')}
-                className={`flex-1 py-1.5 text-xs font-sans font-medium rounded-lg transition-all cursor-pointer ${
-                  wordCustomizerTab === 'font'
-                    ? 'bg-[#D97757] text-white shadow-xs font-semibold'
-                    : themeMode === 'dark' ? 'text-white/50 hover:text-white' : 'text-[#5E5D59] hover:text-[#141413]'
-                }`}
-              >
-                Typography Font
-              </button>
-              <button
-                type="button"
-                onClick={() => setWordCustomizerTab('motif')}
-                className={`flex-1 py-1.5 text-xs font-sans font-medium rounded-lg transition-all cursor-pointer ${
-                  wordCustomizerTab === 'motif'
-                    ? 'bg-[#D97757] text-white shadow-xs font-semibold'
-                    : themeMode === 'dark' ? 'text-white/50 hover:text-white' : 'text-[#5E5D59] hover:text-[#141413]'
-                }`}
-              >
-                Visual Motif
-              </button>
+              {[
+                { id: 'archetype' as const, label: 'Motion Style' },
+                { id: 'font' as const, label: 'Typography Font' },
+                { id: 'motif' as const, label: 'Visual Motif' }
+              ].map(tab => {
+                const isActive = wordCustomizerTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setWordCustomizerTab(tab.id)}
+                    className={`relative flex-1 py-1.5 text-xs font-sans rounded-lg transition-colors cursor-pointer flex items-center justify-center z-10 ${
+                      isActive
+                        ? 'text-white font-semibold'
+                        : themeMode === 'dark' ? 'text-white/50 hover:text-white' : 'text-[#5E5D59] hover:text-[#141413]'
+                    }`}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="word-customizer-tab-pill"
+                        className="absolute inset-0 bg-[#D97757] rounded-lg shadow-xs -z-10"
+                        transition={{ type: 'spring', bounce: 0.16, duration: 0.35 }}
+                      />
+                    )}
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Tab 1: Motion Style */}
