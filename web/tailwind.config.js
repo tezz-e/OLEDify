@@ -20,6 +20,20 @@ export default {
         'accent-dark': '#C96442',
         terracotta: '#D97757',
         'terracotta-dark': '#C96442',
+        studio: {
+          dark: '#141413',
+          card: '#18181C',
+          panel: '#1E1E20',
+          elevated: '#232228',
+          subtle: '#2C2B29',
+        }
+      },
+      zIndex: {
+        '60': '60',
+        '70': '70',
+        '80': '80',
+        '90': '90',
+        '100': '100',
       },
       fontFamily: {
         serif: ['"DM Serif Display"', 'Georgia', 'serif'],

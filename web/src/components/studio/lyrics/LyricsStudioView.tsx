@@ -2163,12 +2163,15 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
       {/* Word Customizer Modal */}
       {editingWordTarget && (
-        <div className="fixed inset-0 z-60 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className={`w-full max-w-lg p-5 flex flex-col gap-4 font-sans animate-scale-in border rounded-2xl shadow-2xl ${
-            themeMode === 'dark'
-              ? 'bg-[#18181C] border-white/10 text-white'
-              : 'bg-white border-[#E8E5DE] text-[#141413]'
-          }`}>
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div
+            style={{ backgroundColor: themeMode === 'dark' ? '#18181C' : '#FFFFFF' }}
+            className={`w-full max-w-lg p-5 flex flex-col gap-4 font-sans border rounded-2xl shadow-2xl relative z-10 ${
+              themeMode === 'dark'
+                ? 'border-white/10 text-white'
+                : 'border-[#E8E5DE] text-[#141413]'
+            }`}
+          >
             {/* Header */}
             <div className="flex justify-between items-start">
               <div>
@@ -2247,14 +2250,19 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                         }));
                         setEditingWordTarget(prev => prev ? { ...prev, currentArchetype: archKey } : null);
                       }}
+                      style={{
+                        backgroundColor: isSelected
+                          ? (themeMode === 'dark' ? 'rgba(217, 119, 87, 0.2)' : '#FAF0EB')
+                          : (themeMode === 'dark' ? '#232228' : '#FAF9F5')
+                      }}
                       className={`p-2.5 border rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between ${
                         isSelected
                           ? themeMode === 'dark'
-                            ? 'border-[#D97757] bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs'
-                            : 'border-[#D97757] bg-[#FAF0EB] ring-1 ring-[#D97757]/30 shadow-xs'
+                            ? 'border-[#D97757] ring-1 ring-[#D97757]/40 shadow-xs'
+                            : 'border-[#D97757] ring-1 ring-[#D97757]/30 shadow-xs'
                           : themeMode === 'dark'
-                          ? 'border-white/10 hover:border-white/20 bg-[#232228]'
-                          : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-[#FAF9F5] shadow-xs'
+                          ? 'border-white/10 hover:border-white/20'
+                          : 'border-[#E8E5DE] hover:border-[#D5D0C5] shadow-xs'
                       }`}
                     >
                       <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded self-start ${
@@ -2291,10 +2299,13 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     }));
                     setEditingWordTarget(prev => prev ? { ...prev, currentFont: e.target.value } : null);
                   }}
+                  style={{
+                    backgroundColor: themeMode === 'dark' ? '#1C1C20' : '#FFFFFF'
+                  }}
                   className={`w-full p-2.5 text-xs font-sans rounded-xl focus:outline-none focus:border-[#D97757] focus:ring-1 focus:ring-[#D97757] cursor-pointer border shadow-xs transition-colors ${
                     themeMode === 'dark'
-                      ? 'bg-[#1C1C20] border-white/10 text-white'
-                      : 'bg-white border-[#E8E5DE] text-[#141413]'
+                      ? 'border-white/10 text-white'
+                      : 'border-[#E8E5DE] text-[#141413]'
                   }`}
                 >
                   <optgroup label="Style Pack Presets">
@@ -2344,14 +2355,19 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                         }));
                         setEditingWordTarget(prev => prev ? { ...prev, currentMotif: m.id } : null);
                       }}
+                      style={{
+                        backgroundColor: isSelected
+                          ? (themeMode === 'dark' ? 'rgba(217, 119, 87, 0.2)' : '#FAF0EB')
+                          : (themeMode === 'dark' ? '#232228' : '#FAF9F5')
+                      }}
                       className={`p-2.5 border rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between ${
                         isSelected
                           ? themeMode === 'dark'
-                            ? 'border-[#D97757] bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs'
-                            : 'border-[#D97757] bg-[#FAF0EB] ring-1 ring-[#D97757]/30 shadow-xs'
+                            ? 'border-[#D97757] ring-1 ring-[#D97757]/40 shadow-xs'
+                            : 'border-[#D97757] ring-1 ring-[#D97757]/30 shadow-xs'
                           : themeMode === 'dark'
-                          ? 'border-white/10 hover:border-white/20 bg-[#232228]'
-                          : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-[#FAF9F5] shadow-xs'
+                          ? 'border-white/10 hover:border-white/20'
+                          : 'border-[#E8E5DE] hover:border-[#D5D0C5] shadow-xs'
                       }`}
                     >
                       <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded self-start ${
