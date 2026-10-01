@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, Music, FileText, Upload, Play, Pause, ArrowLeft, Sparkles, Check, RefreshCw, X, RotateCcw, ChevronUp, ChevronDown, CheckCheck, Bot, Cpu, Activity, Zap, Volume2, Terminal } from 'lucide-react';
+import { Search, Music, FileText, Upload, Play, Pause, ArrowLeft, Sparkles, Check, RefreshCw, X, RotateCcw, ChevronUp, ChevronDown, CheckCheck, Bot, Cpu, Activity, Zap, Volume2, Terminal, Sliders, Layers, Type } from 'lucide-react';
 import { searchLrclib, getLrclibExact, searchLyricsOvhFallback } from '../../../engine/lyrics/lrclibClient';
 import { parseLrc, parsePlainTextLyrics } from '../../../engine/lyrics/lrcParser';
 import { LrclibTrack, ParsedLyrics, LyricLine, LyricWord } from '../../../engine/lyrics/types';
@@ -89,6 +89,9 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   // --- KINETIC STYLE CONFIG ---
   // Default to AUTO_SEMANTIC (Smart Adaptive Director)
   const [archetype, setArchetype] = useState<MotionArchetype>('auto_semantic');
+  const [directorModeTab, setDirectorModeTab] = useState<'auto' | 'manual'>('auto');
+  const [showTokenBadges, setShowTokenBadges] = useState<boolean>(false);
+  const [wordCustomizerTab, setWordCustomizerTab] = useState<'archetype' | 'font' | 'motif'>('archetype');
   const [stylePack, setStylePack] = useState<StylePackId>('trap_drill');
   const [wordOverrides, setWordOverrides] = useState<Record<string, MotionArchetype>>({});
   const [wordFontOverrides, setWordFontOverrides] = useState<Record<string, string>>({});
@@ -785,7 +788,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
       themeMode === 'dark' ? 'bg-[#141413] text-[#FAF9F5]' : 'bg-[#FAF9F5] text-[#141413]'
     }`}>
       {/* Studio Top Navigation Bar */}
-      <header className={`h-14 px-6 border-b flex items-center justify-between shrink-0 z-20 transition-colors duration-200 ${
+      <header className={`h-13 px-6 border-b flex items-center justify-between shrink-0 z-20 transition-colors duration-200 ${
         themeMode === 'dark' ? 'bg-[#18181A] border-[#2C2B29] text-[#FAF9F5]' : 'bg-[#FAF9F5] border-[#E8E5DE] text-[#141413]'
       }`}>
         <div className="flex items-center gap-4">
@@ -803,11 +806,10 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
           <div className={`h-4 w-px ${themeMode === 'dark' ? 'bg-white/10' : 'bg-[#E8E5DE]'}`} />
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-[#D97757]" />
-            <h1 className="font-serif text-lg font-normal tracking-tight flex items-center gap-1.5">
-              <span>Kinetic Typography</span>
-              <span className="italic font-normal opacity-60 text-base">Studio</span>
+            <h1 className="font-sans text-sm font-semibold tracking-tight">
+              Kinetic Studio
             </h1>
           </div>
         </div>
@@ -817,14 +819,13 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           <ThemeSwitch theme={themeMode} onChange={setThemeMode} />
         </div>
 
-        {/* Right Badges */}
-        <div className="flex items-center gap-3 text-xs font-sans">
-          <span className={`px-2.5 py-0.5 text-[10px] font-mono tracking-wider border rounded-full ${
+        {/* Right: Unified Hardware Spec Cluster */}
+        <div className="flex items-center gap-2 text-xs font-mono">
+          <span className={`px-2.5 py-1 text-[11px] font-medium border rounded-full ${
             themeMode === 'dark' ? 'bg-[#232220] text-white/80 border-white/10' : 'bg-white text-[#5E5D59] border-[#E8E5DE]'
           }`}>
-            128×64 Monochrome
+            128×64 • 1-Bit • 30 FPS
           </span>
-          <span className="text-[#D97757] font-mono text-[10px] font-semibold">30 FPS Clock</span>
         </div>
       </header>
 
@@ -846,7 +847,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               themeMode === 'dark' ? 'text-white/80' : 'text-[#141413]'
             }`}>
               <span className="w-1.5 h-1.5 rounded-full bg-[#D97757]" />
-              <span>1. Song & Lyrics Ingestion</span>
+              <span>1. Ingest</span>
             </h2>
           </div>
 
@@ -1141,11 +1142,11 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           }`}>
             <div className="flex items-center gap-3">
               <span className="text-[12px] font-sans font-semibold tracking-wide text-[#D97757] flex items-center gap-1.5">
-                <span>✦</span>
-                <span className={themeMode === 'dark' ? 'text-white' : 'text-[#141413]'}>Lyrics Sequence</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#D97757]" />
+                <span className={themeMode === 'dark' ? 'text-white' : 'text-[#141413]'}>2. Lyrics Timeline</span>
               </span>
-              <span className={`text-[10px] font-sans ${themeMode === 'dark' ? 'text-white/40' : 'text-[#777]'}`}>
-                Click line to focus • Shift+Click to expand range
+              <span className={`text-[10px] font-sans hidden sm:inline ${themeMode === 'dark' ? 'text-white/40' : 'text-[#777]'}`}>
+                Click line to seek • Click word to customize
               </span>
             </div>
 
@@ -1164,25 +1165,41 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               </button>
               <button
                 onClick={() => handleExpandRange(1)}
-                className={`px-2.5 py-1 font-medium border rounded-lg transition-colors cursor-pointer shadow-xs ${
+                className={`px-2 py-1 font-medium border rounded-lg transition-colors cursor-pointer shadow-xs ${
                   themeMode === 'dark'
                     ? 'bg-[#232220] hover:bg-white text-white/80 hover:text-black border-white/10'
                     : 'bg-white hover:bg-[#FAF9F5] text-[#5E5D59] hover:text-[#141413] border-[#E8E5DE]'
                 }`}
                 title="Expand selection by 1 line"
               >
-                +1 Line
+                +1
               </button>
               <button
                 onClick={() => handleExpandRange(-1)}
-                className={`px-2.5 py-1 font-medium border rounded-lg transition-colors cursor-pointer shadow-xs ${
+                className={`px-2 py-1 font-medium border rounded-lg transition-colors cursor-pointer shadow-xs ${
                   themeMode === 'dark'
                     ? 'bg-[#232220] hover:bg-white text-white/80 hover:text-black border-white/10'
                     : 'bg-white hover:bg-[#FAF9F5] text-[#5E5D59] hover:text-[#141413] border-[#E8E5DE]'
                 }`}
                 title="Shrink selection by 1 line"
               >
-                -1 Line
+                -1
+              </button>
+              <div className={`h-3 w-px ${themeMode === 'dark' ? 'bg-white/10' : 'bg-[#E8E5DE]'}`} />
+              <button
+                type="button"
+                onClick={() => setShowTokenBadges(prev => !prev)}
+                className={`px-2.5 py-1 font-medium border rounded-lg transition-all cursor-pointer shadow-xs flex items-center gap-1.5 ${
+                  showTokenBadges
+                    ? 'bg-[#D97757] text-white border-[#D97757]'
+                    : themeMode === 'dark'
+                    ? 'bg-[#232220] hover:bg-white/10 text-white/70 border-white/10'
+                    : 'bg-white hover:bg-[#FAF9F5] text-[#5E5D59] border-[#E8E5DE]'
+                }`}
+                title="Toggle dense word token inspection"
+              >
+                <Layers className="w-3 h-3" />
+                <span>Tokens</span>
               </button>
             </div>
           </div>
@@ -1249,82 +1266,26 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                         )}
                       </div>
 
-                      {/* Clean Apple Music Typography */}
-                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                      {/* Clean Apple Music Typography - Words are directly interactive */}
+                      <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1.5">
                         {line.words && line.words.length > 0 ? (
                           line.words.map((w, wIdx) => {
                             const isWordActive = isActiveLine && playheadMs >= w.startMs && playheadMs < w.endMs;
                             const isWordPast = isActiveLine ? playheadMs >= w.endMs : idx < activeLineIndex;
 
-                            return (
-                              <span
-                                key={wIdx}
-                                className={`text-xl md:text-2xl font-bold tracking-tight transition-colors duration-150 inline-block ${
-                                  themeMode === 'dark'
-                                    ? isWordActive
-                                      ? 'text-white font-black underline decoration-[#D97757] decoration-2'
-                                      : isWordPast
-                                      ? 'text-white/90'
-                                      : 'text-white/40'
-                                    : isWordActive
-                                    ? 'text-[#1A1A1A] font-black underline decoration-[#D97757] decoration-3'
-                                    : isWordPast
-                                    ? 'text-[#1A1A1A] font-bold'
-                                    : 'text-[#888]'
-                                }`}
-                              >
-                                {w.word}
-                              </span>
-                            );
-                          })
-                        ) : (
-                          <span className={`text-xl md:text-2xl font-bold ${
-                            themeMode === 'dark' ? 'text-white' : 'text-[#1A1A1A]'
-                          }`}>
-                            {line.text}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Word Motion Badges */}
-                      {line.words && line.words.length > 0 && (
-                        <div className={`mt-3 pt-2.5 border-t flex flex-wrap gap-1.5 items-center ${
-                          themeMode === 'dark' ? 'border-white/10' : 'border-[#1A1A1A]/15'
-                        }`}>
-                          <span className={`text-[8px] font-bold uppercase tracking-wider mr-1 font-mono ${
-                            themeMode === 'dark' ? 'text-white/40' : 'text-[#666]'
-                          }`}>
-                            {archetype === 'auto_semantic' ? 'DYNAMIC STYLES:' : 'WORDS:'}
-                          </span>
-                          {line.words.map((w, wIdx) => {
                             const precedingWord = wIdx > 0 ? line.words[wIdx - 1] : undefined;
-                            const wordArch = getWordEffectiveArchetype(
-                              w,
-                              wIdx,
-                              archetype,
-                              wordOverrides,
-                              precedingWord
-                            );
+                            const wordArch = getWordEffectiveArchetype(w, wIdx, archetype, wordOverrides, precedingWord);
                             const packConfig = STYLE_PACKS[stylePack] || STYLE_PACKS.trap_drill;
-                            const wordFont = getWordEffectiveFont(
-                              w,
-                              wordArch,
-                              packConfig,
-                              wordFontOverrides,
-                              fontFamily
-                            );
-                            const meta = ARCHETYPE_METADATA[wordArch] || ARCHETYPE_METADATA.smooth_fluid;
+                            const wordFont = getWordEffectiveFont(w, wordArch, packConfig, wordFontOverrides, fontFamily);
                             const specificKey = `${w.word}_${w.startMs}`;
                             const cleanKey = w.word.toLowerCase().replace(/[^a-z0-9]/g, '');
                             const wordMotif = wordMotifOverrides[specificKey] || wordMotifOverrides[cleanKey] || 'none';
-                            const motifMeta = MOTIF_METADATA[wordMotif];
                             const isOverridden = !!(
                               wordOverrides[specificKey] || wordOverrides[cleanKey] ||
                               wordFontOverrides[specificKey] || wordFontOverrides[cleanKey] ||
                               (wordMotifOverrides[specificKey] && wordMotifOverrides[specificKey] !== 'none') ||
                               (wordMotifOverrides[cleanKey] && wordMotifOverrides[cleanKey] !== 'none')
                             );
-                            const fontShortName = wordFont.split(',')[0].replace(/['"]/g, '');
 
                             return (
                               <button
@@ -1341,21 +1302,94 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                                     currentMotif: wordMotif
                                   });
                                 }}
-                                className={`px-2 py-0.5 text-[10px] font-sans rounded-md flex items-center gap-1 transition-all cursor-pointer shadow-xs ${
-                                  isOverridden
-                                    ? 'bg-[#D97757] text-white font-medium ring-1 ring-[#D97757]/40'
-                                    : themeMode === 'dark'
-                                    ? 'bg-white/10 hover:bg-white/20 text-white/80 hover:text-white border border-white/10'
-                                    : 'bg-[#FAF9F5] hover:bg-[#F0EEE6] text-[#5E5D59] hover:text-[#141413] border border-[#E8E5DE]'
+                                className={`text-xl md:text-2xl font-bold tracking-tight transition-all duration-150 inline-flex flex-col items-center cursor-pointer rounded px-1.5 py-0.5 -mx-1 group/word ${
+                                  themeMode === 'dark'
+                                    ? isWordActive
+                                      ? 'text-white font-black underline decoration-[#D97757] decoration-2'
+                                      : isWordPast
+                                      ? 'text-white/90 hover:text-[#D97757]'
+                                      : 'text-white/40 hover:text-white/80'
+                                    : isWordActive
+                                    ? 'text-[#1A1A1A] font-black underline decoration-[#D97757] decoration-3'
+                                    : isWordPast
+                                    ? 'text-[#1A1A1A] font-bold hover:text-[#D97757]'
+                                    : 'text-[#888] hover:text-[#1A1A1A]'
                                 }`}
-                                title={`Customize motion style, font & motif for "${w.word}" (Style: ${meta.name}, Font: ${fontShortName}, Motif: ${motifMeta?.name || 'None'})`}
+                                title={`Click to customize style for "${w.word}"`}
                               >
-                                <span>{meta.icon}</span>
-                                {wordMotif !== 'none' && motifMeta && (
-                                  <span className="text-[10px]" title={`Motif: ${motifMeta.name}`}>{motifMeta.icon}</span>
+                                <span>{w.word}</span>
+                                {isOverridden && (
+                                  <span className="w-1 h-1 rounded-full bg-[#D97757] -mt-0.5" title="Custom override active" />
                                 )}
+                              </button>
+                            );
+                          })
+                        ) : (
+                          <span className={`text-xl md:text-2xl font-bold ${
+                            themeMode === 'dark' ? 'text-white' : 'text-[#1A1A1A]'
+                          }`}>
+                            {line.text}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Optional Dense Token Inspection Strip (Toggled via header button) */}
+                      {showTokenBadges && line.words && line.words.length > 0 && (
+                        <div className={`mt-3 pt-2.5 border-t flex flex-wrap gap-1.5 items-center ${
+                          themeMode === 'dark' ? 'border-white/10' : 'border-[#1A1A1A]/10'
+                        }`}>
+                          <span className={`text-[8px] font-mono tracking-wider mr-1 ${
+                            themeMode === 'dark' ? 'text-white/40' : 'text-[#87867F]'
+                          }`}>
+                            TOKENS:
+                          </span>
+                          {line.words.map((w, wIdx) => {
+                            const precedingWord = wIdx > 0 ? line.words[wIdx - 1] : undefined;
+                            const wordArch = getWordEffectiveArchetype(w, wIdx, archetype, wordOverrides, precedingWord);
+                            const packConfig = STYLE_PACKS[stylePack] || STYLE_PACKS.trap_drill;
+                            const wordFont = getWordEffectiveFont(w, wordArch, packConfig, wordFontOverrides, fontFamily);
+                            const meta = ARCHETYPE_METADATA[wordArch] || ARCHETYPE_METADATA.smooth_fluid;
+                            const specificKey = `${w.word}_${w.startMs}`;
+                            const cleanKey = w.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+                            const wordMotif = wordMotifOverrides[specificKey] || wordMotifOverrides[cleanKey] || 'none';
+                            const motifMeta = MOTIF_METADATA[wordMotif];
+                            const isOverridden = !!(
+                              wordOverrides[specificKey] || wordOverrides[cleanKey] ||
+                              wordFontOverrides[specificKey] || wordFontOverrides[cleanKey] ||
+                              (wordMotifOverrides[specificKey] && wordMotifOverrides[specificKey] !== 'none') ||
+                              (wordMotifOverrides[cleanKey] && wordMotifOverrides[cleanKey] !== 'none')
+                            );
+
+                            return (
+                              <button
+                                key={wIdx}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingWordTarget({
+                                    word: w,
+                                    lineIdx: idx,
+                                    wordIdx: wIdx,
+                                    currentArchetype: wordArch,
+                                    currentFont: wordFont,
+                                    currentMotif: wordMotif
+                                  });
+                                }}
+                                className={`px-2 py-0.5 text-[10px] font-sans rounded-md flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+                                  isOverridden
+                                    ? 'bg-[#D97757] text-white font-medium'
+                                    : themeMode === 'dark'
+                                    ? 'bg-white/5 hover:bg-white/10 text-white/80 border border-white/10'
+                                    : 'bg-[#FAF9F5] hover:bg-[#F0EEE6] text-[#5E5D59] border border-[#E8E5DE]'
+                                }`}
+                                title={`Customize style for "${w.word}"`}
+                              >
                                 <span className="font-medium">{w.word}</span>
-                                <span className="opacity-50 text-[9px] font-mono">[{fontShortName}]</span>
+                                <span className="opacity-40 font-mono text-[9px]">•</span>
+                                <span className="opacity-70 text-[9px] font-mono">{meta.name}</span>
+                                {wordMotif !== 'none' && motifMeta && (
+                                  <span className="text-[9px] text-[#D97757] font-mono">({motifMeta.name})</span>
+                                )}
                               </button>
                             );
                           })}
@@ -1520,515 +1554,479 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         <section className={`w-[360px] flex flex-col shrink-0 min-h-0 transition-colors duration-200 ${
           themeMode === 'dark' ? 'bg-[#18181A] text-white' : 'bg-white text-[#141413]'
         }`}>
-          <div className={`p-3 border-b ${
+          <div className={`p-3 border-b shrink-0 ${
             themeMode === 'dark' ? 'border-[#2C2B29] bg-[#1E1E20]' : 'border-[#E8E5DE] bg-[#F5F2EB]'
           }`}>
             <h2 className={`text-[11px] font-sans font-semibold tracking-wide flex items-center gap-2 ${
               themeMode === 'dark' ? 'text-white/80' : 'text-[#141413]'
             }`}>
               <span className="w-1.5 h-1.5 rounded-full bg-[#D97757]" />
-              <span>3. Motion Archetypes & OLED Preview</span>
+              <span>3. Motion & Display</span>
             </h2>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 min-h-0">
-            {/* Live True OLED Display Preview */}
-            <div className={`rounded-xl p-3 shadow-lg flex flex-col items-center border ${
-              themeMode === 'dark' ? 'bg-[#1B1B20] border-white/10' : 'bg-[#2A2A2A] border-[#111]'
-            }`}>
-              <div className="text-[#888] text-[8px] font-mono mb-1">TRUE OLED PREVIEW (128×64)</div>
-              <div className="bg-black p-1 rounded shadow-inner w-[128px]">
-                <OledCanvas frameData={previewFrame} theme="cyan" scale={8} />
-              </div>
-              <div className="text-[#666] text-[7px] font-mono mt-1">30 FPS • 1-BIT MONOCHROME</div>
+          {/* Fixed Live OLED Display Preview */}
+          <div className={`p-3 border-b flex flex-col items-center shrink-0 ${
+            themeMode === 'dark' ? 'bg-[#141418] border-[#2C2B29]' : 'bg-[#FAF9F5] border-[#E8E5DE]'
+          }`}>
+            <div className="flex justify-between items-center w-full px-1 mb-1.5 text-[10px] font-mono">
+              <span className="opacity-50">128×64 MONOCHROME</span>
+              <span className="text-[#D97757] font-semibold">30 FPS LIVE</span>
             </div>
+            <div className="bg-black p-1 rounded-lg shadow-inner flex items-center justify-center">
+              <OledCanvas frameData={previewFrame} theme="cyan" scale={8} />
+            </div>
+          </div>
 
-            {/* Featured Dynamic Semantic Director Hero Card */}
-            <div className="flex flex-col gap-2">
-              <div
-                onClick={() => setArchetype('auto_semantic')}
-                className={`p-3.5 border transition-all cursor-pointer flex flex-col gap-1.5 rounded-xl ${
-                  archetype === 'auto_semantic'
-                    ? themeMode === 'dark'
-                      ? 'border-[#D97757] bg-[#D97757]/10 shadow-sm ring-1 ring-[#D97757]/40'
-                      : 'border-[#D97757] bg-[#FAF0EB] shadow-xs ring-1 ring-[#D97757]/30'
-                    : themeMode === 'dark'
-                    ? 'border-white/10 hover:border-white/25 bg-[#1C1C20]'
-                    : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-white shadow-xs'
+          {/* Director Mode Segmented Tabs (Skiper-UI inspired) */}
+          <div className={`p-2.5 border-b shrink-0 ${
+            themeMode === 'dark' ? 'border-[#2C2B29] bg-[#18181A]' : 'border-[#E8E5DE] bg-white'
+          }`}>
+            <div className={`flex p-1 rounded-xl border gap-1 ${
+              themeMode === 'dark' ? 'bg-[#141418] border-white/10' : 'bg-[#FAF9F5] border-[#E8E5DE]'
+            }`}>
+              <button
+                type="button"
+                onClick={() => {
+                  setDirectorModeTab('auto');
+                  setArchetype('auto_semantic');
+                }}
+                className={`flex-1 py-1.5 text-xs font-sans font-medium rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  directorModeTab === 'auto'
+                    ? 'bg-[#D97757] text-white shadow-xs font-semibold'
+                    : themeMode === 'dark' ? 'text-white/50 hover:text-white' : 'text-[#5E5D59] hover:text-[#141413]'
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">✦</span>
-                    <span className={`font-serif text-sm font-normal ${themeMode === 'dark' ? 'text-white' : 'text-[#141413]'}`}>
-                      Auto Semantic Director
-                    </span>
-                  </div>
-                  <span className="text-[10px] font-sans font-medium bg-[#D97757] text-white px-2 py-0.5 rounded-full">
-                    Adaptive
-                  </span>
-                </div>
-                <p className={`text-[11px] leading-relaxed font-sans ${
-                  themeMode === 'dark' ? 'text-white/60' : 'text-[#5E5D59]'
-                }`}>
-                  Adapts typography style dynamically per word according to meaning, phonetics, vocal duration & beats (e.g. blade slashes for sharp words, impact slams for drops, 3D blocks for anthems).
-                </p>
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Smart Director</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDirectorModeTab('manual');
+                  if (archetype === 'auto_semantic') setArchetype('blade_slash');
+                }}
+                className={`flex-1 py-1.5 text-xs font-sans font-medium rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  directorModeTab === 'manual'
+                    ? 'bg-[#D97757] text-white shadow-xs font-semibold'
+                    : themeMode === 'dark' ? 'text-white/50 hover:text-white' : 'text-[#5E5D59] hover:text-[#141413]'
+                }`}
+              >
+                <Sliders className="w-3.5 h-3.5" />
+                <span>Manual Lock</span>
+              </button>
+            </div>
+          </div>
 
-                {/* Inference Engine Sub-Selector */}
-                {archetype === 'auto_semantic' && (
-                  <div 
-                    onClick={(e) => e.stopPropagation()} 
-                    className={`mt-2 pt-2 border-t flex flex-col gap-2 ${
-                      themeMode === 'dark' ? 'border-white/10' : 'border-[#E8E5DE]'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className={`text-[10px] font-sans font-medium ${themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}`}>
-                        Inference Engine:
-                      </span>
-                      <div className="flex items-center gap-1">
+          {/* Scrollable Middle Controls */}
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 min-h-0">
+            {directorModeTab === 'auto' ? (
+              <>
+                {/* Thematic 4-Font Style Pack Selector */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className={`text-[11px] font-sans font-medium block ${
+                      themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'
+                    }`}>
+                      Thematic Style Pack
+                    </label>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mb-2.5">
+                    {(['trap_drill', 'shonen_comic', 'cartoon_bounce', 'cyber_industrial'] as StylePackId[]).map(packId => {
+                      const pack = STYLE_PACKS[packId];
+                      const isSelected = stylePack === packId;
+                      return (
                         <button
+                          key={packId}
                           type="button"
-                          onClick={() => setInferenceMode('heuristic')}
-                          className={`px-2.5 py-1 text-[10px] font-sans font-medium rounded-lg border transition-colors cursor-pointer shadow-xs ${
-                            inferenceMode === 'heuristic'
-                              ? 'bg-[#141413] text-white border-[#141413]'
-                              : themeMode === 'dark' ? 'border-white/10 text-white/60 hover:text-white bg-[#232220]' : 'border-[#E8E5DE] text-[#5E5D59] bg-white'
+                          onClick={() => {
+                            setStylePack(packId);
+                            setFontFamily(pack.fonts.hero);
+                          }}
+                          className={`p-2.5 border rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between ${
+                            isSelected
+                              ? themeMode === 'dark'
+                                ? 'border-[#D97757] bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs'
+                                : 'border-[#D97757] bg-[#FAF0EB] ring-1 ring-[#D97757]/30 shadow-xs'
+                              : themeMode === 'dark'
+                              ? 'border-white/10 hover:border-white/20 bg-[#1C1C20]'
+                              : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-white shadow-xs'
                           }`}
                         >
-                          ⚡ Fast Heuristic
+                          <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded self-start ${
+                            themeMode === 'dark' ? 'bg-white/10 text-white/80' : 'bg-[#FAF9F5] text-[#5E5D59] border border-[#E8E5DE]'
+                          }`}>
+                            {pack.tag}
+                          </span>
+                          <span className={`text-xs font-sans font-medium mt-2 truncate ${
+                            themeMode === 'dark' ? 'text-white' : 'text-[#141413]'
+                          }`}>
+                            {pack.name}
+                          </span>
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => setInferenceMode('ollama')}
-                          className={`px-2.5 py-1 text-[10px] font-sans font-medium rounded-lg border transition-colors cursor-pointer flex items-center gap-1 shadow-xs ${
-                            inferenceMode === 'ollama'
-                              ? 'bg-[#D97757] text-white border-[#D97757]'
-                              : themeMode === 'dark' ? 'border-white/10 text-white/60 hover:text-white bg-[#232220]' : 'border-[#E8E5DE] text-[#5E5D59] bg-white'
-                          }`}
-                        >
-                          <Bot className="w-3 h-3" />
-                          <span>AI LLM Director</span>
-                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Monochromatic Font Hierarchy Matrix (No rainbow tags!) */}
+                  {stylePack && STYLE_PACKS[stylePack] && (
+                    <div className={`p-3 rounded-xl border text-[11px] font-sans space-y-1.5 ${
+                      themeMode === 'dark' ? 'bg-[#16161A] border-white/10 text-white/80' : 'bg-[#FAF9F5] border-[#E8E5DE] text-[#444]'
+                    }`}>
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-[#D97757] flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#D97757]" />
+                          Hero
+                        </span>
+                        <span className="font-mono text-[10px] text-right">{STYLE_PACKS[stylePack].fonts.hero.split(',')[0].replace(/'/g, '')}</span>
+                      </div>
+                      <div className="flex justify-between items-center opacity-85">
+                        <span className="font-medium flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-current opacity-40" />
+                          Action
+                        </span>
+                        <span className="font-mono text-[10px] text-right">{STYLE_PACKS[stylePack].fonts.action.split(',')[0].replace(/'/g, '')}</span>
+                      </div>
+                      <div className="flex justify-between items-center opacity-85">
+                        <span className="font-medium flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-current opacity-40" />
+                          Novelty
+                        </span>
+                        <span className="font-mono text-[10px] text-right">{STYLE_PACKS[stylePack].fonts.novelty.split(',')[0].replace(/'/g, '')}</span>
+                      </div>
+                      <div className="flex justify-between items-center opacity-70">
+                        <span className="font-medium flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-current opacity-30" />
+                          Anchor
+                        </span>
+                        <span className="font-mono text-[10px] text-right">{STYLE_PACKS[stylePack].fonts.anchor.split(',')[0].replace(/['"]/g, '')}</span>
                       </div>
                     </div>
+                  )}
+                </div>
 
-                    {/* AI LLM Active Panel */}
-                    {inferenceMode === 'ollama' && (
-                      <div className={`p-3 border rounded-xl text-xs font-sans flex flex-col gap-2.5 shadow-xs ${
-                        themeMode === 'dark' ? 'bg-[#141418] border-white/10' : 'bg-[#FAF9F5] border-[#E8E5DE]'
+                {/* Visual Motifs & Manga Layering */}
+                <div>
+                  <label className={`text-[11px] font-sans font-medium block mb-2 ${
+                    themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'
+                  }`}>
+                    Visual Motifs & Manga Layering
+                  </label>
+                  <div className="grid grid-cols-4 gap-1.5 mb-2">
+                    {[
+                      { id: 'off' as MotifMode, label: 'Off', desc: 'Clean typography only. Zero background visuals.' },
+                      { id: 'subtle' as MotifMode, label: 'Subtle', desc: 'Minimal speedline flares on beat transients.' },
+                      { id: 'dynamic' as MotifMode, label: 'Dynamic', desc: 'AI-directed motif assignment per lyric meaning.' },
+                      { id: 'heavy' as MotifMode, label: 'Heavy', desc: 'Full manga layering with Bayer halftones.' },
+                    ].map(mode => {
+                      const isSelected = motifMode === mode.id;
+                      return (
+                        <button
+                          key={mode.id}
+                          type="button"
+                          onClick={() => setMotifMode(mode.id)}
+                          className={`py-1.5 px-2 border rounded-xl text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
+                            isSelected
+                              ? themeMode === 'dark'
+                                ? 'border-[#D97757] bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs'
+                                : 'border-[#D97757] bg-[#FAF0EB] ring-1 ring-[#D97757]/30 shadow-xs'
+                              : themeMode === 'dark'
+                              ? 'border-white/10 hover:border-white/20 bg-[#1C1C20]'
+                              : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-white shadow-xs'
+                          }`}
+                          title={mode.desc}
+                        >
+                          <span className={`text-[11px] font-sans font-medium ${
+                            themeMode === 'dark' ? 'text-white' : 'text-[#141413]'
+                          }`}>
+                            {mode.label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className={`text-[10px] font-sans leading-tight ${
+                    themeMode === 'dark' ? 'text-white/40' : 'text-[#87867F]'
+                  }`}>
+                    {motifMode === 'off' && 'Clean typography only. Zero background visuals.'}
+                    {motifMode === 'subtle' && 'Minimal speedline flares on beat transients.'}
+                    {motifMode === 'dynamic' && 'Semantic motif assignment (crowns, scopes, flames & stars).'}
+                    {motifMode === 'heavy' && 'Full manga layering with Bayer halftones and speedlines.'}
+                  </p>
+                </div>
+
+                {/* Semantic Director Engine (Heuristic vs LLM) */}
+                <div className={`p-3 border rounded-xl flex flex-col gap-2.5 ${
+                  themeMode === 'dark' ? 'bg-[#16161A] border-white/10' : 'bg-[#FAF9F5] border-[#E8E5DE]'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className={`text-[11px] font-sans font-medium ${themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'}`}>
+                      Director Engine
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setInferenceMode('heuristic')}
+                        className={`px-2.5 py-1 text-[10px] font-sans font-medium rounded-lg border transition-colors cursor-pointer shadow-xs ${
+                          inferenceMode === 'heuristic'
+                            ? 'bg-[#141413] text-white border-[#141413]'
+                            : themeMode === 'dark' ? 'border-white/10 text-white/60 hover:text-white bg-[#232220]' : 'border-[#E8E5DE] text-[#5E5D59] bg-white'
+                        }`}
+                      >
+                        Fast Heuristic
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setInferenceMode('ollama')}
+                        className={`px-2.5 py-1 text-[10px] font-sans font-medium rounded-lg border transition-colors cursor-pointer flex items-center gap-1 shadow-xs ${
+                          inferenceMode === 'ollama'
+                            ? 'bg-[#D97757] text-white border-[#D97757]'
+                            : themeMode === 'dark' ? 'border-white/10 text-white/60 hover:text-white bg-[#232220]' : 'border-[#E8E5DE] text-[#5E5D59] bg-white'
+                        }`}
+                      >
+                        <Bot className="w-3 h-3" />
+                        <span>AI LLM</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {inferenceMode === 'ollama' && (
+                    <div className="flex flex-col gap-2 pt-2 border-t border-current/10">
+                      {/* Provider Switcher */}
+                      <div className={`flex items-center p-0.5 rounded-lg border text-[10px] font-sans font-medium ${
+                        themeMode === 'dark' ? 'bg-[#18181B] border-white/10' : 'bg-white border-[#E8E5DE]'
                       }`}>
-                        {/* Provider Switcher Tabs */}
-                        <div className={`flex items-center p-0.5 rounded-lg border text-[10px] font-sans font-medium ${
-                          themeMode === 'dark' ? 'bg-[#18181B] border-white/10' : 'bg-white border-[#E8E5DE]'
-                        }`}>
-                          <button
-                            type="button"
-                            onClick={() => setLlmProvider('groq')}
-                            className={`flex-1 py-1 rounded-md transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                              llmProvider === 'groq'
-                                ? 'bg-[#D97757] text-white shadow-xs font-semibold'
-                                : 'text-[#87867F] hover:text-[#141413] dark:hover:text-white'
-                            }`}
-                          >
-                            <Zap className="w-3 h-3" />
-                            <span>Groq 120B (Punjabi/Slang)</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setLlmProvider('ollama')}
-                            className={`flex-1 py-1 rounded-md transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                              llmProvider === 'ollama'
-                                ? 'bg-[#D97757] text-white shadow-xs font-semibold'
-                                : 'text-[#87867F] hover:text-[#141413] dark:hover:text-white'
-                            }`}
-                          >
-                            <Cpu className="w-3 h-3" />
-                            <span>Local GPU (Offline)</span>
-                          </button>
-                        </div>
-
-                        {llmProvider === 'groq' ? (
-                          <>
-                            <div className="flex items-center justify-between">
-                              <span className={`text-[10px] font-medium ${themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}`}>Provider:</span>
-                              <span className="text-[10px] font-mono text-emerald-500 font-medium flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                Groq Cloud LPU (~1.5s)
-                              </span>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={handleRunOllamaAnalysis}
-                              disabled={isAnalyzingOllama}
-                              className={`w-full py-2 px-3 text-xs font-sans font-medium rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
-                                isAnalyzingOllama
-                                  ? 'bg-[#D97757]/40 text-white cursor-wait'
-                                  : 'bg-[#D97757] text-white hover:bg-[#C66545]'
-                              }`}
-                            >
-                              {isAnalyzingOllama ? (
-                                <>
-                                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                  <span>{ollamaProgress?.message || 'Analyzing with Groq...'}</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Sparkles className="w-3.5 h-3.5" />
-                                  <span>Analyze with Groq 120B Cloud</span>
-                                </>
-                              )}
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex items-center justify-between">
-                              <span className={`text-[10px] font-medium ${themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}`}>Local GPU Status:</span>
-                              <span className={`text-[10px] font-medium flex items-center gap-1.5 ${
-                                ollamaStatus?.online ? 'text-emerald-500' : 'text-amber-500'
-                              }`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${
-                                  ollamaStatus?.online ? 'bg-emerald-500 shadow-[0_0_5px_#10B981]' : 'bg-amber-500'
-                                }`} />
-                                {ollamaStatus?.online ? `100% GPU Ready (${selectedOllamaModel})` : 'Offline (http://localhost:11434)'}
-                              </span>
-                            </div>
-
-                            {ollamaStatus?.online && (
-                              <div className="flex items-center justify-between gap-2">
-                                <span className={`text-[10px] font-medium ${themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}`}>Model:</span>
-                                <select
-                                  value={selectedOllamaModel}
-                                  onChange={(e) => setSelectedOllamaModel(e.target.value)}
-                                  className={`text-xs font-sans p-1.5 rounded-lg border outline-none shadow-xs ${
-                                    themeMode === 'dark' ? 'bg-[#232220] text-white border-white/10' : 'bg-white text-[#141413] border-[#E8E5DE]'
-                                  }`}
-                                >
-                                  {(ollamaStatus.models.length > 0 ? ollamaStatus.models : RECOMMENDED_OLLAMA_MODELS).map(m => (
-                                    <option key={m} value={m}>
-                                      {m} {m.includes('qwen3.5:2b-q4_K_M') ? '⚡ 66 tok/s (100% GPU)' : ''}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            )}
-
-                            <button
-                              type="button"
-                              onClick={handleRunOllamaAnalysis}
-                              disabled={isAnalyzingOllama || !ollamaStatus?.online}
-                              className={`w-full py-2 px-3 text-xs font-sans font-medium rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
-                                isAnalyzingOllama
-                                  ? 'bg-[#D97757]/40 text-white cursor-wait'
-                                  : ollamaStatus?.online
-                                  ? 'bg-[#D97757] text-white hover:bg-[#C66545]'
-                                  : 'bg-black/10 dark:bg-white/10 text-[#87867F] cursor-not-allowed'
-                              }`}
-                            >
-                              {isAnalyzingOllama ? (
-                                <>
-                                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                  <span>{ollamaProgress?.message || 'Analyzing...'}</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Sparkles className="w-3.5 h-3.5" />
-                                  <span>Analyze with {selectedOllamaModel}</span>
-                                </>
-                              )}
-                            </button>
-                          </>
-                        )}
-
-                        {ollamaProgress && (
-                          <div className="w-full bg-black/10 dark:bg-white/10 h-1 rounded-full overflow-hidden">
-                            <div 
-                              className="bg-[#D97757] h-full transition-all duration-300 rounded-full" 
-                              style={{ width: `${ollamaProgress.percent}%` }}
-                            />
-                          </div>
-                        )}
-
                         <button
                           type="button"
-                          onClick={() => setShowOllamaInspector(true)}
-                          className={`w-full py-1.5 px-2.5 text-[11px] font-sans font-medium rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
-                            themeMode === 'dark' 
-                              ? 'border-white/10 hover:bg-white/5 text-white/80' 
-                              : 'border-[#E8E5DE] hover:bg-[#F2EFE9] text-[#5E5D59]'
+                          onClick={() => setLlmProvider('groq')}
+                          className={`flex-1 py-1 rounded-md transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                            llmProvider === 'groq'
+                              ? 'bg-[#D97757] text-white shadow-xs font-semibold'
+                              : 'text-[#87867F] hover:text-[#141413] dark:hover:text-white'
                           }`}
                         >
-                          <Terminal className="w-3.5 h-3.5 text-[#D97757]" />
-                          <span>Inspect Prompts & Responses {ollamaInspectionLogs.length > 0 ? `(${ollamaInspectionLogs.length})` : ''}</span>
+                          <Zap className="w-3 h-3" />
+                          <span>Groq Cloud (120B)</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setLlmProvider('ollama')}
+                          className={`flex-1 py-1 rounded-md transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                            llmProvider === 'ollama'
+                              ? 'bg-[#D97757] text-white shadow-xs font-semibold'
+                              : 'text-[#87867F] hover:text-[#141413] dark:hover:text-white'
+                          }`}
+                        >
+                          <Cpu className="w-3 h-3" />
+                          <span>Local Ollama</span>
                         </button>
                       </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
 
-            {/* Manual Motion Archetypes Grid */}
-            <div>
-              <label className={`text-[11px] font-sans font-medium block mb-2 ${
-                themeMode === 'dark' ? 'text-white/60' : 'text-[#5E5D59]'
-              }`}>
-                Or lock uniform motion style:
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {MANUAL_ARCHETYPES.map(archKey => {
-                  const meta = ARCHETYPE_METADATA[archKey];
-                  return (
-                    <button
-                      key={archKey}
-                      onClick={() => setArchetype(archKey)}
-                      className={`p-2.5 border text-left transition-all cursor-pointer flex flex-col justify-between rounded-xl ${
-                        archetype === archKey
-                          ? themeMode === 'dark'
-                            ? 'border-[#D97757] bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs'
-                            : 'border-[#D97757] bg-[#FAF0EB] ring-1 ring-[#D97757]/30 shadow-xs'
-                          : themeMode === 'dark'
-                          ? 'border-white/10 hover:border-white/25 bg-[#1C1C20]'
-                          : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-white shadow-xs'
-                      }`}
-                    >
-                      <div className="flex justify-between items-center">
-                        <span className="text-base">{meta.icon}</span>
-                        <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${
-                          themeMode === 'dark' ? 'bg-white/10 text-white/80' : 'bg-[#FAF9F5] text-[#5E5D59] border border-[#E8E5DE]'
-                        }`}>
-                          {meta.tag}
-                        </span>
-                      </div>
-                      <span className={`text-xs font-sans font-medium mt-1.5 ${themeMode === 'dark' ? 'text-white' : 'text-[#141413]'}`}>
-                        {meta.name}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+                      {llmProvider === 'groq' ? (
+                        <button
+                          type="button"
+                          onClick={handleRunOllamaAnalysis}
+                          disabled={isAnalyzingOllama}
+                          className={`w-full py-2 px-3 text-xs font-sans font-medium rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
+                            isAnalyzingOllama
+                              ? 'bg-[#D97757]/40 text-white cursor-wait'
+                              : 'bg-[#D97757] text-white hover:bg-[#C66545]'
+                          }`}
+                        >
+                          {isAnalyzingOllama ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>{ollamaProgress?.message || 'Analyzing...'}</span>
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-3.5 h-3.5" />
+                              <span>Analyze with Groq 120B Cloud</span>
+                            </>
+                          )}
+                        </button>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between text-[10px]">
+                            <span className={themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}>GPU Status:</span>
+                            <span className="font-medium flex items-center gap-1.5">
+                              <span className={`w-1.5 h-1.5 rounded-full ${ollamaStatus?.online ? 'bg-[#D97757]' : 'bg-zinc-400'}`} />
+                              {ollamaStatus?.online ? 'Connected' : 'Offline'}
+                            </span>
+                          </div>
+                          {ollamaStatus?.online && (
+                            <select
+                              value={selectedOllamaModel}
+                              onChange={(e) => setSelectedOllamaModel(e.target.value)}
+                              className={`text-xs font-sans p-1.5 rounded-lg border outline-none shadow-xs ${
+                                themeMode === 'dark' ? 'bg-[#232220] text-white border-white/10' : 'bg-white text-[#141413] border-[#E8E5DE]'
+                              }`}
+                            >
+                              {(ollamaStatus.models.length > 0 ? ollamaStatus.models : RECOMMENDED_OLLAMA_MODELS).map(m => (
+                                <option key={m} value={m}>{m}</option>
+                              ))}
+                            </select>
+                          )}
+                          <button
+                            type="button"
+                            onClick={handleRunOllamaAnalysis}
+                            disabled={isAnalyzingOllama || !ollamaStatus?.online}
+                            className={`w-full py-2 px-3 text-xs font-sans font-medium rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
+                              isAnalyzingOllama
+                                ? 'bg-[#D97757]/40 text-white cursor-wait'
+                                : ollamaStatus?.online
+                                ? 'bg-[#D97757] text-white hover:bg-[#C66545]'
+                                : 'bg-black/10 dark:bg-white/10 text-[#87867F] cursor-not-allowed'
+                            }`}
+                          >
+                            {isAnalyzingOllama ? (
+                              <>
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                <span>{ollamaProgress?.message || 'Analyzing...'}</span>
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="w-3.5 h-3.5" />
+                                <span>Analyze with {selectedOllamaModel}</span>
+                              </>
+                            )}
+                          </button>
+                        </>
+                      )}
 
-            {/* Thematic 4-Font Style Pack Selector */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className={`text-[11px] font-sans font-medium block ${
-                  themeMode === 'dark' ? 'text-white/60' : 'text-[#5E5D59]'
-                }`}>
-                  Thematic 4-Font Style Pack
-                </label>
-                <span className="text-[9px] font-mono text-[#D97757] font-semibold">
-                  SEMANTIC MATRIX
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-1.5 mb-2">
-                {(['trap_drill', 'shonen_comic', 'cartoon_bounce', 'cyber_industrial'] as StylePackId[]).map(packId => {
-                  const pack = STYLE_PACKS[packId];
-                  const isSelected = stylePack === packId;
-                  return (
-                    <button
-                      key={packId}
-                      type="button"
-                      onClick={() => {
-                        setStylePack(packId);
-                        setFontFamily(pack.fonts.hero);
-                      }}
-                      className={`p-2 border rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between ${
-                        isSelected
-                          ? themeMode === 'dark'
-                            ? 'border-[#D97757] bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs'
-                            : 'border-[#D97757] bg-[#FAF0EB] ring-1 ring-[#D97757]/30 shadow-xs'
-                          : themeMode === 'dark'
-                          ? 'border-white/10 hover:border-white/20 bg-[#1C1C20]'
-                          : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-white shadow-xs'
-                      }`}
-                    >
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm">{pack.icon}</span>
-                        <span className={`text-[8px] font-mono px-1 py-0.5 rounded ${
-                          themeMode === 'dark' ? 'bg-white/10 text-white/80' : 'bg-[#FAF9F5] text-[#5E5D59] border border-[#E8E5DE]'
-                        }`}>
-                          {pack.tag}
-                        </span>
-                      </div>
-                      <span className={`text-[11px] font-sans font-medium mt-1 truncate ${
-                        themeMode === 'dark' ? 'text-white' : 'text-[#141413]'
-                      }`}>
-                        {pack.name}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+                      {ollamaProgress && (
+                        <div className="w-full bg-black/10 dark:bg-white/10 h-1 rounded-full overflow-hidden">
+                          <div
+                            className="bg-[#D97757] h-full transition-all duration-300 rounded-full"
+                            style={{ width: `${ollamaProgress.percent}%` }}
+                          />
+                        </div>
+                      )}
 
-              {/* Active Pack Font Matrix Visualizer */}
-              {stylePack && STYLE_PACKS[stylePack] && (
-                <div className={`p-2.5 rounded-xl border text-[10px] font-mono space-y-1 mb-3 ${
-                  themeMode === 'dark' ? 'bg-[#18181C] border-white/10 text-white/70' : 'bg-[#FAF9F5] border-[#E8E5DE] text-[#5E5D59]'
-                }`}>
-                  <div className="flex justify-between items-center">
-                    <span className="text-[#D97757] font-semibold flex items-center gap-1">
-                      <span>👑</span>
-                      <span>Hero (Drop/Punch):</span>
-                    </span>
-                    <span className="truncate max-w-[130px] text-right font-medium">{STYLE_PACKS[stylePack].fonts.hero.split(',')[0].replace(/'/g, '')}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-amber-500 font-semibold flex items-center gap-1">
-                      <span>⚔️</span>
-                      <span>Action (Slash/Cut):</span>
-                    </span>
-                    <span className="truncate max-w-[130px] text-right font-medium">{STYLE_PACKS[stylePack].fonts.action.split(',')[0].replace(/'/g, '')}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-cyan-400 font-semibold flex items-center gap-1">
-                      <span>⚡</span>
-                      <span>Novelty (Glitch/Bounce):</span>
-                    </span>
-                    <span className="truncate max-w-[130px] text-right font-medium">{STYLE_PACKS[stylePack].fonts.novelty.split(',')[0].replace(/'/g, '')}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-emerald-500 font-semibold flex items-center gap-1">
-                      <span>⚓</span>
-                      <span>Anchor (Connectors):</span>
-                    </span>
-                    <span className="truncate max-w-[130px] text-right font-medium">{STYLE_PACKS[stylePack].fonts.anchor.split(',')[0].replace(/['"]/g, '')}</span>
+                      <button
+                        type="button"
+                        onClick={() => setShowOllamaInspector(true)}
+                        className={`w-full py-1.5 px-2.5 text-[11px] font-sans font-medium rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
+                          themeMode === 'dark' 
+                            ? 'border-white/10 hover:bg-white/5 text-white/80' 
+                            : 'border-[#E8E5DE] hover:bg-[#F2EFE9] text-[#5E5D59]'
+                        }`}
+                      >
+                        <Terminal className="w-3.5 h-3.5 text-[#D97757]" />
+                        <span>Inspect Prompts {ollamaInspectionLogs.length > 0 ? `(${ollamaInspectionLogs.length})` : ''}</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Manual Motion Archetypes Grid */}
+                <div>
+                  <label className={`text-[11px] font-sans font-medium block mb-2 ${
+                    themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'
+                  }`}>
+                    Uniform Motion Style
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {MANUAL_ARCHETYPES.map(archKey => {
+                      const meta = ARCHETYPE_METADATA[archKey];
+                      return (
+                        <button
+                          key={archKey}
+                          onClick={() => setArchetype(archKey)}
+                          className={`p-2.5 border text-left transition-all cursor-pointer flex flex-col justify-between rounded-xl ${
+                            archetype === archKey
+                              ? themeMode === 'dark'
+                                ? 'border-[#D97757] bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs'
+                                : 'border-[#D97757] bg-[#FAF0EB] ring-1 ring-[#D97757]/30 shadow-xs'
+                              : themeMode === 'dark'
+                              ? 'border-white/10 hover:border-white/25 bg-[#1C1C20]'
+                              : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-white shadow-xs'
+                          }`}
+                        >
+                          <div className="flex justify-between items-center">
+                            <span className="text-base">{meta.icon}</span>
+                            <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${
+                              themeMode === 'dark' ? 'bg-white/10 text-white/80' : 'bg-[#FAF9F5] text-[#5E5D59] border border-[#E8E5DE]'
+                            }`}>
+                              {meta.tag}
+                            </span>
+                          </div>
+                          <span className={`text-xs font-sans font-medium mt-1.5 ${themeMode === 'dark' ? 'text-white' : 'text-[#141413]'}`}>
+                            {meta.name}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-              )}
+
+                {/* Hero Font Override */}
+                <div>
+                  <label className={`text-[11px] font-sans font-medium block mb-1.5 ${
+                    themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'
+                  }`}>
+                    Hero Font
+                  </label>
+                  <select
+                    value={fontFamily}
+                    onChange={e => setFontFamily(e.target.value)}
+                    className={`w-full p-2.5 text-xs font-sans rounded-xl focus:outline-none focus:border-[#D97757] focus:ring-1 focus:ring-[#D97757] cursor-pointer border shadow-xs transition-colors ${
+                      themeMode === 'dark'
+                        ? 'bg-[#1C1C20] border-white/10 text-white'
+                        : 'bg-white border-[#E8E5DE] text-[#141413]'
+                    }`}
+                  >
+                    <optgroup label="Trap & Gothic">
+                      <option value="'Wilhelm Gotisch', sans-serif">Wilhelm Gotisch (Trap / Gothic)</option>
+                      <option value="'Molot', sans-serif">Molot (Brutalist 3D)</option>
+                      <option value="'Helvetica Compressed', sans-serif">Helvetica Compressed (Poster)</option>
+                      <option value="'Vendetta', cursive">Vendetta (Blade Razor)</option>
+                      <option value="'Lemon Milk', sans-serif">Lemon Milk (Clean Streetwear)</option>
+                      <option value="'Cinzel Decorative', serif">Cinzel Decorative (Imperial)</option>
+                    </optgroup>
+                    <optgroup label="Cartoony & Bubbly">
+                      <option value="'Luckiest Guy', cursive">Luckiest Guy (Bubbly Title)</option>
+                      <option value="'Wicked Mouse', cursive">Wicked Mouse (Retro Cartoon)</option>
+                      <option value="'Bubblegum', cursive">Bubblegum (Bubble)</option>
+                      <option value="'Supersonic Rocketship', cursive">Supersonic Rocketship (Retro 60s)</option>
+                      <option value="'Plumpfull', sans-serif">Plumpfull (Ultra Chonky)</option>
+                      <option value="'Dinosaur', cursive">Dinosaur (Playful Block)</option>
+                    </optgroup>
+                    <optgroup label="Manga & Comic Action">
+                      <option value="'Bangers', cursive">Bangers (Comic Action)</option>
+                      <option value="'Kraash Black', cursive">Kraash Black (Punk Cutout)</option>
+                      <option value="'Super Comic', sans-serif">Super Comic (Heavy Action)</option>
+                    </optgroup>
+                    <optgroup label="Monospace & Technical">
+                      <option value='"IBM Plex Mono", monospace'>IBM Plex Mono (Clean Mono)</option>
+                      <option value="VT323, monospace">VT323 (8-Bit Arcade)</option>
+                      <option value='"Space Mono", monospace'>Space Mono (Modern Tech)</option>
+                      <option value="Impact, sans-serif">Impact (Standard Heavy)</option>
+                    </optgroup>
+                  </select>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Pinned Action Dock (Always visible at bottom!) */}
+          <div className={`p-4 border-t flex flex-col gap-2.5 shrink-0 ${
+            themeMode === 'dark' ? 'border-[#2C2B29] bg-[#18181A]' : 'border-[#E8E5DE] bg-white'
+          }`}>
+            <div className="flex justify-between items-center text-[11px] font-mono">
+              <span className={themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}>
+                {selectedLines.length} lines • {rangeDurationSec.toFixed(1)}s
+              </span>
+              <span className="text-[#D97757] font-semibold">
+                {totalFrames} frames (~{estProgmemKb} KB)
+              </span>
             </div>
-
-            {/* Visual Motifs Mode (1-Bit Manga Sprites & Speedlines) */}
-            <div className="pt-2 border-t border-white/10 dark:border-white/10">
-              <div className="flex justify-between items-center mb-1.5">
-                <label className={`text-[11px] font-sans font-medium ${
-                  themeMode === 'dark' ? 'text-white/60' : 'text-[#5E5D59]'
-                }`}>
-                  Visual Motifs & Manga Layering
-                </label>
-                <span className="text-[9px] font-mono text-[#D97757] font-semibold">
-                  1-BIT SPRITES
-                </span>
-              </div>
-              <div className="grid grid-cols-4 gap-1 mb-2">
-                {[
-                  { id: 'off' as MotifMode, label: 'Off', icon: '🚫', desc: 'Pure typography' },
-                  { id: 'subtle' as MotifMode, label: 'Subtle', icon: '〰️', desc: 'Speedlines on drops' },
-                  { id: 'dynamic' as MotifMode, label: 'Dynamic', icon: '✨', desc: 'AI-directed motifs' },
-                  { id: 'heavy' as MotifMode, label: 'Heavy', icon: '🏁', desc: 'Motifs + halftones' },
-                ].map(mode => {
-                  const isSelected = motifMode === mode.id;
-                  return (
-                    <button
-                      key={mode.id}
-                      type="button"
-                      onClick={() => setMotifMode(mode.id)}
-                      className={`p-1.5 border rounded-xl text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
-                        isSelected
-                          ? themeMode === 'dark'
-                            ? 'border-[#D97757] bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs'
-                            : 'border-[#D97757] bg-[#FAF0EB] ring-1 ring-[#D97757]/30 shadow-xs'
-                          : themeMode === 'dark'
-                          ? 'border-white/10 hover:border-white/20 bg-[#1C1C20]'
-                          : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-white shadow-xs'
-                      }`}
-                      title={mode.desc}
-                    >
-                      <span className="text-xs">{mode.icon}</span>
-                      <span className={`text-[10px] font-sans font-medium mt-0.5 ${
-                        themeMode === 'dark' ? 'text-white' : 'text-[#141413]'
-                      }`}>
-                        {mode.label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-              <p className={`text-[10px] font-sans leading-tight mb-2 ${
-                themeMode === 'dark' ? 'text-white/40' : 'text-[#87867F]'
-              }`}>
-                {motifMode === 'off' && '🚫 Clean typography only. Zero background visuals.'}
-                {motifMode === 'subtle' && '〰️ Minimal speedline flares on heavy 808 beat transients.'}
-                {motifMode === 'dynamic' && '✨ AI director selects crowns, scopes, flames & stars based on lyrics slang.'}
-                {motifMode === 'heavy' && '🏁 Full manga layering with Bayer halftone shading & action motifs.'}
-              </p>
-            </div>
-
-            {/* Font Selector */}
-            <div>
-              <label className={`text-[11px] font-sans font-medium block mb-1.5 ${
-                themeMode === 'dark' ? 'text-white/60' : 'text-[#5E5D59]'
-              }`}>
-                Hero Typography Font (Override)
-              </label>
-              <select
-                value={fontFamily}
-                onChange={e => setFontFamily(e.target.value)}
-                className={`w-full p-2.5 text-xs font-sans rounded-xl focus:outline-none focus:border-[#D97757] focus:ring-1 focus:ring-[#D97757] cursor-pointer border shadow-xs transition-colors ${
-                  themeMode === 'dark'
-                    ? 'bg-[#1C1C20] border-white/10 text-white'
-                    : 'bg-white border-[#E8E5DE] text-[#141413]'
-                }`}
-              >
-                <optgroup label="🔥 Trap, Gothic & Streetwear">
-                  <option value="'Wilhelm Gotisch', sans-serif">𝕾𝖍𝖆𝖘𝖍𝖙𝖆𝖗 Gotisch (Trap / Opium Vibe)</option>
-                  <option value="'Molot', sans-serif">Molot (Brutalist 3D Block)</option>
-                  <option value="'Helvetica Compressed', sans-serif">Helvetica Compressed (Tall Rap Tour Poster)</option>
-                  <option value="'Vendetta', cursive">Vendetta (Slanted Razor Brush)</option>
-                  <option value="'Lemon Milk', sans-serif">Lemon Milk (Clean Streetwear Sans)</option>
-                  <option value="'Cinzel Decorative', serif">Cinzel Decorative (Imperial Gothic Royalty)</option>
-                </optgroup>
-
-                <optgroup label="🎈 Cartoony, Bubbly & Fun">
-                  <option value="'Luckiest Guy', cursive">Luckiest Guy (Punchy Bubbly Title)</option>
-                  <option value="'Wicked Mouse', cursive">Wicked Mouse (1930s Cuphead / Disney)</option>
-                  <option value="'Bubblegum', cursive">Bubblegum (Puffy Round Bubble)</option>
-                  <option value="'Supersonic Rocketship', cursive">Supersonic Rocketship (Retro 60s Atomic)</option>
-                  <option value="'Plumpfull', sans-serif">Plumpfull (Ultra Chonky Fat)</option>
-                  <option value="'Dinosaur', cursive">Dinosaur (Playful Block Cartoon)</option>
-                </optgroup>
-
-                <optgroup label="💥 Shonen Manga & Comic Action">
-                  <option value="'Bangers', cursive">Bangers (Shonen Manga Impact)</option>
-                  <option value="'Kraash Black', cursive">Kraash Black (Jittery Cutout Punk)</option>
-                  <option value="'Super Comic', sans-serif">Super Comic (Heavy Action Comic)</option>
-                </optgroup>
-
-                <optgroup label="💻 Classic & Monospace">
-                  <option value='"IBM Plex Mono", monospace'>IBM Plex Mono (Classic Clean)</option>
-                  <option value="VT323, monospace">VT323 (Retro 8-Bit Arcade)</option>
-                  <option value='"Space Mono", monospace'>Space Mono (Modern Tech)</option>
-                  <option value="Impact, sans-serif">Impact (Standard Heavy)</option>
-                </optgroup>
-              </select>
-            </div>
-
-            {/* Real-time Telemetry Card */}
-            <div className={`p-3.5 border rounded-xl text-xs font-sans space-y-1.5 shadow-xs ${
-              themeMode === 'dark'
-                ? 'bg-[#16161A] border-white/10 text-white'
-                : 'bg-[#FAF9F5] border-[#E8E5DE] text-[#141413]'
-            }`}>
-              <div className="flex justify-between items-center">
-                <span className={themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}>Total Duration:</span>
-                <span className="font-mono font-medium">{rangeDurationSec.toFixed(2)}s</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className={themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}>30 FPS Frames:</span>
-                <span className="font-mono font-medium text-[#D97757]">{totalFrames} frames</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className={themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}>PROGMEM Flash:</span>
-                <span className="font-mono font-medium">~{estProgmemKb} KB</span>
-              </div>
-            </div>
-
-            {/* Main Action Button */}
             <button
               onClick={handleGenerateAndInject}
               disabled={isRendering || selectedLines.length === 0}
-              className={`w-full py-3 bg-[#D97757] hover:bg-[#C66545] text-white text-xs font-sans font-medium tracking-wide rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer mt-auto flex items-center justify-center gap-2 ${
+              className={`w-full py-3 bg-[#D97757] hover:bg-[#C66545] text-white text-xs font-sans font-medium tracking-wide rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2 ${
                 isRendering ? 'opacity-70 cursor-wait' : ''
               }`}
             >
@@ -2049,27 +2047,29 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
       </main>
 
-      {/* Word Archetype Customizer Modal */}
+      {/* Word Customizer Modal */}
       {editingWordTarget && (
         <div className="fixed inset-0 z-60 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className={`w-full max-w-md p-6 flex flex-col gap-4 font-sans animate-scale-in border rounded-2xl shadow-2xl ${
+          <div className={`w-full max-w-lg p-5 flex flex-col gap-4 font-sans animate-scale-in border rounded-2xl shadow-2xl ${
             themeMode === 'dark'
               ? 'bg-[#18181C] border-white/10 text-white'
               : 'bg-white border-[#E8E5DE] text-[#141413]'
           }`}>
+            {/* Header */}
             <div className="flex justify-between items-start">
               <div>
                 <span className="text-[10px] font-sans font-medium text-[#D97757] tracking-wider block">
-                  Word Motion Override
+                  Word Customizer
                 </span>
-                <h3 className="font-serif text-xl font-normal tracking-tight mt-0.5">
+                <h3 className="font-sans text-xl font-bold tracking-tight mt-0.5">
                   "{editingWordTarget.word.word}"
                 </h3>
-                <span className={`text-xs font-mono ${themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}`}>
+                <span className={`text-[11px] font-mono ${themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}`}>
                   {(editingWordTarget.word.startMs / 1000).toFixed(2)}s – {(editingWordTarget.word.endMs / 1000).toFixed(2)}s ({Math.round(editingWordTarget.word.endMs - editingWordTarget.word.startMs)}ms)
                 </span>
               </div>
               <button
+                type="button"
                 onClick={() => setEditingWordTarget(null)}
                 className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
                   themeMode === 'dark'
@@ -2081,140 +2081,190 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               </button>
             </div>
 
-            <p className={`text-xs font-sans leading-relaxed ${themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'}`}>
-              Select an explicit motion style for this word, or restore dynamic semantic detection:
-            </p>
+            {/* Segmented Inspector Tabs */}
+            <div className={`flex p-1 rounded-xl border gap-1 ${
+              themeMode === 'dark' ? 'bg-[#141418] border-white/10' : 'bg-[#FAF9F5] border-[#E8E5DE]'
+            }`}>
+              <button
+                type="button"
+                onClick={() => setWordCustomizerTab('archetype')}
+                className={`flex-1 py-1.5 text-xs font-sans font-medium rounded-lg transition-all cursor-pointer ${
+                  wordCustomizerTab === 'archetype'
+                    ? 'bg-[#D97757] text-white shadow-xs font-semibold'
+                    : themeMode === 'dark' ? 'text-white/50 hover:text-white' : 'text-[#5E5D59] hover:text-[#141413]'
+                }`}
+              >
+                Motion Style
+              </button>
+              <button
+                type="button"
+                onClick={() => setWordCustomizerTab('font')}
+                className={`flex-1 py-1.5 text-xs font-sans font-medium rounded-lg transition-all cursor-pointer ${
+                  wordCustomizerTab === 'font'
+                    ? 'bg-[#D97757] text-white shadow-xs font-semibold'
+                    : themeMode === 'dark' ? 'text-white/50 hover:text-white' : 'text-[#5E5D59] hover:text-[#141413]'
+                }`}
+              >
+                Typography Font
+              </button>
+              <button
+                type="button"
+                onClick={() => setWordCustomizerTab('motif')}
+                className={`flex-1 py-1.5 text-xs font-sans font-medium rounded-lg transition-all cursor-pointer ${
+                  wordCustomizerTab === 'motif'
+                    ? 'bg-[#D97757] text-white shadow-xs font-semibold'
+                    : themeMode === 'dark' ? 'text-white/50 hover:text-white' : 'text-[#5E5D59] hover:text-[#141413]'
+                }`}
+              >
+                Visual Motif
+              </button>
+            </div>
 
-            <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
-              {MANUAL_ARCHETYPES.map((archKey) => {
-                const meta = ARCHETYPE_METADATA[archKey];
-                const isSelected = editingWordTarget.currentArchetype === archKey;
-                return (
-                  <button
-                    key={archKey}
-                    onClick={() => {
-                      const specificKey = `${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`;
-                      setWordOverrides(prev => ({
-                        ...prev,
-                        [specificKey]: archKey
-                      }));
-                      setEditingWordTarget(prev => prev ? { ...prev, currentArchetype: archKey } : null);
-                    }}
-                    className={`p-2.5 border rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between ${
-                      isSelected
-                        ? themeMode === 'dark'
-                          ? 'border-[#D97757] bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs'
-                          : 'border-[#D97757] bg-[#FAF0EB] ring-1 ring-[#D97757]/30 shadow-xs'
-                        : themeMode === 'dark'
-                        ? 'border-white/10 hover:border-white/20 bg-[#232228]'
-                        : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-[#FAF9F5] shadow-xs'
-                    }`}
-                  >
-                    <div className="flex justify-between items-center">
-                      <span className="text-base">{meta.icon}</span>
-                      <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${
+            {/* Tab 1: Motion Style */}
+            {wordCustomizerTab === 'archetype' && (
+              <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-1">
+                {MANUAL_ARCHETYPES.map((archKey) => {
+                  const meta = ARCHETYPE_METADATA[archKey];
+                  const isSelected = editingWordTarget.currentArchetype === archKey;
+                  return (
+                    <button
+                      key={archKey}
+                      type="button"
+                      onClick={() => {
+                        const specificKey = `${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`;
+                        setWordOverrides(prev => ({
+                          ...prev,
+                          [specificKey]: archKey
+                        }));
+                        setEditingWordTarget(prev => prev ? { ...prev, currentArchetype: archKey } : null);
+                      }}
+                      className={`p-2.5 border rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        isSelected
+                          ? themeMode === 'dark'
+                            ? 'border-[#D97757] bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs'
+                            : 'border-[#D97757] bg-[#FAF0EB] ring-1 ring-[#D97757]/30 shadow-xs'
+                          : themeMode === 'dark'
+                          ? 'border-white/10 hover:border-white/20 bg-[#232228]'
+                          : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-[#FAF9F5] shadow-xs'
+                      }`}
+                    >
+                      <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded self-start ${
                         themeMode === 'dark' ? 'bg-white/10 text-white/80' : 'bg-white text-[#5E5D59] border border-[#E8E5DE]'
                       }`}>
                         {meta.tag}
                       </span>
-                    </div>
-                    <span className={`text-xs font-sans font-medium mt-1.5 ${themeMode === 'dark' ? 'text-white' : 'text-[#141413]'}`}>{meta.name}</span>
-                  </button>
-                );
-              })}
-            </div>
+                      <span className={`text-xs font-sans font-medium mt-1.5 ${themeMode === 'dark' ? 'text-white' : 'text-[#141413]'}`}>
+                        {meta.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
-            {/* Typography Font for this specific word */}
-            <div className="pt-2 border-t border-white/10 dark:border-white/10">
-              <label className={`text-[11px] font-sans font-medium block mb-1 ${
-                themeMode === 'dark' ? 'text-white/60' : 'text-[#5E5D59]'
-              }`}>
-                Typography Font for this Word:
-              </label>
-              <select
-                value={
-                  wordFontOverrides[`${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`] ||
-                  wordFontOverrides[editingWordTarget.word.word.toLowerCase().replace(/[^a-z0-9]/g, '')] ||
-                  editingWordTarget.currentFont
-                }
-                onChange={(e) => {
+            {/* Tab 2: Typography Font */}
+            {wordCustomizerTab === 'font' && (
+              <div className="flex flex-col gap-2 max-h-60 overflow-y-auto pr-1">
+                <span className={`text-[11px] font-medium ${themeMode === 'dark' ? 'text-white/60' : 'text-[#5E5D59]'}`}>
+                  Select font family override for this word:
+                </span>
+                <select
+                  value={
+                    wordFontOverrides[`${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`] ||
+                    wordFontOverrides[editingWordTarget.word.word.toLowerCase().replace(/[^a-z0-9]/g, '')] ||
+                    editingWordTarget.currentFont
+                  }
+                  onChange={(e) => {
+                    const specificKey = `${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`;
+                    setWordFontOverrides(prev => ({
+                      ...prev,
+                      [specificKey]: e.target.value
+                    }));
+                    setEditingWordTarget(prev => prev ? { ...prev, currentFont: e.target.value } : null);
+                  }}
+                  className={`w-full p-2.5 text-xs font-sans rounded-xl focus:outline-none focus:border-[#D97757] focus:ring-1 focus:ring-[#D97757] cursor-pointer border shadow-xs transition-colors ${
+                    themeMode === 'dark'
+                      ? 'bg-[#1C1C20] border-white/10 text-white'
+                      : 'bg-white border-[#E8E5DE] text-[#141413]'
+                  }`}
+                >
+                  <optgroup label="Style Pack Presets">
+                    <option value={STYLE_PACKS[stylePack].fonts.hero}>Hero: {STYLE_PACKS[stylePack].fonts.hero.split(',')[0].replace(/'/g, '')}</option>
+                    <option value={STYLE_PACKS[stylePack].fonts.action}>Action: {STYLE_PACKS[stylePack].fonts.action.split(',')[0].replace(/'/g, '')}</option>
+                    <option value={STYLE_PACKS[stylePack].fonts.novelty}>Novelty: {STYLE_PACKS[stylePack].fonts.novelty.split(',')[0].replace(/'/g, '')}</option>
+                    <option value={STYLE_PACKS[stylePack].fonts.anchor}>Anchor: {STYLE_PACKS[stylePack].fonts.anchor.split(',')[0].replace(/['"]/g, '')}</option>
+                  </optgroup>
+                  <optgroup label="Curated Fonts">
+                    <option value="'Wilhelm Gotisch', sans-serif">Wilhelm Gotisch (Trap / Gothic)</option>
+                    <option value="'Molot', sans-serif">Molot (Brutalist 3D)</option>
+                    <option value="'Vendetta', cursive">Vendetta (Blade Razor)</option>
+                    <option value="'Bangers', cursive">Bangers (Comic Action)</option>
+                    <option value="'Luckiest Guy', cursive">Luckiest Guy (Bubbly)</option>
+                    <option value="'Wicked Mouse', cursive">Wicked Mouse (Retro)</option>
+                    <option value="'Kraash Black', cursive">Kraash Black (Punk)</option>
+                    <option value="'Super Comic', sans-serif">Super Comic (Heavy)</option>
+                    <option value="'Bubblegum', cursive">Bubblegum (Bubble)</option>
+                    <option value="VT323, monospace">VT323 (8-Bit Arcade)</option>
+                    <option value='"IBM Plex Mono", monospace'>IBM Plex Mono (Clean Mono)</option>
+                    <option value='"Space Mono", monospace'>Space Mono (Modern Tech)</option>
+                  </optgroup>
+                </select>
+              </div>
+            )}
+
+            {/* Tab 3: Visual Motif */}
+            {wordCustomizerTab === 'motif' && (
+              <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-1">
+                {Object.values(MOTIF_METADATA).map(m => {
                   const specificKey = `${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`;
-                  setWordFontOverrides(prev => ({
-                    ...prev,
-                    [specificKey]: e.target.value
-                  }));
-                  setEditingWordTarget(prev => prev ? { ...prev, currentFont: e.target.value } : null);
-                }}
-                className={`w-full p-2 text-xs font-sans rounded-xl focus:outline-none focus:border-[#D97757] focus:ring-1 focus:ring-[#D97757] cursor-pointer border shadow-xs transition-colors ${
-                  themeMode === 'dark'
-                    ? 'bg-[#1C1C20] border-white/10 text-white'
-                    : 'bg-white border-[#E8E5DE] text-[#141413]'
-                }`}
-              >
-                <optgroup label="Style Pack Presets">
-                  <option value={STYLE_PACKS[stylePack].fonts.hero}>👑 Hero: {STYLE_PACKS[stylePack].fonts.hero.split(',')[0].replace(/'/g, '')}</option>
-                  <option value={STYLE_PACKS[stylePack].fonts.action}>⚔️ Action: {STYLE_PACKS[stylePack].fonts.action.split(',')[0].replace(/'/g, '')}</option>
-                  <option value={STYLE_PACKS[stylePack].fonts.novelty}>⚡ Novelty: {STYLE_PACKS[stylePack].fonts.novelty.split(',')[0].replace(/'/g, '')}</option>
-                  <option value={STYLE_PACKS[stylePack].fonts.anchor}>⚓ Anchor: {STYLE_PACKS[stylePack].fonts.anchor.split(',')[0].replace(/['"]/g, '')}</option>
-                </optgroup>
-                <optgroup label="All Curated Fonts">
-                  <option value="'Wilhelm Gotisch', sans-serif">𝕾𝖍𝖆𝖘𝖍𝖙𝖆𝖗 Gotisch (Trap)</option>
-                  <option value="'Molot', sans-serif">Molot (Brutalist 3D)</option>
-                  <option value="'Vendetta', cursive">Vendetta (Blade Razor)</option>
-                  <option value="'Bangers', cursive">Bangers (Comic)</option>
-                  <option value="'Luckiest Guy', cursive">Luckiest Guy (Bubbly)</option>
-                  <option value="'Wicked Mouse', cursive">Wicked Mouse (1930s)</option>
-                  <option value="'Kraash Black', cursive">Kraash Black (Punk)</option>
-                  <option value="'Super Comic', sans-serif">Super Comic (Heavy)</option>
-                  <option value="'Bubblegum', cursive">Bubblegum (Bubble)</option>
-                  <option value="VT323, monospace">VT323 (8-Bit)</option>
-                  <option value='"IBM Plex Mono", monospace'>IBM Plex Mono (Clean)</option>
-                  <option value='"Space Mono", monospace'>Space Mono (Modern Tech)</option>
-                </optgroup>
-              </select>
-            </div>
+                  const currentSelected = (
+                    wordMotifOverrides[specificKey] ||
+                    wordMotifOverrides[editingWordTarget.word.word.toLowerCase().replace(/[^a-z0-9]/g, '')] ||
+                    editingWordTarget.currentMotif ||
+                    'none'
+                  );
+                  const isSelected = currentSelected === m.id;
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => {
+                        setWordMotifOverrides(prev => ({
+                          ...prev,
+                          [specificKey]: m.id
+                        }));
+                        setEditingWordTarget(prev => prev ? { ...prev, currentMotif: m.id } : null);
+                      }}
+                      className={`p-2.5 border rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        isSelected
+                          ? themeMode === 'dark'
+                            ? 'border-[#D97757] bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs'
+                            : 'border-[#D97757] bg-[#FAF0EB] ring-1 ring-[#D97757]/30 shadow-xs'
+                          : themeMode === 'dark'
+                          ? 'border-white/10 hover:border-white/20 bg-[#232228]'
+                          : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-[#FAF9F5] shadow-xs'
+                      }`}
+                    >
+                      <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded self-start ${
+                        themeMode === 'dark' ? 'bg-white/10 text-white/80' : 'bg-white text-[#5E5D59] border border-[#E8E5DE]'
+                      }`}>
+                        {m.tag}
+                      </span>
+                      <span className={`text-xs font-sans font-medium mt-1.5 ${themeMode === 'dark' ? 'text-white' : 'text-[#141413]'}`}>
+                        {m.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
-            {/* Visual Motif for this specific word */}
-            <div className="pt-2 border-t border-white/10 dark:border-white/10">
-              <label className={`text-[11px] font-sans font-medium block mb-1 ${
-                themeMode === 'dark' ? 'text-white/60' : 'text-[#5E5D59]'
-              }`}>
-                Visual Motif for this Word:
-              </label>
-              <select
-                value={
-                  wordMotifOverrides[`${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`] ||
-                  wordMotifOverrides[editingWordTarget.word.word.toLowerCase().replace(/[^a-z0-9]/g, '')] ||
-                  editingWordTarget.currentMotif ||
-                  'none'
-                }
-                onChange={(e) => {
-                  const specificKey = `${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`;
-                  const selectedVal = e.target.value as VisualMotif;
-                  setWordMotifOverrides(prev => ({
-                    ...prev,
-                    [specificKey]: selectedVal
-                  }));
-                  setEditingWordTarget(prev => prev ? { ...prev, currentMotif: selectedVal } : null);
-                }}
-                className={`w-full p-2 text-xs font-sans rounded-xl focus:outline-none focus:border-[#D97757] focus:ring-1 focus:ring-[#D97757] cursor-pointer border shadow-xs transition-colors ${
-                  themeMode === 'dark'
-                    ? 'bg-[#1C1C20] border-white/10 text-white'
-                    : 'bg-white border-[#E8E5DE] text-[#141413]'
-                }`}
-              >
-                {Object.values(MOTIF_METADATA).map(m => (
-                  <option key={m.id} value={m.id}>
-                    {m.icon} {m.name} ({m.tag})
-                  </option>
-                ))}
-              </select>
-            </div>
-
+            {/* Footer Actions */}
             <div className={`flex gap-2.5 pt-3 border-t ${
               themeMode === 'dark' ? 'border-white/10' : 'border-[#E8E5DE]'
             }`}>
               <button
+                type="button"
                 onClick={() => {
                   const specificKey = `${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`;
                   const cleanKey = editingWordTarget.word.word.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -2244,11 +2294,12 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     : 'border-[#E8E5DE] hover:bg-[#FAF9F5] text-[#141413]'
                 }`}
               >
-                Reset to Auto Semantic
+                Reset to Auto
               </button>
               <button
+                type="button"
                 onClick={() => setEditingWordTarget(null)}
-                className="px-5 py-2 rounded-xl text-xs font-sans font-medium bg-[#D97757] hover:bg-[#C66545] text-white transition-colors cursor-pointer shadow-xs"
+                className="px-6 py-2 rounded-xl text-xs font-sans font-medium bg-[#D97757] hover:bg-[#C66545] text-white transition-colors cursor-pointer shadow-xs"
               >
                 Done
               </button>

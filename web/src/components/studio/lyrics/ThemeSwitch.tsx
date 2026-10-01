@@ -32,19 +32,18 @@ export const ThemeSwitch: React.FC<ThemeSwitchProps> = ({
         className={`flex items-center gap-1 text-[11px] font-medium transition-colors cursor-pointer ${
           !isDark ? 'text-[#D97757]' : 'text-white/40 hover:text-white/70'
         }`}
-        title="Switch to uniform Light Mode"
+        title="Switch to Light Mode"
       >
         <Sun className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline">Light</span>
       </button>
 
       {/* Official React Bits Squish Switch with fluid velocity squash & stretch physics */}
       <SquishSwitch
         checked={isDark}
         onChange={(checked) => onChange(checked ? 'dark' : 'light')}
-        width={38}
-        height={20}
-        radius={10}
+        width={36}
+        height={18}
+        radius={9}
         trackColor="#E8E5DE"
         trackOnColor="#2C2B29"
         thumbColor="#141413"
@@ -61,10 +60,9 @@ export const ThemeSwitch: React.FC<ThemeSwitchProps> = ({
         className={`flex items-center gap-1 text-[11px] font-medium transition-colors cursor-pointer ${
           isDark ? 'text-[#D97757]' : 'text-[#87867F] hover:text-[#141413]'
         }`}
-        title="Switch to uniform Dark Mode"
+        title="Switch to Dark Mode"
       >
         <Moon className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline">Dark</span>
       </button>
     </div>
   );

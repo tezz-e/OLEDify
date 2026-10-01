@@ -139,22 +139,8 @@ export const OllamaInspectorModal: React.FC<OllamaInspectorModalProps> = ({
     setArtist(preset.artist);
   };
 
-const ARCHETYPE_COLORS: Record<MotionArchetype, string> = {
-  auto_semantic: '#D97757',
-  manga_impact: '#E11D48',
-  blade_slash: '#8B5CF6',
-  cyber_glitch: '#06B6D4',
-  smooth_fluid: '#14B8A6',
-  '3d_block_stack': '#EAB308',
-  echo_stack: '#6366F1',
-  target_focus: '#3B82F6',
-  snake_slither: '#10B981',
-  wiggly_boil: '#EC4899',
-  inverted_badge: '#F97316',
-};
-
-  const getArchetypeColor = (arch: MotionArchetype) => {
-    return ARCHETYPE_COLORS[arch] || '#D97757';
+  const getArchetypeColor = (_arch: MotionArchetype) => {
+    return '#D97757';
   };
 
   return (
