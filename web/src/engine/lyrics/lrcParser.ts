@@ -1,6 +1,10 @@
 import { ParsedLyrics, LyricLine, LyricWord } from './types';
 import { isSpacelessScript, detectScript, getScriptLanguage, countGraphemes } from '../kinetic/scriptDetector';
 
+// Comprehensive multilingual punctuation regex matching Latin, Arabic, CJK, and Thai punctuation/brackets
+const MULTILINGUAL_PUNCT_REGEX = /[,\.!?;:—\-、。！？،؟؛，．：；「」『』【】（）《》“”‘’"']/;
+const MULTILINGUAL_PUNCT_GLOBAL = /[,\.!?;:—\-、。！？،؟؛，．：；「」『』【】（）《》“”‘’"'\s]/g;
+
 /**
  * Syllable-weighted word interpolation algorithm.
  * Allocates word durations inside a line based on syllable counts, consonant drag,
@@ -19,25 +23,39 @@ export function estimateWordTimestamps(
   // When line contains spaceless CJK/Thai text, segment by natural morphemes/words
   if (isSpacelessScript(trimmed)) {
     if (typeof Intl !== 'undefined' && Intl.Segmenter) {
-      const script = detectScript(trimmed);
-      const lang = getScriptLanguage(script, trimmed);
+      // Prioritize Thai if Thai characters present, otherwise Japanese Kana/CJK
+      let lang = 'ja';
+      if (/[\u0E00-\u0E7F]/.test(trimmed)) {
+        lang = 'th';
+      } else {
+        const script = detectScript(trimmed);
+        lang = getScriptLanguage(script, trimmed);
+        if (lang === 'en') lang = 'ja'; // Ensure spaceless text doesn't default to English dictionary
+      }
+
       const segmenter = new Intl.Segmenter(lang, { granularity: 'word' });
       const segments = Array.from(segmenter.segment(trimmed));
 
+      let pendingPrefix = '';
       for (const seg of segments) {
         const text = seg.segment.trim();
         if (!text) continue;
 
         if (seg.isWordLike) {
-          rawTokens.push(text);
+          rawTokens.push(pendingPrefix + text);
+          pendingPrefix = '';
         } else {
-          // If non-wordlike punctuation (e.g. '、', '。', '！', '!'), attach to preceding word
+          // If non-wordlike punctuation, attach to preceding word if available,
+          // or accumulate as prefix for the upcoming word
           if (rawTokens.length > 0) {
             rawTokens[rawTokens.length - 1] += text;
           } else {
-            rawTokens.push(text);
+            pendingPrefix += text;
           }
         }
+      }
+      if (pendingPrefix && rawTokens.length === 0) {
+        rawTokens.push(pendingPrefix);
       }
     }
   }
@@ -57,7 +75,6 @@ export function estimateWordTimestamps(
 
   // 1. Reserve phrase-tail breath pause (singers inhale before next line)
   const tailSilenceMs = totalDuration > 1500 ? Math.min(350, Math.round(totalDuration * 0.12)) : 50;
-  const vocalPoolMs = totalDuration - tailSilenceMs;
 
   // 2. Syllable counter heuristic (Latin vowels vs Non-Latin grapheme clusters)
   const countWordSyllables = (word: string): number => {
@@ -70,7 +87,7 @@ export function estimateWordTimestamps(
     }
     // For non-Latin scripts (Devanagari, Gurmukhi, CJK, Arabic, etc.),
     // each grapheme cluster corresponds to an akshara, mora, or syllable beat
-    const cleanNonLatin = word.replace(/[\s,\.!?;:—-、。！？]/g, '');
+    const cleanNonLatin = word.replace(MULTILINGUAL_PUNCT_GLOBAL, '');
     const graphemeCount = countGraphemes(cleanNonLatin);
     return Math.max(1, graphemeCount);
   };
@@ -84,10 +101,10 @@ export function estimateWordTimestamps(
   const metrics: WordMetric[] = rawTokens.map((w, idx) => {
     const script = detectScript(w);
     const isLatin = script === 'latin';
-    const clean = isLatin ? w.replace(/[^\w]/g, '') : w.replace(/[\s,\.!?;:—-、。！？]/g, '');
+    const clean = isLatin ? w.replace(/[^\w]/g, '') : w.replace(MULTILINGUAL_PUNCT_GLOBAL, '');
     const syllables = countWordSyllables(w);
     const charCount = isLatin ? clean.length : countGraphemes(clean);
-    const hasPunctuation = /[,\.!?;:—-、。！？]/.test(w);
+    const hasPunctuation = MULTILINGUAL_PUNCT_REGEX.test(w);
     const isLineEnd = idx === rawTokens.length - 1;
 
     // Weight formula: Syllables dominate sung duration (65%), chars add consonant drag (35%)
@@ -105,12 +122,27 @@ export function estimateWordTimestamps(
 
   const totalWeight = metrics.reduce((acc, m) => acc + m.weight, 0);
 
+  // Budget intermediate punctuation pauses within the available duration
+  const pauseCount = metrics.filter(m => m.hasPunctuationPause).length;
+  const maxPauseTotal = Math.floor((totalDuration - tailSilenceMs) * 0.25);
+  const pauseMs = pauseCount > 0 ? Math.min(100, Math.floor(maxPauseTotal / pauseCount)) : 0;
+  const totalPausesMs = pauseCount * pauseMs;
+
+  // Vocal pool after accounting for breath tail silence and punctuation pauses
+  const vocalPoolMs = Math.max(metrics.length * 30, totalDuration - tailSilenceMs - totalPausesMs);
+
   const words: LyricWord[] = [];
   let currentStart = startMs;
 
   for (let i = 0; i < metrics.length; i++) {
     const m = metrics[i];
-    const duration = Math.max(50, Math.round((m.weight / totalWeight) * vocalPoolMs));
+    let duration = Math.max(30, Math.round((m.weight / totalWeight) * vocalPoolMs));
+
+    // Ensure the last word stays strictly within line boundary
+    if (i === metrics.length - 1 && currentStart + duration > endMs) {
+      duration = Math.max(30, endMs - currentStart);
+    }
+
     const wordEnd = currentStart + duration;
 
     words.push({
@@ -119,7 +151,7 @@ export function estimateWordTimestamps(
       endMs: wordEnd
     });
 
-    const punctPause = m.hasPunctuationPause ? 100 : 0;
+    const punctPause = m.hasPunctuationPause ? pauseMs : 0;
     currentStart = wordEnd + punctPause;
   }
 

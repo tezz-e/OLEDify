@@ -12,6 +12,7 @@ export type ScriptType =
   | 'korean'
   | 'cyrillic'
   | 'arabic'
+  | 'hebrew'
   | 'tamil'
   | 'telugu'
   | 'thai'
@@ -67,6 +68,29 @@ export function countGraphemes(text: string): number {
 }
 
 /**
+ * Detects all distinct script families present within a text segment.
+ * Critical for multilingual lyrics and ensuring fonts are preloaded for every script.
+ */
+export function detectAllScripts(text: string): ScriptType[] {
+  if (!text) return [];
+  const found = new Set<ScriptType>();
+  for (const char of text) {
+    if (/[\u0900-\u097F]/.test(char)) found.add('devanagari');
+    else if (/[\u0A00-\u0A7F]/.test(char)) found.add('gurmukhi');
+    else if (/[\u0B80-\u0BFF]/.test(char)) found.add('tamil');
+    else if (/[\u0C00-\u0C7F]/.test(char)) found.add('telugu');
+    else if (/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(char)) found.add('arabic');
+    else if (/[\u0590-\u05FF]/.test(char)) found.add('hebrew');
+    else if (/[\u0400-\u04FF\u0500-\u052F\u2DE0-\u2DFF\uA640-\uA69F]/.test(char)) found.add('cyrillic');
+    else if (/[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F\uA960-\uA97F\uD7B0-\uD7FF]/.test(char)) found.add('hangul');
+    else if (/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\u3400-\u4DBF\uF900-\uFAFF]/.test(char)) found.add('cjk');
+    else if (/[\u0E00-\u0E7F]/.test(char)) found.add('thai');
+    else if (/[a-zA-Z\u00C0-\u024F\u1E00-\u1EFF]/.test(char)) found.add('latin');
+  }
+  return Array.from(found);
+}
+
+/**
  * Detects the primary script family of a given text segment.
  */
 export function detectScript(text: string): ScriptType {
@@ -78,6 +102,7 @@ export function detectScript(text: string): ScriptType {
     tamil: 0,
     telugu: 0,
     arabic: 0,
+    hebrew: 0,
     cyrillic: 0,
     hangul: 0,
     cjk: 0,
@@ -90,7 +115,8 @@ export function detectScript(text: string): ScriptType {
     else if (/[\u0A00-\u0A7F]/.test(char)) counts.gurmukhi++;
     else if (/[\u0B80-\u0BFF]/.test(char)) counts.tamil++;
     else if (/[\u0C00-\u0C7F]/.test(char)) counts.telugu++;
-    else if (/[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(char)) counts.arabic++;
+    else if (/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(char)) counts.arabic++;
+    else if (/[\u0590-\u05FF]/.test(char)) counts.hebrew++;
     else if (/[\u0400-\u04FF\u0500-\u052F\u2DE0-\u2DFF\uA640-\uA69F]/.test(char)) counts.cyrillic++;
     else if (/[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F\uA960-\uA97F\uD7B0-\uD7FF]/.test(char)) counts.hangul++;
     else if (/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\u3400-\u4DBF\uF900-\uFAFF]/.test(char)) counts.cjk++;
@@ -125,6 +151,7 @@ export function getScriptLanguage(script: ScriptType, sampleText?: string): stri
     case 'tamil': return 'ta';
     case 'telugu': return 'te';
     case 'arabic': return 'ar';
+    case 'hebrew': return 'he';
     case 'cyrillic': return 'ru';
     case 'hangul':
     case 'korean': return 'ko';

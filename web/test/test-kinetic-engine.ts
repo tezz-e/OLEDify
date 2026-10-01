@@ -21,6 +21,7 @@ import { computeSafeTextLayout } from '../src/engine/kinetic/kineticLayout';
 import { LyricWord } from '../src/engine/lyrics/types';
 import { 
   detectScript, 
+  detectAllScripts,
   isRTL, 
   isSpacelessScript, 
   getGraphemes, 
@@ -355,6 +356,8 @@ const scriptTestCases: Array<{ text: string; expected: string }> = [
   { text: 'सत्यमेव जयते', expected: 'devanagari' },
   { text: 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ', expected: 'gurmukhi' },
   { text: 'ਸ਼ਸਤਰ', expected: 'gurmukhi' },
+  { text: 'வணக்கம் உலகம்', expected: 'tamil' },
+  { text: 'నమస్కారం ప్రపంచం', expected: 'telugu' },
   { text: 'こんにちは世界', expected: 'cjk' },
   { text: '君の名は', expected: 'cjk' },
   { text: '안녕하세요 세계', expected: 'hangul' },
@@ -362,16 +365,24 @@ const scriptTestCases: Array<{ text: string; expected: string }> = [
   { text: 'Привет мир', expected: 'cyrillic' },
   { text: 'Кинетическая типографика', expected: 'cyrillic' },
   { text: 'مرحبا بالعالم', expected: 'arabic' },
-  { text: 'اردو شاعری', expected: 'arabic' }
+  { text: 'اردو شاعری', expected: 'arabic' },
+  { text: 'שלום עולם', expected: 'hebrew' }
 ];
 
 for (const t of scriptTestCases) {
   const detected = detectScript(t.text);
   assert.equal(detected, t.expected, `Text "${t.text}": expected script "${t.expected}", got "${detected}"`);
 }
-console.log('✅ Script detection for Latin, Devanagari, Gurmukhi, CJK, Hangul, Cyrillic, and Arabic verified.');
+console.log('✅ Script detection for Latin, Devanagari, Gurmukhi, Tamil, Telugu, CJK, Hangul, Cyrillic, Arabic, and Hebrew verified.');
 
-// 2. RTL Directionality Detection
+// 2. Multi-Script Detection (detectAllScripts) for Mixed Sequences
+const mixedScripts1 = detectAllScripts('君の名は RADWIMPS');
+assert.ok(mixedScripts1.includes('cjk') && mixedScripts1.includes('latin'), 'Mixed Japanese & English text must detect both CJK and Latin');
+const mixedScripts2 = detectAllScripts('Hello नमस्ते duniya');
+assert.ok(mixedScripts2.includes('devanagari') && mixedScripts2.includes('latin'), 'Mixed Hindi & English text must detect both Devanagari and Latin');
+console.log('✅ Multi-script detection (detectAllScripts) for mixed-language sequences verified.');
+
+// 3. RTL Directionality Detection
 assert.equal(isRTL('مرحبا بالعالم'), true, 'Arabic text must be detected as RTL');
 assert.equal(isRTL('اردو شاعری'), true, 'Urdu text must be detected as RTL');
 assert.equal(isRTL('שלום עולם'), true, 'Hebrew text must be detected as RTL');
@@ -381,7 +392,7 @@ assert.equal(isRTL('नमस्ते'), false, 'Devanagari text must NOT be de
 assert.equal(isRTL('ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ'), false, 'Gurmukhi text must NOT be detected as RTL');
 console.log('✅ RTL text directionality detection verified.');
 
-// 3. Spaceless Script Detection & Natural Word Segmentation (Intl.Segmenter)
+// 4. Spaceless Script Detection & Natural Word Segmentation (Intl.Segmenter)
 assert.equal(isSpacelessScript('こんにちは世界'), true, 'Japanese text must be detected as spaceless');
 assert.equal(isSpacelessScript('君の名は'), true, 'Japanese Kanji must be detected as spaceless');
 assert.equal(isSpacelessScript('สวัสดีชาวโลก'), true, 'Thai text must be detected as spaceless');
@@ -409,9 +420,26 @@ const jpPunctLine = '走れ、光の速さで！';
 const jpPunctTokens = estimateWordTimestamps(jpPunctLine, 0, 2000);
 assert.ok(jpPunctTokens.length >= 3, 'Spaceless text with punctuation must segment into morphemes');
 assert.ok(jpPunctTokens.some(w => w.word.includes('、') || w.word.includes('！')), 'Punctuation must stay attached to preceding morpheme');
-console.log('✅ Spaceless CJK word segmentation and timestamp interpolation verified.');
 
-// 4. Grapheme Cluster Preservation (Indic Matras & Viramas)
+// Test leading brackets/quotes are attached to first word rather than creating a solitary bracket word
+const jpBracketTokens = estimateWordTimestamps('「君の名は」', 0, 2000);
+assert.equal(jpBracketTokens[0].word, '「君', 'Leading bracket must attach to first word');
+assert.equal(jpBracketTokens[jpBracketTokens.length - 1].word, 'は」', 'Closing bracket must attach to last word');
+assert.ok(!jpBracketTokens.some(w => w.word === '「' || w.word === '」'), 'Brackets must never become standalone words');
+
+// Test line end boundary protection against punctuation pause overshoot
+const multiCommaTokens = estimateWordTimestamps('one, two, three, four, five, six, seven, eight, nine, ten.', 0, 1000);
+const lastToken = multiCommaTokens[multiCommaTokens.length - 1];
+assert.ok(lastToken.endMs <= 1000, `Last token endMs (${lastToken.endMs}) must not exceed line endMs (1000)`);
+
+// Test Arabic filler words with Arabic comma
+assert.equal(isFillerWord('في،'), true, 'Arabic filler word with Arabic comma must be recognized');
+assert.equal(isFillerWord('في'), true, 'Arabic filler word must be recognized');
+assert.equal(isFillerWord('من'), true, 'Arabic filler word must be recognized');
+
+console.log('✅ Spaceless CJK word segmentation, leading bracket attachment, and timing boundary limits verified.');
+
+// 5. Grapheme Cluster Preservation (Indic Matras & Viramas)
 // In Devanagari "दुनिया", graphemes are ['दु', 'नि', 'या'] (3 aksharas)
 const hindiGraphemes = getGraphemes('दुनिया');
 assert.equal(hindiGraphemes.length, 3, `Expected 3 graphemes for "दुनिया", got ${hindiGraphemes.length}`);
@@ -439,9 +467,16 @@ const longCjkWord = '新世紀エヴァンゲリオン劇場版';
 const cjkLayout = computeSafeTextLayout(longCjkWord, mockCtx);
 assert.ok(cjkLayout.lines.length >= 2, 'Long CJK string must split');
 assert.ok(!cjkLayout.lines[0].endsWith('-'), `CJK split line 1 "${cjkLayout.lines[0]}" must NOT end with hyphen "-"`);
-console.log('✅ Grapheme cluster preservation and non-hyphenated CJK Tier 3 splitting verified.');
 
-// 5. Curated Multilingual 1-Bit Display Font Resolution
+// Test Arabic Tier 3 extreme word splitting: do NOT append hyphen '-'
+const longArabicWord = 'المسؤوليات';
+const arabicLayout = computeSafeTextLayout(longArabicWord, mockCtx);
+if (arabicLayout.lines.length >= 2) {
+  assert.ok(!arabicLayout.lines[0].endsWith('-'), `Arabic split line 1 "${arabicLayout.lines[0]}" must NOT end with hyphen "-"`);
+}
+console.log('✅ Grapheme cluster preservation and non-hyphenated CJK/RTL Tier 3 splitting verified.');
+
+// 6. Curated Multilingual 1-Bit Display Font Resolution
 const trapStylePack = STYLE_PACKS.trap_drill;
 
 // Japanese word -> Dela Gothic One
@@ -474,7 +509,22 @@ const arWord: LyricWord = { word: 'مرحبا', startMs: 0, endMs: 500 };
 const arFont = getWordEffectiveFont(arWord, 'manga_impact', trapStylePack);
 assert.ok(arFont.includes('Lalezar'), `Expected Arabic font to include 'Lalezar', got: ${arFont}`);
 
-console.log('✅ Curated multilingual display fonts properly cascade across global scripts.');
+// Hebrew word -> Rubik
+const heWord: LyricWord = { word: 'שלום', startMs: 0, endMs: 500 };
+const heFont = getWordEffectiveFont(heWord, 'manga_impact', trapStylePack);
+assert.ok(heFont.includes('Rubik'), `Expected Hebrew font to include 'Rubik', got: ${heFont}`);
+
+// Tamil word -> Anek Tamil
+const taWord: LyricWord = { word: 'வணக்கம்', startMs: 0, endMs: 500 };
+const taFont = getWordEffectiveFont(taWord, 'manga_impact', trapStylePack);
+assert.ok(taFont.includes('Anek Tamil'), `Expected Tamil font to include 'Anek Tamil', got: ${taFont}`);
+
+// Telugu word -> Anek Telugu
+const teWord: LyricWord = { word: 'నమస్కారం', startMs: 0, endMs: 500 };
+const teFont = getWordEffectiveFont(teWord, 'manga_impact', trapStylePack);
+assert.ok(teFont.includes('Anek Telugu'), `Expected Telugu font to include 'Anek Telugu', got: ${teFont}`);
+
+console.log('✅ Curated multilingual display fonts properly cascade across global scripts (Japanese, Korean, Devanagari, Gurmukhi, Cyrillic, Arabic, Hebrew, Tamil, Telugu).');
 
 console.log('\n🎉 ALL KINETIC TYPOGRAPHY & MOTIF TESTS PASSED PERFECTLY!\n');
 

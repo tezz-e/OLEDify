@@ -1,4 +1,4 @@
-import { ScriptType, detectScript } from './scriptDetector';
+import { ScriptType, detectScript, detectAllScripts } from './scriptDetector';
 
 export interface ScriptFontMeta {
   script: ScriptType;
@@ -68,6 +68,13 @@ export const SCRIPT_FONT_REGISTRY: Record<string, ScriptFontMeta> = {
     googleFontFamily: 'Lalezar',
     cssUrl: 'https://fonts.googleapis.com/css2?family=Lalezar&display=swap'
   },
+  hebrew: {
+    script: 'hebrew',
+    primaryFont: 'Rubik',
+    fontStack: "'Rubik', 'Arial Hebrew', 'Arial', sans-serif",
+    googleFontFamily: 'Rubik:wght@800',
+    cssUrl: 'https://fonts.googleapis.com/css2?family=Rubik:wght@800&display=swap'
+  },
   tamil: {
     script: 'tamil',
     primaryFont: 'Anek Tamil',
@@ -84,6 +91,21 @@ export const SCRIPT_FONT_REGISTRY: Record<string, ScriptFontMeta> = {
   }
 };
 
+export const SCRIPT_SAMPLE_CHARS: Record<string, string> = {
+  cjk: 'あ',
+  japanese: 'あ',
+  hangul: '한',
+  korean: '한',
+  devanagari: 'अ',
+  gurmukhi: 'ਅ',
+  cyrillic: 'Ж',
+  arabic: 'ع',
+  hebrew: 'ש',
+  tamil: 'அ',
+  telugu: 'అ',
+  thai: 'ก',
+};
+
 const loadedFonts = new Set<string>();
 const inflightPromises = new Map<string, Promise<void>>();
 
@@ -91,7 +113,7 @@ const inflightPromises = new Map<string, Promise<void>>();
  * Dynamically loads curated Google Display Fonts for the specified script using the CSS FontFace API.
  * Uses an in-memory cache and prevents redundant network fetches.
  */
-export async function loadFontForScript(script: ScriptType): Promise<void> {
+export async function loadFontForScript(script: ScriptType, sampleText?: string): Promise<void> {
   const meta = SCRIPT_FONT_REGISTRY[script];
   if (!meta) return;
 
@@ -111,7 +133,7 @@ export async function loadFontForScript(script: ScriptType): Promise<void> {
     }
 
     try {
-      // 1. Inject link tag if not present
+      // 1. Inject stylesheet link tag if not present
       const existingLink = document.querySelector(`link[href*="${meta.googleFontFamily}"]`);
       if (!existingLink) {
         const link = document.createElement('link');
@@ -120,27 +142,43 @@ export async function loadFontForScript(script: ScriptType): Promise<void> {
         document.head.appendChild(link);
       }
 
-      // 2. Fetch and register directly via FontFace API if supported
+      // 2. Fetch and register FontFace rules directly if FontFace API is supported
       if (typeof FontFace !== 'undefined' && document.fonts) {
         try {
           const res = await fetch(meta.cssUrl);
           if (res.ok) {
             const cssText = await res.text();
-            const match = cssText.match(/url\((https:\/\/[^)]+\.woff2)\)/);
-            if (match && match[1]) {
-              const fontFace = new FontFace(meta.primaryFont, `url(${match[1]})`);
-              await fontFace.load();
-              document.fonts.add(fontFace);
+            // Parse all @font-face blocks to preserve unicode-range subsets
+            const blocks = cssText.match(/@font-face\s*\{[^}]+\}/g) || [];
+            for (const block of blocks) {
+              const urlMatch = block.match(/url\(['"]?(https:\/\/[^)'"]+)['"]?\)/);
+              if (urlMatch && urlMatch[1]) {
+                const rangeMatch = block.match(/unicode-range:\s*([^;]+);/);
+                const weightMatch = block.match(/font-weight:\s*([^;]+);/);
+                const styleMatch = block.match(/font-style:\s*([^;]+);/);
+                const descriptors: FontFaceDescriptors = {};
+                if (rangeMatch) descriptors.unicodeRange = rangeMatch[1].trim();
+                if (weightMatch) descriptors.weight = weightMatch[1].trim();
+                if (styleMatch) descriptors.style = styleMatch[1].trim();
+
+                const fontFace = new FontFace(meta.primaryFont, `url(${urlMatch[1]})`, descriptors);
+                await fontFace.load();
+                document.fonts.add(fontFace);
+              }
             }
           }
         } catch {
-          // If direct fetch is blocked by CORS/offline, fallback to document.fonts.load below
+          // If direct fetch is blocked by CORS/offline, the injected <link> tag still works
         }
       }
 
-      // 3. Wait for browser font set readiness
+      // 3. Trigger download of the required unicode-range slice using sample character
+      const testChar = sampleText ? Array.from(sampleText)[0] : (SCRIPT_SAMPLE_CHARS[script] || 'A');
       if (document.fonts?.load) {
-        await document.fonts.load(`bold 16px "${meta.primaryFont}"`);
+        await Promise.allSettled([
+          document.fonts.load(`16px "${meta.primaryFont}"`, testChar),
+          document.fonts.load(`bold 16px "${meta.primaryFont}"`, testChar)
+        ]);
       }
       if (document.fonts?.ready) {
         await document.fonts.ready;
@@ -160,12 +198,12 @@ export async function loadFontForScript(script: ScriptType): Promise<void> {
 
 /**
  * Preloads fonts for any foreign script detected within the provided text.
+ * Checks all scripts present in mixed-language text sequences.
  */
 export async function ensureFontForText(text: string): Promise<void> {
-  const script = detectScript(text);
-  if (script !== 'latin' && script !== 'unknown') {
-    await loadFontForScript(script);
-  }
+  const scripts = detectAllScripts(text);
+  const foreignScripts = scripts.filter(s => s !== 'latin' && s !== 'unknown');
+  await Promise.all(foreignScripts.map(s => loadFontForScript(s, text)));
 }
 
 /**

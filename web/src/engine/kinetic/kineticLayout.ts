@@ -1,6 +1,6 @@
 import { TextLayoutResult } from './types';
 import { isFillerWord } from './semanticClassifier';
-import { getGraphemes, isSpacelessScript } from './scriptDetector';
+import { getGraphemes, isSpacelessScript, isRTL } from './scriptDetector';
 
 /**
  * Computes safe text layout guaranteed to never clip outside 128x64 display.
@@ -91,7 +91,7 @@ export function computeSafeTextLayout(
     const mid = Math.ceil(graphemes.length / 2);
     const firstHalf = graphemes.slice(0, mid).join('');
     const secondHalf = graphemes.slice(mid).join('');
-    if (isSpacelessScript(clean)) {
+    if (isSpacelessScript(clean) || isRTL(clean)) {
       splitLines = [firstHalf, secondHalf];
     } else {
       splitLines = [`${firstHalf}-`, secondHalf];

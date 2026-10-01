@@ -25,10 +25,12 @@ export const FILLER_WORDS = new Set([
   'في', 'من', 'إلى', 'على', 'عن', 'مع', 'و', 'أو'
 ]);
 
+const PUNCTUATION_CLEAN_REGEX = /^[\s,\.!?;:—\-、。！？،؟؛，．：；「」『』【】（）《》“”‘’"'\~`]+|[\s,\.!?;:—\-、。！？،؟؛，．：；「」『』【】（）《》“”‘’"'\~`]+$/g;
+
 export function isFillerWord(word: string): boolean {
   const trimmed = word.trim().toLowerCase();
   if (FILLER_WORDS.has(trimmed)) return true;
-  const clean = trimmed.replace(/^[,\.!?;:—\-、。！？]+|[,\.!?;:—\-、。！？]+$/g, '');
+  const clean = trimmed.replace(PUNCTUATION_CLEAN_REGEX, '');
   if (FILLER_WORDS.has(clean)) return true;
   const latinClean = trimmed.replace(/[^a-z0-9']/g, '');
   return FILLER_WORDS.has(latinClean);

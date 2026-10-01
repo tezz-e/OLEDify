@@ -134,7 +134,7 @@ export interface StylePackConfig {
 }
 
 export const MULTILINGUAL_FALLBACK_FONTS = 
-  "'Yatra One', 'Anek Gurmukhi', 'Dela Gothic One', 'Black Han Sans', 'Rubik Mono One', 'Lalezar'";
+  "'Yatra One', 'Anek Gurmukhi', 'Dela Gothic One', 'Black Han Sans', 'Rubik Mono One', 'Lalezar', 'Anek Tamil', 'Anek Telugu', 'Rubik'";
 
 export const STYLE_PACKS: Record<StylePackId, StylePackConfig> = {
   trap_drill: {
