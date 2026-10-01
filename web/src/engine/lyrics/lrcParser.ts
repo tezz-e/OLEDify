@@ -1,4 +1,5 @@
 import { ParsedLyrics, LyricLine, LyricWord } from './types';
+import { isSpacelessScript, detectScript, getScriptLanguage, countGraphemes } from '../kinetic/scriptDetector';
 
 /**
  * Syllable-weighted word interpolation algorithm.
@@ -10,7 +11,42 @@ export function estimateWordTimestamps(
   startMs: number,
   endMs: number
 ): LyricWord[] {
-  const rawTokens = lineText.trim().split(/\s+/).filter(Boolean);
+  const trimmed = lineText.trim();
+  if (!trimmed) return [];
+
+  let rawTokens: string[] = [];
+
+  // When line contains spaceless CJK/Thai text, segment by natural morphemes/words
+  if (isSpacelessScript(trimmed)) {
+    if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+      const script = detectScript(trimmed);
+      const lang = getScriptLanguage(script, trimmed);
+      const segmenter = new Intl.Segmenter(lang, { granularity: 'word' });
+      const segments = Array.from(segmenter.segment(trimmed));
+
+      for (const seg of segments) {
+        const text = seg.segment.trim();
+        if (!text) continue;
+
+        if (seg.isWordLike) {
+          rawTokens.push(text);
+        } else {
+          // If non-wordlike punctuation (e.g. '、', '。', '！', '!'), attach to preceding word
+          if (rawTokens.length > 0) {
+            rawTokens[rawTokens.length - 1] += text;
+          } else {
+            rawTokens.push(text);
+          }
+        }
+      }
+    }
+  }
+
+  // Fallback to whitespace splitting if not spaceless or if segmentation returned empty
+  if (rawTokens.length === 0) {
+    rawTokens = trimmed.split(/\s+/).filter(Boolean);
+  }
+
   if (rawTokens.length === 0) return [];
 
   if (rawTokens.length === 1) {
@@ -23,12 +59,20 @@ export function estimateWordTimestamps(
   const tailSilenceMs = totalDuration > 1500 ? Math.min(350, Math.round(totalDuration * 0.12)) : 50;
   const vocalPoolMs = totalDuration - tailSilenceMs;
 
-  // 2. Syllable counter heuristic
-  const countSyllables = (word: string): number => {
-    const clean = word.toLowerCase().replace(/[^a-z]/g, '');
-    if (clean.length <= 3) return 1;
-    const vowels = clean.replace(/(?:[^laeiouy]|ed|es|e)$/g, '').match(/[aeiouy]{1,2}/g);
-    return vowels ? Math.max(1, vowels.length) : 1;
+  // 2. Syllable counter heuristic (Latin vowels vs Non-Latin grapheme clusters)
+  const countWordSyllables = (word: string): number => {
+    const script = detectScript(word);
+    if (script === 'latin') {
+      const clean = word.toLowerCase().replace(/[^a-z]/g, '');
+      if (clean.length <= 3) return 1;
+      const vowels = clean.replace(/(?:[^laeiouy]|ed|es|e)$/g, '').match(/[aeiouy]{1,2}/g);
+      return vowels ? Math.max(1, vowels.length) : 1;
+    }
+    // For non-Latin scripts (Devanagari, Gurmukhi, CJK, Arabic, etc.),
+    // each grapheme cluster corresponds to an akshara, mora, or syllable beat
+    const cleanNonLatin = word.replace(/[\s,\.!?;:—-、。！？]/g, '');
+    const graphemeCount = countGraphemes(cleanNonLatin);
+    return Math.max(1, graphemeCount);
   };
 
   interface WordMetric {
@@ -38,10 +82,12 @@ export function estimateWordTimestamps(
   }
 
   const metrics: WordMetric[] = rawTokens.map((w, idx) => {
-    const clean = w.replace(/[^\w]/g, '');
-    const syllables = countSyllables(clean);
-    const charCount = clean.length;
-    const hasPunctuation = /[,\.!?;:—-]/.test(w);
+    const script = detectScript(w);
+    const isLatin = script === 'latin';
+    const clean = isLatin ? w.replace(/[^\w]/g, '') : w.replace(/[\s,\.!?;:—-、。！？]/g, '');
+    const syllables = countWordSyllables(w);
+    const charCount = isLatin ? clean.length : countGraphemes(clean);
+    const hasPunctuation = /[,\.!?;:—-、。！？]/.test(w);
     const isLineEnd = idx === rawTokens.length - 1;
 
     // Weight formula: Syllables dominate sung duration (65%), chars add consonant drag (35%)

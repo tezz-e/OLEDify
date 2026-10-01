@@ -133,6 +133,9 @@ export interface StylePackConfig {
   };
 }
 
+export const MULTILINGUAL_FALLBACK_FONTS = 
+  "'Yatra One', 'Anek Gurmukhi', 'Dela Gothic One', 'Black Han Sans', 'Rubik Mono One', 'Lalezar'";
+
 export const STYLE_PACKS: Record<StylePackId, StylePackConfig> = {
   trap_drill: {
     id: 'trap_drill',
@@ -141,10 +144,10 @@ export const STYLE_PACKS: Record<StylePackId, StylePackConfig> = {
     tag: 'TRAP',
     description: 'Wilhelm Gotisch hero with razor Vendetta slashes, brutalist Molot punch, and clean mono connectors',
     fonts: {
-      hero: "'Wilhelm Gotisch', sans-serif",
-      action: "'Vendetta', cursive",
-      novelty: "'Molot', sans-serif",
-      anchor: '"IBM Plex Mono", monospace'
+      hero: `'Wilhelm Gotisch', ${MULTILINGUAL_FALLBACK_FONTS}, sans-serif`,
+      action: `'Vendetta', ${MULTILINGUAL_FALLBACK_FONTS}, cursive`,
+      novelty: `'Molot', ${MULTILINGUAL_FALLBACK_FONTS}, sans-serif`,
+      anchor: `"IBM Plex Mono", ${MULTILINGUAL_FALLBACK_FONTS}, monospace`
     }
   },
   shonen_comic: {
@@ -154,10 +157,10 @@ export const STYLE_PACKS: Record<StylePackId, StylePackConfig> = {
     tag: 'COMIC',
     description: 'Bangers hero impact, Kraash punk slashes, Super Comic blocks, and mono conversational flow',
     fonts: {
-      hero: "'Bangers', cursive",
-      action: "'Kraash Black', cursive",
-      novelty: "'Super Comic', sans-serif",
-      anchor: '"IBM Plex Mono", monospace'
+      hero: `'Bangers', ${MULTILINGUAL_FALLBACK_FONTS}, cursive`,
+      action: `'Kraash Black', ${MULTILINGUAL_FALLBACK_FONTS}, cursive`,
+      novelty: `'Super Comic', ${MULTILINGUAL_FALLBACK_FONTS}, sans-serif`,
+      anchor: `"IBM Plex Mono", ${MULTILINGUAL_FALLBACK_FONTS}, monospace`
     }
   },
   cartoon_bounce: {
@@ -167,10 +170,10 @@ export const STYLE_PACKS: Record<StylePackId, StylePackConfig> = {
     tag: 'BOUNCE',
     description: '1930s Wicked Mouse hero, bubbly Luckiest Guy actions, puffy Bubblegum, and clean modern tech mono',
     fonts: {
-      hero: "'Wicked Mouse', cursive",
-      action: "'Luckiest Guy', cursive",
-      novelty: "'Bubblegum', cursive",
-      anchor: '"Space Mono", monospace'
+      hero: `'Wicked Mouse', ${MULTILINGUAL_FALLBACK_FONTS}, cursive`,
+      action: `'Luckiest Guy', ${MULTILINGUAL_FALLBACK_FONTS}, cursive`,
+      novelty: `'Bubblegum', ${MULTILINGUAL_FALLBACK_FONTS}, cursive`,
+      anchor: `"Space Mono", ${MULTILINGUAL_FALLBACK_FONTS}, monospace`
     }
   },
   cyber_industrial: {
@@ -180,10 +183,10 @@ export const STYLE_PACKS: Record<StylePackId, StylePackConfig> = {
     tag: 'CYBER',
     description: 'Brutalist Molot hero, VT323 retro pixel glitch, Space Mono speed, and IBM Plex anchor',
     fonts: {
-      hero: "'Molot', sans-serif",
-      action: "VT323, monospace",
-      novelty: '"Space Mono", monospace',
-      anchor: '"IBM Plex Mono", monospace'
+      hero: `'Molot', ${MULTILINGUAL_FALLBACK_FONTS}, sans-serif`,
+      action: `VT323, ${MULTILINGUAL_FALLBACK_FONTS}, monospace`,
+      novelty: `"Space Mono", ${MULTILINGUAL_FALLBACK_FONTS}, monospace`,
+      anchor: `"IBM Plex Mono", ${MULTILINGUAL_FALLBACK_FONTS}, monospace`
     }
   },
   custom: {
@@ -193,10 +196,10 @@ export const STYLE_PACKS: Record<StylePackId, StylePackConfig> = {
     tag: 'CUSTOM',
     description: 'User-selected custom Hero typography with automatically tuned semantic companion fonts',
     fonts: {
-      hero: '"IBM Plex Mono", monospace',
-      action: "'Vendetta', cursive",
-      novelty: "'Molot', sans-serif",
-      anchor: '"IBM Plex Mono", monospace'
+      hero: `"IBM Plex Mono", ${MULTILINGUAL_FALLBACK_FONTS}, monospace`,
+      action: `'Vendetta', ${MULTILINGUAL_FALLBACK_FONTS}, cursive`,
+      novelty: `'Molot', ${MULTILINGUAL_FALLBACK_FONTS}, sans-serif`,
+      anchor: `"IBM Plex Mono", ${MULTILINGUAL_FALLBACK_FONTS}, monospace`
     }
   }
 };

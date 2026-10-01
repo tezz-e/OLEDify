@@ -1,7 +1,9 @@
 import { MotionArchetype, StylePackConfig, WordFontRole, STYLE_PACKS } from './types';
 import { LyricWord } from '../lyrics/types';
+import { detectScript } from './scriptDetector';
+import { getScriptFontStack } from './fontLoader';
 
-// Common English, Punjabi & Hindi Filler / Connective Words
+// Common English, Punjabi, Hindi, Japanese & Arabic Filler / Connective Words
 export const FILLER_WORDS = new Set([
   // English
   'a', 'an', 'the', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'up', 
@@ -9,15 +11,27 @@ export const FILLER_WORDS = new Set([
   'my', 'your', 'his', 'her', 'their', 'our', 'is', 'am', 'are', 'was', 'were', 'be',
   'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'that', 'this', 'these', 'those',
   'i', 'im', "i'm", 'you', 'he', 'she', 'we', 'they', 'me', 'him', 'us', 'them',
-  // Punjabi & Hindi
+  // Punjabi & Hindi (Latin transliteration)
   'te', 'de', 'da', 'di', 'ne', 'nu', 'ch', 'vich', 'se', 'ko', 'ka', 'ki', 'ke',
   'aur', 'par', 'bhi', 'naal', 'mera', 'meri', 'mere', 'tera', 'teri', 'tere', 
-  'asi', 'tussi', 'oh', 'ae', 'hai', 'si', 'han', 'main', 'tu', 'jo', 'woh', 'yeh'
+  'asi', 'tussi', 'oh', 'ae', 'hai', 'si', 'han', 'main', 'tu', 'jo', 'woh', 'yeh',
+  // Devanagari (Hindi / Marathi)
+  'का', 'की', 'के', 'को', 'में', 'से', 'पर', 'और', 'है', 'हैं', 'था', 'थी', 'थे', 'भी', 'तो', 'ने', 'या', 'एक',
+  // Gurmukhi (Punjabi)
+  'ਤੇ', 'ਦੇ', 'ਦਾ', 'ਦੀ', 'ਨੇ', 'ਨੂੰ', 'ਵਿੱਚ', 'ਨਾਲ', 'ਹੈ', 'ਸੀ', 'ਹਨ', 'ਮੇਰਾ', 'ਤੇਰਾ', 'ਅਸੀਂ', 'ਤੁਸੀਂ',
+  // Japanese particles
+  'の', 'は', 'が', 'を', 'に', 'で', 'と', 'へ', 'も', 'や',
+  // Arabic prepositions
+  'في', 'من', 'إلى', 'على', 'عن', 'مع', 'و', 'أو'
 ]);
 
 export function isFillerWord(word: string): boolean {
-  const clean = word.toLowerCase().replace(/[^a-z0-9']/g, '');
-  return FILLER_WORDS.has(clean);
+  const trimmed = word.trim().toLowerCase();
+  if (FILLER_WORDS.has(trimmed)) return true;
+  const clean = trimmed.replace(/^[,\.!?;:—\-、。！？]+|[,\.!?;:—\-、。！？]+$/g, '');
+  if (FILLER_WORDS.has(clean)) return true;
+  const latinClean = trimmed.replace(/[^a-z0-9']/g, '');
+  return FILLER_WORDS.has(latinClean);
 }
 
 // Semantic Keyword Dictionaries
@@ -250,18 +264,31 @@ export function getWordEffectiveFont(
   const role = getWordFontRole(archetype, word.word);
   const fonts = packConfig.fonts;
 
+  let baseFont: string;
   switch (role) {
     case 'hero':
       // If user selected a custom font dropdown, use it as hero font
-      return globalFont || fonts.hero;
+      baseFont = globalFont || fonts.hero;
+      break;
     case 'action':
-      return fonts.action;
+      baseFont = fonts.action;
+      break;
     case 'novelty':
-      return fonts.novelty;
+      baseFont = fonts.novelty;
+      break;
     case 'anchor':
     default:
-      return fonts.anchor;
+      baseFont = fonts.anchor;
+      break;
   }
+
+  // 3. Multilingual Font Cascade: Prepend curated 1-bit display font for foreign scripts
+  const script = detectScript(word.word);
+  if (script !== 'latin' && script !== 'unknown') {
+    return getScriptFontStack(script, baseFont);
+  }
+
+  return baseFont;
 }
 
 

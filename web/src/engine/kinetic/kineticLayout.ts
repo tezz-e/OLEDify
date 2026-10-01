@@ -1,5 +1,6 @@
 import { TextLayoutResult } from './types';
 import { isFillerWord } from './semanticClassifier';
+import { getGraphemes, isSpacelessScript } from './scriptDetector';
 
 /**
  * Computes safe text layout guaranteed to never clip outside 128x64 display.
@@ -12,7 +13,8 @@ export function computeSafeTextLayout(
   maxH: number = 58
 ): TextLayoutResult {
   const clean = text.toUpperCase().trim();
-  const charCount = clean.length;
+  const graphemes = getGraphemes(clean);
+  const charCount = graphemes.length;
 
   if (!clean) {
     return {
@@ -83,11 +85,17 @@ export function computeSafeTextLayout(
     }
   }
 
-  // Tier 3: Extreme word (>10 chars, e.g. "EXTRAORDINARY") -> Syllabic / Midpoint Splitting
+  // Tier 3: Extreme word (>10 graphemes, e.g. "EXTRAORDINARY") -> Syllabic / Midpoint Splitting
   let splitLines: string[] = [];
   if (charCount > 10 && !clean.includes(' ')) {
-    const mid = Math.ceil(charCount / 2);
-    splitLines = [`${clean.slice(0, mid)}-`, clean.slice(mid)];
+    const mid = Math.ceil(graphemes.length / 2);
+    const firstHalf = graphemes.slice(0, mid).join('');
+    const secondHalf = graphemes.slice(mid).join('');
+    if (isSpacelessScript(clean)) {
+      splitLines = [firstHalf, secondHalf];
+    } else {
+      splitLines = [`${firstHalf}-`, secondHalf];
+    }
   } else {
     // Multi-word phrase wrapping
     const words = clean.split(' ');

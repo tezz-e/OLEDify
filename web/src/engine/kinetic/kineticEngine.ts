@@ -5,6 +5,8 @@ import { renderArchetypeFrame } from './kineticArchetypes';
 import { renderMotifBackground } from './motifRenderer';
 import { getWordEffectiveArchetype, getWordEffectiveFont } from './semanticClassifier';
 import { LyricWord } from '../lyrics/types';
+import { isRTL } from './scriptDetector';
+import { ensureFontForText } from './fontLoader';
 
 function findLastEndedWord(wordsList: LyricWord[], timeMs: number): { word?: LyricWord; index: number } {
   for (let i = wordsList.length - 1; i >= 0; i--) {
@@ -37,6 +39,23 @@ export async function renderKineticSequence(
   const frameCount = Math.max(1, Math.round((durationMs / 1000) * targetFps));
   const frameIntervalMs = 1000 / targetFps;
 
+  // Flatten words within the selected time window
+  const wordsInRange = lyrics
+    .flatMap(l => l.words)
+    .filter(w => w.endMs >= startMs && w.startMs <= endMs)
+    .sort((a, b) => a.startMs - b.startMs);
+
+  const fallbackWord = { word: 'KINETIC', startMs, endMs };
+  const words = wordsInRange.length > 0 ? wordsInRange : [fallbackWord];
+
+  // Preload foreign script display fonts for words in sequence
+  try {
+    const allWordsText = words.map(w => w.word).join(' ');
+    await ensureFontForText(allWordsText);
+  } catch {
+    // Continue
+  }
+
   // Ensure custom @font-face assets are loaded into memory before measuring text
   if (typeof document !== 'undefined' && document.fonts?.ready) {
     try {
@@ -55,15 +74,6 @@ export async function renderKineticSequence(
 
   const ctx = canvas.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D;
   if (!ctx) throw new Error('Could not acquire 2D rendering context for kinetic engine');
-
-  // Flatten words within the selected time window
-  const wordsInRange = lyrics
-    .flatMap(l => l.words)
-    .filter(w => w.endMs >= startMs && w.startMs <= endMs)
-    .sort((a, b) => a.startMs - b.startMs);
-
-  const fallbackWord = { word: 'KINETIC', startMs, endMs };
-  const words = wordsInRange.length > 0 ? wordsInRange : [fallbackWord];
 
   const extractedFrames: ExtractedFrame[] = [];
 
@@ -113,6 +123,9 @@ export async function renderKineticSequence(
       }
       ctx.restore();
     } else {
+      const isWordRTL = isRTL(activeWord.word);
+      ctx.direction = isWordRTL ? 'rtl' : 'ltr';
+
       const wordDuration = Math.max(80, activeWord.endMs - activeWord.startMs);
       const tau = Math.max(0, Math.min(1, (currentMs - activeWord.startMs) / wordDuration));
 
@@ -163,6 +176,7 @@ export async function renderKineticSequence(
           frameIndex: f,
           textCenterY: 32,
           audioFrame,
+          isRTL: isWordRTL,
         });
       }
 

@@ -1,5 +1,6 @@
 import { MotionArchetype, TextLayoutResult } from './types';
 import { AudioFrameData } from './audioAnalysisEngine';
+import { isRTL, getGraphemes } from './scriptDetector';
 
 // Pooled scratch canvas to eliminate per-frame GC allocations
 let cachedScratchCanvas: OffscreenCanvas | HTMLCanvasElement | null = null;
@@ -36,6 +37,9 @@ export function renderArchetypeFrame(
   fontFamily: string = '"IBM Plex Mono", monospace',
   audioFrame?: AudioFrameData
 ) {
+  const rtl = isRTL(text);
+  ctx.direction = rtl ? 'rtl' : 'ltr';
+
   switch (archetype) {
     case 'blade_slash':
       renderBladeSlash(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
@@ -85,9 +89,11 @@ function renderBladeSlash(
   fontFamily: string,
   audioFrame?: AudioFrameData
 ) {
+  const rtl = isRTL(text);
   const { canvas: tempCanvas, ctx: tCtx } = getScratchCanvas();
 
   tCtx.clearRect(0, 0, 128, 64);
+  tCtx.direction = rtl ? 'rtl' : 'ltr';
   tCtx.font = `bold ${layout.fontSize}px ${fontFamily}`;
   tCtx.textAlign = 'center';
   tCtx.strokeStyle = '#000000';
@@ -110,21 +116,32 @@ function renderBladeSlash(
   const audioKick = audioFrame ? (audioFrame.isBeat ? 6 : audioFrame.flux * 4) : 0;
   const shift = Math.round((1 - ease) * 18 + audioKick);
 
-  // Upper half shifted left
-  ctx.drawImage(tempCanvas, 0, 0, 128, midY, -shift, 0, 128, midY);
+  // Invert horizontal split sliding when RTL is active
+  const topShift = rtl ? shift : -shift;
+  const bottomShift = rtl ? -shift : shift;
 
-  // Lower half shifted right
-  ctx.drawImage(tempCanvas, 0, midY, 128, 64 - midY, shift, midY, 128, 64 - midY);
+  // Upper half shifted
+  ctx.drawImage(tempCanvas, 0, 0, 128, midY, topShift, 0, 128, midY);
+
+  // Lower half shifted
+  ctx.drawImage(tempCanvas, 0, midY, 128, 64 - midY, bottomShift, midY, 128, 64 - midY);
 
   // Diagonal razor slash line during initial 30% of duration or on beat onset
   if (tau < 0.3 || audioFrame?.isBeat) {
     const p = tau < 0.3 ? tau / 0.3 : 1.0;
-    const xEnd = Math.floor(p * 128);
+    const xDist = Math.floor(p * 128);
     ctx.strokeStyle = '#FFFFFF';
     ctx.lineWidth = audioFrame?.isBeat ? 3 : 2;
     ctx.beginPath();
-    ctx.moveTo(0, midY + 4);
-    ctx.lineTo(xEnd, midY - 4);
+    if (rtl) {
+      // In RTL, slash sweeps from right to left
+      ctx.moveTo(128, midY + 4);
+      ctx.lineTo(128 - xDist, midY - 4);
+    } else {
+      // In LTR, slash sweeps from left to right
+      ctx.moveTo(0, midY + 4);
+      ctx.lineTo(xDist, midY - 4);
+    }
     ctx.stroke();
   }
 }
@@ -213,16 +230,26 @@ function renderCyberGlitch(
   fontFamily: string,
   audioFrame?: AudioFrameData
 ) {
+  const rtl = isRTL(text);
+  ctx.direction = rtl ? 'rtl' : 'ltr';
   ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
   ctx.textAlign = 'center';
 
   const isGlitchBurst = (tau < 0.2) || (audioFrame && audioFrame.flux > 0.5) || audioFrame?.isBeat;
   const glitchChars = '01X$#%_~<>';
+
+  // Arabic cursive ligatures rule: do NOT replace characters with ASCII in Arabic (which breaks cursive ligatures).
+  // Non-Arabic: use grapheme cluster segmentation so combining vowel marks in Devanagari, Gurmukhi, Tamil, and Thai
+  // are never severed from base consonants.
   const displayLines = layout.lines.map(line => {
+    if (rtl) {
+      return line; // Preserve cursive ligatures
+    }
     if (isGlitchBurst) {
-      return line.split('').map(ch => {
-        if (ch === ' ' || ch === '-') return ch;
-        return Math.random() > 0.35 ? glitchChars[Math.floor(Math.random() * glitchChars.length)] : ch;
+      const clusters = getGraphemes(line);
+      return clusters.map(cluster => {
+        if (cluster === ' ' || cluster === '-') return cluster;
+        return Math.random() > 0.35 ? glitchChars[Math.floor(Math.random() * glitchChars.length)] : cluster;
       }).join('');
     }
     return line;
@@ -246,15 +273,20 @@ function renderCyberGlitch(
     ctx.fillText(displayLines[i], 64 + jitterX, layout.yOffsets[i]);
   }
 
-  if (tau < 0.35 || frameIndex % 6 === 0 || audioFrame?.isBeat) {
-    const sliceY = (frameIndex * 13) % 48 + 8;
-    const sliceH = 4 + (frameIndex % 5) + (audioFrame?.isBeat ? 4 : 0);
-    const sliceShift = ((frameIndex * 7) % 11) - 5 + (audioFrame?.isBeat ? (frameIndex % 2 === 0 ? 8 : -8) : 0);
+  // Row tearing: for Arabic during burst or normal glitch frames, horizontal slice row tearing provides the glitch aesthetic
+  if (tau < 0.35 || frameIndex % 6 === 0 || audioFrame?.isBeat || (rtl && isGlitchBurst)) {
+    const numSlices = (rtl && isGlitchBurst) ? 3 : 1;
+    for (let s = 0; s < numSlices; s++) {
+      const sliceY = ((frameIndex * 13 + s * 17) % 48) + 8;
+      const sliceH = 4 + ((frameIndex + s) % 5) + (audioFrame?.isBeat ? 4 : 0);
+      const baseShift = ((frameIndex * 7 + s * 11) % 11) - 5 + (audioFrame?.isBeat ? (frameIndex % 2 === 0 ? 8 : -8) : 0);
+      const sliceShift = rtl ? -baseShift : baseShift;
 
-    const slice = ctx.getImageData(0, sliceY, 128, sliceH);
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, sliceY, 128, sliceH);
-    ctx.putImageData(slice, sliceShift, sliceY);
+      const slice = ctx.getImageData(0, sliceY, 128, sliceH);
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, sliceY, 128, sliceH);
+      ctx.putImageData(slice, sliceShift, sliceY);
+    }
   }
 
   ctx.strokeStyle = '#FFFFFF';
@@ -500,6 +532,7 @@ function renderSnakeSlither(
   const { canvas: tempCanvas, ctx: tCtx } = getScratchCanvas();
 
   tCtx.clearRect(0, 0, 128, 64);
+  tCtx.direction = isRTL(text) ? 'rtl' : 'ltr';
   tCtx.font = `bold ${layout.fontSize}px ${fontFamily}`;
   tCtx.textAlign = 'center';
   tCtx.strokeStyle = '#000000';

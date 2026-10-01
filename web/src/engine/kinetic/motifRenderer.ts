@@ -487,6 +487,7 @@ export interface MotifRenderContext {
   frameIndex: number;
   textCenterY?: number;
   audioFrame?: AudioFrameData;
+  isRTL?: boolean;
 }
 
 /**
@@ -496,7 +497,7 @@ export function renderMotifBackground(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   rc: MotifRenderContext
 ): void {
-  const { motif, motifMode, tau, frameIndex, audioFrame } = rc;
+  const { motif, motifMode, tau, frameIndex, audioFrame, isRTL } = rc;
 
   // If motifs are disabled globally, exit immediately
   if (motifMode === 'off' || motif === 'none') {
@@ -526,7 +527,7 @@ export function renderMotifBackground(
       break;
 
     case 'anime_rush':
-      renderAnimeRushLines(ctx, tau, frameIndex, 'left-to-right', isBeat ? 1.8 : 1.0);
+      renderAnimeRushLines(ctx, tau, frameIndex, isRTL ? 'right-to-left' : 'left-to-right', isBeat ? 1.8 : 1.0);
       break;
 
     case 'crown_royal':
