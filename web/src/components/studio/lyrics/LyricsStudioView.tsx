@@ -234,6 +234,11 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const waveformCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const localAudioUrlRef = useRef<string | null>(null);
 
+  // Timeline Scrollability & Zoom States
+  const [scrubScope, setScrubScope] = useState<'selection' | 'full'>('selection');
+  const [timelineZoom, setTimelineZoom] = useState<number>(1);
+  const timelineScrollRef = useRef<HTMLDivElement | null>(null);
+
   // Clean up object URLs on unmount to prevent memory leaks
   useEffect(() => {
     return () => {
@@ -407,6 +412,17 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const totalFrames = Math.round(rangeDurationSec * 30);
   const estProgmemKb = Math.round((totalFrames * 1024) / 1024);
 
+  const songTotalDurationMs = useMemo(() => {
+    if (audioAnalysis?.durationMs) return audioAnalysis.durationMs;
+    if (parsedLyrics.lines.length > 0) {
+      return parsedLyrics.lines[parsedLyrics.lines.length - 1].endMs || 5000;
+    }
+    return 5000;
+  }, [audioAnalysis, parsedLyrics.lines]);
+
+  const activeScrubMinMs = scrubScope === 'full' ? 0 : rangeStartMs;
+  const activeScrubMaxMs = scrubScope === 'full' ? songTotalDurationMs : rangeEndMs;
+
   // Live timeline frame counter and playback duration clock
   const currentFrameIndex = useMemo(() => {
     if (totalFrames <= 0) return 0;
@@ -470,12 +486,24 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   };
 
   useEffect(() => {
-    if (!isPlaying || !isAutoScrollEnabled) return;
-    const el = document.getElementById(`lyric-line-${activeLineIndex}`);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (!isAutoScrollEnabled) return;
+    if (isPlaying || scrubScope === 'full') {
+      const el = document.getElementById(`lyric-line-${activeLineIndex}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     }
-  }, [activeLineIndex, isPlaying, isAutoScrollEnabled]);
+  }, [activeLineIndex, isPlaying, scrubScope, isAutoScrollEnabled]);
+
+  // Sync selected line with playhead in full song scrub mode
+  useEffect(() => {
+    if (scrubScope !== 'full' || parsedLyrics.lines.length === 0) return;
+    const lineIdx = parsedLyrics.lines.findIndex(l => playheadMs >= l.startMs && playheadMs < l.endMs);
+    if (lineIdx !== -1 && (lineIdx !== selectedStartIndex || lineIdx !== selectedEndIndex)) {
+      setSelectedStartIndex(lineIdx);
+      setSelectedEndIndex(lineIdx);
+    }
+  }, [playheadMs, scrubScope, parsedLyrics.lines, selectedStartIndex, selectedEndIndex]);
 
   // Quick range helpers
   const handleSelectAll = () => {
@@ -550,13 +578,22 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
   // Clamp playhead if lyric range changes
   useEffect(() => {
-    if (playheadMs < rangeStartMs || playheadMs > rangeEndMs) {
-      setPlayheadMs(rangeStartMs);
-      if (audioRef.current) {
-        audioRef.current.currentTime = rangeStartMs / 1000;
+    if (scrubScope === 'selection') {
+      if (playheadMs < rangeStartMs || playheadMs > rangeEndMs) {
+        setPlayheadMs(rangeStartMs);
+        if (audioRef.current) {
+          audioRef.current.currentTime = rangeStartMs / 1000;
+        }
+      }
+    } else {
+      if (playheadMs < 0 || playheadMs > songTotalDurationMs) {
+        setPlayheadMs(0);
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
+        }
       }
     }
-  }, [rangeStartMs, rangeEndMs]);
+  }, [rangeStartMs, rangeEndMs, scrubScope, songTotalDurationMs]);
 
   // Canvas resize observer to keep waveform sharp on any layout or window size change
   useEffect(() => {
@@ -600,21 +637,42 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
       ctx.fillRect(0, 0, width, height);
     }
 
-    const rangeDuration = Math.max(1, rangeEndMs - rangeStartMs);
-    const playheadRatio = Math.max(0, Math.min(1, (playheadMs - rangeStartMs) / rangeDuration));
+    const activeMinMs = scrubScope === 'full' ? 0 : rangeStartMs;
+    const activeMaxMs = scrubScope === 'full' ? songTotalDurationMs : rangeEndMs;
+    const activeDuration = Math.max(1, activeMaxMs - activeMinMs);
+    const playheadRatio = Math.max(0, Math.min(1, (playheadMs - activeMinMs) / activeDuration));
     const playheadX = playheadRatio * width;
+
+    // Selection range background highlight when in full song mode
+    if (scrubScope === 'full' && selectedLines.length > 0) {
+      const selStartX = Math.max(0, Math.min(width, ((rangeStartMs - activeMinMs) / activeDuration) * width));
+      const selEndX = Math.max(0, Math.min(width, ((rangeEndMs - activeMinMs) / activeDuration) * width));
+      const selW = Math.max(3, selEndX - selStartX);
+
+      ctx.fillStyle = themeMode === 'dark' ? 'rgba(217, 119, 87, 0.22)' : 'rgba(217, 119, 87, 0.15)';
+      if (ctx.roundRect) {
+        ctx.beginPath();
+        ctx.roundRect(selStartX, 1, selW, height - 2, 3);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(217, 119, 87, 0.6)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      } else {
+        ctx.fillRect(selStartX, 1, selW, height - 2);
+      }
+    }
 
     if (audioAnalysis && audioAnalysis.waveform && audioAnalysis.waveform.length > 0) {
       const waveform = audioAnalysis.waveform;
       const totalAudioDuration = Math.max(1, audioAnalysis.durationMs);
 
-      // Render vertical waveform bars across range
-      const numBars = Math.min(90, Math.max(28, Math.floor(width / 5)));
+      // Render vertical waveform bars across active range
+      const numBars = Math.min(Math.round(100 * timelineZoom), Math.max(28, Math.floor(width / 4)));
       const barWidth = Math.max(1.5, (width / numBars) - 1.5);
 
       for (let i = 0; i < numBars; i++) {
         const barRatio = i / numBars;
-        const barTimeMs = rangeStartMs + barRatio * rangeDuration;
+        const barTimeMs = activeMinMs + barRatio * activeDuration;
         const barX = barRatio * width;
 
         let amplitude = 0.04;
@@ -647,8 +705,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
       // Render Beat Onset Marker Ticks with high contrast
       if (audioAnalysis.beatsMs && audioAnalysis.beatsMs.length > 0) {
         for (const beatMs of audioAnalysis.beatsMs) {
-          if (beatMs >= rangeStartMs && beatMs <= rangeEndMs) {
-            const beatX = ((beatMs - rangeStartMs) / rangeDuration) * width;
+          if (beatMs >= activeMinMs && beatMs <= activeMaxMs) {
+            const beatX = ((beatMs - activeMinMs) / activeDuration) * width;
             const isNearPlayhead = Math.abs(beatX - playheadX) < 5;
             const isPlayed = beatX <= playheadX;
 
@@ -714,15 +772,77 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     ctx.stroke();
 
     ctx.restore();
-  }, [audioAnalysis, rangeStartMs, rangeEndMs, playheadMs, themeMode, waveformResizeTick]);
+  }, [audioAnalysis, rangeStartMs, rangeEndMs, playheadMs, themeMode, waveformResizeTick, scrubScope, songTotalDurationMs, timelineZoom, selectedLines]);
+
+  // Auto-scroll timeline scroll container to keep playhead in view when zoomed
+  useEffect(() => {
+    if (timelineZoom <= 1 || !timelineScrollRef.current) return;
+    const container = timelineScrollRef.current;
+    const activeMin = scrubScope === 'full' ? 0 : rangeStartMs;
+    const activeMax = scrubScope === 'full' ? songTotalDurationMs : rangeEndMs;
+    const ratio = Math.max(0, Math.min(1, (playheadMs - activeMin) / Math.max(1, activeMax - activeMin)));
+    const trackWidth = container.clientWidth * timelineZoom;
+    const playheadPixelX = ratio * trackWidth;
+    const targetScrollLeft = playheadPixelX - container.clientWidth / 2;
+    container.scrollTo({ left: Math.max(0, targetScrollLeft), behavior: 'auto' });
+  }, [playheadMs, timelineZoom, scrubScope, rangeStartMs, rangeEndMs, songTotalDurationMs]);
+
+  // Non-passive wheel listener on timeline container for smooth scrubbing & panning
+  useEffect(() => {
+    const el = timelineScrollRef.current;
+    if (!el) return;
+
+    const onWheelNative = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // 1. Ctrl + Wheel: Zoom In / Out
+      if (e.ctrlKey) {
+        setTimelineZoom(prev => {
+          const next = e.deltaY < 0 ? Math.min(6, prev + 1) : Math.max(1, prev - 1);
+          return Math.round(next);
+        });
+        return;
+      }
+
+      // 2. Shift + Wheel or horizontal trackpad deltaX when zoomed: Pan timeline horizontally
+      if (timelineZoom > 1 && (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY))) {
+        const panDelta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+        el.scrollLeft += panDelta;
+        return;
+      }
+
+      // 3. Normal Vertical Wheel / Trackpad Scroll: Scrub Time!
+      const delta = e.deltaY !== 0 ? e.deltaY : e.deltaX;
+      if (delta === 0) return;
+      const direction = delta > 0 ? 1 : -1;
+      const activeMin = scrubScope === 'full' ? 0 : (selectedLines[0]?.startMs ?? 0);
+      const activeMax = scrubScope === 'full' ? songTotalDurationMs : (selectedLines[selectedLines.length - 1]?.endMs ?? 5000);
+      const spanMs = Math.max(100, activeMax - activeMin);
+      const stepMs = e.shiftKey ? 33 : Math.max(33, Math.round(spanMs * 0.015));
+
+      setPlayheadMs(curr => {
+        const targetMs = Math.max(activeMin, Math.min(activeMax, curr + direction * stepMs));
+        if (audioRef.current) {
+          audioRef.current.currentTime = targetMs / 1000;
+        }
+        return targetMs;
+      });
+    };
+
+    el.addEventListener('wheel', onWheelNative, { passive: false });
+    return () => el.removeEventListener('wheel', onWheelNative);
+  }, [timelineZoom, scrubScope, songTotalDurationMs, selectedLines]);
 
   // Toggle audio playback
   const togglePlay = () => {
     if (!isPlaying) {
       let startFromMs = playheadMs;
-      if (startFromMs >= rangeEndMs - 50) {
-        startFromMs = rangeStartMs;
-        setPlayheadMs(rangeStartMs);
+      const minMs = scrubScope === 'full' ? 0 : rangeStartMs;
+      const maxMs = scrubScope === 'full' ? songTotalDurationMs : rangeEndMs;
+      if (startFromMs >= maxMs - 50) {
+        startFromMs = minMs;
+        setPlayheadMs(minMs);
       }
       if (audioRef.current) {
         audioRef.current.currentTime = startFromMs / 1000;
@@ -751,12 +871,14 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         if (audioRef.current && !audioRef.current.paused) {
           next = audioRef.current.currentTime * 1000;
         }
-        if (next >= rangeEndMs) {
+        const minMs = scrubScope === 'full' ? 0 : rangeStartMs;
+        const maxMs = scrubScope === 'full' ? songTotalDurationMs : rangeEndMs;
+        if (next >= maxMs) {
           if (audioRef.current) {
-            audioRef.current.currentTime = rangeStartMs / 1000;
+            audioRef.current.currentTime = minMs / 1000;
             audioRef.current.play().catch(() => {});
           }
-          return rangeStartMs;
+          return minMs;
         }
         return next;
       });
@@ -765,7 +887,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
     rafId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(rafId);
-  }, [isPlaying, rangeStartMs, rangeEndMs]);
+  }, [isPlaying, rangeStartMs, rangeEndMs, scrubScope, songTotalDurationMs]);
 
   // Generate full kinetic sequence and hand-off to NLE Timeline
   const handleGenerateAndInject = async () => {
@@ -1479,7 +1601,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             <motion.div
               layout
               transition={{ type: "spring", bounce: 0.16, duration: 0.4 }}
-              className={`w-full ${localAudioUrl ? 'max-w-4xl' : 'max-w-2xl'} px-4 py-2.5 rounded-2xl border flex items-center justify-between gap-4 shadow-xl backdrop-blur-md transition-colors duration-200 ${
+              className={`w-full max-w-4xl px-4 py-2.5 rounded-2xl border flex items-center justify-between gap-3 shadow-xl backdrop-blur-md transition-colors duration-200 ${
                 themeMode === 'dark'
                   ? 'bg-[#18181A]/95 border-[#2C2B29] text-white shadow-black/40'
                   : 'bg-white/95 border-[#E8E5DE] text-[#141413] shadow-stone-200/50'
@@ -1529,16 +1651,51 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                 }`}>
                   <NumberFlow value={(playheadMs / 1000).toFixed(2) + 's'} />
                   <span className="opacity-40">/</span>
-                  <NumberFlow value={(rangeEndMs / 1000).toFixed(2) + 's'} />
+                  <NumberFlow value={(activeScrubMaxMs / 1000).toFixed(2) + 's'} />
                 </div>
 
-                {/* Live Beat Pulse Badge (Skiper #02 Dynamic Island) */}
+                {/* Scope Toggle: Selection vs Full Song */}
+                <div className={`flex items-center p-0.5 rounded-lg border text-[10px] font-sans shrink-0 ${
+                  themeMode === 'dark' ? 'bg-[#232220] border-white/10' : 'bg-[#F2EFE9] border-[#E0DCD3]'
+                }`}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setScrubScope('selection');
+                      if (playheadMs < rangeStartMs || playheadMs > rangeEndMs) {
+                        setPlayheadMs(rangeStartMs);
+                      }
+                    }}
+                    className={`px-2 py-0.5 rounded-md font-medium transition-all cursor-pointer ${
+                      scrubScope === 'selection'
+                        ? 'bg-[#D97757] text-white shadow-xs'
+                        : themeMode === 'dark' ? 'text-white/60 hover:text-white' : 'text-[#5E5D59] hover:text-[#141413]'
+                    }`}
+                    title="Scrub only selected kinetic phrase"
+                  >
+                    Selection
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setScrubScope('full')}
+                    className={`px-2 py-0.5 rounded-md font-medium transition-all cursor-pointer ${
+                      scrubScope === 'full'
+                        ? 'bg-[#D97757] text-white shadow-xs'
+                        : themeMode === 'dark' ? 'text-white/60 hover:text-white' : 'text-[#5E5D59] hover:text-[#141413]'
+                    }`}
+                    title="Continuous scrub across full song"
+                  >
+                    Full Song
+                  </button>
+                </div>
+
+                {/* Live Beat Pulse Badge */}
                 {audioAnalysis && (
                   <motion.div
                     layout
                     animate={isLiveBeat ? { scale: [1, 1.15, 1] } : { scale: 1 }}
                     transition={{ duration: 0.12 }}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold transition-all select-none shrink-0 ${
+                    className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold transition-all select-none shrink-0 ${
                       isLiveBeat
                         ? 'bg-[#D97757] text-white shadow-[0_0_12px_rgba(217,119,87,0.7)]'
                         : themeMode === 'dark'
@@ -1547,35 +1704,80 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     }`}
                     title={`Detected Tempo: ${audioAnalysis.bpm} BPM (Flashing on drum hits)`}
                   >
-                    <Zap className={`w-3.5 h-3.5 transition-transform ${isLiveBeat ? 'scale-125 fill-current' : ''}`} />
-                    <span>⚡ {audioAnalysis.bpm} BPM</span>
+                    <Zap className={`w-3 h-3 transition-transform ${isLiveBeat ? 'scale-125 fill-current' : ''}`} />
+                    <span>{audioAnalysis.bpm} BPM</span>
                   </motion.div>
                 )}
               </div>
 
-              {/* Interactive Downsampled Mini-Waveform Scrubber */}
-              <motion.div layout transition={{ type: "spring", bounce: 0.16 }} className="flex-1 flex items-center max-w-xl mx-2 relative h-9">
-                <canvas
-                  ref={waveformCanvasRef}
-                  className="w-full h-8 rounded-lg pointer-events-none"
-                />
-                <input
-                  type="range"
-                  min={rangeStartMs}
-                  max={rangeEndMs}
-                  step={33}
-                  value={playheadMs}
-                  onChange={(e) => {
-                    const val = parseFloat(e.target.value);
-                    setPlayheadMs(val);
-                    if (audioRef.current) {
-                      audioRef.current.currentTime = val / 1000;
-                    }
-                  }}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                  title="Scrub timeline"
-                />
-              </motion.div>
+              {/* Interactive Scrollable & Zoomable Mini-Waveform Scrubber */}
+              <div className="flex-1 flex items-center gap-2 min-w-0 mx-2">
+                {/* Horizontal Scrollable Timeline Track */}
+                <div
+                  ref={timelineScrollRef}
+                  className="flex-1 overflow-x-auto overflow-y-hidden rounded-lg relative h-9 scrollbar-none select-none cursor-pointer border border-transparent hover:border-[#D97757]/30 transition-colors"
+                  style={{ scrollbarWidth: 'none' }}
+                  title="Hover and scroll mouse wheel to scrub time. Ctrl+Wheel to zoom. Shift+Wheel to pan."
+                >
+                  <div
+                    className="relative h-full flex items-center"
+                    style={{ width: `${timelineZoom * 100}%`, minWidth: '100%' }}
+                  >
+                    <canvas
+                      ref={waveformCanvasRef}
+                      className="w-full h-8 rounded-lg pointer-events-none"
+                    />
+                    <input
+                      type="range"
+                      min={activeScrubMinMs}
+                      max={activeScrubMaxMs}
+                      step={33}
+                      value={playheadMs}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        setPlayheadMs(val);
+                        if (audioRef.current) {
+                          audioRef.current.currentTime = val / 1000;
+                        }
+                        if (scrubScope === 'full' && parsedLyrics.lines.length > 0) {
+                          const lineIdx = parsedLyrics.lines.findIndex(l => val >= l.startMs && val < l.endMs);
+                          if (lineIdx !== -1 && (lineIdx !== selectedStartIndex || lineIdx !== selectedEndIndex)) {
+                            setSelectedStartIndex(lineIdx);
+                            setSelectedEndIndex(lineIdx);
+                          }
+                        }
+                      }}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      title="Click/drag or scroll mouse wheel to scrub timeline. Ctrl+Wheel to zoom."
+                    />
+                  </div>
+                </div>
+
+                {/* Timeline Zoom Controls */}
+                <div className={`flex items-center gap-0.5 text-[10px] font-mono shrink-0 p-0.5 rounded-lg border ${
+                  themeMode === 'dark' ? 'bg-[#232220] border-white/10' : 'bg-[#F2EFE9] border-[#E0DCD3]'
+                }`}>
+                  <button
+                    type="button"
+                    onClick={() => setTimelineZoom(z => Math.max(1, z - 1))}
+                    disabled={timelineZoom <= 1}
+                    className="w-5 h-5 rounded flex items-center justify-center font-bold text-xs hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed transition-all"
+                    title="Zoom Out Timeline"
+                  >
+                    −
+                  </button>
+                  <span className="min-w-6 text-center font-semibold text-[#D97757] text-[10px]">{timelineZoom}x</span>
+                  <button
+                    type="button"
+                    onClick={() => setTimelineZoom(z => Math.min(6, z + 1))}
+                    disabled={timelineZoom >= 6}
+                    className="w-5 h-5 rounded flex items-center justify-center font-bold text-xs hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed transition-all"
+                    title="Zoom In Timeline"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
 
               {/* Controls and Selection Info */}
               <div className={`flex items-center gap-3 text-xs font-sans shrink-0 ${
@@ -1612,10 +1814,12 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                   </div>
                 )}
                 <span className="text-[#D97757] font-medium font-mono text-[11px]">
-                  {selectedLines.length} lines
+                  {scrubScope === 'full' ? `${parsedLyrics.lines.length} lines` : `${selectedLines.length} lines`}
                 </span>
                 <span>•</span>
-                <span className="font-mono text-[11px]">{rangeDurationSec.toFixed(1)}s</span>
+                <span className="font-mono text-[11px]">
+                  {scrubScope === 'full' ? `${(songTotalDurationMs / 1000).toFixed(1)}s` : `${rangeDurationSec.toFixed(1)}s`}
+                </span>
               </div>
             </motion.div>
           </div>
