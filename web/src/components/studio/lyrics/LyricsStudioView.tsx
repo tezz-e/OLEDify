@@ -1479,7 +1479,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             <motion.div
               layout
               transition={{ type: "spring", bounce: 0.16, duration: 0.4 }}
-              className={`w-full max-w-4xl px-4 py-2.5 rounded-2xl border flex items-center justify-between gap-4 shadow-xl backdrop-blur-md transition-colors duration-200 ${
+              className={`w-full ${localAudioUrl ? 'max-w-4xl' : 'max-w-2xl'} px-4 py-2.5 rounded-2xl border flex items-center justify-between gap-4 shadow-xl backdrop-blur-md transition-colors duration-200 ${
                 themeMode === 'dark'
                   ? 'bg-[#18181A]/95 border-[#2C2B29] text-white shadow-black/40'
                   : 'bg-white/95 border-[#E8E5DE] text-[#141413] shadow-stone-200/50'
@@ -1693,50 +1693,42 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             <div className={`flex p-1 rounded-xl border gap-1 relative ${
               themeMode === 'dark' ? 'bg-[#141418] border-white/10' : 'bg-[#FAF9F5] border-[#E8E5DE]'
             }`}>
-              <button
-                type="button"
-                onClick={() => {
-                  setDirectorModeTab('auto');
-                  setArchetype('auto_semantic');
-                }}
-                className={`relative flex-1 py-1.5 text-xs font-sans rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1.5 z-10 ${
-                  directorModeTab === 'auto'
-                    ? 'text-white font-semibold'
-                    : themeMode === 'dark' ? 'text-white/50 hover:text-white' : 'text-[#5E5D59] hover:text-[#141413]'
-                }`}
-              >
-                {directorModeTab === 'auto' && (
-                  <motion.div
-                    layoutId="director-tab-pill"
-                    className="absolute inset-0 bg-[#D97757] rounded-lg shadow-xs -z-10"
-                    transition={{ type: 'spring', bounce: 0.16, duration: 0.35 }}
-                  />
-                )}
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Smart Director</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setDirectorModeTab('manual');
-                  if (archetype === 'auto_semantic') setArchetype('blade_slash');
-                }}
-                className={`relative flex-1 py-1.5 text-xs font-sans rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1.5 z-10 ${
-                  directorModeTab === 'manual'
-                    ? 'text-white font-semibold'
-                    : themeMode === 'dark' ? 'text-white/50 hover:text-white' : 'text-[#5E5D59] hover:text-[#141413]'
-                }`}
-              >
-                {directorModeTab === 'manual' && (
-                  <motion.div
-                    layoutId="director-tab-pill"
-                    className="absolute inset-0 bg-[#D97757] rounded-lg shadow-xs -z-10"
-                    transition={{ type: 'spring', bounce: 0.16, duration: 0.35 }}
-                  />
-                )}
-                <Sliders className="w-3.5 h-3.5" />
-                <span>Manual Lock</span>
-              </button>
+              {[
+                { id: 'auto' as const, label: 'Smart Director', Icon: Sparkles },
+                { id: 'manual' as const, label: 'Manual Lock', Icon: Sliders }
+              ].map(tab => {
+                const isActive = directorModeTab === tab.id;
+                const TabIcon = tab.Icon;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => {
+                      setDirectorModeTab(tab.id);
+                      if (tab.id === 'auto') {
+                        setArchetype('auto_semantic');
+                      } else if (archetype === 'auto_semantic') {
+                        setArchetype('blade_slash');
+                      }
+                    }}
+                    className={`relative flex-1 py-1.5 text-xs font-sans rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1.5 z-10 ${
+                      isActive
+                        ? 'text-white font-semibold'
+                        : themeMode === 'dark' ? 'text-white/50 hover:text-white' : 'text-[#5E5D59] hover:text-[#141413]'
+                    }`}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="director-tab-pill"
+                        className="absolute inset-0 bg-[#D97757] rounded-lg shadow-xs -z-10"
+                        transition={{ type: 'spring', bounce: 0.16, duration: 0.35 }}
+                      />
+                    )}
+                    <TabIcon className="w-3.5 h-3.5" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 

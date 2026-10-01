@@ -720,11 +720,11 @@ function renderRollingOdometer(
 
     const slotTop = Math.max(1, Math.floor(centerY - slotH / 2));
     const slotBottom = Math.min(62, Math.floor(centerY + slotH / 2));
-    const actualSlotH = slotBottom - slotTop;
+    const actualSlotH = Math.max(8, slotBottom - slotTop);
 
     // Draw mechanical slot frame rails above and below the line
     ctx.strokeStyle = '#FFFFFF';
-    ctx.lineWidth = 1;
+    ctx.lineWidth = audioFrame?.isBeat ? 2 : 1;
 
     // Top horizontal bezel rail with end ticks
     ctx.beginPath();
@@ -758,12 +758,20 @@ function renderRollingOdometer(
     let curX = startX;
 
     for (let i = 0; i < n; i++) {
-      const charW = charWidths[i];
+      // In RTL, visual columns from left to right map to characters from end to beginning
+      const charIndex = rtl ? (n - 1 - i) : i;
+      const targetChar = graphemes[charIndex];
+      const charW = charWidths[charIndex];
       const charCenterX = curX + charW / 2;
-      const targetChar = graphemes[i];
 
-      // Stagger progression: LTR left-to-right, RTL right-to-left
-      const staggerIndex = rtl ? (n - 1 - i) : i;
+      // Skip tumbler rendering for whitespace characters (leave clean space)
+      if (targetChar.trim() === '') {
+        curX += charW;
+        continue;
+      }
+
+      // Stagger progression: the first character of the word (charIndex 0) starts rolling first
+      const staggerIndex = charIndex;
       const staggerWindow = n > 1 ? Math.min(0.38, 0.42 / n) : 0;
       const charStartTau = staggerIndex * staggerWindow;
       const rollDuration = 0.58;
@@ -810,9 +818,9 @@ function renderRollingOdometer(
         ctx.fillText(charAbove, charCenterX, centerY + reelOffset - actualSlotH);
         ctx.fillText(charBelow, charCenterX, centerY + reelOffset + actualSlotH);
 
-        // Motion tick bars across spinning column
+        // Motion tick bars across spinning column (using binary #FFFFFF on alternating frames for 1-bit OLED)
         if ((frameIndex + i) % 2 === 0) {
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+          ctx.fillStyle = '#FFFFFF';
           ctx.fillRect(curX, slotTop + 2, charW, 1);
           ctx.fillRect(curX, slotBottom - 3, charW, 1);
         }
@@ -820,8 +828,9 @@ function renderRollingOdometer(
 
       ctx.restore();
 
-      // Divider tick mark between tumbler wheels
-      if (i < n - 1) {
+      // Divider tick mark between tumbler wheels (only if adjacent to non-space)
+      const nextCharIndex = rtl ? (n - 2 - i) : (i + 1);
+      if (i < n - 1 && graphemes[nextCharIndex]?.trim() !== '') {
         ctx.strokeStyle = '#FFFFFF';
         ctx.lineWidth = 1;
         ctx.beginPath();

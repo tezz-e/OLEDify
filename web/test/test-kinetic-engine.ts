@@ -642,6 +642,35 @@ renderArchetypeFrame(ctxRTL, 'rolling_odometer', 'عداد', 0.5, rtlLayout, 10)
 assert.equal(ctxRTL.direction, 'rtl', 'RTL text properly sets ctx.direction to rtl');
 assert.ok(ctxRTL.drawnTexts.length > 0, 'RTL text renders rolling tumbler');
 
+// Deep verification of RTL character coordinate ordering at locked state (tau = 1.0)
+const ctxRTLLocked = createFullMockCanvasCtx();
+renderArchetypeFrame(ctxRTLLocked, 'rolling_odometer', 'عداد', 1.0, rtlLayout, 30);
+const ainChar = ctxRTLLocked.drawnTexts.find(t => t.text === 'ع');
+const dalChars = ctxRTLLocked.drawnTexts.filter(t => t.text === 'د');
+assert.ok(ainChar, "RTL text must render initial Arabic letter 'ع'");
+assert.ok(dalChars.length > 0, "RTL text must render Arabic letter 'د'");
+// In Arabic, first letter 'ع' must be positioned on the right (higher X) compared to final letter 'د'
+const leftmostDal = dalChars.reduce((min, d) => d.x < min.x ? d : min, dalChars[0]);
+assert.ok(
+  ainChar.x > leftmostDal.x,
+  `RTL layout error: Initial letter 'ع' (X=${ainChar.x}) must be to the right of final letter 'د' (X=${leftmostDal.x})`
+);
+
+// Verification of whitespace handling in multi-word text
+const multiWordLayout = {
+  lines: ['7 7'],
+  fontSize: 24,
+  lineHeight: 28,
+  letterSpacing: 0,
+  totalHeight: 28,
+  yOffsets: [32]
+};
+const ctxMulti = createFullMockCanvasCtx();
+renderArchetypeFrame(ctxMulti, 'rolling_odometer', '7 7', 1.0, multiWordLayout, 30);
+const multiTexts = ctxMulti.drawnTexts.map(t => t.text);
+assert.ok(!multiTexts.includes(' '), 'Whitespace between words should not render empty text frames');
+assert.equal(multiTexts.filter(t => t === '7').length, 2, 'Exactly two 7s rendered for "7 7"');
+
 console.log('✅ Headless 1-bit OLED canvas rendering, mechanical stagger, locked state & RTL for rolling_odometer verified.');
 
 console.log('\n🎉 ALL KINETIC TYPOGRAPHY, MOTIF & ODOMETER TESTS PASSED PERFECTLY!\n');
