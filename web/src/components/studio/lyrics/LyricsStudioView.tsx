@@ -37,6 +37,7 @@ const SAMPLE_FALLBACK_LRC = `[ti:OLED Kinetic Intro]
 const MANUAL_ARCHETYPES: MotionArchetype[] = [
   'blade_slash',
   'manga_impact',
+  'rolling_odometer',
   '3d_block_stack',
   'snake_slither',
   'cyber_glitch',

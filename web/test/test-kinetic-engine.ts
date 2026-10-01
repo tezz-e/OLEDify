@@ -10,13 +10,16 @@ import {
   StylePackId, 
   MotionArchetype,
   VisualMotif,
-  MOTIF_METADATA 
+  MOTIF_METADATA,
+  ARCHETYPE_METADATA
 } from '../src/engine/kinetic/types';
 import { 
   VALID_VISUAL_MOTIFS,
   normalizeMotif,
+  normalizeArchetype,
   extractClassificationsFromResponse 
 } from '../src/engine/kinetic/ollamaClassifier';
+import { renderArchetypeFrame } from '../src/engine/kinetic/kineticArchetypes';
 import { computeSafeTextLayout } from '../src/engine/kinetic/kineticLayout';
 import { LyricWord } from '../src/engine/lyrics/types';
 import { 
@@ -526,6 +529,121 @@ assert.ok(teFont.includes('Anek Telugu'), `Expected Telugu font to include 'Anek
 
 console.log('✅ Curated multilingual display fonts properly cascade across global scripts (Japanese, Korean, Devanagari, Gurmukhi, Cyrillic, Arabic, Hebrew, Tamil, Telugu).');
 
-console.log('\n🎉 ALL KINETIC TYPOGRAPHY & MOTIF TESTS PASSED PERFECTLY!\n');
+// =========================================================================
+// TEST SUITE 7: Rolling Odometer Archetype & Mechanical Tumbler Physics
+// =========================================================================
+console.log('\n--- Suite 7: Rolling Odometer Archetype & Mechanical Tumbler Physics ---');
+
+// 7a: Metadata verification
+const odoMeta = ARCHETYPE_METADATA.rolling_odometer;
+assert.ok(odoMeta, 'rolling_odometer metadata exists');
+assert.equal(odoMeta.id, 'rolling_odometer');
+assert.equal(odoMeta.icon, '🎰');
+assert.equal(odoMeta.name, 'ROLLING ODOMETER');
+assert.equal(odoMeta.tag, 'REEL');
+assert.ok(odoMeta.description.includes('tumbler') || odoMeta.description.includes('odometer'), 'Description mentions tumbler/odometer');
+console.log('✅ Archetype metadata and UI tags verified for rolling_odometer.');
+
+// 7b: Semantic Classification & Font Role Mapping
+const odoKeywords = ['odometer', 'casino', 'jackpot', 'score', 'lucky', 'counter', 'reels', 'wheel'];
+for (const kw of odoKeywords) {
+  const arch = classifyWordArchetype(kw, 350, 0, 0);
+  assert.equal(arch, 'rolling_odometer', `Expected "${kw}" to classify as rolling_odometer, got: ${arch}`);
+  const role = getWordFontRole(arch, kw);
+  assert.equal(role, 'novelty', `Expected rolling_odometer for "${kw}" to map to 'novelty' font role, got: ${role}`);
+}
+console.log('✅ Semantic keyword classification and novelty font role verified for rolling_odometer.');
+
+// 7c: LLM Response Normalization
+const fuzzyInputs = ['rolling_odometer', 'odometer', 'mechanical_odometer', 'slot_machine', 'tumbler_reel', 'rolling_digits', 'counter_reel'];
+for (const input of fuzzyInputs) {
+  const normalized = normalizeArchetype(input);
+  assert.equal(normalized, 'rolling_odometer', `Expected normalizeArchetype("${input}") to be 'rolling_odometer', got: ${normalized}`);
+}
+console.log('✅ Resilient LLM normalization for rolling_odometer fuzzy tags verified.');
+
+// 7d: Headless Canvas Frame Rendering
+function createFullMockCanvasCtx() {
+  let font = 'bold 24px monospace';
+  const drawnTexts: Array<{ text: string; x: number; y: number }> = [];
+  return {
+    get font() { return font; },
+    set font(f: string) { font = f; },
+    direction: 'ltr',
+    textAlign: 'center',
+    textBaseline: 'middle',
+    strokeStyle: '#FFFFFF',
+    fillStyle: '#FFFFFF',
+    lineWidth: 1,
+    globalCompositeOperation: 'source-over',
+    measureText: (t: string) => ({ width: t.length * 14 }),
+    save: () => {},
+    restore: () => {},
+    beginPath: () => {},
+    closePath: () => {},
+    rect: () => {},
+    clip: () => {},
+    moveTo: () => {},
+    lineTo: () => {},
+    stroke: () => {},
+    fill: () => {},
+    fillRect: () => {},
+    strokeRect: () => {},
+    clearRect: () => {},
+    fillText: (text: string, x: number, y: number) => {
+      drawnTexts.push({ text, x, y });
+    },
+    drawnTexts
+  } as unknown as CanvasRenderingContext2D & { drawnTexts: Array<{ text: string; x: number; y: number }> };
+}
+
+const sampleLayout = {
+  lines: ['777'],
+  fontSize: 28,
+  lineHeight: 32,
+  letterSpacing: 0,
+  totalHeight: 32,
+  yOffsets: [32]
+};
+
+// Test tau = 0.0 (initial spin)
+const ctx0 = createFullMockCanvasCtx();
+renderArchetypeFrame(ctx0, 'rolling_odometer', '777', 0.0, sampleLayout, 0);
+assert.ok(ctx0.drawnTexts.length > 0, 'tau=0.0 renders rolling tumbler characters');
+
+// Test tau = 0.5 (mid-spin with audio beat)
+const ctx50 = createFullMockCanvasCtx();
+renderArchetypeFrame(ctx50, 'rolling_odometer', '777', 0.5, sampleLayout, 15, 'monospace', {
+  rms: 0.8,
+  spectralCentroid: 2000,
+  zeroCrossingRate: 0.1,
+  isBeat: true,
+  onsetStrength: 0.9
+});
+assert.ok(ctx50.drawnTexts.length > 0, 'tau=0.5 with audio beat renders tumbler characters');
+
+// Test tau = 1.0 (settled lock)
+const ctx100 = createFullMockCanvasCtx();
+renderArchetypeFrame(ctx100, 'rolling_odometer', '777', 1.0, sampleLayout, 30);
+const lockedTexts = ctx100.drawnTexts.map(t => t.text);
+assert.ok(lockedTexts.includes('7'), `tau=1.0 locked target digit '7' should be rendered, got: ${lockedTexts.join(',')}`);
+
+// Test RTL and Multilingual text
+const rtlLayout = {
+  lines: ['عداد'],
+  fontSize: 24,
+  lineHeight: 28,
+  letterSpacing: 0,
+  totalHeight: 28,
+  yOffsets: [32]
+};
+const ctxRTL = createFullMockCanvasCtx();
+renderArchetypeFrame(ctxRTL, 'rolling_odometer', 'عداد', 0.5, rtlLayout, 10);
+assert.equal(ctxRTL.direction, 'rtl', 'RTL text properly sets ctx.direction to rtl');
+assert.ok(ctxRTL.drawnTexts.length > 0, 'RTL text renders rolling tumbler');
+
+console.log('✅ Headless 1-bit OLED canvas rendering, mechanical stagger, locked state & RTL for rolling_odometer verified.');
+
+console.log('\n🎉 ALL KINETIC TYPOGRAPHY, MOTIF & ODOMETER TESTS PASSED PERFECTLY!\n');
 
 

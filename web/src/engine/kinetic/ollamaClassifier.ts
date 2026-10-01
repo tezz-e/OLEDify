@@ -162,6 +162,7 @@ export const VALID_MOTION_ARCHETYPES: MotionArchetype[] = [
   'inverted_badge',
   'smooth_fluid',
   'wiggly_boil',
+  'rolling_odometer',
 ];
 
 export const VALID_VISUAL_MOTIFS: VisualMotif[] = [
@@ -226,6 +227,7 @@ export function normalizeArchetype(
   if (clean.includes('badge') || clean.includes('invert') || clean.includes('stamp') || clean.includes('rule') || clean.includes('stop')) return 'inverted_badge';
   if (clean.includes('fluid') || clean.includes('smooth') || clean.includes('float') || clean.includes('glide')) return 'smooth_fluid';
   if (clean.includes('boil') || clean.includes('wiggly') || clean.includes('shake') || clean.includes('jitter') || clean.includes('chaos')) return 'wiggly_boil';
+  if (clean.includes('odometer') || clean.includes('rolling') || clean.includes('roller') || clean.includes('slot') || clean.includes('reel') || clean.includes('tumbler') || clean.includes('counter')) return 'rolling_odometer';
 
   return null;
 }
@@ -384,7 +386,7 @@ CRITICAL RULES:
 3. For each selected word, provide its translated meaning/definition and your artistic reasoning for choosing that visual archetype.
 4. OPTIONALLY assign a background visual motif ("motif") that best captures the cultural slang, metaphor, or imagery of the punchline. If no motif fits, use "none".
 
-Choose from these 10 visual archetypes:
+Choose from these 11 visual archetypes:
 - "manga_impact": explosive hits, punches, loud shouts, beat drops
 - "cyber_glitch": high-tech speed, rapid flows, digital panic, lightning
 - "3d_block_stack": royalty, power, anthems, pride, heavy boss energy, solid blocks
@@ -395,6 +397,7 @@ Choose from these 10 visual archetypes:
 - "inverted_badge": declarations, "NO", stops, rules, verification stamps, warnings
 - "smooth_fluid": floating, love, breeze, calm sky/water, romantic drift, gentle
 - "wiggly_boil": wild dancing, boiling jitter, chaos, fun, quirky shaking
+- "rolling_odometer": slot machine tumbler, rolling digits, reels, mechanical spin, count, numbers, casino
 
 Choose from these 10 visual motifs (or "none"):
 - "none": clean typography only with zero background visual distractions

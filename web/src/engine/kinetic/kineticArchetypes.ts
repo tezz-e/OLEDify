@@ -71,6 +71,9 @@ export function renderArchetypeFrame(
     case 'inverted_badge':
       renderInvertedBadge(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
       break;
+    case 'rolling_odometer':
+      renderRollingOdometer(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
+      break;
     default:
       renderSmoothFluid(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
       break;
@@ -675,4 +678,163 @@ function roundRect(
   ctx.arcTo(x, y + h, x, y, r);
   ctx.arcTo(x, y, x + w, y, r);
   ctx.closePath();
+}
+
+/**
+ * 11. ROLLING ODOMETER: Mechanical slot-machine tumbler reels rolling vertically into locked alignment
+ */
+function renderRollingOdometer(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  text: string,
+  tau: number,
+  layout: TextLayoutResult,
+  frameIndex: number,
+  fontFamily: string,
+  audioFrame?: AudioFrameData
+) {
+  const rtl = isRTL(text);
+  ctx.save();
+  ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const beatJitter = audioFrame?.isBeat
+    ? ((frameIndex % 2 === 0 ? 1 : -1) * (audioFrame.onsetStrength > 0.6 ? 2 : 1))
+    : 0;
+
+  const TUMBLER_CHARS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'X', '7', '#', '$', '!', '?'];
+
+  for (let lineIdx = 0; lineIdx < layout.lines.length; lineIdx++) {
+    const lineText = layout.lines[lineIdx];
+    const graphemes = getGraphemes(lineText);
+    const n = graphemes.length;
+    if (n === 0) continue;
+
+    const centerY = layout.yOffsets[lineIdx] + beatJitter;
+    const slotH = Math.min(56, Math.max(14, Math.floor(layout.fontSize * 1.3)));
+
+    // Calculate per-character metrics
+    const charWidths = graphemes.map(g => Math.max(6, Math.ceil(ctx.measureText(g).width)));
+    const totalLineWidth = charWidths.reduce((sum, w) => sum + w, 0);
+    const startX = Math.floor(64 - totalLineWidth / 2);
+
+    const slotTop = Math.max(1, Math.floor(centerY - slotH / 2));
+    const slotBottom = Math.min(62, Math.floor(centerY + slotH / 2));
+    const actualSlotH = slotBottom - slotTop;
+
+    // Draw mechanical slot frame rails above and below the line
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 1;
+
+    // Top horizontal bezel rail with end ticks
+    ctx.beginPath();
+    ctx.moveTo(Math.max(2, startX - 4), slotTop);
+    ctx.lineTo(Math.min(125, startX + totalLineWidth + 4), slotTop);
+    ctx.stroke();
+
+    // Bottom horizontal bezel rail with end ticks
+    ctx.beginPath();
+    ctx.moveTo(Math.max(2, startX - 4), slotBottom);
+    ctx.lineTo(Math.min(125, startX + totalLineWidth + 4), slotBottom);
+    ctx.stroke();
+
+    // Left and right mechanical knockout brackets
+    const bracketX1 = Math.max(2, startX - 4);
+    const bracketX2 = Math.min(125, startX + totalLineWidth + 4);
+    ctx.beginPath();
+    ctx.moveTo(bracketX1 + 3, slotTop - 2);
+    ctx.lineTo(bracketX1, slotTop);
+    ctx.lineTo(bracketX1, slotBottom);
+    ctx.lineTo(bracketX1 + 3, slotBottom + 2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(bracketX2 - 3, slotTop - 2);
+    ctx.lineTo(bracketX2, slotTop);
+    ctx.lineTo(bracketX2, slotBottom);
+    ctx.lineTo(bracketX2 - 3, slotBottom + 2);
+    ctx.stroke();
+
+    let curX = startX;
+
+    for (let i = 0; i < n; i++) {
+      const charW = charWidths[i];
+      const charCenterX = curX + charW / 2;
+      const targetChar = graphemes[i];
+
+      // Stagger progression: LTR left-to-right, RTL right-to-left
+      const staggerIndex = rtl ? (n - 1 - i) : i;
+      const staggerWindow = n > 1 ? Math.min(0.38, 0.42 / n) : 0;
+      const charStartTau = staggerIndex * staggerWindow;
+      const rollDuration = 0.58;
+      const progress = Math.max(0, Math.min(1, (tau - charStartTau) / rollDuration));
+
+      // Clip character column aperture
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(curX, slotTop + 1, charW, actualSlotH - 2);
+      ctx.clip();
+
+      if (progress >= 1) {
+        // Locked position with crisp solid character
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText(targetChar, charCenterX, centerY);
+
+        // Subtle mechanical alignment notch on settled digit
+        if (tau < charStartTau + rollDuration + 0.08) {
+          ctx.fillRect(curX, centerY - 1, 1, 2);
+          ctx.fillRect(curX + charW - 1, centerY - 1, 1, 2);
+        }
+      } else {
+        // Tumbler spinning vertically with ease-out mechanical ratchet
+        const easeOutRatchet = (t: number) => {
+          const c = 1.6;
+          return 1 + c * Math.pow(t - 1, 3) + (c - 1) * Math.pow(t - 1, 2);
+        };
+
+        const spinRounds = 3 + (i % 3);
+        const totalDistance = spinRounds * actualSlotH;
+        const currentDist = (1 - easeOutRatchet(progress)) * totalDistance;
+        const reelOffset = currentDist % actualSlotH;
+
+        // Select pseudo-random tumbler characters cycling with scroll distance
+        const tumblerBaseIdx = Math.floor(currentDist / actualSlotH) + i * 4 + frameIndex;
+        const charBelow = TUMBLER_CHARS[Math.abs(tumblerBaseIdx) % TUMBLER_CHARS.length];
+        const charAbove = TUMBLER_CHARS[Math.abs(tumblerBaseIdx + 1) % TUMBLER_CHARS.length];
+        const displayTarget = progress > 0.75 ? targetChar : charBelow;
+
+        ctx.fillStyle = '#FFFFFF';
+
+        // Draw rolling tumbler reel stack (above, center, below)
+        ctx.fillText(displayTarget, charCenterX, centerY + reelOffset);
+        ctx.fillText(charAbove, charCenterX, centerY + reelOffset - actualSlotH);
+        ctx.fillText(charBelow, charCenterX, centerY + reelOffset + actualSlotH);
+
+        // Motion tick bars across spinning column
+        if ((frameIndex + i) % 2 === 0) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+          ctx.fillRect(curX, slotTop + 2, charW, 1);
+          ctx.fillRect(curX, slotBottom - 3, charW, 1);
+        }
+      }
+
+      ctx.restore();
+
+      // Divider tick mark between tumbler wheels
+      if (i < n - 1) {
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(curX + charW, slotTop);
+        ctx.lineTo(curX + charW, slotTop + 2);
+        ctx.moveTo(curX + charW, slotBottom - 2);
+        ctx.lineTo(curX + charW, slotBottom);
+        ctx.stroke();
+      }
+
+      curX += charW;
+    }
+  }
+
+  ctx.restore();
 }

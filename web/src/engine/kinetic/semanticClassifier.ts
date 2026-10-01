@@ -110,6 +110,12 @@ const WIGGLY_KEYWORDS = new Set([
   'weird', 'groove', 'twist', 'rock', 'roll', 'funky', 'chaos', 'vibe', 'trip'
 ]);
 
+const ODOMETER_KEYWORDS = new Set([
+  'count', 'roll', 'rolling', 'wheel', 'slot', 'spin', 'odometer', 'numbers', 'math',
+  'calc', 'meter', 'clock', 'time', 'score', 'jackpot', 'casino', 'lucky', 'tally',
+  'stats', 'speedometer', 'counter', 'digits', 'reels', 'tumbler', '777'
+]);
+
 /**
  * Classifies a lyric word into its optimal visual kinetic archetype based on
  * semantics, phonetics, and vocal duration.
@@ -142,6 +148,7 @@ export function classifyWordArchetype(
   if (TARGET_KEYWORDS.has(clean)) return 'target_focus';
   if (SNAKE_KEYWORDS.has(clean)) return 'snake_slither';
   if (GLITCH_KEYWORDS.has(clean)) return 'cyber_glitch';
+  if (ODOMETER_KEYWORDS.has(clean)) return 'rolling_odometer';
   if (ECHO_KEYWORDS.has(clean)) return 'echo_stack';
   if (BADGE_KEYWORDS.has(clean)) return 'inverted_badge';
   if (FLUID_KEYWORDS.has(clean)) return 'smooth_fluid';
@@ -166,6 +173,7 @@ export function classifyWordArchetype(
   // 5. Dynamic Variety Rotation for neutral words (never monotonous)
   const neutralPalette: MotionArchetype[] = [
     'smooth_fluid',
+    'rolling_odometer',
     'inverted_badge',
     '3d_block_stack',
     'wiggly_boil',
@@ -233,6 +241,7 @@ export function getWordFontRole(
     case 'target_focus':
     case 'wiggly_boil':
     case 'echo_stack':
+    case 'rolling_odometer':
       return 'novelty';
     case 'smooth_fluid':
     default:

@@ -11,7 +11,8 @@ export type MotionArchetype =
   | 'target_focus'
   | 'snake_slither'
   | 'wiggly_boil'
-  | 'inverted_badge';
+  | 'inverted_badge'
+  | 'rolling_odometer';
 
 export interface ArchetypeMeta {
   id: MotionArchetype;
@@ -98,6 +99,13 @@ export const ARCHETYPE_METADATA: Record<MotionArchetype, ArchetypeMeta> = {
     name: 'WIGGLY BOIL',
     tag: 'BOIL',
     description: 'Squigglevision 12 FPS boiling hand-drawn jitter'
+  },
+  rolling_odometer: {
+    id: 'rolling_odometer',
+    icon: '🎰',
+    name: 'ROLLING ODOMETER',
+    tag: 'REEL',
+    description: 'Mechanical slot-machine tumbler reels rolling vertically into locked alignment'
   }
 };
 
