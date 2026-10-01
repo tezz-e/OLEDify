@@ -3,7 +3,7 @@ import { Search, Music, FileText, Upload, Play, Pause, ArrowLeft, Sparkles, Chec
 import { searchLrclib, getLrclibExact, searchLyricsOvhFallback } from '../../../engine/lyrics/lrclibClient';
 import { parseLrc, parsePlainTextLyrics } from '../../../engine/lyrics/lrcParser';
 import { LrclibTrack, ParsedLyrics, LyricLine, LyricWord } from '../../../engine/lyrics/types';
-import { MotionArchetype, ARCHETYPE_METADATA, STYLE_PACKS, StylePackId } from '../../../engine/kinetic/types';
+import { MotionArchetype, ARCHETYPE_METADATA, STYLE_PACKS, StylePackId, VisualMotif, MotifMode, MOTIF_METADATA } from '../../../engine/kinetic/types';
 import { renderKineticSequence } from '../../../engine/kinetic/kineticEngine';
 import { getWordEffectiveArchetype, getWordEffectiveFont, getWordFontRole } from '../../../engine/kinetic/semanticClassifier';
 import { analyzeAudioFile, AudioAnalysisResult } from '../../../engine/kinetic/audioAnalysisEngine';
@@ -53,6 +53,7 @@ interface EditingWordTarget {
   wordIdx: number;
   currentArchetype: MotionArchetype;
   currentFont: string;
+  currentMotif: VisualMotif;
 }
 
 
@@ -91,6 +92,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const [stylePack, setStylePack] = useState<StylePackId>('trap_drill');
   const [wordOverrides, setWordOverrides] = useState<Record<string, MotionArchetype>>({});
   const [wordFontOverrides, setWordFontOverrides] = useState<Record<string, string>>({});
+  const [motifMode, setMotifMode] = useState<MotifMode>('dynamic');
+  const [wordMotifOverrides, setWordMotifOverrides] = useState<Record<string, VisualMotif>>({});
   const [editingWordTarget, setEditingWordTarget] = useState<EditingWordTarget | null>(null);
   const [fontFamily, setFontFamily] = useState<string>("'Wilhelm Gotisch', sans-serif");
   const [isRendering, setIsRendering] = useState(false);
@@ -146,8 +149,13 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         }
       );
 
-      if (Object.keys(results).length > 0) {
+      if (results.archetypes && Object.keys(results.archetypes).length > 0) {
+        setWordOverrides(prev => ({ ...prev, ...results.archetypes }));
+      } else if (Object.keys(results).length > 0) {
         setWordOverrides(prev => ({ ...prev, ...results }));
+      }
+      if (results.motifs && Object.keys(results.motifs).length > 0) {
+        setWordMotifOverrides(prev => ({ ...prev, ...results.motifs }));
       }
     } catch (err: any) {
       console.error('LLM analysis failed:', err);
@@ -477,6 +485,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           stylePack,
           wordOverrides,
           wordFontOverrides,
+          wordMotifOverrides,
+          motifMode,
           audioAnalysis: audioAnalysis || undefined
         });
         if (active) {
@@ -497,7 +507,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
     renderLivePreview();
     return () => { active = false; };
-  }, [selectedLines, archetype, fontFamily, stylePack, rangeStartMs, rangeEndMs, wordOverrides, wordFontOverrides, audioAnalysis]);
+  }, [selectedLines, archetype, fontFamily, stylePack, rangeStartMs, rangeEndMs, wordOverrides, wordFontOverrides, wordMotifOverrides, motifMode, audioAnalysis]);
 
   // Synchronize live preview frame when playhead updates
   useEffect(() => {
@@ -751,6 +761,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           stylePack,
           wordOverrides,
           wordFontOverrides,
+          wordMotifOverrides,
+          motifMode,
           audioAnalysis: audioAnalysis || undefined
         },
         progress => setRenderProgress(progress)
@@ -1304,9 +1316,13 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                             const meta = ARCHETYPE_METADATA[wordArch] || ARCHETYPE_METADATA.smooth_fluid;
                             const specificKey = `${w.word}_${w.startMs}`;
                             const cleanKey = w.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+                            const wordMotif = wordMotifOverrides[specificKey] || wordMotifOverrides[cleanKey] || 'none';
+                            const motifMeta = MOTIF_METADATA[wordMotif];
                             const isOverridden = !!(
                               wordOverrides[specificKey] || wordOverrides[cleanKey] ||
-                              wordFontOverrides[specificKey] || wordFontOverrides[cleanKey]
+                              wordFontOverrides[specificKey] || wordFontOverrides[cleanKey] ||
+                              (wordMotifOverrides[specificKey] && wordMotifOverrides[specificKey] !== 'none') ||
+                              (wordMotifOverrides[cleanKey] && wordMotifOverrides[cleanKey] !== 'none')
                             );
                             const fontShortName = wordFont.split(',')[0].replace(/['"]/g, '');
 
@@ -1321,7 +1337,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                                     lineIdx: idx,
                                     wordIdx: wIdx,
                                     currentArchetype: wordArch,
-                                    currentFont: wordFont
+                                    currentFont: wordFont,
+                                    currentMotif: wordMotif
                                   });
                                 }}
                                 className={`px-2 py-0.5 text-[10px] font-sans rounded-md flex items-center gap-1 transition-all cursor-pointer shadow-xs ${
@@ -1331,9 +1348,12 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                                     ? 'bg-white/10 hover:bg-white/20 text-white/80 hover:text-white border border-white/10'
                                     : 'bg-[#FAF9F5] hover:bg-[#F0EEE6] text-[#5E5D59] hover:text-[#141413] border border-[#E8E5DE]'
                                 }`}
-                                title={`Customize motion style & font for "${w.word}" (Style: ${meta.name}, Font: ${fontShortName})`}
+                                title={`Customize motion style, font & motif for "${w.word}" (Style: ${meta.name}, Font: ${fontShortName}, Motif: ${motifMeta?.name || 'None'})`}
                               >
                                 <span>{meta.icon}</span>
+                                {wordMotif !== 'none' && motifMeta && (
+                                  <span className="text-[10px]" title={`Motif: ${motifMeta.name}`}>{motifMeta.icon}</span>
+                                )}
                                 <span className="font-medium">{w.word}</span>
                                 <span className="opacity-50 text-[9px] font-mono">[{fontShortName}]</span>
                               </button>
@@ -1879,6 +1899,62 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               )}
             </div>
 
+            {/* Visual Motifs Mode (1-Bit Manga Sprites & Speedlines) */}
+            <div className="pt-2 border-t border-white/10 dark:border-white/10">
+              <div className="flex justify-between items-center mb-1.5">
+                <label className={`text-[11px] font-sans font-medium ${
+                  themeMode === 'dark' ? 'text-white/60' : 'text-[#5E5D59]'
+                }`}>
+                  Visual Motifs & Manga Layering
+                </label>
+                <span className="text-[9px] font-mono text-[#D97757] font-semibold">
+                  1-BIT SPRITES
+                </span>
+              </div>
+              <div className="grid grid-cols-4 gap-1 mb-2">
+                {[
+                  { id: 'off' as MotifMode, label: 'Off', icon: '🚫', desc: 'Pure typography' },
+                  { id: 'subtle' as MotifMode, label: 'Subtle', icon: '〰️', desc: 'Speedlines on drops' },
+                  { id: 'dynamic' as MotifMode, label: 'Dynamic', icon: '✨', desc: 'AI-directed motifs' },
+                  { id: 'heavy' as MotifMode, label: 'Heavy', icon: '🏁', desc: 'Motifs + halftones' },
+                ].map(mode => {
+                  const isSelected = motifMode === mode.id;
+                  return (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      onClick={() => setMotifMode(mode.id)}
+                      className={`p-1.5 border rounded-xl text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
+                        isSelected
+                          ? themeMode === 'dark'
+                            ? 'border-[#D97757] bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs'
+                            : 'border-[#D97757] bg-[#FAF0EB] ring-1 ring-[#D97757]/30 shadow-xs'
+                          : themeMode === 'dark'
+                          ? 'border-white/10 hover:border-white/20 bg-[#1C1C20]'
+                          : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-white shadow-xs'
+                      }`}
+                      title={mode.desc}
+                    >
+                      <span className="text-xs">{mode.icon}</span>
+                      <span className={`text-[10px] font-sans font-medium mt-0.5 ${
+                        themeMode === 'dark' ? 'text-white' : 'text-[#141413]'
+                      }`}>
+                        {mode.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className={`text-[10px] font-sans leading-tight mb-2 ${
+                themeMode === 'dark' ? 'text-white/40' : 'text-[#87867F]'
+              }`}>
+                {motifMode === 'off' && '🚫 Clean typography only. Zero background visuals.'}
+                {motifMode === 'subtle' && '〰️ Minimal speedline flares on heavy 808 beat transients.'}
+                {motifMode === 'dynamic' && '✨ AI director selects crowns, scopes, flames & stars based on lyrics slang.'}
+                {motifMode === 'heavy' && '🏁 Full manga layering with Bayer halftone shading & action motifs.'}
+              </p>
+            </div>
+
             {/* Font Selector */}
             <div>
               <label className={`text-[11px] font-sans font-medium block mb-1.5 ${
@@ -2098,6 +2174,43 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               </select>
             </div>
 
+            {/* Visual Motif for this specific word */}
+            <div className="pt-2 border-t border-white/10 dark:border-white/10">
+              <label className={`text-[11px] font-sans font-medium block mb-1 ${
+                themeMode === 'dark' ? 'text-white/60' : 'text-[#5E5D59]'
+              }`}>
+                Visual Motif for this Word:
+              </label>
+              <select
+                value={
+                  wordMotifOverrides[`${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`] ||
+                  wordMotifOverrides[editingWordTarget.word.word.toLowerCase().replace(/[^a-z0-9]/g, '')] ||
+                  editingWordTarget.currentMotif ||
+                  'none'
+                }
+                onChange={(e) => {
+                  const specificKey = `${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`;
+                  const selectedVal = e.target.value as VisualMotif;
+                  setWordMotifOverrides(prev => ({
+                    ...prev,
+                    [specificKey]: selectedVal
+                  }));
+                  setEditingWordTarget(prev => prev ? { ...prev, currentMotif: selectedVal } : null);
+                }}
+                className={`w-full p-2 text-xs font-sans rounded-xl focus:outline-none focus:border-[#D97757] focus:ring-1 focus:ring-[#D97757] cursor-pointer border shadow-xs transition-colors ${
+                  themeMode === 'dark'
+                    ? 'bg-[#1C1C20] border-white/10 text-white'
+                    : 'bg-white border-[#E8E5DE] text-[#141413]'
+                }`}
+              >
+                {Object.values(MOTIF_METADATA).map(m => (
+                  <option key={m.id} value={m.id}>
+                    {m.icon} {m.name} ({m.tag})
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className={`flex gap-2.5 pt-3 border-t ${
               themeMode === 'dark' ? 'border-white/10' : 'border-[#E8E5DE]'
             }`}>
@@ -2112,6 +2225,12 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     return next;
                   });
                   setWordFontOverrides(prev => {
+                    const next = { ...prev };
+                    delete next[specificKey];
+                    delete next[cleanKey];
+                    return next;
+                  });
+                  setWordMotifOverrides(prev => {
                     const next = { ...prev };
                     delete next[specificKey];
                     delete next[cleanKey];

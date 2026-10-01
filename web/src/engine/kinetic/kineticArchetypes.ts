@@ -87,12 +87,19 @@ function renderBladeSlash(
 ) {
   const { canvas: tempCanvas, ctx: tCtx } = getScratchCanvas();
 
-  tCtx.fillStyle = '#000000';
-  tCtx.fillRect(0, 0, 128, 64);
+  tCtx.clearRect(0, 0, 128, 64);
   tCtx.font = `bold ${layout.fontSize}px ${fontFamily}`;
   tCtx.textAlign = 'center';
-  tCtx.fillStyle = '#FFFFFF';
+  tCtx.strokeStyle = '#000000';
+  tCtx.lineWidth = 3;
+  tCtx.lineJoin = 'miter';
+  tCtx.miterLimit = 2;
 
+  for (let i = 0; i < layout.lines.length; i++) {
+    tCtx.strokeText(layout.lines[i], 64, layout.yOffsets[i]);
+  }
+
+  tCtx.fillStyle = '#FFFFFF';
   for (let i = 0; i < layout.lines.length; i++) {
     tCtx.fillText(layout.lines[i], 64, layout.yOffsets[i]);
   }
@@ -226,6 +233,14 @@ function renderCyberGlitch(
     ? ((frameIndex * 17) % 7) - 3 + (Math.random() > 0.5 ? jitterAmp : -jitterAmp) 
     : 0;
 
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'miter';
+  ctx.miterLimit = 2;
+  for (let i = 0; i < displayLines.length; i++) {
+    ctx.strokeText(displayLines[i], 64 + jitterX, layout.yOffsets[i]);
+  }
+
   ctx.fillStyle = '#FFFFFF';
   for (let i = 0; i < displayLines.length; i++) {
     ctx.fillText(displayLines[i], 64 + jitterX, layout.yOffsets[i]);
@@ -273,11 +288,27 @@ function renderSmoothFluid(
   ctx.textAlign = 'center';
 
   if (tau < 0.25) {
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 3;
+    for (let i = 0; i < layout.lines.length; i++) {
+      const y = layout.yOffsets[i] + currentY + 4;
+      ctx.strokeText(layout.lines[i], 64, y);
+    }
     ctx.fillStyle = '#FFFFFF';
     for (let i = 0; i < layout.lines.length; i++) {
       const y = layout.yOffsets[i] + currentY + 4;
       ctx.fillText(layout.lines[i], 64, y);
     }
+  }
+
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'miter';
+  ctx.miterLimit = 2;
+  for (let i = 0; i < layout.lines.length; i++) {
+    const line = layout.lines[i];
+    const y = layout.yOffsets[i] + currentY;
+    ctx.strokeText(line, 64, y);
   }
 
   ctx.fillStyle = '#FFFFFF';
@@ -423,8 +454,15 @@ function renderTargetFocus(
 
   ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#FFFFFF';
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'miter';
+  ctx.miterLimit = 2;
+  for (let i = 0; i < layout.lines.length; i++) {
+    ctx.strokeText(layout.lines[i], 64, layout.yOffsets[i]);
+  }
 
+  ctx.fillStyle = '#FFFFFF';
   for (let i = 0; i < layout.lines.length; i++) {
     ctx.fillText(layout.lines[i], 64, layout.yOffsets[i]);
   }
@@ -461,12 +499,19 @@ function renderSnakeSlither(
 ) {
   const { canvas: tempCanvas, ctx: tCtx } = getScratchCanvas();
 
-  tCtx.fillStyle = '#000000';
-  tCtx.fillRect(0, 0, 128, 64);
+  tCtx.clearRect(0, 0, 128, 64);
   tCtx.font = `bold ${layout.fontSize}px ${fontFamily}`;
   tCtx.textAlign = 'center';
-  tCtx.fillStyle = '#FFFFFF';
+  tCtx.strokeStyle = '#000000';
+  tCtx.lineWidth = 3;
+  tCtx.lineJoin = 'miter';
+  tCtx.miterLimit = 2;
 
+  for (let i = 0; i < layout.lines.length; i++) {
+    tCtx.strokeText(layout.lines[i], 64, layout.yOffsets[i]);
+  }
+
+  tCtx.fillStyle = '#FFFFFF';
   for (let i = 0; i < layout.lines.length; i++) {
     tCtx.fillText(layout.lines[i], 64, layout.yOffsets[i]);
   }
@@ -505,6 +550,14 @@ function renderWigglyBoil(
 
   const dx = offsetsX[boilPhase] * (audioFrame?.isBeat ? 2 : 1);
   const dy = offsetsY[boilPhase] * (audioFrame?.isBeat ? 2 : 1);
+
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'miter';
+  ctx.miterLimit = 2;
+  for (let i = 0; i < layout.lines.length; i++) {
+    ctx.strokeText(layout.lines[i], 64 + dx, layout.yOffsets[i] + dy);
+  }
 
   ctx.fillStyle = '#FFFFFF';
   for (let i = 0; i < layout.lines.length; i++) {

@@ -2,6 +2,7 @@ import { ExtractedFrame, DecodedMedia } from '../../types/media';
 import { KineticRenderOptions, MotionArchetype, STYLE_PACKS } from './types';
 import { computeSafeTextLayout } from './kineticLayout';
 import { renderArchetypeFrame } from './kineticArchetypes';
+import { renderMotifBackground } from './motifRenderer';
 import { getWordEffectiveArchetype, getWordEffectiveFont } from './semanticClassifier';
 import { LyricWord } from '../lyrics/types';
 
@@ -142,6 +143,28 @@ export async function renderKineticSequence(
         options.wordFontOverrides,
         fontFamily
       );
+
+      // Resolve active motif for word
+      const specificKey = `${activeWord.word}_${activeWord.startMs}`;
+      const cleanWord = activeWord.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const wordMotif = options.wordMotifOverrides?.[specificKey] 
+        || options.wordMotifOverrides?.[cleanWord] 
+        || options.wordMotifOverrides?.[activeWord.word] 
+        || 'none';
+
+      const effectiveMotifMode = options.motifMode || 'dynamic';
+
+      // Render background motif layer before text
+      if (effectiveMotifMode !== 'off' && wordMotif !== 'none') {
+        renderMotifBackground(ctx, {
+          motif: wordMotif,
+          motifMode: effectiveMotifMode,
+          tau,
+          frameIndex: f,
+          textCenterY: 32,
+          audioFrame,
+        });
+      }
 
       // Compute Zero-Clip Layout with the effective font
       const layout = computeSafeTextLayout(activeWord.word, ctx, effectiveFont);

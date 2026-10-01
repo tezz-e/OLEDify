@@ -201,6 +201,109 @@ export const STYLE_PACKS: Record<StylePackId, StylePackConfig> = {
   }
 };
 
+export type VisualMotif =
+  | 'none'
+  | 'manga_speedlines'
+  | 'anime_rush'
+  | 'crown_royal'
+  | 'razor_blade'
+  | 'tactical_scope'
+  | 'flame_tongue'
+  | 'skull_cross'
+  | 'chrome_star'
+  | 'lightning_arc'
+  | 'comic_burst';
+
+export type MotifMode = 'off' | 'subtle' | 'dynamic' | 'heavy';
+
+export interface MotifMeta {
+  id: VisualMotif;
+  icon: string;
+  name: string;
+  tag: string;
+  description: string;
+}
+
+export const MOTIF_METADATA: Record<VisualMotif, MotifMeta> = {
+  none: {
+    id: 'none',
+    icon: '🚫',
+    name: 'None (Pure Typography)',
+    tag: 'CLEAN',
+    description: 'Clean typography only with zero background visual distractions'
+  },
+  manga_speedlines: {
+    id: 'manga_speedlines',
+    icon: '💥',
+    name: 'Manga Speedlines',
+    tag: 'RADIAL',
+    description: 'Tapered ink focus wedges converging around text'
+  },
+  anime_rush: {
+    id: 'anime_rush',
+    icon: '💨',
+    name: 'Anime Rush Lines',
+    tag: 'RUSH',
+    description: 'Horizontal speed barrage streaks simulating rapid velocity'
+  },
+  crown_royal: {
+    id: 'crown_royal',
+    icon: '👑',
+    name: 'Royal Crown',
+    tag: 'ROYAL',
+    description: 'Gothic / Basquiat 3-point crown for boss and king lyrics'
+  },
+  razor_blade: {
+    id: 'razor_blade',
+    icon: '🗡️',
+    name: 'Razor Blade Slice',
+    tag: 'CUT',
+    description: 'Diagonal razor slice with impact cutting glints'
+  },
+  tactical_scope: {
+    id: 'tactical_scope',
+    icon: '🎯',
+    name: 'Tactical Crosshairs',
+    tag: 'AIM',
+    description: 'HUD corner brackets and reticle targeting key nouns'
+  },
+  flame_tongue: {
+    id: 'flame_tongue',
+    icon: '🔥',
+    name: 'Inferno Flames',
+    tag: 'FIRE',
+    description: 'Procedural 1-bit flame contours with rising ember particles'
+  },
+  skull_cross: {
+    id: 'skull_cross',
+    icon: '💀',
+    name: 'Skull Stamp',
+    tag: 'DEAD',
+    description: '12x12 micro-sprite skull mark for lethal and grave lyrics'
+  },
+  chrome_star: {
+    id: 'chrome_star',
+    icon: '✨',
+    name: 'Chrome Star Glint',
+    tag: 'ICE',
+    description: '4-point curved anime diamond sparkles for luxury and shine'
+  },
+  lightning_arc: {
+    id: 'lightning_arc',
+    icon: '⚡',
+    name: 'Lightning Bolt',
+    tag: 'VOLT',
+    description: 'High-voltage electric jagged bolt for sudden voltage surges'
+  },
+  comic_burst: {
+    id: 'comic_burst',
+    icon: '🗯️',
+    name: 'Comic Starburst',
+    tag: 'BURST',
+    description: '14-point pop-art comic explosion bubble behind text'
+  }
+};
+
 import { AudioAnalysisResult } from './audioAnalysisEngine';
 
 export interface KineticRenderOptions {
@@ -213,8 +316,11 @@ export interface KineticRenderOptions {
   theme?: 'cyan' | 'white' | 'amber' | 'green';
   wordOverrides?: Record<string, MotionArchetype>;
   wordFontOverrides?: Record<string, string>;
+  wordMotifOverrides?: Record<string, VisualMotif>;
+  motifMode?: MotifMode;
   stylePack?: StylePackId;
   customPalette?: StylePackConfig['fonts'];
   audioAnalysis?: AudioAnalysisResult;
 }
+
 

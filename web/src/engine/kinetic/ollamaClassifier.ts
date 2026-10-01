@@ -1,4 +1,4 @@
-import { MotionArchetype } from './types';
+import { MotionArchetype, VisualMotif } from './types';
 import { LyricLine, LyricWord } from '../lyrics/types';
 
 export interface OllamaModelInfo {
@@ -140,6 +140,7 @@ export interface OllamaInspectionLog {
     word: string;
     startMs: number;
     archetype: MotionArchetype;
+    motif?: VisualMotif;
     meaning?: string;
     reason?: string;
   }>;
@@ -162,6 +163,46 @@ export const VALID_MOTION_ARCHETYPES: MotionArchetype[] = [
   'smooth_fluid',
   'wiggly_boil',
 ];
+
+export const VALID_VISUAL_MOTIFS: VisualMotif[] = [
+  'none',
+  'manga_speedlines',
+  'anime_rush',
+  'crown_royal',
+  'razor_blade',
+  'tactical_scope',
+  'flame_tongue',
+  'skull_cross',
+  'chrome_star',
+  'lightning_arc',
+  'comic_burst',
+];
+
+/**
+ * Normalizes loose or fuzzy motif strings returned by LLMs.
+ */
+export function normalizeMotif(
+  raw: string,
+  valid: VisualMotif[] = VALID_VISUAL_MOTIFS
+): VisualMotif {
+  if (!raw || typeof raw !== 'string') return 'none';
+  const clean = raw.toLowerCase().replace(/[-\s]/g, '_').trim();
+  if (valid.includes(clean as VisualMotif)) return clean as VisualMotif;
+
+  // Fuzzy keyword matching for motifs
+  if (clean.includes('speed') || clean.includes('wedge') || clean.includes('focus') || clean.includes('radial')) return 'manga_speedlines';
+  if (clean.includes('rush') || clean.includes('dash') || clean.includes('run') || clean.includes('nagare')) return 'anime_rush';
+  if (clean.includes('crown') || clean.includes('king') || clean.includes('royal') || clean.includes('queen') || clean.includes('boss')) return 'crown_royal';
+  if (clean.includes('razor') || clean.includes('blade') || clean.includes('cut') || clean.includes('slash') || clean.includes('sword') || clean.includes('knife')) return 'razor_blade';
+  if (clean.includes('scope') || clean.includes('target') || clean.includes('crosshair') || clean.includes('aim') || clean.includes('reticle')) return 'tactical_scope';
+  if (clean.includes('flame') || clean.includes('fire') || clean.includes('burn') || clean.includes('inferno') || clean.includes('ember') || clean.includes('hot')) return 'flame_tongue';
+  if (clean.includes('skull') || clean.includes('dead') || clean.includes('death') || clean.includes('grave') || clean.includes('kill')) return 'skull_cross';
+  if (clean.includes('burst') || clean.includes('comic') || clean.includes('pop') || clean.includes('bubble') || clean.includes('starburst') || clean.includes('shout')) return 'comic_burst';
+  if (clean.includes('star') || clean.includes('glint') || clean.includes('shine') || clean.includes('diamond') || clean.includes('ice') || clean.includes('chrome') || clean.includes('sparkle')) return 'chrome_star';
+  if (clean.includes('lightning') || clean.includes('bolt') || clean.includes('electric') || clean.includes('thunder') || clean.includes('volt')) return 'lightning_arc';
+
+  return 'none';
+}
 
 /**
  * Normalizes loose or fuzzy archetype strings returned by smaller LLMs.
@@ -197,9 +238,10 @@ export function normalizeArchetype(
  */
 export function extractClassificationsFromResponse(
   rawResponse: string,
-  validArchetypes: MotionArchetype[] = VALID_MOTION_ARCHETYPES
-): Array<{ word: string; startMs?: number; archetype: MotionArchetype; meaning?: string; reason?: string }> {
-  const results: Array<{ word: string; startMs?: number; archetype: MotionArchetype; meaning?: string; reason?: string }> = [];
+  validArchetypes: MotionArchetype[] = VALID_MOTION_ARCHETYPES,
+  validMotifs: VisualMotif[] = VALID_VISUAL_MOTIFS
+): Array<{ word: string; startMs?: number; archetype: MotionArchetype; motif?: VisualMotif; meaning?: string; reason?: string }> {
+  const results: Array<{ word: string; startMs?: number; archetype: MotionArchetype; motif?: VisualMotif; meaning?: string; reason?: string }> = [];
   if (!rawResponse || typeof rawResponse !== 'string') return results;
 
   let cleaned = rawResponse.trim();
@@ -226,6 +268,8 @@ export function extractClassificationsFromResponse(
         const word = (item.word || item.text || item.token || '').trim();
         const rawArch = (item.archetype || item.style || item.motion || '').toString();
         const arch = normalizeArchetype(rawArch, validArchetypes);
+        const rawMotif = (item.motif || item.visualMotif || item.symbol || item.graphic || '').toString();
+        const motif = normalizeMotif(rawMotif, validMotifs);
         const meaning = (item.meaning || item.punjabiMeaning || item.translation || '').toString().trim() || undefined;
         const reason = (item.reason || item.rationale || item.explanation || '').toString().trim() || undefined;
         if (word && arch) {
@@ -233,23 +277,26 @@ export function extractClassificationsFromResponse(
             word,
             startMs: typeof item.startMs === 'number' ? item.startMs : undefined,
             archetype: arch,
+            motif,
             meaning,
             reason,
           });
         }
       }
     } else if (typeof parsed === 'object' && parsed !== null) {
-      // Key-value map: { "word": "archetype" } or { "word": { archetype, meaning, reason } }
+      // Key-value map: { "word": "archetype" } or { "word": { archetype, motif, meaning, reason } }
       for (const [key, val] of Object.entries(parsed)) {
         if (['classifications', 'words', 'analysis', 'notes'].includes(key.toLowerCase())) continue;
         if (typeof val === 'string') {
           const arch = normalizeArchetype(val, validArchetypes);
-          if (arch) results.push({ word: key.trim(), archetype: arch });
+          if (arch) results.push({ word: key.trim(), archetype: arch, motif: 'none' });
         } else if (typeof val === 'object' && val !== null && 'archetype' in val) {
           const arch = normalizeArchetype((val as any).archetype, validArchetypes);
+          const rawMotif = (val as any).motif || (val as any).visualMotif || '';
+          const motif = normalizeMotif(rawMotif, validMotifs);
           const meaning = (val as any).meaning || (val as any).translation || undefined;
           const reason = (val as any).reason || (val as any).rationale || undefined;
-          if (arch) results.push({ word: key.trim(), archetype: arch, meaning, reason });
+          if (arch) results.push({ word: key.trim(), archetype: arch, motif, meaning, reason });
         }
       }
     }
@@ -259,21 +306,24 @@ export function extractClassificationsFromResponse(
     // Truncated or malformed JSON — proceed to regex extraction
   }
 
-  // Strategy 2: Robust Regex Extraction for individual JSON object blocks with meaning/reason
+  // Strategy 2: Robust Regex Extraction for individual JSON object blocks with motif/meaning/reason
   const blockRegex = /\{[^{}]*"word"\s*:\s*"([^"]+)"[^{}]*\}/gi;
   let blockMatch: RegExpExecArray | null;
   while ((blockMatch = blockRegex.exec(cleaned)) !== null) {
     const block = blockMatch[0];
     const wordMatch = /"word"\s*:\s*"([^"]+)"/i.exec(block);
     const archMatch = /"archetype"\s*:\s*"([^"]+)"/i.exec(block);
+    const motifMatch = /"motif"\s*:\s*"([^"]+)"/i.exec(block);
     const meaningMatch = /"meaning"\s*:\s*"([^"]+)"/i.exec(block);
     const reasonMatch = /"reason"\s*:\s*"([^"]+)"/i.exec(block);
     if (wordMatch && archMatch) {
       const arch = normalizeArchetype(archMatch[1], validArchetypes);
+      const motif = motifMatch ? normalizeMotif(motifMatch[1], validMotifs) : 'none';
       if (arch) {
         results.push({
           word: wordMatch[1].trim(),
           archetype: arch,
+          motif,
           meaning: meaningMatch ? meaningMatch[1].trim() : undefined,
           reason: reasonMatch ? reasonMatch[1].trim() : undefined,
         });
@@ -289,7 +339,7 @@ export function extractClassificationsFromResponse(
       const word = match[1].trim();
       const arch = normalizeArchetype(match[2], validArchetypes);
       if (word && arch) {
-        results.push({ word, archetype: arch });
+        results.push({ word, archetype: arch, motif: 'none' });
       }
     }
   }
@@ -302,7 +352,7 @@ export function extractClassificationsFromResponse(
       const arch = normalizeArchetype(match[1], validArchetypes);
       const word = match[2].trim();
       if (word && arch) {
-        results.push({ word, archetype: arch });
+        results.push({ word, archetype: arch, motif: 'none' });
       }
     }
   }
@@ -325,13 +375,14 @@ export function buildOllamaLyricsPrompt(
   return `You are an elite motion typography director for high-energy 1-bit OLED kinetic lyrics.
 Song Context: "${songTitle}" by ${artist}.
 
-Analyze the emotions, language, and rhythm of these lines:
+Analyze the emotions, language, cultural slang, metaphors, and rhythm of these lines:
 ${formattedLines}
 
 CRITICAL RULES:
 1. ONLY select 1 to 2 high-impact punchline words per line (e.g. key nouns, weapons, powerful verbs, emotional climaxes, shouting words).
 2. NEVER classify filler words, prepositions, conjunctions, or pronouns. Specifically DO NOT classify: "te", "de", "naal", "mera", "ni", "ki", "tainu", "and", "the", "with", "of", "to", "in", "it", "my", "you", "me".
-3. For each selected word, provide its translated meaning/definition and your artistic reasoning for choosing that visual archetype so we can verify you understand the lyrics.
+3. For each selected word, provide its translated meaning/definition and your artistic reasoning for choosing that visual archetype.
+4. OPTIONALLY assign a background visual motif ("motif") that best captures the cultural slang, metaphor, or imagery of the punchline. If no motif fits, use "none".
 
 Choose from these 10 visual archetypes:
 - "manga_impact": explosive hits, punches, loud shouts, beat drops
@@ -345,6 +396,19 @@ Choose from these 10 visual archetypes:
 - "smooth_fluid": floating, love, breeze, calm sky/water, romantic drift, gentle
 - "wiggly_boil": wild dancing, boiling jitter, chaos, fun, quirky shaking
 
+Choose from these 10 visual motifs (or "none"):
+- "none": clean typography only with zero background visual distractions
+- "manga_speedlines": radial tapered focus lines converging around text
+- "anime_rush": horizontal rapid speed barrage streaks
+- "crown_royal": gothic 3-point crown for kings, bosses, wealth, royalty, "hukum", "badshah"
+- "razor_blade": sharp diagonal cut slice with impact glints for sharp cuts, danger
+- "tactical_scope": HUD corner brackets and targeting reticle for guns, aim, "draco", targets
+- "flame_tongue": rising fire contours with detached ember sparks for heat, cooked, fire
+- "skull_cross": 12x12 micro-sprite skull mark for lethal, death, danger, grave lyrics
+- "chrome_star": 4-point diamond glint sparkles for ice, diamonds, luxury, shine, "wrist", jewelry
+- "lightning_arc": high-voltage jagged electric bolt for sudden voltage surges, shocks
+- "comic_burst": 14-point pop-art comic starburst bubble for punchy comic shoutouts
+
 Output JSON strictly matching this format:
 {
   "classifications": [
@@ -352,14 +416,20 @@ Output JSON strictly matching this format:
       "word": "SHASHTAR",
       "meaning": "weapons / guns (Punjabi)",
       "archetype": "3d_block_stack",
+      "motif": "razor_blade",
       "reason": "heavy impactful weapon punchline"
     }
   ]
 }`;
 }
 
+export type LLMClassificationOutput = Record<string, MotionArchetype> & {
+  archetypes: Record<string, MotionArchetype>;
+  motifs: Record<string, VisualMotif>;
+};
+
 /**
- * Classifies kinetic archetypes for lyric words using local Ollama or cloud Groq inference.
+ * Classifies kinetic archetypes and visual motifs for lyric words using local Ollama or cloud Groq inference.
  */
 export async function classifyLyricsWithOllama(
   lines: LyricLine[],
@@ -373,11 +443,12 @@ export async function classifyLyricsWithOllama(
     onProgress?: (percent: number, message: string) => void;
     onInspectionLog?: (log: OllamaInspectionLog) => void;
   } = {}
-): Promise<Record<string, MotionArchetype>> {
+): Promise<LLMClassificationOutput> {
   const provider = options.provider || 'ollama';
   const endpoint = options.endpoint || resolvedOllamaEndpoint || DEFAULT_ENDPOINT;
   const model = options.model || (provider === 'groq' ? 'openai/gpt-oss-120b' : 'qwen3.5:2b-q4_K_M');
   const archetypeOverrides: Record<string, MotionArchetype> = {};
+  const motifOverrides: Record<string, VisualMotif> = {};
 
   // Batch lines into stanzas of up to 4 lines for optimal context window & throughput
   const BATCH_SIZE = 4;
@@ -470,12 +541,13 @@ export async function classifyLyricsWithOllama(
           }
         }
 
-        const extracted = extractClassificationsFromResponse(textResponse, VALID_MOTION_ARCHETYPES);
+        const extracted = extractClassificationsFromResponse(textResponse, VALID_MOTION_ARCHETYPES, VALID_VISUAL_MOTIFS);
         for (const item of extracted) {
           logEntry.parsedClassifications.push({
             word: item.word,
             startMs: item.startMs ?? 0,
             archetype: item.archetype,
+            motif: item.motif,
             meaning: item.meaning,
             reason: item.reason,
           });
@@ -490,6 +562,10 @@ export async function classifyLyricsWithOllama(
                 const specificKey = `${w.word}_${w.startMs}`;
                 archetypeOverrides[specificKey] = item.archetype;
                 archetypeOverrides[cleanWord] = item.archetype;
+                if (item.motif && item.motif !== 'none') {
+                  motifOverrides[specificKey] = item.motif;
+                  motifOverrides[cleanWord] = item.motif;
+                }
               }
             }
           }
@@ -531,13 +607,14 @@ export async function classifyLyricsWithOllama(
           logEntry.tokensPerSecond = Math.round((data.eval_count / (data.eval_duration / 1e9)) * 10) / 10;
         }
 
-        const extracted = extractClassificationsFromResponse(data.response, VALID_MOTION_ARCHETYPES);
+        const extracted = extractClassificationsFromResponse(data.response, VALID_MOTION_ARCHETYPES, VALID_VISUAL_MOTIFS);
 
         for (const item of extracted) {
           logEntry.parsedClassifications.push({
             word: item.word,
             startMs: item.startMs ?? 0,
             archetype: item.archetype,
+            motif: item.motif,
             meaning: item.meaning,
             reason: item.reason,
           });
@@ -552,6 +629,10 @@ export async function classifyLyricsWithOllama(
                 const specificKey = `${w.word}_${w.startMs}`;
                 archetypeOverrides[specificKey] = item.archetype;
                 archetypeOverrides[cleanWord] = item.archetype;
+                if (item.motif && item.motif !== 'none') {
+                  motifOverrides[specificKey] = item.motif;
+                  motifOverrides[cleanWord] = item.motif;
+                }
               }
             }
           }
@@ -570,8 +651,12 @@ export async function classifyLyricsWithOllama(
     options.onProgress(100, `Completed LLM semantic analysis!`);
   }
 
-  return archetypeOverrides;
+  return Object.assign(archetypeOverrides, {
+    archetypes: archetypeOverrides,
+    motifs: motifOverrides,
+  });
 }
+
 
 /**
  * Executes a standalone test prompt with arbitrary custom text to either
@@ -691,7 +776,7 @@ export async function testSinglePromptWithOllama(
         }
       }
 
-      const extracted = extractClassificationsFromResponse(textResponse, VALID_MOTION_ARCHETYPES);
+      const extracted = extractClassificationsFromResponse(textResponse, VALID_MOTION_ARCHETYPES, VALID_VISUAL_MOTIFS);
       for (const item of extracted) {
         let sMs = item.startMs;
         if (sMs === undefined) {
@@ -708,6 +793,7 @@ export async function testSinglePromptWithOllama(
           word: item.word,
           startMs: sMs ?? 0,
           archetype: item.archetype,
+          motif: item.motif,
           meaning: item.meaning,
           reason: item.reason,
         });
@@ -747,7 +833,7 @@ export async function testSinglePromptWithOllama(
         logEntry.tokensPerSecond = Math.round((data.eval_count / (data.eval_duration / 1e9)) * 10) / 10;
       }
 
-      const extracted = extractClassificationsFromResponse(data.response, VALID_MOTION_ARCHETYPES);
+      const extracted = extractClassificationsFromResponse(data.response, VALID_MOTION_ARCHETYPES, VALID_VISUAL_MOTIFS);
       for (const item of extracted) {
         let sMs = item.startMs;
         if (sMs === undefined) {
@@ -764,6 +850,7 @@ export async function testSinglePromptWithOllama(
           word: item.word,
           startMs: sMs ?? 0,
           archetype: item.archetype,
+          motif: item.motif,
           meaning: item.meaning,
           reason: item.reason,
         });

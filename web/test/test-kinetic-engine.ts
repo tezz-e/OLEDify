@@ -8,8 +8,15 @@ import {
 import { 
   STYLE_PACKS, 
   StylePackId, 
-  MotionArchetype 
+  MotionArchetype,
+  VisualMotif,
+  MOTIF_METADATA 
 } from '../src/engine/kinetic/types';
+import { 
+  VALID_VISUAL_MOTIFS,
+  normalizeMotif,
+  extractClassificationsFromResponse 
+} from '../src/engine/kinetic/ollamaClassifier';
 import { computeSafeTextLayout } from '../src/engine/kinetic/kineticLayout';
 import { LyricWord } from '../src/engine/lyrics/types';
 
@@ -206,4 +213,124 @@ assert.equal(stateWord2.tau, 0);
 
 console.log('✅ Phantom Future Word Pause Bug verified fixed: gaps enter clean rest state without freezing upcoming words.');
 
-console.log('\n🎉 ALL KINETIC TYPOGRAPHY TESTS PASSED PERFECTLY!\n');
+
+// =========================================================================
+// TEST SUITE 5: 1-Bit Visual Motifs & LLM Inference Classification
+// =========================================================================
+console.log('\n--- Suite 5: 1-Bit Visual Motifs & LLM Inference Pipeline ---');
+
+// 1. Verify all 11 motifs exist in metadata
+assert.equal(VALID_VISUAL_MOTIFS.length, 11, 'Expected exactly 11 visual motifs');
+for (const motif of VALID_VISUAL_MOTIFS) {
+  const meta = MOTIF_METADATA[motif];
+  assert.ok(meta, `Motif "${motif}" must have metadata`);
+  assert.ok(meta.icon, `Motif "${motif}" must have an icon`);
+  assert.ok(meta.name, `Motif "${motif}" must have a name`);
+  assert.ok(meta.tag, `Motif "${motif}" must have a tag`);
+}
+console.log('✅ All 11 Visual Motifs defined with valid icons, tags, and metadata.');
+
+// 2. Test motif normalization and fuzzy recovery
+const fuzzyMotifTests: Array<{ raw: string; expected: VisualMotif }> = [
+  { raw: 'crown_royal', expected: 'crown_royal' },
+  { raw: 'crown', expected: 'crown_royal' },
+  { raw: 'king', expected: 'crown_royal' },
+  { raw: 'royal', expected: 'crown_royal' },
+  { raw: 'boss', expected: 'crown_royal' },
+  { raw: 'razor_blade', expected: 'razor_blade' },
+  { raw: 'blade', expected: 'razor_blade' },
+  { raw: 'slash', expected: 'razor_blade' },
+  { raw: 'tactical_scope', expected: 'tactical_scope' },
+  { raw: 'target', expected: 'tactical_scope' },
+  { raw: 'crosshair', expected: 'tactical_scope' },
+  { raw: 'aim', expected: 'tactical_scope' },
+  { raw: 'flame_tongue', expected: 'flame_tongue' },
+  { raw: 'fire', expected: 'flame_tongue' },
+  { raw: 'burn', expected: 'flame_tongue' },
+  { raw: 'skull_cross', expected: 'skull_cross' },
+  { raw: 'death', expected: 'skull_cross' },
+  { raw: 'grave', expected: 'skull_cross' },
+  { raw: 'chrome_star', expected: 'chrome_star' },
+  { raw: 'diamond', expected: 'chrome_star' },
+  { raw: 'sparkle', expected: 'chrome_star' },
+  { raw: 'ice', expected: 'chrome_star' },
+  { raw: 'lightning_arc', expected: 'lightning_arc' },
+  { raw: 'electric', expected: 'lightning_arc' },
+  { raw: 'comic_burst', expected: 'comic_burst' },
+  { raw: 'starburst', expected: 'comic_burst' },
+  { raw: 'none', expected: 'none' },
+  { raw: 'xyz_random', expected: 'none' }
+];
+
+for (const t of fuzzyMotifTests) {
+  const norm = normalizeMotif(t.raw);
+  assert.equal(norm, t.expected, `Input "${t.raw}": expected motif "${t.expected}", got "${norm}"`);
+}
+console.log('✅ Motif normalization and fuzzy keyword recovery verified.');
+
+// 3. Test LLM response extraction with motifs
+const sampleLLMResponse = JSON.stringify({
+  classifications: [
+    {
+      word: "SHASHTAR",
+      meaning: "weapons / arms",
+      archetype: "3d_block_stack",
+      motif: "razor_blade",
+      reason: "heavy weapon punchline"
+    },
+    {
+      word: "HUKUM",
+      meaning: "royal command / king",
+      archetype: "manga_impact",
+      motif: "crown_royal",
+      reason: "royal declaration"
+    },
+    {
+      word: "DRACO",
+      meaning: "firearm weapon",
+      archetype: "target_focus",
+      motif: "tactical_scope",
+      reason: "aiming and shooting"
+    },
+    {
+      word: "ICE",
+      meaning: "diamond jewelry",
+      archetype: "smooth_fluid",
+      motif: "chrome_star",
+      reason: "shine and glint"
+    }
+  ]
+});
+
+const extracted = extractClassificationsFromResponse(sampleLLMResponse);
+assert.equal(extracted.length, 4, 'Expected 4 extracted classifications');
+assert.equal(extracted[0].word, 'SHASHTAR');
+assert.equal(extracted[0].motif, 'razor_blade');
+assert.equal(extracted[1].word, 'HUKUM');
+assert.equal(extracted[1].motif, 'crown_royal');
+assert.equal(extracted[2].word, 'DRACO');
+assert.equal(extracted[2].motif, 'tactical_scope');
+assert.equal(extracted[3].word, 'ICE');
+assert.equal(extracted[3].motif, 'chrome_star');
+console.log('✅ LLM JSON extraction with motifs verified.');
+
+// 4. Test Regex Fallback extraction for markdown-wrapped and streaming LLM output
+const markdownLLMResponse = `
+Here is the kinetic analysis for the lyrics:
+\`\`\`json
+{
+  "classifications": [
+    { "word": "BADSHAH", "meaning": "emperor", "archetype": "3d_block_stack", "motif": "crown_royal" },
+    { "word": "CHOPPER", "meaning": "automatic rifle", "archetype": "blade_slash", "motif": "tactical_scope" }
+  ]
+}
+\`\`\`
+`;
+const extractedMarkdown = extractClassificationsFromResponse(markdownLLMResponse);
+assert.equal(extractedMarkdown.length, 2);
+assert.equal(extractedMarkdown[0].motif, 'crown_royal');
+assert.equal(extractedMarkdown[1].motif, 'tactical_scope');
+console.log('✅ Markdown codeblock and regex fallback extraction with motifs verified.');
+
+console.log('\n🎉 ALL KINETIC TYPOGRAPHY & MOTIF TESTS PASSED PERFECTLY!\n');
+
