@@ -116,6 +116,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const [ollamaProgress, setOllamaProgress] = useState<{ percent: number; message: string } | null>(null);
   const [showOllamaInspector, setShowOllamaInspector] = useState<boolean>(false);
   const [ollamaInspectionLogs, setOllamaInspectionLogs] = useState<OllamaInspectionLog[]>([]);
+  const [analysisScope, setAnalysisScope] = useState<'selected' | 'all'>('selected');
+  const [lastAnalysisNotice, setLastAnalysisNotice] = useState<{ message: string; count: number; timestamp: number } | null>(null);
 
   // Check Ollama status when user toggles to Ollama mode
   useEffect(() => {
@@ -132,15 +134,27 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const handleRunOllamaAnalysis = async () => {
     if (!parsedLyrics || parsedLyrics.lines.length === 0) return;
     setIsAnalyzingOllama(true);
+
+    const start = Math.min(selectedStartIndex, selectedEndIndex);
+    const end = Math.max(selectedStartIndex, selectedEndIndex);
+    const targetLines = analysisScope === 'selected'
+      ? parsedLyrics.lines.slice(start, end + 1)
+      : parsedLyrics.lines;
+
+    const targetLabel = analysisScope === 'selected'
+      ? `Stanza (Lines ${start + 1}–${end + 1})`
+      : `Full Song (${parsedLyrics.lines.length} lines)`;
+
+    const providerLabel = llmProvider === 'groq' ? 'Groq 120B Cloud' : selectedOllamaModel;
+
     setOllamaProgress({ 
       percent: 0, 
-      message: llmProvider === 'groq' ? 'Calling Groq 120B Cloud...' : 'Connecting to local Ollama...' 
+      message: `Analyzing ${targetLabel} with ${providerLabel}...` 
     });
 
     try {
-      const selectedLines = parsedLyrics.lines.slice(selectedStartIndex, selectedEndIndex + 1);
       const results = await classifyLyricsWithOllama(
-        selectedLines.length > 0 ? selectedLines : parsedLyrics.lines,
+        targetLines,
         {
           provider: llmProvider,
           model: llmProvider === 'groq' ? 'openai/gpt-oss-120b' : selectedOllamaModel,
@@ -155,20 +169,62 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         }
       );
 
+      let appliedCount = 0;
       if (results.archetypes && Object.keys(results.archetypes).length > 0) {
         setWordOverrides(prev => ({ ...prev, ...results.archetypes }));
+        appliedCount += Object.keys(results.archetypes).length;
       } else if (Object.keys(results).length > 0) {
         setWordOverrides(prev => ({ ...prev, ...results }));
+        appliedCount += Object.keys(results).length;
       }
       if (results.motifs && Object.keys(results.motifs).length > 0) {
         setWordMotifOverrides(prev => ({ ...prev, ...results.motifs }));
+        appliedCount += Object.keys(results.motifs).length;
       }
+
+      setLastAnalysisNotice({
+        message: `Applied ${appliedCount} AI styles across ${targetLines.length} lines`,
+        count: appliedCount,
+        timestamp: Date.now()
+      });
     } catch (err: any) {
       console.error('LLM analysis failed:', err);
     } finally {
       setIsAnalyzingOllama(false);
-      setTimeout(() => setOllamaProgress(null), 3500);
+      setTimeout(() => setOllamaProgress(null), 4000);
     }
+  };
+
+  const handleClearSelectedStanzaOverrides = () => {
+    const start = Math.min(selectedStartIndex, selectedEndIndex);
+    const end = Math.max(selectedStartIndex, selectedEndIndex);
+    const stanzaLines = parsedLyrics.lines.slice(start, end + 1);
+
+    const keysToRemove = new Set<string>();
+    for (const line of stanzaLines) {
+      if (line.words) {
+        for (const w of line.words) {
+          keysToRemove.add(`${w.word}_${w.startMs}`);
+          keysToRemove.add(w.word.toLowerCase().replace(/[^a-z0-9]/g, ''));
+        }
+      }
+    }
+
+    setWordOverrides(prev => {
+      const next = { ...prev };
+      for (const k of keysToRemove) delete next[k];
+      return next;
+    });
+    setWordFontOverrides(prev => {
+      const next = { ...prev };
+      for (const k of keysToRemove) delete next[k];
+      return next;
+    });
+    setWordMotifOverrides(prev => {
+      const next = { ...prev };
+      for (const k of keysToRemove) delete next[k];
+      return next;
+    });
   };
 
   // --- PREVIEW FRAME IN OLED CANVAS ---
@@ -202,17 +258,24 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
   // Select track from search results
   const handleSelectTrack = (track: LrclibTrack) => {
+    // Reset previous song overrides & notices
+    setWordOverrides({});
+    setWordFontOverrides({});
+    setWordMotifOverrides({});
+    setOllamaInspectionLogs([]);
+    setLastAnalysisNotice(null);
+
     if (track.syncedLyrics) {
       const parsed = parseLrc(track.syncedLyrics);
       setParsedLyrics(parsed);
       setSelectedStartIndex(0);
-      setSelectedEndIndex(Math.min(4, parsed.lines.length - 1));
+      setSelectedEndIndex(Math.min(3, parsed.lines.length - 1));
       setPlayheadMs(parsed.lines[0]?.startMs || 0);
     } else if (track.plainLyrics) {
       const parsed = parsePlainTextLyrics(track.plainLyrics, track.duration * 1000);
       setParsedLyrics(parsed);
       setSelectedStartIndex(0);
-      setSelectedEndIndex(Math.min(4, parsed.lines.length - 1));
+      setSelectedEndIndex(Math.min(3, parsed.lines.length - 1));
       setPlayheadMs(0);
     }
   };
@@ -220,10 +283,17 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   // Parse pasted LRC / plain lyrics
   const handleApplyPastedLrc = () => {
     if (!pastedLrcText.trim()) return;
+    // Reset previous song overrides & notices
+    setWordOverrides({});
+    setWordFontOverrides({});
+    setWordMotifOverrides({});
+    setOllamaInspectionLogs([]);
+    setLastAnalysisNotice(null);
+
     const parsed = parseLrc(pastedLrcText);
     setParsedLyrics(parsed);
     setSelectedStartIndex(0);
-    setSelectedEndIndex(Math.min(4, parsed.lines.length - 1));
+    setSelectedEndIndex(Math.min(3, parsed.lines.length - 1));
     setPlayheadMs(parsed.lines[0]?.startMs || 0);
   };
 
@@ -423,6 +493,41 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const activeScrubMinMs = scrubScope === 'full' ? 0 : rangeStartMs;
   const activeScrubMaxMs = scrubScope === 'full' ? songTotalDurationMs : rangeEndMs;
 
+  // Detailed summary of overrides and status for the currently selected stanza
+  const selectedStanzaStats = useMemo(() => {
+    let wordCount = 0;
+    let overrideCount = 0;
+    const activeMotifs = new Set<string>();
+    const activeArchetypes = new Set<string>();
+
+    for (const line of selectedLines) {
+      if (line.words) {
+        for (const w of line.words) {
+          wordCount++;
+          const specificKey = `${w.word}_${w.startMs}`;
+          const cleanKey = w.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const arch = wordOverrides[specificKey] || wordOverrides[cleanKey];
+          const motif = wordMotifOverrides[specificKey] || wordMotifOverrides[cleanKey];
+          if (arch) {
+            overrideCount++;
+            activeArchetypes.add(ARCHETYPE_METADATA[arch]?.name || arch);
+          }
+          if (motif && motif !== 'none') {
+            activeMotifs.add(MOTIF_METADATA[motif]?.name || motif);
+          }
+        }
+      }
+    }
+
+    return {
+      wordCount,
+      overrideCount,
+      hasOverrides: overrideCount > 0,
+      activeMotifs: Array.from(activeMotifs),
+      activeArchetypes: Array.from(activeArchetypes)
+    };
+  }, [selectedLines, wordOverrides, wordMotifOverrides]);
+
   // Live timeline frame counter and playback duration clock
   const currentFrameIndex = useMemo(() => {
     if (totalFrames <= 0) return 0;
@@ -445,7 +550,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   // Line selection click handler
   const handleLineClick = (idx: number, e: React.MouseEvent) => {
     if (e.shiftKey) {
-      // Range expand
+      // Range expand from start to clicked index
       setSelectedEndIndex(idx);
     } else {
       setSelectedStartIndex(idx);
@@ -495,16 +600,6 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     }
   }, [activeLineIndex, isPlaying, scrubScope, isAutoScrollEnabled]);
 
-  // Sync selected line with playhead in full song scrub mode
-  useEffect(() => {
-    if (scrubScope !== 'full' || parsedLyrics.lines.length === 0) return;
-    const lineIdx = parsedLyrics.lines.findIndex(l => playheadMs >= l.startMs && playheadMs < l.endMs);
-    if (lineIdx !== -1 && (lineIdx !== selectedStartIndex || lineIdx !== selectedEndIndex)) {
-      setSelectedStartIndex(lineIdx);
-      setSelectedEndIndex(lineIdx);
-    }
-  }, [playheadMs, scrubScope, parsedLyrics.lines, selectedStartIndex, selectedEndIndex]);
-
   // Quick range helpers
   const handleSelectAll = () => {
     setSelectedStartIndex(0);
@@ -515,8 +610,10 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     const start = Math.min(selectedStartIndex, selectedEndIndex);
     const end = Math.max(selectedStartIndex, selectedEndIndex);
     if (delta > 0) {
+      setSelectedStartIndex(start);
       setSelectedEndIndex(Math.min(parsedLyrics.lines.length - 1, end + 1));
     } else if (delta < 0 && end > start) {
+      setSelectedStartIndex(start);
       setSelectedEndIndex(end - 1);
     }
   };
@@ -1286,6 +1383,14 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               <span className={`text-[10px] font-sans hidden sm:inline ${themeMode === 'dark' ? 'text-white/40' : 'text-[#777]'}`}>
                 Click line to seek • Click word to customize
               </span>
+              {/* Prominent Selection Stanza Badge */}
+              <span className="px-2.5 py-0.5 rounded-full bg-[#D97757]/15 border border-[#D97757]/30 text-[#D97757] font-mono text-[10px] font-semibold flex items-center gap-1">
+                <span>Selected: Lines {Math.min(selectedStartIndex, selectedEndIndex) + 1}–{Math.max(selectedStartIndex, selectedEndIndex) + 1}</span>
+                <span className="opacity-40">•</span>
+                <span>{selectedLines.length} {selectedLines.length === 1 ? 'line' : 'lines'}</span>
+                <span className="opacity-40">•</span>
+                <span>{rangeDurationSec.toFixed(1)}s</span>
+              </span>
             </div>
 
             {/* Quick Selection Shortcuts */}
@@ -1390,28 +1495,30 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                           : ''
                       }`}
                     >
-                      {/* Selection Pin Badges */}
-                      {isStartPin && (
-                        <span className="absolute -top-2.5 left-4 bg-[#D97757] text-white text-[8px] font-bold px-2 py-0.5 shadow-sm z-20 font-mono tracking-wider">
-                          START • {(line.startMs / 1000).toFixed(2)}s
-                        </span>
-                      )}
-                      {isEndPin && (
-                        <span className="absolute -bottom-2.5 right-4 bg-[#D97757] text-white text-[8px] font-bold px-2 py-0.5 shadow-sm z-20 font-mono tracking-wider">
-                          END • {(line.endMs / 1000).toFixed(2)}s
-                        </span>
-                      )}
-
-                      {/* Header Timestamp */}
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] text-[#D97757] font-mono font-semibold tracking-wider">
-                          {Math.floor(line.startMs / 60000)}:{((line.startMs % 60000) / 1000).toFixed(2).padStart(5, '0')}
-                        </span>
-                        {isActiveLine && (
-                          <span className="text-[8px] font-bold text-white bg-[#D97757] px-2 py-0.5 uppercase font-mono tracking-wider">
-                            PLAYING
+                      {/* Header Timestamp & Selection Badges (Contained inside, zero clipping!) */}
+                      <div className="flex items-center justify-between mb-2.5 flex-wrap gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-[#D97757] font-mono font-semibold tracking-wider">
+                            {Math.floor(line.startMs / 60000)}:{((line.startMs % 60000) / 1000).toFixed(2).padStart(5, '0')}
                           </span>
-                        )}
+                          {isStartPin && (
+                            <span className="bg-[#D97757] text-white text-[8px] font-bold px-2 py-0.5 rounded shadow-xs font-mono tracking-wider">
+                              START • {(line.startMs / 1000).toFixed(2)}s
+                            </span>
+                          )}
+                          {isEndPin && (
+                            <span className="bg-[#D97757] text-white text-[8px] font-bold px-2 py-0.5 rounded shadow-xs font-mono tracking-wider">
+                              END • {(line.endMs / 1000).toFixed(2)}s
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isActiveLine && (
+                            <span className="text-[8px] font-bold text-white bg-[#D97757] px-2 py-0.5 rounded uppercase font-mono tracking-wider animate-pulse">
+                              PLAYING
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {/* Clean Apple Music Typography - Words are directly interactive */}
@@ -1451,6 +1558,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                                   });
                                 }}
                                 className={`text-xl md:text-2xl font-bold tracking-tight transition-all duration-150 inline-flex flex-col items-center cursor-pointer rounded px-1.5 py-0.5 -mx-1 group/word ${
+                                  isOverridden ? 'bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs' : ''
+                                } ${
                                   themeMode === 'dark'
                                     ? isWordActive
                                       ? 'text-white font-black underline decoration-[#D97757] decoration-2'
@@ -1463,11 +1572,11 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                                     ? 'text-[#1A1A1A] font-bold hover:text-[#D97757]'
                                     : 'text-[#888] hover:text-[#1A1A1A]'
                                 }`}
-                                title={`Click to customize style for "${w.word}"`}
+                                title={isOverridden ? `Active Override: ${ARCHETYPE_METADATA[wordArch]?.name || wordArch} • Click to edit` : `Click to customize style for "${w.word}"`}
                               >
                                 <span>{w.word}</span>
                                 {isOverridden && (
-                                  <span className="w-1 h-1 rounded-full bg-[#D97757] -mt-0.5" title="Custom override active" />
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#D97757] -mt-0.5" title="Custom override active" />
                                 )}
                               </button>
                             );
@@ -1738,13 +1847,6 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                         setPlayheadMs(val);
                         if (audioRef.current) {
                           audioRef.current.currentTime = val / 1000;
-                        }
-                        if (scrubScope === 'full' && parsedLyrics.lines.length > 0) {
-                          const lineIdx = parsedLyrics.lines.findIndex(l => val >= l.startMs && val < l.endMs);
-                          if (lineIdx !== -1 && (lineIdx !== selectedStartIndex || lineIdx !== selectedEndIndex)) {
-                            setSelectedStartIndex(lineIdx);
-                            setSelectedEndIndex(lineIdx);
-                          }
                         }
                       }}
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
@@ -2073,13 +2175,86 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                   </p>
                 </div>
 
-                {/* Semantic Director Engine (Heuristic vs LLM) */}
-                <div className={`p-3 border rounded-xl flex flex-col gap-2.5 ${
+                {/* Contextual Target & Director Engine Panel */}
+                <div className={`p-3 border rounded-xl flex flex-col gap-3 ${
                   themeMode === 'dark' ? 'bg-[#16161A] border-white/10' : 'bg-[#FAF9F5] border-[#E8E5DE]'
                 }`}>
-                  <div className="flex items-center justify-between">
+                  {/* Active Target Stanza Status Card */}
+                  <div className={`p-2.5 rounded-lg border flex flex-col gap-1.5 ${
+                    themeMode === 'dark' ? 'bg-[#1F1F24] border-white/10' : 'bg-white border-[#E8E5DE]'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-[10px] font-mono uppercase tracking-wider font-semibold ${
+                          themeMode === 'dark' ? 'text-white/60' : 'text-[#87867F]'
+                        }`}>
+                          Current Selection
+                        </span>
+                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-[#D97757]/15 text-[#D97757] border border-[#D97757]/30">
+                          Lines {Math.min(selectedStartIndex, selectedEndIndex) + 1}–{Math.max(selectedStartIndex, selectedEndIndex) + 1}
+                        </span>
+                      </div>
+                      <span className={`text-[10px] font-mono ${themeMode === 'dark' ? 'text-white/40' : 'text-[#87867F]'}`}>
+                        {selectedLines.length} lines • {rangeDurationSec.toFixed(1)}s
+                      </span>
+                    </div>
+
+                    {/* Stanza Applied State Badge & Clear Action */}
+                    <div className="flex items-center justify-between pt-1 border-t border-current/10">
+                      {selectedStanzaStats.hasOverrides ? (
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                          <span className="text-[11px] font-sans font-medium text-emerald-600 dark:text-emerald-400 truncate">
+                            {selectedStanzaStats.overrideCount} custom overrides active
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#D97757] shrink-0" />
+                          <span className={`text-[11px] font-sans font-medium truncate ${
+                            themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'
+                          }`}>
+                            ⚡ Fast Heuristic (Auto)
+                          </span>
+                        </div>
+                      )}
+
+                      {selectedStanzaStats.hasOverrides && (
+                        <button
+                          type="button"
+                          onClick={handleClearSelectedStanzaOverrides}
+                          className="text-[10px] font-sans text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 flex items-center gap-1 cursor-pointer transition-colors"
+                          title="Reset custom overrides for this stanza to heuristic defaults"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                          <span>Reset</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Active Archetypes Tags if overrides applied */}
+                    {selectedStanzaStats.activeArchetypes.length > 0 && (
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {selectedStanzaStats.activeArchetypes.map(arch => (
+                          <span
+                            key={arch}
+                            className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${
+                              themeMode === 'dark'
+                                ? 'bg-white/5 border-white/10 text-white/70'
+                                : 'bg-[#FAF9F5] border-[#E8E5DE] text-[#5E5D59]'
+                            }`}
+                          >
+                            {arch}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Director Engine Header & Mode Switcher */}
+                  <div className="flex items-center justify-between pt-0.5">
                     <span className={`text-[11px] font-sans font-medium ${themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'}`}>
-                      Director Engine
+                      Director Mode
                     </span>
                     <div className="flex items-center gap-1">
                       <button
@@ -2103,13 +2278,54 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                         }`}
                       >
                         <Bot className="w-3 h-3" />
-                        <span>AI LLM</span>
+                        <span>AI Director</span>
                       </button>
                     </div>
                   </div>
 
-                  {inferenceMode === 'ollama' && (
-                    <div className="flex flex-col gap-2 pt-2 border-t border-current/10">
+                  {inferenceMode === 'heuristic' ? (
+                    <div className={`p-2.5 rounded-lg border text-[11px] font-sans leading-relaxed ${
+                      themeMode === 'dark' ? 'bg-[#18181C] border-white/5 text-white/60' : 'bg-white border-[#E8E5DE] text-[#5E5D59]'
+                    }`}>
+                      <p>
+                        Heuristic rules automatically compute archetype pacing and font weights per word in real-time from syllable cadence and beat transients.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2.5 pt-1 border-t border-current/10">
+                      {/* Analysis Scope Switcher */}
+                      <div className="flex flex-col gap-1">
+                        <span className={`text-[10px] font-sans font-medium ${themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}`}>
+                          Target Range for AI Analysis:
+                        </span>
+                        <div className={`grid grid-cols-2 p-0.5 rounded-lg border text-[10px] font-sans font-medium ${
+                          themeMode === 'dark' ? 'bg-[#18181B] border-white/10' : 'bg-white border-[#E8E5DE]'
+                        }`}>
+                          <button
+                            type="button"
+                            onClick={() => setAnalysisScope('selected')}
+                            className={`py-1 px-1.5 rounded-md transition-all cursor-pointer text-center truncate ${
+                              analysisScope === 'selected'
+                                ? 'bg-[#D97757] text-white shadow-xs font-semibold'
+                                : 'text-[#87867F] hover:text-[#141413] dark:hover:text-white'
+                            }`}
+                          >
+                            Selected ({selectedLines.length} lines)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setAnalysisScope('all')}
+                            className={`py-1 px-1.5 rounded-md transition-all cursor-pointer text-center truncate ${
+                              analysisScope === 'all'
+                                ? 'bg-[#D97757] text-white shadow-xs font-semibold'
+                                : 'text-[#87867F] hover:text-[#141413] dark:hover:text-white'
+                            }`}
+                          >
+                            Full Song ({parsedLyrics.lines.length} lines)
+                          </button>
+                        </div>
+                      </div>
+
                       {/* Provider Switcher */}
                       <div className={`flex items-center p-0.5 rounded-lg border text-[10px] font-sans font-medium ${
                         themeMode === 'dark' ? 'bg-[#18181B] border-white/10' : 'bg-white border-[#E8E5DE]'
@@ -2154,12 +2370,14 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                           {isAnalyzingOllama ? (
                             <>
                               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                              <span>{ollamaProgress?.message || 'Analyzing...'}</span>
+                              <span className="truncate">{ollamaProgress?.message || 'Analyzing...'}</span>
                             </>
                           ) : (
                             <>
-                              <Sparkles className="w-3.5 h-3.5" />
-                              <span>Analyze with Groq 120B Cloud</span>
+                              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                              <span className="truncate">
+                                Analyze {analysisScope === 'selected' ? `Selected (${selectedLines.length} lines)` : `Full Song (${parsedLyrics.lines.length} lines)`} (Groq 120B)
+                              </span>
                             </>
                           )}
                         </button>
@@ -2200,16 +2418,35 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                             {isAnalyzingOllama ? (
                               <>
                                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                <span>{ollamaProgress?.message || 'Analyzing...'}</span>
+                                <span className="truncate">{ollamaProgress?.message || 'Analyzing...'}</span>
                               </>
                             ) : (
                               <>
-                                <Sparkles className="w-3.5 h-3.5" />
-                                <span>Analyze with {selectedOllamaModel}</span>
+                                <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                                <span className="truncate">
+                                  Analyze {analysisScope === 'selected' ? `Selected (${selectedLines.length} lines)` : `Full Song (${parsedLyrics.lines.length} lines)`} ({selectedOllamaModel})
+                                </span>
                               </>
                             )}
                           </button>
                         </>
+                      )}
+
+                      {/* Notice banner after successful analysis */}
+                      {lastAnalysisNotice && (
+                        <div className="flex items-center justify-between p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[11px] font-sans">
+                          <div className="flex items-center gap-1.5 truncate">
+                            <Check className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
+                            <span className="truncate">{lastAnalysisNotice.message}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setLastAnalysisNotice(null)}
+                            className="p-0.5 hover:opacity-75 cursor-pointer shrink-0"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
                       )}
 
                       {ollamaProgress && (
