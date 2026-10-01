@@ -227,6 +227,71 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     });
   };
 
+  // Safe word editor snapshot to allow full cancellation
+  const initialWordStateRef = useRef<{
+    arch?: MotionArchetype;
+    font?: string;
+    motif?: VisualMotif;
+  } | null>(null);
+
+  const handleOpenWordEditor = (
+    w: LyricWord,
+    lineIdx: number,
+    wIdx: number,
+    wordArch: MotionArchetype,
+    wordFont: string,
+    wordMotif: VisualMotif
+  ) => {
+    const specificKey = `${w.word}_${w.startMs}`;
+    const cleanKey = w.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+    initialWordStateRef.current = {
+      arch: wordOverrides[specificKey] || wordOverrides[cleanKey],
+      font: wordFontOverrides[specificKey] || wordFontOverrides[cleanKey],
+      motif: wordMotifOverrides[specificKey] || wordMotifOverrides[cleanKey],
+    };
+    setEditingWordTarget({
+      word: w,
+      lineIdx,
+      wordIdx: wIdx,
+      currentArchetype: wordArch,
+      currentFont: wordFont,
+      currentMotif: wordMotif
+    });
+  };
+
+  const handleCancelWordEditor = () => {
+    if (!editingWordTarget || !initialWordStateRef.current) {
+      setEditingWordTarget(null);
+      return;
+    }
+    const specificKey = `${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`;
+    const cleanKey = editingWordTarget.word.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const { arch, font, motif } = initialWordStateRef.current;
+
+    setWordOverrides(prev => {
+      const next = { ...prev };
+      if (arch) next[specificKey] = arch;
+      else { delete next[specificKey]; delete next[cleanKey]; }
+      return next;
+    });
+
+    setWordFontOverrides(prev => {
+      const next = { ...prev };
+      if (font) next[specificKey] = font;
+      else { delete next[specificKey]; delete next[cleanKey]; }
+      return next;
+    });
+
+    setWordMotifOverrides(prev => {
+      const next = { ...prev };
+      if (motif && motif !== 'none') next[specificKey] = motif;
+      else { delete next[specificKey]; delete next[cleanKey]; }
+      return next;
+    });
+
+    setEditingWordTarget(null);
+  };
+
   // --- PREVIEW FRAME IN OLED CANVAS ---
   const [previewFrame, setPreviewFrame] = useState<ImageData | null>(null);
   const previewFramesRef = useRef<ExtractedFrame[]>([]);
@@ -493,16 +558,23 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const activeScrubMinMs = scrubScope === 'full' ? 0 : rangeStartMs;
   const activeScrubMaxMs = scrubScope === 'full' ? songTotalDurationMs : rangeEndMs;
 
-  // Detailed summary of overrides and status for the currently selected stanza
+  // Summary of overrides, roles, and status for the currently selected stanza
   const selectedStanzaStats = useMemo(() => {
     let wordCount = 0;
     let overrideCount = 0;
     const activeMotifs = new Set<string>();
     const activeArchetypes = new Set<string>();
 
+    let heroCount = 0;
+    let actionCount = 0;
+    let noveltyCount = 0;
+    let anchorCount = 0;
+    const autoArchetypeCounts: Record<string, number> = {};
+
     for (const line of selectedLines) {
       if (line.words) {
-        for (const w of line.words) {
+        for (let wIdx = 0; wIdx < line.words.length; wIdx++) {
+          const w = line.words[wIdx];
           wordCount++;
           const specificKey = `${w.word}_${w.startMs}`;
           const cleanKey = w.word.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -515,18 +587,61 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           if (motif && motif !== 'none') {
             activeMotifs.add(MOTIF_METADATA[motif]?.name || motif);
           }
+
+          // Heuristic assignment calculation
+          const precedingWord = wIdx > 0 ? line.words[wIdx - 1] : undefined;
+          const effArch = getWordEffectiveArchetype(w, wIdx, archetype, wordOverrides, precedingWord);
+          const role = getWordFontRole(effArch, w.word);
+          if (role === 'hero') heroCount++;
+          else if (role === 'action') actionCount++;
+          else if (role === 'novelty') noveltyCount++;
+          else anchorCount++;
+
+          const archName = ARCHETYPE_METADATA[effArch]?.name || effArch;
+          autoArchetypeCounts[archName] = (autoArchetypeCounts[archName] || 0) + 1;
         }
       }
     }
+
+    const topAutoStyles = Object.entries(autoArchetypeCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([name, cnt]) => `${name} (${cnt})`);
 
     return {
       wordCount,
       overrideCount,
       hasOverrides: overrideCount > 0,
       activeMotifs: Array.from(activeMotifs),
-      activeArchetypes: Array.from(activeArchetypes)
+      activeArchetypes: Array.from(activeArchetypes),
+      heroCount,
+      actionCount,
+      noveltyCount,
+      anchorCount,
+      topAutoStyles
     };
-  }, [selectedLines, wordOverrides, wordMotifOverrides]);
+  }, [selectedLines, wordOverrides, wordMotifOverrides, archetype]);
+
+  // Global map tracking which lines across the entire song have custom overrides applied
+  const lineOverrideStatusMap = useMemo(() => {
+    return parsedLyrics.lines.map(line => {
+      if (!line.words || line.words.length === 0) return { hasCustom: false, count: 0 };
+      let count = 0;
+      for (const w of line.words) {
+        const specificKey = `${w.word}_${w.startMs}`;
+        const cleanKey = w.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (
+          wordOverrides[specificKey] || wordOverrides[cleanKey] ||
+          wordFontOverrides[specificKey] || wordFontOverrides[cleanKey] ||
+          (wordMotifOverrides[specificKey] && wordMotifOverrides[specificKey] !== 'none') ||
+          (wordMotifOverrides[cleanKey] && wordMotifOverrides[cleanKey] !== 'none')
+        ) {
+          count++;
+        }
+      }
+      return { hasCustom: count > 0, count };
+    });
+  }, [parsedLyrics.lines, wordOverrides, wordFontOverrides, wordMotifOverrides]);
 
   // Live timeline frame counter and playback duration clock
   const currentFrameIndex = useMemo(() => {
@@ -1513,6 +1628,17 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                           )}
                         </div>
                         <div className="flex items-center gap-2">
+                          {lineOverrideStatusMap[idx]?.hasCustom ? (
+                            <span className="text-[8px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 flex items-center gap-1 shadow-xs">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                              <span>✨ {lineOverrideStatusMap[idx].count} custom overrides</span>
+                            </span>
+                          ) : (
+                            <span className="text-[8px] font-mono font-medium px-2 py-0.5 rounded bg-black/5 dark:bg-white/5 text-[#5E5D59] dark:text-white/50 border border-black/5 dark:border-white/10 flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#D97757]" />
+                              <span>⚡ Auto Rules</span>
+                            </span>
+                          )}
                           {isActiveLine && (
                             <span className="text-[8px] font-bold text-white bg-[#D97757] px-2 py-0.5 rounded uppercase font-mono tracking-wider animate-pulse">
                               PLAYING
@@ -1548,14 +1674,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setEditingWordTarget({
-                                    word: w,
-                                    lineIdx: idx,
-                                    wordIdx: wIdx,
-                                    currentArchetype: wordArch,
-                                    currentFont: wordFont,
-                                    currentMotif: wordMotif
-                                  });
+                                  handleOpenWordEditor(w, idx, wIdx, wordArch, wordFont, wordMotif);
                                 }}
                                 className={`text-xl md:text-2xl font-bold tracking-tight transition-all duration-150 inline-flex flex-col items-center cursor-pointer rounded px-1.5 py-0.5 -mx-1 group/word ${
                                   isOverridden ? 'bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs' : ''
@@ -1623,14 +1742,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setEditingWordTarget({
-                                    word: w,
-                                    lineIdx: idx,
-                                    wordIdx: wIdx,
-                                    currentArchetype: wordArch,
-                                    currentFont: wordFont,
-                                    currentMotif: wordMotif
-                                  });
+                                  handleOpenWordEditor(w, idx, wIdx, wordArch, wordFont, wordMotif);
                                 }}
                                 className={`px-2 py-0.5 text-[10px] font-sans rounded-md flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
                                   isOverridden
@@ -1676,6 +1788,11 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     }`}>
                       {Math.floor(line.startMs / 60000)}:{((line.startMs % 60000) / 1000).toFixed(1).padStart(4, '0')}
                     </span>
+                    {lineOverrideStatusMap[idx]?.hasCustom ? (
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 shadow-xs" title={`${lineOverrideStatusMap[idx].count} custom overrides active`} />
+                    ) : (
+                      <span className="w-1.5 h-1.5 rounded-full bg-current opacity-20 shrink-0" />
+                    )}
                     <span className="text-lg font-medium transition-colors">
                       {line.text}
                     </span>
@@ -2001,7 +2118,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             }`}>
               {[
                 { id: 'auto' as const, label: 'Smart Director', Icon: Sparkles },
-                { id: 'manual' as const, label: 'Manual Lock', Icon: Sliders }
+                { id: 'manual' as const, label: 'Single Style', Icon: Sliders }
               ].map(tab => {
                 const isActive = directorModeTab === tab.id;
                 const TabIcon = tab.Icon;
@@ -2042,140 +2159,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 min-h-0">
             {directorModeTab === 'auto' ? (
               <>
-                {/* Thematic 4-Font Style Pack Selector */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className={`text-[11px] font-sans font-medium block ${
-                      themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'
-                    }`}>
-                      Thematic Style Pack
-                    </label>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 mb-2.5">
-                    {(['trap_drill', 'shonen_comic', 'cartoon_bounce', 'cyber_industrial'] as StylePackId[]).map(packId => {
-                      const pack = STYLE_PACKS[packId];
-                      const isSelected = stylePack === packId;
-                      return (
-                        <button
-                          key={packId}
-                          type="button"
-                          onClick={() => {
-                            setStylePack(packId);
-                            setFontFamily(pack.fonts.hero);
-                          }}
-                          className={`p-2.5 border rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between ${
-                            isSelected
-                              ? themeMode === 'dark'
-                                ? 'border-[#D97757] bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs'
-                                : 'border-[#D97757] bg-[#FAF0EB] ring-1 ring-[#D97757]/30 shadow-xs'
-                              : themeMode === 'dark'
-                              ? 'border-white/10 hover:border-white/20 bg-[#1C1C20]'
-                              : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-white shadow-xs'
-                          }`}
-                        >
-                          <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded self-start ${
-                            themeMode === 'dark' ? 'bg-white/10 text-white/80' : 'bg-[#FAF9F5] text-[#5E5D59] border border-[#E8E5DE]'
-                          }`}>
-                            {pack.tag}
-                          </span>
-                          <span className={`text-xs font-sans font-medium mt-2 truncate ${
-                            themeMode === 'dark' ? 'text-white' : 'text-[#141413]'
-                          }`}>
-                            {pack.name}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Monochromatic Font Hierarchy Matrix (No rainbow tags!) */}
-                  {stylePack && STYLE_PACKS[stylePack] && (
-                    <div className={`p-3 rounded-xl border text-[11px] font-sans space-y-1.5 ${
-                      themeMode === 'dark' ? 'bg-[#16161A] border-white/10 text-white/80' : 'bg-[#FAF9F5] border-[#E8E5DE] text-[#444]'
-                    }`}>
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium text-[#D97757] flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#D97757]" />
-                          Hero
-                        </span>
-                        <span className="font-mono text-[10px] text-right">{STYLE_PACKS[stylePack].fonts.hero.split(',')[0].replace(/'/g, '')}</span>
-                      </div>
-                      <div className="flex justify-between items-center opacity-85">
-                        <span className="font-medium flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-current opacity-40" />
-                          Action
-                        </span>
-                        <span className="font-mono text-[10px] text-right">{STYLE_PACKS[stylePack].fonts.action.split(',')[0].replace(/'/g, '')}</span>
-                      </div>
-                      <div className="flex justify-between items-center opacity-85">
-                        <span className="font-medium flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-current opacity-40" />
-                          Novelty
-                        </span>
-                        <span className="font-mono text-[10px] text-right">{STYLE_PACKS[stylePack].fonts.novelty.split(',')[0].replace(/'/g, '')}</span>
-                      </div>
-                      <div className="flex justify-between items-center opacity-70">
-                        <span className="font-medium flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-current opacity-30" />
-                          Anchor
-                        </span>
-                        <span className="font-mono text-[10px] text-right">{STYLE_PACKS[stylePack].fonts.anchor.split(',')[0].replace(/['"]/g, '')}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Visual Motifs & Manga Layering */}
-                <div>
-                  <label className={`text-[11px] font-sans font-medium block mb-2 ${
-                    themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'
-                  }`}>
-                    Visual Motifs & Manga Layering
-                  </label>
-                  <div className="grid grid-cols-4 gap-1.5 mb-2">
-                    {[
-                      { id: 'off' as MotifMode, label: 'Off', desc: 'Clean typography only. Zero background visuals.' },
-                      { id: 'subtle' as MotifMode, label: 'Subtle', desc: 'Minimal speedline flares on beat transients.' },
-                      { id: 'dynamic' as MotifMode, label: 'Dynamic', desc: 'AI-directed motif assignment per lyric meaning.' },
-                      { id: 'heavy' as MotifMode, label: 'Heavy', desc: 'Full manga layering with Bayer halftones.' },
-                    ].map(mode => {
-                      const isSelected = motifMode === mode.id;
-                      return (
-                        <button
-                          key={mode.id}
-                          type="button"
-                          onClick={() => setMotifMode(mode.id)}
-                          className={`py-1.5 px-2 border rounded-xl text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
-                            isSelected
-                              ? themeMode === 'dark'
-                                ? 'border-[#D97757] bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs'
-                                : 'border-[#D97757] bg-[#FAF0EB] ring-1 ring-[#D97757]/30 shadow-xs'
-                              : themeMode === 'dark'
-                              ? 'border-white/10 hover:border-white/20 bg-[#1C1C20]'
-                              : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-white shadow-xs'
-                          }`}
-                          title={mode.desc}
-                        >
-                          <span className={`text-[11px] font-sans font-medium ${
-                            themeMode === 'dark' ? 'text-white' : 'text-[#141413]'
-                          }`}>
-                            {mode.label}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <p className={`text-[10px] font-sans leading-tight ${
-                    themeMode === 'dark' ? 'text-white/40' : 'text-[#87867F]'
-                  }`}>
-                    {motifMode === 'off' && 'Clean typography only. Zero background visuals.'}
-                    {motifMode === 'subtle' && 'Minimal speedline flares on beat transients.'}
-                    {motifMode === 'dynamic' && 'Semantic motif assignment (crowns, scopes, flames & stars).'}
-                    {motifMode === 'heavy' && 'Full manga layering with Bayer halftones and speedlines.'}
-                  </p>
-                </div>
-
-                {/* Contextual Target & Director Engine Panel */}
+                {/* 1. Contextual Target & Director Engine Panel (Top Priority) */}
                 <div className={`p-3 border rounded-xl flex flex-col gap-3 ${
                   themeMode === 'dark' ? 'bg-[#16161A] border-white/10' : 'bg-[#FAF9F5] border-[#E8E5DE]'
                 }`}>
@@ -2210,11 +2194,9 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                         </div>
                       ) : (
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#D97757] shrink-0" />
-                          <span className={`text-[11px] font-sans font-medium truncate ${
-                            themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'
-                          }`}>
-                            ⚡ Fast Heuristic (Auto)
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                          <span className="text-[11px] font-sans font-medium text-emerald-600 dark:text-emerald-400 truncate">
+                            ⚡ Smart Auto Rules Active
                           </span>
                         </div>
                       )}
@@ -2251,7 +2233,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     )}
                   </div>
 
-                  {/* Director Engine Header & Mode Switcher */}
+                  {/* Director Mode Switcher */}
                   <div className="flex items-center justify-between pt-0.5">
                     <span className={`text-[11px] font-sans font-medium ${themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'}`}>
                       Director Mode
@@ -2266,7 +2248,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                             : themeMode === 'dark' ? 'border-white/10 text-white/60 hover:text-white bg-[#232220]' : 'border-[#E8E5DE] text-[#5E5D59] bg-white'
                         }`}
                       >
-                        Fast Heuristic
+                        Auto Rules
                       </button>
                       <button
                         type="button"
@@ -2278,20 +2260,74 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                         }`}
                       >
                         <Bot className="w-3 h-3" />
-                        <span>AI Director</span>
+                        <span>AI Cloud Director</span>
                       </button>
                     </div>
                   </div>
 
+                  {/* Mode 1: Auto Rules (High Confidence Breakdown Card) */}
                   {inferenceMode === 'heuristic' ? (
-                    <div className={`p-2.5 rounded-lg border text-[11px] font-sans leading-relaxed ${
-                      themeMode === 'dark' ? 'bg-[#18181C] border-white/5 text-white/60' : 'bg-white border-[#E8E5DE] text-[#5E5D59]'
+                    <div className={`p-3 rounded-xl border flex flex-col gap-2.5 ${
+                      themeMode === 'dark' ? 'bg-[#18181C] border-white/5 text-white/80' : 'bg-white border-[#E8E5DE] text-[#444]'
                     }`}>
-                      <p>
-                        Heuristic rules automatically compute archetype pacing and font weights per word in real-time from syllable cadence and beat transients.
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-sans font-semibold flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Smart Pacing Ready</span>
+                        </span>
+                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold">
+                          Ready to Render
+                        </span>
+                      </div>
+                      <p className={`text-[10px] font-sans leading-relaxed ${themeMode === 'dark' ? 'text-white/60' : 'text-[#666]'}`}>
+                        The kinetic engine dynamically balances punchlines and filler rests across your selection at 60 FPS:
                       </p>
+                      <div className="grid grid-cols-2 gap-1.5 text-[10px] font-mono">
+                        <div className="p-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 flex items-center justify-between">
+                          <span className="text-[#D97757] font-semibold">Hero Words:</span>
+                          <span className="font-bold">{selectedStanzaStats.heroCount}</span>
+                        </div>
+                        <div className="p-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 flex items-center justify-between">
+                          <span className="opacity-75">Action Words:</span>
+                          <span className="font-bold">{selectedStanzaStats.actionCount}</span>
+                        </div>
+                        <div className="p-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 flex items-center justify-between">
+                          <span className="opacity-75">Novelty Accents:</span>
+                          <span className="font-bold">{selectedStanzaStats.noveltyCount}</span>
+                        </div>
+                        <div className="p-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 flex items-center justify-between">
+                          <span className="opacity-60">Anchor Fills:</span>
+                          <span className="font-bold">{selectedStanzaStats.anchorCount}</span>
+                        </div>
+                      </div>
+                      {selectedStanzaStats.topAutoStyles.length > 0 && (
+                        <div className="flex items-center gap-1 pt-0.5 flex-wrap text-[9px] font-mono">
+                          <span className="opacity-50">Top Styles:</span>
+                          {selectedStanzaStats.topAutoStyles.map(st => (
+                            <span key={st} className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 border border-current/10">
+                              {st}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {selectedStanzaStats.hasOverrides && (
+                        <div className="flex items-center justify-between pt-1.5 border-t border-current/10 text-[10px]">
+                          <span className="text-amber-500 font-medium">
+                            {selectedStanzaStats.overrideCount} custom overrides take priority
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleClearSelectedStanzaOverrides}
+                            className="text-rose-500 hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                            Reset Stanza
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ) : (
+                    /* Mode 2: AI Cloud Director */
                     <div className="flex flex-col gap-2.5 pt-1 border-t border-current/10">
                       {/* Analysis Scope Switcher */}
                       <div className="flex flex-col gap-1">
@@ -2461,17 +2497,159 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                       <button
                         type="button"
                         onClick={() => setShowOllamaInspector(true)}
-                        className={`w-full py-1.5 px-2.5 text-[11px] font-sans font-medium rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
+                        className={`w-full py-1.5 px-2.5 text-[10px] font-sans font-medium rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1.5 opacity-70 hover:opacity-100 ${
                           themeMode === 'dark' 
-                            ? 'border-white/10 hover:bg-white/5 text-white/80' 
+                            ? 'border-white/10 hover:bg-white/5 text-white/70' 
                             : 'border-[#E8E5DE] hover:bg-[#F2EFE9] text-[#5E5D59]'
                         }`}
                       >
-                        <Terminal className="w-3.5 h-3.5 text-[#D97757]" />
-                        <span>Inspect Prompts {ollamaInspectionLogs.length > 0 ? `(${ollamaInspectionLogs.length})` : ''}</span>
+                        <Terminal className="w-3 h-3 text-[#D97757]" />
+                        <span>View Prompts & AI Logs {ollamaInspectionLogs.length > 0 ? `(${ollamaInspectionLogs.length})` : ''}</span>
                       </button>
                     </div>
                   )}
+                </div>
+
+                {/* 2. Thematic 4-Font Style Pack Selector (With Live Visual Specimens) */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className={`text-[11px] font-sans font-medium block ${
+                      themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'
+                    }`}>
+                      Thematic Style Pack
+                    </label>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mb-2.5">
+                    {(['trap_drill', 'shonen_comic', 'cartoon_bounce', 'cyber_industrial'] as StylePackId[]).map(packId => {
+                      const pack = STYLE_PACKS[packId];
+                      const isSelected = stylePack === packId;
+                      return (
+                        <button
+                          key={packId}
+                          type="button"
+                          onClick={() => {
+                            setStylePack(packId);
+                            setFontFamily(pack.fonts.hero);
+                          }}
+                          className={`p-2.5 border rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between ${
+                            isSelected
+                              ? themeMode === 'dark'
+                                ? 'border-[#D97757] bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs'
+                                : 'border-[#D97757] bg-[#FAF0EB] ring-1 ring-[#D97757]/30 shadow-xs'
+                              : themeMode === 'dark'
+                              ? 'border-white/10 hover:border-white/20 bg-[#1C1C20]'
+                              : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-white shadow-xs'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded ${
+                              themeMode === 'dark' ? 'bg-white/10 text-white/80' : 'bg-[#FAF9F5] text-[#5E5D59] border border-[#E8E5DE]'
+                            }`}>
+                              {pack.tag}
+                            </span>
+                            {/* Live Visual Specimen */}
+                            <span
+                              style={{ fontFamily: pack.fonts.hero }}
+                              className="text-xs font-bold opacity-80"
+                            >
+                              Ag
+                            </span>
+                          </div>
+                          <span className={`text-xs font-sans font-medium mt-2 truncate ${
+                            themeMode === 'dark' ? 'text-white' : 'text-[#141413]'
+                          }`}>
+                            {pack.name}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Monochromatic Font Hierarchy Matrix with Plain-English Role Definitions */}
+                  {stylePack && STYLE_PACKS[stylePack] && (
+                    <div className={`p-3 rounded-xl border text-[11px] font-sans space-y-1.5 ${
+                      themeMode === 'dark' ? 'bg-[#16161A] border-white/10 text-white/80' : 'bg-[#FAF9F5] border-[#E8E5DE] text-[#444]'
+                    }`}>
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-[#D97757] flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#D97757]" />
+                          Hero (Climax)
+                        </span>
+                        <span className="font-mono text-[10px] text-right">{STYLE_PACKS[stylePack].fonts.hero.split(',')[0].replace(/'/g, '')}</span>
+                      </div>
+                      <div className="flex justify-between items-center opacity-85">
+                        <span className="font-medium flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-current opacity-40" />
+                          Action (Beats)
+                        </span>
+                        <span className="font-mono text-[10px] text-right">{STYLE_PACKS[stylePack].fonts.action.split(',')[0].replace(/'/g, '')}</span>
+                      </div>
+                      <div className="flex justify-between items-center opacity-85">
+                        <span className="font-medium flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-current opacity-40" />
+                          Novelty (Tech/Glitch)
+                        </span>
+                        <span className="font-mono text-[10px] text-right">{STYLE_PACKS[stylePack].fonts.novelty.split(',')[0].replace(/'/g, '')}</span>
+                      </div>
+                      <div className="flex justify-between items-center opacity-70">
+                        <span className="font-medium flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-current opacity-30" />
+                          Anchor (Filler Rest)
+                        </span>
+                        <span className="font-mono text-[10px] text-right">{STYLE_PACKS[stylePack].fonts.anchor.split(',')[0].replace(/['"]/g, '')}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. Visual Motifs & Manga Layering */}
+                <div>
+                  <label className={`text-[11px] font-sans font-medium block mb-2 ${
+                    themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'
+                  }`}>
+                    Visual Motifs & Manga Layering
+                  </label>
+                  <div className="grid grid-cols-4 gap-1.5 mb-2">
+                    {[
+                      { id: 'off' as MotifMode, label: 'Off', desc: 'Clean typography only. Zero background visuals.' },
+                      { id: 'subtle' as MotifMode, label: 'Subtle', desc: 'Minimal speedline flares on beat transients.' },
+                      { id: 'dynamic' as MotifMode, label: 'Dynamic', desc: 'AI-directed motif assignment per lyric meaning.' },
+                      { id: 'heavy' as MotifMode, label: 'Heavy', desc: 'Full manga layering with Bayer halftones.' },
+                    ].map(mode => {
+                      const isSelected = motifMode === mode.id;
+                      return (
+                        <button
+                          key={mode.id}
+                          type="button"
+                          onClick={() => setMotifMode(mode.id)}
+                          className={`py-1.5 px-2 border rounded-xl text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
+                            isSelected
+                              ? themeMode === 'dark'
+                                ? 'border-[#D97757] bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs'
+                                : 'border-[#D97757] bg-[#FAF0EB] ring-1 ring-[#D97757]/30 shadow-xs'
+                              : themeMode === 'dark'
+                              ? 'border-white/10 hover:border-white/20 bg-[#1C1C20]'
+                              : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-white shadow-xs'
+                          }`}
+                          title={mode.desc}
+                        >
+                          <span className={`text-[11px] font-sans font-medium ${
+                            themeMode === 'dark' ? 'text-white' : 'text-[#141413]'
+                          }`}>
+                            {mode.label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className={`text-[10px] font-sans leading-tight ${
+                    themeMode === 'dark' ? 'text-white/40' : 'text-[#87867F]'
+                  }`}>
+                    {motifMode === 'off' && 'Clean typography only. Zero background visuals.'}
+                    {motifMode === 'subtle' && 'Minimal speedline flares on beat transients.'}
+                    {motifMode === 'dynamic' && 'Semantic motif assignment (crowns, scopes, flames & stars).'}
+                    {motifMode === 'heavy' && 'Full manga layering with Bayer halftones and speedlines.'}
+                  </p>
                 </div>
               </>
             ) : (
@@ -2570,6 +2748,20 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           <div className={`p-4 border-t flex flex-col gap-2.5 shrink-0 ${
             themeMode === 'dark' ? 'border-[#2C2B29] bg-[#18181A]' : 'border-[#E8E5DE] bg-white'
           }`}>
+            {/* Scope Mismatch Warning Banner */}
+            {analysisScope === 'all' && selectedLines.length < parsedLyrics.lines.length && (
+              <div className="flex items-center justify-between text-[10px] text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1.5 rounded-lg">
+                <span className="truncate">AI styles applied to all {parsedLyrics.lines.length} lines. Rendering selected {selectedLines.length}.</span>
+                <button
+                  type="button"
+                  onClick={handleSelectAll}
+                  className="underline font-semibold cursor-pointer shrink-0 ml-1.5"
+                >
+                  Select All
+                </button>
+              </div>
+            )}
+
             <div className="flex justify-between items-center text-[11px] font-mono">
               <span className={themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}>
                 {selectedLines.length} lines • {rangeDurationSec.toFixed(1)}s
@@ -2581,19 +2773,27 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             <button
               onClick={handleGenerateAndInject}
               disabled={isRendering || selectedLines.length === 0}
-              className={`w-full py-3 bg-[#D97757] hover:bg-[#C66545] text-white text-xs font-sans font-medium tracking-wide rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2 ${
+              className={`w-full py-3 bg-[#D97757] hover:bg-[#C66545] text-white text-xs font-sans font-medium tracking-wide rounded-xl shadow-xs transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
                 isRendering ? 'opacity-70 cursor-wait' : ''
               }`}
             >
               {isRendering ? (
-                <>
+                <div className="flex items-center gap-2">
                   <RefreshCw className="w-4 h-4 animate-spin" />
                   <span>Rendering sequence ({renderProgress}%)...</span>
-                </>
+                </div>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4" />
-                  <span>Render & Add to Timeline</span>
+                  <div className="flex items-center gap-1.5 font-semibold text-xs">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Render {selectedLines.length} Lines to Timeline</span>
+                  </div>
+                  <span className="text-[10px] opacity-80 font-normal">
+                    {directorModeTab === 'auto'
+                      ? (selectedStanzaStats.hasOverrides ? '✨ AI Overrides + Auto' : '⚡ Smart Auto Rules')
+                      : ARCHETYPE_METADATA[archetype]?.name
+                    } • {STYLE_PACKS[stylePack]?.name}
+                  </span>
                 </>
               )}
             </button>
@@ -2622,13 +2822,24 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                 <h3 className="font-sans text-xl font-bold tracking-tight mt-0.5">
                   "{editingWordTarget.word.word}"
                 </h3>
-                <span className={`text-[11px] font-mono ${themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}`}>
-                  {(editingWordTarget.word.startMs / 1000).toFixed(2)}s – {(editingWordTarget.word.endMs / 1000).toFixed(2)}s ({Math.round(editingWordTarget.word.endMs - editingWordTarget.word.startMs)}ms)
-                </span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`text-[11px] font-mono ${themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}`}>
+                    {(editingWordTarget.word.startMs / 1000).toFixed(2)}s – {(editingWordTarget.word.endMs / 1000).toFixed(2)}s ({Math.round(editingWordTarget.word.endMs - editingWordTarget.word.startMs)}ms)
+                  </span>
+                  {(wordOverrides[`${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`] || wordOverrides[editingWordTarget.word.word.toLowerCase().replace(/[^a-z0-9]/g, '')]) ? (
+                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/20 font-mono font-medium">
+                      ✨ Custom Override
+                    </span>
+                  ) : (
+                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/5 text-[#5E5D59] dark:text-white/60 border border-current/10 font-mono font-medium">
+                      ⚡ Following Auto Rules
+                    </span>
+                  )}
+                </div>
               </div>
               <button
                 type="button"
-                onClick={() => setEditingWordTarget(null)}
+                onClick={handleCancelWordEditor}
                 className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
                   themeMode === 'dark'
                     ? 'border-white/10 hover:bg-white/10 text-white/80'
@@ -2831,6 +3042,17 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             }`}>
               <button
                 type="button"
+                onClick={handleCancelWordEditor}
+                className={`py-2 px-3.5 rounded-xl border text-xs font-sans font-medium transition-colors cursor-pointer ${
+                  themeMode === 'dark'
+                    ? 'border-white/10 hover:bg-white/10 text-white/70'
+                    : 'border-[#E8E5DE] hover:bg-[#FAF9F5] text-[#5E5D59]'
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
                 onClick={() => {
                   const specificKey = `${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`;
                   const cleanKey = editingWordTarget.word.word.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -2867,7 +3089,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                 onClick={() => setEditingWordTarget(null)}
                 className="px-6 py-2 rounded-xl text-xs font-sans font-medium bg-[#D97757] hover:bg-[#C66545] text-white transition-colors cursor-pointer shadow-xs"
               >
-                Done
+                Apply
               </button>
             </div>
           </div>
