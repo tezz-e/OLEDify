@@ -101,7 +101,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const [motifMode, setMotifMode] = useState<MotifMode>('dynamic');
   const [wordMotifOverrides, setWordMotifOverrides] = useState<Record<string, VisualMotif>>({});
   const [editingWordTarget, setEditingWordTarget] = useState<EditingWordTarget | null>(null);
-  const [fontFamily, setFontFamily] = useState<string>("'Wilhelm Gotisch', sans-serif");
+  const [fontFamily, setFontFamily] = useState<string>("'Lemon Milk', sans-serif");
   const [isRendering, setIsRendering] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
 

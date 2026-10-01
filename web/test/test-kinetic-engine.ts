@@ -96,9 +96,14 @@ const wordAction: LyricWord = { word: 'BLADE', startMs: 1600, endMs: 2000 };
 const fontAction = getWordEffectiveFont(wordAction, 'blade_slash', trapPack);
 assert.equal(fontAction, trapPack.fonts.action, `Expected action font for BLADE with blade_slash`);
 
-const wordNovelty: LyricWord = { word: 'GLITCH', startMs: 2100, endMs: 2400 };
+const wordNovelty: LyricWord = { word: 'GOTH', startMs: 2100, endMs: 2400 };
 const fontNovelty = getWordEffectiveFont(wordNovelty, 'cyber_glitch', trapPack);
-assert.equal(fontNovelty, trapPack.fonts.novelty, `Expected novelty font for GLITCH with cyber_glitch`);
+assert.equal(fontNovelty, trapPack.fonts.novelty, `Expected novelty font for GOTH with cyber_glitch`);
+
+// Verify 5+ char aperture safety guard upgrades long blackletter words to Lemon Milk
+const wordLongNovelty: LyricWord = { word: 'GLITCH', startMs: 2100, endMs: 2400 };
+const fontLong = getWordEffectiveFont(wordLongNovelty, 'cyber_glitch', trapPack);
+assert.ok(fontLong.includes('Lemon Milk'), 'Long words in blackletter novelty font must upgrade to Lemon Milk for 1-bit legibility');
 
 const wordConnector: LyricWord = { word: 'in', startMs: 2500, endMs: 2700 };
 const fontConnector = getWordEffectiveFont(wordConnector, 'smooth_fluid', trapPack);

@@ -1,4 +1,4 @@
-import { MotionArchetype, StylePackConfig, WordFontRole, STYLE_PACKS } from './types';
+import { MotionArchetype, StylePackConfig, WordFontRole, STYLE_PACKS, MULTILINGUAL_FALLBACK_FONTS } from './types';
 import { LyricWord } from '../lyrics/types';
 import { detectScript } from './scriptDetector';
 import { getScriptFontStack } from './fontLoader';
@@ -299,7 +299,20 @@ export function getWordEffectiveFont(
     return getScriptFontStack(script, baseFont);
   }
 
+  // 4. Low-Resolution 128x64 Aperture Safety Guard:
+  // If the font is ornate blackletter or delicate cursive ('Wilhelm Gotisch', 'Vendetta')
+  // and the word has 5+ characters (not a short 1-4 punchline like 'NO', 'WAR', 'ICE'),
+  // upgrade to a high-legibility geometric display font ('Lemon Milk') so counters and apertures stay open.
+  if (
+    !wordFontOverrides?.[cleanKey] &&
+    /wilhelm|vendetta/i.test(baseFont) &&
+    word.word.replace(/[^a-zA-Z0-9]/g, '').length >= 5
+  ) {
+    baseFont = `'Lemon Milk', ${MULTILINGUAL_FALLBACK_FONTS}, sans-serif`;
+  }
+
   return baseFont;
 }
+
 
 

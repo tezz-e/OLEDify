@@ -205,7 +205,7 @@ export async function renderKineticSequence(
 
     for (let i = 0; i < src.length; i += 4) {
       const lum = 0.299 * src[i] + 0.587 * src[i + 1] + 0.114 * src[i + 2];
-      const val = (lum > 110 && src[i + 3] > 120) ? 255 : 0;
+      const val = (lum > 125 && src[i + 3] > 120) ? 255 : 0;
       dest[i] = val;
       dest[i + 1] = val;
       dest[i + 2] = val;

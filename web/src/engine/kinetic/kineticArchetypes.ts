@@ -22,6 +22,60 @@ function getScratchCanvas(): { canvas: OffscreenCanvas | HTMLCanvasElement; ctx:
 }
 
 /**
+ * Returns safe font specification for Canvas 2D without artificial bold dilation on display fonts.
+ */
+export function getSafeFontSpec(fontSize: number, fontFamily: string): string {
+  const isDisplayHeavy = /molot|wilhelm|lemon milk|bangers|super comic|kraash|plumpfull|wicked mouse|cinzel/i.test(fontFamily);
+  return isDisplayHeavy ? `${fontSize}px ${fontFamily}` : `bold ${fontSize}px ${fontFamily}`;
+}
+
+/**
+ * Draws text with guaranteed inter-character spacing and 1-bit counter preservation.
+ * Prevents adjacent glyphs from bridging together during binary thresholding.
+ */
+export function drawTrackedText(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  text: string,
+  centerX: number,
+  y: number,
+  letterSpacing: number = 0,
+  isStroke: boolean = false
+) {
+  if (letterSpacing <= 0 || !text || text.length <= 1) {
+    if (isStroke) ctx.strokeText(text, centerX, y);
+    else ctx.fillText(text, centerX, y);
+    return;
+  }
+
+  const graphemes = getGraphemes(text);
+  const rtl = ctx.direction === 'rtl';
+
+  const widths = graphemes.map(g => ctx.measureText(g).width);
+  const totalW = widths.reduce((sum, w) => sum + w, 0) + (graphemes.length - 1) * letterSpacing;
+
+  let curX = rtl ? (centerX + totalW / 2) : (centerX - totalW / 2);
+  const prevAlign = ctx.textAlign;
+  ctx.textAlign = rtl ? 'right' : 'left';
+
+  for (let i = 0; i < graphemes.length; i++) {
+    const char = graphemes[i];
+    const w = widths[i];
+    if (isStroke) {
+      ctx.strokeText(char, curX, y);
+    } else {
+      ctx.fillText(char, curX, y);
+    }
+    if (rtl) {
+      curX -= (w + letterSpacing);
+    } else {
+      curX += (w + letterSpacing);
+    }
+  }
+
+  ctx.textAlign = prevAlign;
+}
+
+/**
  * Dispatches frame rendering to the selected motion archetype.
  * ctx: OffscreenCanvas 2D context (128x64)
  * tau: Normalized temporal progress of active word/line [0..1]
@@ -97,20 +151,20 @@ function renderBladeSlash(
 
   tCtx.clearRect(0, 0, 128, 64);
   tCtx.direction = rtl ? 'rtl' : 'ltr';
-  tCtx.font = `bold ${layout.fontSize}px ${fontFamily}`;
+  tCtx.font = getSafeFontSpec(layout.fontSize, fontFamily);
   tCtx.textAlign = 'center';
   tCtx.strokeStyle = '#000000';
-  tCtx.lineWidth = 3;
+  tCtx.lineWidth = 2;
   tCtx.lineJoin = 'miter';
   tCtx.miterLimit = 2;
 
   for (let i = 0; i < layout.lines.length; i++) {
-    tCtx.strokeText(layout.lines[i], 64, layout.yOffsets[i]);
+    drawTrackedText(tCtx, layout.lines[i], 64, layout.yOffsets[i], layout.letterSpacing, true);
   }
 
   tCtx.fillStyle = '#FFFFFF';
   for (let i = 0; i < layout.lines.length; i++) {
-    tCtx.fillText(layout.lines[i], 64, layout.yOffsets[i]);
+    drawTrackedText(tCtx, layout.lines[i], 64, layout.yOffsets[i], layout.letterSpacing, false);
   }
 
   const midY = 32;
@@ -190,23 +244,23 @@ function renderMangaImpact(
     }
   }
 
-  ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
+  ctx.font = getSafeFontSpec(layout.fontSize, fontFamily);
   ctx.textAlign = 'center';
   ctx.fillStyle = '#000000';
   ctx.strokeStyle = '#000000';
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 2;
 
   for (let i = 0; i < layout.lines.length; i++) {
     const line = layout.lines[i];
     const y = layout.yOffsets[i];
-    ctx.strokeText(line, 64 + 2, y + 2);
+    drawTrackedText(ctx, line, 64 + 1, y + 1, layout.letterSpacing, true);
   }
 
   ctx.fillStyle = '#FFFFFF';
   for (let i = 0; i < layout.lines.length; i++) {
     const line = layout.lines[i];
     const y = layout.yOffsets[i];
-    ctx.fillText(line, 64, y);
+    drawTrackedText(ctx, line, 64, y, layout.letterSpacing, false);
   }
 
   ctx.restore();
@@ -235,7 +289,7 @@ function renderCyberGlitch(
 ) {
   const rtl = isRTL(text);
   ctx.direction = rtl ? 'rtl' : 'ltr';
-  ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
+  ctx.font = getSafeFontSpec(layout.fontSize, fontFamily);
   ctx.textAlign = 'center';
 
   const isGlitchBurst = (tau < 0.2) || (audioFrame && audioFrame.flux > 0.5) || audioFrame?.isBeat;
@@ -264,16 +318,16 @@ function renderCyberGlitch(
     : 0;
 
   ctx.strokeStyle = '#000000';
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 2;
   ctx.lineJoin = 'miter';
   ctx.miterLimit = 2;
   for (let i = 0; i < displayLines.length; i++) {
-    ctx.strokeText(displayLines[i], 64 + jitterX, layout.yOffsets[i]);
+    drawTrackedText(ctx, displayLines[i], 64 + jitterX, layout.yOffsets[i], layout.letterSpacing, true);
   }
 
   ctx.fillStyle = '#FFFFFF';
   for (let i = 0; i < displayLines.length; i++) {
-    ctx.fillText(displayLines[i], 64 + jitterX, layout.yOffsets[i]);
+    drawTrackedText(ctx, displayLines[i], 64 + jitterX, layout.yOffsets[i], layout.letterSpacing, false);
   }
 
   // Row tearing: for Arabic during burst or normal glitch frames, horizontal slice row tearing provides the glitch aesthetic
@@ -319,38 +373,38 @@ function renderSmoothFluid(
   const idleBob = tau > 0.3 ? (Math.sin((tau - 0.3) * Math.PI * 4) * 1.5 - audioBob) : 0;
   const currentY = startYOffset + idleBob;
 
-  ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
+  ctx.font = getSafeFontSpec(layout.fontSize, fontFamily);
   ctx.textAlign = 'center';
 
   if (tau < 0.25) {
     ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2;
     for (let i = 0; i < layout.lines.length; i++) {
-      const y = layout.yOffsets[i] + currentY + 4;
-      ctx.strokeText(layout.lines[i], 64, y);
+      const y = layout.yOffsets[i] + currentY + 3;
+      drawTrackedText(ctx, layout.lines[i], 64, y, layout.letterSpacing, true);
     }
     ctx.fillStyle = '#FFFFFF';
     for (let i = 0; i < layout.lines.length; i++) {
-      const y = layout.yOffsets[i] + currentY + 4;
-      ctx.fillText(layout.lines[i], 64, y);
+      const y = layout.yOffsets[i] + currentY + 3;
+      drawTrackedText(ctx, layout.lines[i], 64, y, layout.letterSpacing, false);
     }
   }
 
   ctx.strokeStyle = '#000000';
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 2;
   ctx.lineJoin = 'miter';
   ctx.miterLimit = 2;
   for (let i = 0; i < layout.lines.length; i++) {
     const line = layout.lines[i];
     const y = layout.yOffsets[i] + currentY;
-    ctx.strokeText(line, 64, y);
+    drawTrackedText(ctx, line, 64, y, layout.letterSpacing, true);
   }
 
   ctx.fillStyle = '#FFFFFF';
   for (let i = 0; i < layout.lines.length; i++) {
     const line = layout.lines[i];
     const y = layout.yOffsets[i] + currentY;
-    ctx.fillText(line, 64, y);
+    drawTrackedText(ctx, line, 64, y, layout.letterSpacing, false);
 
     if (i === layout.lines.length - 1) {
       const metrics = ctx.measureText(line);
@@ -363,7 +417,7 @@ function renderSmoothFluid(
 }
 
 /**
- * 5. 3D BLOCK STACK: Isometric extrusion with checkerboard dither shadow
+ * 5. 3D BLOCK STACK: Isometric extrusion with clean 1-bit shadow (no blurred smearing)
  */
 function render3DBlockStack(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
@@ -398,27 +452,27 @@ function render3DBlockStack(
   ctx.scale(scaleX, scaleY);
   ctx.translate(-64, -32);
 
-  ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
+  ctx.font = getSafeFontSpec(layout.fontSize, fontFamily);
   ctx.textAlign = 'center';
 
-  // Depth expands with bass energy
-  const extraDepth = audioFrame ? Math.round(audioFrame.bass * 3) : 0;
-  const depth = 4 + extraDepth;
-  for (let d = depth; d >= 1; d--) {
-    ctx.fillStyle = (d % 2 === 0) ? '#FFFFFF' : '#000000';
-    for (let i = 0; i < layout.lines.length; i++) {
-      ctx.fillText(layout.lines[i], 64 + d, layout.yOffsets[i] + dropY + d);
-    }
-  }
-
-  ctx.strokeStyle = '#000000';
-  ctx.lineWidth = 2;
+  // Crisp 1-bit drop shadow offset (clean single offset, never 4 blurred smearing layers!)
+  const shadowOffset = audioFrame?.isBeat ? 3 : 2;
   ctx.fillStyle = '#FFFFFF';
   for (let i = 0; i < layout.lines.length; i++) {
-    const line = layout.lines[i];
-    const y = layout.yOffsets[i] + dropY;
-    ctx.strokeText(line, 64, y);
-    ctx.fillText(line, 64, y);
+    drawTrackedText(ctx, layout.lines[i], 64 + shadowOffset, layout.yOffsets[i] + dropY + shadowOffset, layout.letterSpacing, false);
+  }
+
+  // Black separation outline around front text to preserve inner apertures and counters
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < layout.lines.length; i++) {
+    drawTrackedText(ctx, layout.lines[i], 64, layout.yOffsets[i] + dropY, layout.letterSpacing, true);
+  }
+
+  // Crisp front text
+  ctx.fillStyle = '#FFFFFF';
+  for (let i = 0; i < layout.lines.length; i++) {
+    drawTrackedText(ctx, layout.lines[i], 64, layout.yOffsets[i] + dropY, layout.letterSpacing, false);
   }
 
   ctx.restore();
@@ -436,7 +490,7 @@ function renderEchoStack(
   fontFamily: string,
   audioFrame?: AudioFrameData
 ) {
-  ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
+  ctx.font = getSafeFontSpec(layout.fontSize, fontFamily);
   ctx.textAlign = 'center';
 
   const pulseMultiplier = audioFrame ? 1.0 + audioFrame.rms * 0.8 : 1.0;
@@ -451,18 +505,19 @@ function renderEchoStack(
 
     if (tau > 0.2 || audioFrame?.isBeat) {
       // Offset echo echoes
-      ctx.strokeText(line, 64 - pulseR / 3, y - pulseR / 4);
-      ctx.strokeText(line, 64 + pulseR / 3, y + pulseR / 4);
+      drawTrackedText(ctx, line, 64 - pulseR / 3, y - pulseR / 4, layout.letterSpacing, true);
+      drawTrackedText(ctx, line, 64 + pulseR / 3, y + pulseR / 4, layout.letterSpacing, true);
       if (audioFrame?.isBeat) {
-        ctx.strokeText(line, 64, y - pulseR / 2);
+        drawTrackedText(ctx, line, 64, y - pulseR / 2, layout.letterSpacing, true);
       }
     }
 
     // Main text
-    ctx.fillStyle = '#000000';
-    ctx.strokeText(line, 64, y);
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2;
+    drawTrackedText(ctx, line, 64, y, layout.letterSpacing, true);
     ctx.fillStyle = '#FFFFFF';
-    ctx.fillText(line, 64, y);
+    drawTrackedText(ctx, line, 64, y, layout.letterSpacing, false);
   }
 }
 
@@ -487,19 +542,19 @@ function renderTargetFocus(
   ctx.scale(scale, scale);
   ctx.translate(-64, -32);
 
-  ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
+  ctx.font = getSafeFontSpec(layout.fontSize, fontFamily);
   ctx.textAlign = 'center';
   ctx.strokeStyle = '#000000';
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 2;
   ctx.lineJoin = 'miter';
   ctx.miterLimit = 2;
   for (let i = 0; i < layout.lines.length; i++) {
-    ctx.strokeText(layout.lines[i], 64, layout.yOffsets[i]);
+    drawTrackedText(ctx, layout.lines[i], 64, layout.yOffsets[i], layout.letterSpacing, true);
   }
 
   ctx.fillStyle = '#FFFFFF';
   for (let i = 0; i < layout.lines.length; i++) {
-    ctx.fillText(layout.lines[i], 64, layout.yOffsets[i]);
+    drawTrackedText(ctx, layout.lines[i], 64, layout.yOffsets[i], layout.letterSpacing, false);
   }
 
   ctx.restore();
@@ -536,20 +591,20 @@ function renderSnakeSlither(
 
   tCtx.clearRect(0, 0, 128, 64);
   tCtx.direction = isRTL(text) ? 'rtl' : 'ltr';
-  tCtx.font = `bold ${layout.fontSize}px ${fontFamily}`;
+  tCtx.font = getSafeFontSpec(layout.fontSize, fontFamily);
   tCtx.textAlign = 'center';
   tCtx.strokeStyle = '#000000';
-  tCtx.lineWidth = 3;
+  tCtx.lineWidth = 2;
   tCtx.lineJoin = 'miter';
   tCtx.miterLimit = 2;
 
   for (let i = 0; i < layout.lines.length; i++) {
-    tCtx.strokeText(layout.lines[i], 64, layout.yOffsets[i]);
+    drawTrackedText(tCtx, layout.lines[i], 64, layout.yOffsets[i], layout.letterSpacing, true);
   }
 
   tCtx.fillStyle = '#FFFFFF';
   for (let i = 0; i < layout.lines.length; i++) {
-    tCtx.fillText(layout.lines[i], 64, layout.yOffsets[i]);
+    drawTrackedText(tCtx, layout.lines[i], 64, layout.yOffsets[i], layout.letterSpacing, false);
   }
 
   // Slice vertical strips and sine displace
@@ -576,7 +631,7 @@ function renderWigglyBoil(
   fontFamily: string,
   audioFrame?: AudioFrameData
 ) {
-  ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
+  ctx.font = getSafeFontSpec(layout.fontSize, fontFamily);
   ctx.textAlign = 'center';
 
   const boilSpeed = audioFrame && audioFrame.rms > 0.5 ? 1.8 : 2.5;
@@ -588,18 +643,18 @@ function renderWigglyBoil(
   const dy = offsetsY[boilPhase] * (audioFrame?.isBeat ? 2 : 1);
 
   ctx.strokeStyle = '#000000';
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 2;
   ctx.lineJoin = 'miter';
   ctx.miterLimit = 2;
   for (let i = 0; i < layout.lines.length; i++) {
-    ctx.strokeText(layout.lines[i], 64 + dx, layout.yOffsets[i] + dy);
+    drawTrackedText(ctx, layout.lines[i], 64 + dx, layout.yOffsets[i] + dy, layout.letterSpacing, true);
   }
 
   ctx.fillStyle = '#FFFFFF';
   for (let i = 0; i < layout.lines.length; i++) {
     const line = layout.lines[i];
     const y = layout.yOffsets[i];
-    ctx.fillText(line, 64 + dx, y + dy);
+    drawTrackedText(ctx, line, 64 + dx, y + dy, layout.letterSpacing, false);
 
     if (frameIndex % 3 === 0 || audioFrame?.isBeat) {
       ctx.strokeStyle = '#FFFFFF';
@@ -621,12 +676,12 @@ function renderInvertedBadge(
   fontFamily: string,
   audioFrame?: AudioFrameData
 ) {
-  ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
+  ctx.font = getSafeFontSpec(layout.fontSize, fontFamily);
   ctx.textAlign = 'center';
 
   let maxLineWidth = 0;
   for (const l of layout.lines) {
-    maxLineWidth = Math.max(maxLineWidth, ctx.measureText(l).width);
+    maxLineWidth = Math.max(maxLineWidth, ctx.measureText(l).width + (l.length - 1) * layout.letterSpacing);
   }
 
   const badgeW = Math.min(124, Math.floor(maxLineWidth + 14));
@@ -648,7 +703,7 @@ function renderInvertedBadge(
 
   ctx.globalCompositeOperation = 'destination-out';
   for (let i = 0; i < layout.lines.length; i++) {
-    ctx.fillText(layout.lines[i], 64, layout.yOffsets[i]);
+    drawTrackedText(ctx, layout.lines[i], 64, layout.yOffsets[i], layout.letterSpacing, false);
   }
 
   ctx.globalCompositeOperation = 'source-over';

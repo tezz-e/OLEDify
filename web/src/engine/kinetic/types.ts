@@ -150,11 +150,11 @@ export const STYLE_PACKS: Record<StylePackId, StylePackConfig> = {
     name: 'Trap & Drill Opium',
     icon: '🗡️',
     tag: 'TRAP',
-    description: 'Wilhelm Gotisch hero with razor Vendetta slashes, brutalist Molot punch, and clean mono connectors',
+    description: 'Lemon Milk & Molot brutalist punch with Wilhelm Gotisch punchlines and clean mono connectors',
     fonts: {
-      hero: `'Wilhelm Gotisch', ${MULTILINGUAL_FALLBACK_FONTS}, sans-serif`,
-      action: `'Vendetta', ${MULTILINGUAL_FALLBACK_FONTS}, cursive`,
-      novelty: `'Molot', ${MULTILINGUAL_FALLBACK_FONTS}, sans-serif`,
+      hero: `'Lemon Milk', ${MULTILINGUAL_FALLBACK_FONTS}, sans-serif`,
+      action: `'Molot', ${MULTILINGUAL_FALLBACK_FONTS}, sans-serif`,
+      novelty: `'Wilhelm Gotisch', ${MULTILINGUAL_FALLBACK_FONTS}, sans-serif`,
       anchor: `"IBM Plex Mono", ${MULTILINGUAL_FALLBACK_FONTS}, monospace`
     }
   },

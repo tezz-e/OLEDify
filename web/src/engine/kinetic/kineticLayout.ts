@@ -3,6 +3,14 @@ import { isFillerWord } from './semanticClassifier';
 import { getGraphemes, isSpacelessScript, isRTL } from './scriptDetector';
 
 /**
+ * Returns empty prefix for heavy display fonts to prevent synthetic faux-bold dilation.
+ */
+export function getFontWeightPrefix(fontFamily: string): string {
+  const isDisplayHeavy = /molot|wilhelm|lemon milk|bangers|super comic|kraash|plumpfull|wicked mouse|cinzel/i.test(fontFamily);
+  return isDisplayHeavy ? '' : 'bold ';
+}
+
+/**
  * Computes safe text layout guaranteed to never clip outside 128x64 display.
  */
 export function computeSafeTextLayout(
@@ -31,12 +39,13 @@ export function computeSafeTextLayout(
   // Subordinated to clean, conversational scale (14px to 18px) so hero words have punch
   if (isFillerWord(clean) && !clean.includes(' ')) {
     const size = 16;
-    ctx.font = `bold ${size}px ${fontFamily}`;
+    const weightPrefix = getFontWeightPrefix(fontFamily);
+    ctx.font = `${weightPrefix}${size}px ${fontFamily}`;
     return {
       lines: [clean],
       fontSize: size,
       lineHeight: size,
-      letterSpacing: 1,
+      letterSpacing: 1.5,
       totalHeight: size,
       yOffsets: [Math.floor((64 - size) / 2 + size * 0.85)]
     };
@@ -46,8 +55,9 @@ export function computeSafeTextLayout(
   if (charCount <= 4 && !clean.includes(' ')) {
     let size = 48;
     let spacing = 3;
+    const weightPrefix = getFontWeightPrefix(fontFamily);
     while (size >= 24) {
-      ctx.font = `bold ${size}px ${fontFamily}`;
+      ctx.font = `${weightPrefix}${size}px ${fontFamily}`;
       const metrics = ctx.measureText(clean);
       const measuredW = metrics.width + (charCount - 1) * spacing;
       if (measuredW <= maxW) {
@@ -65,18 +75,21 @@ export function computeSafeTextLayout(
   }
 
 
-  // Tier 2: Medium word (5 to 10 chars) -> Scaled single line (14px to 26px)
+  // Tier 2: Medium word (5 to 10 chars) -> Scaled single line with guaranteed tracking (14px to 26px)
   if (charCount <= 10 && !clean.includes(' ')) {
     let size = 26;
+    const spacing = charCount <= 6 ? 2 : (charCount <= 8 ? 1.5 : 1);
+    const weightPrefix = getFontWeightPrefix(fontFamily);
     while (size >= 12) {
-      ctx.font = `bold ${size}px ${fontFamily}`;
+      ctx.font = `${weightPrefix}${size}px ${fontFamily}`;
       const metrics = ctx.measureText(clean);
-      if (metrics.width <= maxW) {
+      const measuredW = metrics.width + (charCount - 1) * spacing;
+      if (measuredW <= maxW) {
         return {
           lines: [clean],
           fontSize: size,
           lineHeight: size,
-          letterSpacing: 0,
+          letterSpacing: spacing,
           totalHeight: size,
           yOffsets: [Math.floor((64 - size) / 2 + size * 0.85)]
         };
@@ -122,10 +135,11 @@ export function computeSafeTextLayout(
   let lowSize = 8;
   let highSize = Math.max(8, Math.floor(maxH / splitLines.length) - 2);
   let bestSize = lowSize;
+  const weightPrefix = getFontWeightPrefix(fontFamily);
 
   while (lowSize <= highSize) {
     const midSize = Math.floor((lowSize + highSize) / 2);
-    ctx.font = `bold ${midSize}px ${fontFamily}`;
+    ctx.font = `${weightPrefix}${midSize}px ${fontFamily}`;
     const allFit = splitLines.every(l => ctx.measureText(l).width <= maxW);
     const heightFits = (midSize + 2) * splitLines.length <= maxH;
 
@@ -147,7 +161,7 @@ export function computeSafeTextLayout(
     lines: splitLines,
     fontSize: bestSize,
     lineHeight,
-    letterSpacing: 0,
+    letterSpacing: 1,
     totalHeight: totalH,
     yOffsets
   };
