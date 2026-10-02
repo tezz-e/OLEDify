@@ -1,7 +1,14 @@
-import { MotionArchetype, TextLayoutResult } from './types';
+import { MotionArchetype, TextLayoutResult, TextDressing } from './types';
 import { AudioFrameData } from './audioAnalysisEngine';
 import { isRTL, getGraphemes } from './scriptDetector';
 import { SongMoodProfile } from './moodProfileEngine';
+
+// Active text dressing controller for orthogonal typographic styling
+let activeDressingMode: TextDressing | undefined = undefined;
+
+export function setActiveDressing(dressing?: TextDressing) {
+  activeDressingMode = dressing;
+}
 
 // Pooled scratch canvas to eliminate per-frame GC allocations
 let cachedScratchCanvas: OffscreenCanvas | HTMLCanvasElement | null = null;
@@ -30,6 +37,8 @@ export function getScratchCanvas(): { canvas: OffscreenCanvas | HTMLCanvasElemen
         beginPath: () => {},
         closePath: () => {},
         arcTo: () => {},
+        quadraticCurveTo: () => {},
+        bezierCurveTo: () => {},
         roundRect: () => {},
         moveTo: () => {},
         lineTo: () => {},
@@ -38,6 +47,7 @@ export function getScratchCanvas(): { canvas: OffscreenCanvas | HTMLCanvasElemen
         clearRect: () => {},
         getImageData: () => ({ data: new Uint8ClampedArray(128 * 64 * 4) }),
         putImageData: () => {},
+        drawImage: () => {},
         measureText: (text: string) => ({ width: text.length * 8 }),
         save: () => {},
         restore: () => {},
@@ -77,8 +87,14 @@ export function drawTrackedText(
   letterSpacing: number = 0,
   isStroke: boolean = false
 ) {
+  const effectiveStroke = isStroke || activeDressingMode === 'hollow_wireframe';
+  if (activeDressingMode === 'hollow_wireframe' && !isStroke) {
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 1;
+  }
+
   if (letterSpacing <= 0 || !text || text.length <= 1) {
-    if (isStroke) ctx.strokeText(text, centerX, y);
+    if (effectiveStroke) ctx.strokeText(text, centerX, y);
     else ctx.fillText(text, centerX, y);
     return;
   }
@@ -96,7 +112,7 @@ export function drawTrackedText(
   for (let i = 0; i < graphemes.length; i++) {
     const char = graphemes[i];
     const w = widths[i];
-    if (isStroke) {
+    if (effectiveStroke) {
       ctx.strokeText(char, curX, y);
     } else {
       ctx.fillText(char, curX, y);
@@ -126,10 +142,13 @@ export function renderArchetypeFrame(
   frameIndex: number,
   fontFamily: string = '"IBM Plex Mono", monospace',
   audioFrame?: AudioFrameData,
-  moodProfile?: SongMoodProfile | null
+  moodProfile?: SongMoodProfile | null,
+  dressing?: TextDressing
 ) {
   const rtl = isRTL(text);
   ctx.direction = rtl ? 'rtl' : 'ltr';
+
+  setActiveDressing(dressing);
 
   switch (archetype) {
     case 'blade_slash':
@@ -177,10 +196,31 @@ export function renderArchetypeFrame(
     case 'waveform_karaoke':
       renderWaveformKaraoke(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
       break;
+    case 'anvil_stomp':
+      renderAnvilStomp(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
+      break;
+    case 'fracture_shatter':
+      renderFractureShatter(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
+      break;
+    case 'pendulum_sway':
+      renderPendulumSway(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
+      break;
+    case 'prism_shimmer':
+      renderPrismShimmer(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
+      break;
+    case 'squash_bounce':
+      renderSquashBounce(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
+      break;
     default:
       renderSmoothFluid(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame, moodProfile);
       break;
   }
+
+  if (dressing && dressing !== 'solid' && dressing !== 'hollow_wireframe') {
+    applyTextDressing(ctx, dressing, layout, text, frameIndex);
+  }
+
+  setActiveDressing(undefined);
 }
 
 /**
@@ -1229,4 +1269,341 @@ function renderWaveformKaraoke(
   ctx.fillRect(runnerX, runnerY - 1, 1, 3);
 
   ctx.restore();
+}
+
+/**
+ * 12. ANVIL STOMP: Massive vertical slam crashing onto baseline with baseline shock dust and zero rebound
+ */
+function renderAnvilStomp(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  _text: string,
+  tau: number,
+  layout: TextLayoutResult,
+  frameIndex: number,
+  fontFamily: string,
+  _audioFrame?: AudioFrameData
+) {
+  ctx.save();
+  ctx.font = getSafeFontSpec(layout.fontSize, fontFamily);
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'center';
+
+  const slamTime = 0.22;
+  let offsetY = 0;
+  let shudderX = 0;
+  let shudderY = 0;
+
+  if (tau < slamTime) {
+    const p = tau / slamTime;
+    offsetY = Math.round(-34 * (1 - p * p * p));
+  } else {
+    const elapsedImpact = tau - slamTime;
+    if (elapsedImpact < 0.12) {
+      shudderX = (frameIndex % 2 === 0 ? 1 : -1);
+      shudderY = (frameIndex % 2 === 0 ? -1 : 1);
+    }
+  }
+
+  if (tau >= slamTime) {
+    const bottomY = Math.max(...layout.yOffsets) + Math.round(layout.fontSize * 0.55);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(16, Math.min(62, bottomY + 2), 96, 2);
+
+    const dustPhase = Math.min(1, (tau - slamTime) / 0.25);
+    if (dustPhase > 0 && dustPhase < 1) {
+      const spread = Math.round(dustPhase * 36);
+      ctx.fillRect(Math.max(2, 64 - 40 - spread), Math.min(62, bottomY + 2), 3, 2);
+      ctx.fillRect(Math.min(123, 64 + 40 + spread), Math.min(62, bottomY + 2), 3, 2);
+    }
+  }
+
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 3;
+  for (let i = 0; i < layout.lines.length; i++) {
+    drawTrackedText(ctx, layout.lines[i], 64 + shudderX, layout.yOffsets[i] + offsetY + shudderY, layout.letterSpacing, true);
+  }
+
+  ctx.fillStyle = '#FFFFFF';
+  for (let i = 0; i < layout.lines.length; i++) {
+    drawTrackedText(ctx, layout.lines[i], 64 + shudderX, layout.yOffsets[i] + offsetY + shudderY, layout.letterSpacing, false);
+  }
+
+  ctx.restore();
+}
+
+/**
+ * 13. FRACTURE SHATTER: Angular diagonal fissure crack splitting letterforms into upper and lower shearing halves
+ */
+function renderFractureShatter(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  _text: string,
+  tau: number,
+  layout: TextLayoutResult,
+  _frameIndex: number,
+  fontFamily: string,
+  _audioFrame?: AudioFrameData
+) {
+  const { canvas: tempCanvas, ctx: tCtx } = getScratchCanvas();
+  tCtx.clearRect(0, 0, 128, 64);
+  tCtx.save();
+  tCtx.font = getSafeFontSpec(layout.fontSize, fontFamily);
+  tCtx.textBaseline = 'middle';
+  tCtx.textAlign = 'center';
+
+  tCtx.fillStyle = '#FFFFFF';
+  for (let i = 0; i < layout.lines.length; i++) {
+    drawTrackedText(tCtx, layout.lines[i], 64, layout.yOffsets[i], layout.letterSpacing, false);
+  }
+  tCtx.restore();
+
+  ctx.save();
+  const splitTime = 0.25;
+  const isSplit = tau >= splitTime;
+  const splitProgress = isSplit ? Math.min(1, (tau - splitTime) / 0.4) : 0;
+  const shearX = Math.round(splitProgress * 3);
+  const shearY = Math.round(splitProgress * 2);
+
+  const splitY = 32;
+
+  // Upper shard
+  ctx.drawImage(
+    tempCanvas as any,
+    0, 0, 128, splitY,
+    shearX, -shearY, 128, splitY
+  );
+
+  // Lower shard
+  ctx.drawImage(
+    tempCanvas as any,
+    0, splitY, 128, 64 - splitY,
+    -shearX, splitY + shearY, 128, 64 - splitY
+  );
+
+  if (isSplit) {
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(12, splitY - 1);
+    ctx.lineTo(44, splitY + 2);
+    ctx.lineTo(84, splitY - 2);
+    ctx.lineTo(116, splitY + 1);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+/**
+ * 14. PENDULUM SWAY: Harmonic rocking angular tilt rocking smoothly like an acoustic guitar strum or metronome
+ */
+function renderPendulumSway(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  _text: string,
+  tau: number,
+  layout: TextLayoutResult,
+  _frameIndex: number,
+  fontFamily: string,
+  _audioFrame?: AudioFrameData
+) {
+  ctx.save();
+  ctx.font = getSafeFontSpec(layout.fontSize, fontFamily);
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'center';
+
+  const angle = 0.08 * Math.sin(tau * Math.PI * 2.5) * (1 - tau * 0.3);
+  const pivotX = 64;
+  const pivotY = 4;
+
+  ctx.translate(pivotX, pivotY);
+  ctx.rotate(angle);
+  ctx.translate(-pivotX, -pivotY);
+
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+  const tickX = Math.round(64 + Math.sin(angle * 5) * 16);
+  ctx.fillRect(tickX - 1, 60, 3, 2);
+
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < layout.lines.length; i++) {
+    drawTrackedText(ctx, layout.lines[i], 64, layout.yOffsets[i], layout.letterSpacing, true);
+  }
+
+  ctx.fillStyle = '#FFFFFF';
+  for (let i = 0; i < layout.lines.length; i++) {
+    drawTrackedText(ctx, layout.lines[i], 64, layout.yOffsets[i], layout.letterSpacing, false);
+  }
+
+  ctx.restore();
+}
+
+/**
+ * 15. PRISM SHIMMER: Diagonal 1-bit Bayer light beam sweeping smoothly across glyphs with starlight glints
+ */
+function renderPrismShimmer(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  _text: string,
+  tau: number,
+  layout: TextLayoutResult,
+  frameIndex: number,
+  fontFamily: string,
+  _audioFrame?: AudioFrameData
+) {
+  ctx.save();
+  ctx.font = getSafeFontSpec(layout.fontSize, fontFamily);
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'center';
+
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < layout.lines.length; i++) {
+    drawTrackedText(ctx, layout.lines[i], 64, layout.yOffsets[i], layout.letterSpacing, true);
+  }
+
+  ctx.fillStyle = '#FFFFFF';
+  for (let i = 0; i < layout.lines.length; i++) {
+    drawTrackedText(ctx, layout.lines[i], 64, layout.yOffsets[i], layout.letterSpacing, false);
+  }
+
+  const beamX = Math.round(-30 + tau * 188);
+  const beamW = 20;
+
+  ctx.fillStyle = '#000000';
+  for (let y = 0; y < 64; y++) {
+    const xCenter = beamX + Math.round(y * 0.5);
+    for (let x = xCenter - beamW / 2; x <= xCenter + beamW / 2; x++) {
+      if (x >= 0 && x < 128) {
+        if ((x + y + frameIndex) % 3 === 0) {
+          ctx.fillRect(x, y, 1, 1);
+        }
+      }
+    }
+  }
+
+  const sparkleX = Math.min(120, Math.max(8, beamX + 16));
+  const sparkleY = Math.round(32 + Math.sin(tau * Math.PI * 4) * 12);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(sparkleX - 2, sparkleY, 5, 1);
+  ctx.fillRect(sparkleX, sparkleY - 2, 1, 5);
+
+  ctx.restore();
+}
+
+/**
+ * 16. SQUASH & BOUNCE: Elastic Disney squash and stretch physics landing on baseline with rhythmic beat rebound
+ */
+function renderSquashBounce(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  _text: string,
+  tau: number,
+  layout: TextLayoutResult,
+  _frameIndex: number,
+  fontFamily: string,
+  _audioFrame?: AudioFrameData
+) {
+  ctx.save();
+  ctx.font = getSafeFontSpec(layout.fontSize, fontFamily);
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'center';
+
+  let scaleX = 1.0;
+  let scaleY = 1.0;
+  let translateY = 0;
+
+  if (tau < 0.32) {
+    const p = tau / 0.32;
+    translateY = Math.round(-24 * (1 - p * p));
+    scaleX = 0.84;
+    scaleY = 1.25;
+  } else if (tau < 0.48) {
+    const p = (tau - 0.32) / 0.16;
+    scaleX = 1.32 - p * 0.32;
+    scaleY = 0.68 + p * 0.32;
+    translateY = 0;
+  } else if (tau < 0.70) {
+    const p = (tau - 0.48) / 0.22;
+    translateY = Math.round(-6 * Math.sin(p * Math.PI));
+    scaleX = 0.92;
+    scaleY = 1.12;
+  } else {
+    scaleX = 1.0;
+    scaleY = 1.0;
+    translateY = 0;
+  }
+
+  const baseY = Math.max(...layout.yOffsets) + Math.round(layout.fontSize * 0.5);
+
+  ctx.translate(64, baseY);
+  ctx.scale(scaleX, scaleY);
+  ctx.translate(-64, -baseY + translateY);
+
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < layout.lines.length; i++) {
+    drawTrackedText(ctx, layout.lines[i], 64, layout.yOffsets[i], layout.letterSpacing, true);
+  }
+
+  ctx.fillStyle = '#FFFFFF';
+  for (let i = 0; i < layout.lines.length; i++) {
+    drawTrackedText(ctx, layout.lines[i], 64, layout.yOffsets[i], layout.letterSpacing, false);
+  }
+
+  ctx.restore();
+}
+
+/**
+ * Orthogonal Text Dressing Post-Processor (Scanlines, Dither Shade, Inverted Pill)
+ */
+function applyTextDressing(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  dressing: TextDressing,
+  layout: TextLayoutResult,
+  _text: string,
+  _frameIndex: number
+) {
+  if (dressing === 'solid' || dressing === 'hollow_wireframe') return;
+
+  const minY = Math.max(0, Math.min(...layout.yOffsets) - Math.round(layout.fontSize * 0.65));
+  const maxY = Math.min(63, Math.max(...layout.yOffsets) + Math.round(layout.fontSize * 0.65));
+
+  if (dressing === 'scanline_slice') {
+    ctx.fillStyle = '#000000';
+    for (let y = minY; y <= maxY; y += 2) {
+      ctx.fillRect(0, y, 128, 1);
+    }
+  } else if (dressing === 'bayer_dither_shade') {
+    ctx.fillStyle = '#000000';
+    for (let i = 0; i < layout.lines.length; i++) {
+      const midY = layout.yOffsets[i];
+      const bottomY = Math.min(63, midY + Math.round(layout.fontSize * 0.6));
+      for (let y = midY; y <= bottomY; y++) {
+        for (let x = 0; x < 128; x++) {
+          if ((x + y) % 2 === 1) {
+            ctx.fillRect(x, y, 1, 1);
+          }
+        }
+      }
+    }
+  } else if (dressing === 'echo_trail') {
+    // Draw offset Bayer 25% shadow behind bounds
+    ctx.fillStyle = '#000000';
+    for (let y = minY; y <= maxY; y++) {
+      for (let x = 0; x < 128; x++) {
+        if ((x + y) % 4 === 0) {
+          ctx.fillRect(x, y, 1, 1);
+        }
+      }
+    }
+  } else if (dressing === 'inverted_pill') {
+    ctx.save();
+    ctx.globalCompositeOperation = 'difference';
+    ctx.fillStyle = '#FFFFFF';
+    const boxW = Math.min(124, Math.max(40, ctx.measureText(layout.lines[0]).width + 16));
+    const boxH = Math.round((maxY - minY) + 8);
+    const boxX = Math.round((128 - boxW) / 2);
+    const boxY = Math.max(2, minY - 4);
+    roundRect(ctx, boxX, boxY, boxW, boxH, 4);
+    ctx.fill();
+    ctx.restore();
+  }
 }

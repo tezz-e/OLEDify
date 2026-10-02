@@ -356,10 +356,17 @@ export function drawChromeStar(
   ctx.fillStyle = '#FFFFFF';
   ctx.beginPath();
   ctx.moveTo(cx, cy - radius);
-  ctx.quadraticCurveTo(cx, cy, cx + radius, cy);
-  ctx.quadraticCurveTo(cx, cy, cx, cy + radius);
-  ctx.quadraticCurveTo(cx, cy, cx - radius, cy);
-  ctx.quadraticCurveTo(cx, cy, cx, cy - radius);
+  if (typeof (ctx as any).quadraticCurveTo === 'function') {
+    ctx.quadraticCurveTo(cx, cy, cx + radius, cy);
+    ctx.quadraticCurveTo(cx, cy, cx, cy + radius);
+    ctx.quadraticCurveTo(cx, cy, cx - radius, cy);
+    ctx.quadraticCurveTo(cx, cy, cx, cy - radius);
+  } else {
+    ctx.lineTo(cx + radius, cy);
+    ctx.lineTo(cx, cy + radius);
+    ctx.lineTo(cx - radius, cy);
+    ctx.lineTo(cx, cy - radius);
+  }
   ctx.closePath();
   ctx.fill();
   ctx.fillRect(cx - 1, cy - 1, 2, 2);
@@ -591,6 +598,38 @@ export function renderMotifBackground(
     case 'lofi_dust_motes':
       drawLofiDustMotes(ctx, frameIndex);
       break;
+
+    case 'barbed_wire':
+      drawBarbedWire(ctx, frameIndex);
+      break;
+
+    case 'sound_blast_rings':
+      drawSoundBlastRings(ctx, tau, isBeat);
+      break;
+
+    case 'shattered_glass':
+      drawShatteredGlass(ctx, tau);
+      break;
+
+    case 'sound_bars_vintage':
+      drawSoundBarsVintage(ctx, frameIndex, audioFrame);
+      break;
+
+    case 'rain_window':
+      drawRainWindow(ctx, frameIndex);
+      break;
+
+    case 'cassette_spool':
+      drawCassetteSpool(ctx, frameIndex);
+      break;
+
+    case 'equalizer_radial':
+      drawEqualizerRadial(ctx, frameIndex, audioFrame);
+      break;
+
+    case 'vinyl_grooves':
+      drawVinylGrooves(ctx, frameIndex);
+      break;
   }
 }
 
@@ -809,6 +848,305 @@ function drawLofiDustMotes(
       ctx.fillRect(x, y, 1, 1);
     }
   }
+
+  ctx.restore();
+}
+
+function drawBarbedWire(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  _frameIndex: number
+) {
+  ctx.save();
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  // Diagonal strand across top-left corner
+  ctx.beginPath();
+  ctx.moveTo(0, 18);
+  ctx.lineTo(36, 0);
+  ctx.stroke();
+
+  // Diagonal strand across bottom-right corner
+  ctx.beginPath();
+  ctx.moveTo(92, 63);
+  ctx.lineTo(127, 45);
+  ctx.stroke();
+
+  // Draw coiled barbs along the strands
+  const barbOffsets = [8, 20, 32];
+  for (const t of barbOffsets) {
+    const x1 = Math.round(t);
+    const y1 = Math.round(18 - (t * 18) / 36);
+    ctx.fillRect(x1 - 1, y1 - 2, 3, 5);
+    ctx.beginPath();
+    ctx.moveTo(x1 - 3, y1 - 3);
+    ctx.lineTo(x1 + 3, y1 + 3);
+    ctx.moveTo(x1 - 3, y1 + 3);
+    ctx.lineTo(x1 + 3, y1 - 3);
+    ctx.stroke();
+
+    const x2 = Math.round(92 + t);
+    const y2 = Math.round(63 - (t * 18) / 35);
+    ctx.fillRect(x2 - 1, y2 - 2, 3, 5);
+    ctx.beginPath();
+    ctx.moveTo(x2 - 3, y2 - 3);
+    ctx.lineTo(x2 + 3, y2 + 3);
+    ctx.moveTo(x2 - 3, y2 + 3);
+    ctx.lineTo(x2 + 3, y2 - 3);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+function drawSoundBlastRings(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  tau: number,
+  _isBeat: boolean
+) {
+  ctx.save();
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  const numRings = 3;
+  for (let r = 0; r < numRings; r++) {
+    const ringPhase = (tau * 1.5 + r / numRings) % 1.0;
+    const radX = Math.round(20 + ringPhase * 44);
+    const radY = Math.round(10 + ringPhase * 22);
+
+    if (ringPhase < 0.85) {
+      ctx.beginPath();
+      if (typeof (ctx as any).ellipse === 'function') {
+        (ctx as any).ellipse(64, 32, radX, radY, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        ctx.arc(64, 32, radX, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+  }
+
+  ctx.restore();
+}
+
+function drawShatteredGlass(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  tau: number
+) {
+  ctx.save();
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  const SHARDS = [
+    { angle: -0.8, dist: 38, w: 7, h: 5 },
+    { angle: 0.6, dist: 42, w: 6, h: 8 },
+    { angle: 2.2, dist: 36, w: 8, h: 6 },
+    { angle: -2.3, dist: 40, w: 7, h: 7 },
+    { angle: 1.4, dist: 34, w: 5, h: 7 },
+    { angle: -1.7, dist: 35, w: 6, h: 5 }
+  ];
+
+  const flyProgress = Math.min(1, tau * 1.2);
+  for (const s of SHARDS) {
+    const curDist = s.dist * flyProgress;
+    const cx = Math.round(64 + Math.cos(s.angle) * curDist);
+    const cy = Math.round(32 + Math.sin(s.angle) * curDist);
+
+    if (cx >= 2 && cx <= 125 && cy >= 2 && cy <= 61) {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - s.h / 2);
+      ctx.lineTo(cx + s.w / 2, cy + s.h / 2);
+      ctx.lineTo(cx - s.w / 2, cy + s.h / 4);
+      ctx.closePath();
+      ctx.stroke();
+    }
+  }
+
+  ctx.restore();
+}
+
+function drawSoundBarsVintage(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  frameIndex: number,
+  audioFrame?: AudioFrameData
+) {
+  ctx.save();
+  ctx.fillStyle = '#FFFFFF';
+
+  const numBars = 16;
+  const barWidth = 5;
+  const gap = 3;
+  const startX = Math.round((128 - (numBars * (barWidth + gap) - gap)) / 2);
+  const baseY = 62;
+
+  for (let b = 0; b < numBars; b++) {
+    const harmonic = Math.sin(frameIndex * 0.2 + b * 0.45) * 0.5 + 0.5;
+    const beatBump = audioFrame?.isBeat ? 4 : 0;
+    const barHeight = Math.max(2, Math.min(14, Math.round(harmonic * 9 + beatBump)));
+
+    const bx = startX + b * (barWidth + gap);
+    for (let h = 0; h < barHeight; h += 3) {
+      ctx.fillRect(bx, baseY - h - 2, barWidth, 2);
+    }
+  }
+
+  ctx.restore();
+}
+
+function drawRainWindow(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  frameIndex: number
+) {
+  ctx.save();
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  const RAIN_DROPS = [
+    { x0: 10, y0: 0, len: 7, speed: 3.2 },
+    { x0: 24, y0: 20, len: 6, speed: 2.8 },
+    { x0: 38, y0: 8, len: 8, speed: 3.5 },
+    { x0: 52, y0: 30, len: 5, speed: 3.0 },
+    { x0: 68, y0: 15, len: 7, speed: 3.4 },
+    { x0: 82, y0: 5, len: 6, speed: 2.9 },
+    { x0: 96, y0: 25, len: 8, speed: 3.6 },
+    { x0: 112, y0: 12, len: 6, speed: 3.1 },
+    { x0: 18, y0: 42, len: 5, speed: 3.3 },
+    { x0: 75, y0: 38, len: 7, speed: 3.0 }
+  ];
+
+  for (const drop of RAIN_DROPS) {
+    const curY = (drop.y0 + frameIndex * drop.speed) % 72;
+    const curX = drop.x0 + Math.round(curY * 0.25);
+
+    if (curY >= 0 && curY < 64 && curX < 128) {
+      ctx.beginPath();
+      ctx.moveTo(curX, curY);
+      ctx.lineTo(curX + 2, curY + drop.len);
+      ctx.stroke();
+
+      if (curY > 56) {
+        ctx.fillRect(curX - 1, 62, 3, 1);
+      }
+    }
+  }
+
+  ctx.restore();
+}
+
+function drawCassetteSpool(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  frameIndex: number
+) {
+  ctx.save();
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  const spools = [
+    { cx: 20, cy: 32 },
+    { cx: 108, cy: 32 }
+  ];
+
+  const angle = (frameIndex * 0.12) % (Math.PI * 2);
+
+  for (const s of spools) {
+    ctx.beginPath();
+    ctx.arc(s.cx, s.cy, 9, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(s.cx, s.cy, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    for (let a = 0; a < 3; a++) {
+      const spokeAngle = angle + (a * Math.PI * 2) / 3;
+      const sx = s.cx + Math.cos(spokeAngle) * 8;
+      const sy = s.cy + Math.sin(spokeAngle) * 8;
+      ctx.beginPath();
+      ctx.moveTo(s.cx, s.cy);
+      ctx.lineTo(sx, sy);
+      ctx.stroke();
+    }
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(20, 41);
+  ctx.lineTo(108, 41);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawEqualizerRadial(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  frameIndex: number,
+  audioFrame?: AudioFrameData
+) {
+  ctx.save();
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  const numRays = 20;
+  const cx = 64;
+  const cy = 32;
+  const baseR = 24;
+
+  for (let i = 0; i < numRays; i++) {
+    const angle = (i * Math.PI * 2) / numRays + frameIndex * 0.02;
+    const harmonic = Math.sin(i * 1.5 + frameIndex * 0.25) * 0.5 + 0.5;
+    const length = 3 + harmonic * 8 + (audioFrame?.isBeat ? 3 : 0);
+
+    const x1 = Math.round(cx + Math.cos(angle) * (baseR + 2));
+    const y1 = Math.round(cy + Math.sin(angle) * (baseR + 2));
+    const x2 = Math.round(cx + Math.cos(angle) * (baseR + 2 + length));
+    const y2 = Math.round(cy + Math.sin(angle) * (baseR + 2 + length));
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+function drawVinylGrooves(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  frameIndex: number
+) {
+  ctx.save();
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  const radii = [14, 20, 26, 32];
+  for (const r of radii) {
+    ctx.beginPath();
+    if (typeof (ctx as any).ellipse === 'function') {
+      (ctx as any).ellipse(64, 32, r * 1.4, r * 0.75, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      ctx.arc(64, 32, r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  ctx.beginPath();
+  ctx.arc(64, 32, 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  const angle = (frameIndex * 0.08) % Math.PI;
+  const glintLen = 22;
+  ctx.beginPath();
+  ctx.moveTo(64 + Math.cos(angle) * 12, 32 + Math.sin(angle) * 6);
+  ctx.lineTo(64 + Math.cos(angle) * (12 + glintLen), 32 + Math.sin(angle) * (6 + glintLen * 0.5));
+  ctx.moveTo(64 - Math.cos(angle) * 12, 32 - Math.sin(angle) * 6);
+  ctx.lineTo(64 - Math.cos(angle) * (12 + glintLen), 32 - Math.sin(angle) * (6 + glintLen * 0.5));
+  ctx.stroke();
 
   ctx.restore();
 }

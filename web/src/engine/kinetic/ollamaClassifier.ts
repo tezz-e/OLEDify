@@ -169,6 +169,11 @@ export const VALID_MOTION_ARCHETYPES: MotionArchetype[] = [
   'dither_dissolve',
   'typewriter_ribbon',
   'waveform_karaoke',
+  'anvil_stomp',
+  'fracture_shatter',
+  'pendulum_sway',
+  'prism_shimmer',
+  'squash_bounce',
 ];
 
 export const VALID_VISUAL_MOTIFS: VisualMotif[] = [
@@ -189,6 +194,14 @@ export const VALID_VISUAL_MOTIFS: VisualMotif[] = [
   'water_ripples',
   'minimal_frame',
   'lofi_dust_motes',
+  'barbed_wire',
+  'sound_blast_rings',
+  'shattered_glass',
+  'sound_bars_vintage',
+  'rain_window',
+  'cassette_spool',
+  'equalizer_radial',
+  'vinyl_grooves',
 ];
 
 /**
@@ -202,14 +215,24 @@ export function normalizeMotif(
   const clean = raw.toLowerCase().replace(/[-\s]/g, '_').trim();
   if (valid.includes(clean as VisualMotif)) return clean as VisualMotif;
 
-  // Fuzzy keyword matching for motifs
+  // Specific multi-word and compound motif matching first
+  if (clean.includes('blast') || clean.includes('shockwave') || clean.includes('ring')) return 'sound_blast_rings';
+  if (clean.includes('barbed') || clean.includes('wire') || clean.includes('fence')) return 'barbed_wire';
+  if (clean.includes('shatter') || clean.includes('shard') || clean.includes('glass')) return 'shattered_glass';
+  if (clean.includes('vintage') || clean.includes('graphic_eq') || clean.includes('spectrum') || clean.includes('sound_bar')) return 'sound_bars_vintage';
+  if (clean.includes('rain') || clean.includes('window') || clean.includes('storm')) return 'rain_window';
+  if (clean.includes('cassette') || clean.includes('spool') || clean.includes('reel') || clean.includes('tape')) return 'cassette_spool';
+  if (clean.includes('radial') || clean.includes('orbit') || clean.includes('analyzer')) return 'equalizer_radial';
+  if (clean.includes('vinyl') || clean.includes('groove') || clean.includes('record') || clean.includes('turntable')) return 'vinyl_grooves';
+
+  // Standard visual motif matching
   if (clean.includes('note') || clean.includes('music') || clean.includes('melody') || clean.includes('clef')) return 'floating_notes';
   if (clean.includes('starlight') || clean.includes('twinkle') || clean.includes('constellation')) return 'starlight_glimmer';
   if (clean.includes('heart') || clean.includes('pulse') || clean.includes('cardiac') || clean.includes('love')) return 'heartbeat_pulse';
   if (clean.includes('ripple') || clean.includes('water') || clean.includes('wave') || clean.includes('ocean')) return 'water_ripples';
   if (clean.includes('frame') || clean.includes('border') || clean.includes('box') || clean.includes('letterbox')) return 'minimal_frame';
   if (clean.includes('dust') || clean.includes('mote') || clean.includes('particle') || clean.includes('lofi')) return 'lofi_dust_motes';
-  if (clean.includes('speed') || clean.includes('wedge') || clean.includes('focus') || clean.includes('radial')) return 'manga_speedlines';
+  if (clean.includes('speed') || clean.includes('wedge') || clean.includes('focus')) return 'manga_speedlines';
   if (clean.includes('rush') || clean.includes('dash') || clean.includes('run') || clean.includes('nagare')) return 'anime_rush';
   if (clean.includes('crown') || clean.includes('king') || clean.includes('royal') || clean.includes('queen') || clean.includes('boss')) return 'crown_royal';
   if (clean.includes('razor') || clean.includes('blade') || clean.includes('cut') || clean.includes('slash') || clean.includes('sword') || clean.includes('knife')) return 'razor_blade';
@@ -219,6 +242,7 @@ export function normalizeMotif(
   if (clean.includes('burst') || clean.includes('comic') || clean.includes('pop') || clean.includes('bubble') || clean.includes('starburst') || clean.includes('shout')) return 'comic_burst';
   if (clean.includes('star') || clean.includes('glint') || clean.includes('shine') || clean.includes('diamond') || clean.includes('ice') || clean.includes('chrome') || clean.includes('sparkle')) return 'chrome_star';
   if (clean.includes('lightning') || clean.includes('bolt') || clean.includes('electric') || clean.includes('thunder') || clean.includes('volt')) return 'lightning_arc';
+  if (clean.includes('bar') || clean.includes('drop')) return 'sound_bars_vintage';
 
   return 'none';
 }
@@ -250,6 +274,11 @@ export function normalizeArchetype(
   if (clean.includes('fluid') || clean.includes('smooth') || clean.includes('glide')) return 'smooth_fluid';
   if (clean.includes('boil') || clean.includes('wiggly') || clean.includes('shake') || clean.includes('jitter') || clean.includes('chaos')) return 'wiggly_boil';
   if (clean.includes('odometer') || clean.includes('rolling') || clean.includes('roller') || clean.includes('slot') || clean.includes('reel') || clean.includes('tumbler') || clean.includes('counter')) return 'rolling_odometer';
+  if (clean.includes('stomp') || clean.includes('anvil') || clean.includes('heavy_drop') || clean.includes('slam')) return 'anvil_stomp';
+  if (clean.includes('fracture') || clean.includes('shatter') || clean.includes('fissure') || clean.includes('shear')) return 'fracture_shatter';
+  if (clean.includes('pendulum') || clean.includes('sway') || clean.includes('metronome') || clean.includes('rocking')) return 'pendulum_sway';
+  if (clean.includes('prism') || clean.includes('shimmer') || clean.includes('light_beam') || clean.includes('sheen')) return 'prism_shimmer';
+  if (clean.includes('squash') || clean.includes('bounce') || clean.includes('stretch') || clean.includes('elastic')) return 'squash_bounce';
 
   return null;
 }
@@ -431,7 +460,7 @@ DIRECTOR MISSION:
 5. ALWAYS assign an evocative background visual motif ("motif") to key punchlines and emotional climaxes matching the imagery. If no motif fits, use "none". Rotate motifs dynamically across lines to maintain visual freshness.
 6. For each selected word, provide its meaning and rationale for the motion choice.
 
-Choose from these 15 visual archetypes:
+Choose from these 20 visual archetypes:
 - "gentle_float": weightless acoustic drift, floating, romance, calm breeze, dreaming
 - "waveform_karaoke": sing-along melody, catchy choruses, vocal rhythm, musical hooks
 - "typewriter_ribbon": storytelling reveal, confessions, letters, narrative, diary lines
@@ -447,8 +476,13 @@ Choose from these 15 visual archetypes:
 - "smooth_fluid": floating, love, breeze, calm sky/water, romantic drift, gentle
 - "wiggly_boil": wild dancing, boiling jitter, chaos, fun, quirky shaking
 - "rolling_odometer": slot machine tumbler, rolling digits, reels, mechanical spin, count, numbers, casino
+- "anvil_stomp": massive vertical slam onto baseline, heavy hits, bass drops, crushing power, ground slam
+- "fracture_shatter": angular diagonal crack splitting text, heartbreak, pain, cracking glass, tearing apart
+- "pendulum_sway": harmonic rocking acoustic tilt, guitar strums, ticking clock, steady rhythm, acoustic ballads
+- "prism_shimmer": light beam sweeping across glyphs, diamond shine, luxury, glow, star glints
+- "squash_bounce": elastic Disney squash and stretch rebound, playful hops, dance grooves, bouncy funk
 
-Choose from these 16 visual motifs (or "none"):
+Choose from these 24 visual motifs (or "none"):
 - "none": clean typography only with zero background visual distractions
 - "floating_notes": drifting music notes (♪ ♫) for melodies, singing, instruments, romance
 - "starlight_glimmer": breathing twinkling stars for dreams, night, magic, sparkling emotions
@@ -456,6 +490,14 @@ Choose from these 16 visual motifs (or "none"):
 - "water_ripples": calming ocean waves and liquid ripples along screen floor
 - "minimal_frame": cinematic minimalist border frame with corner cuts for elegant ballads
 - "lofi_dust_motes": cozy floating dust particles for coffee shop / bedroom pop warmth
+- "barbed_wire": razor barbed wire fence across corners for trap, danger, street, struggle
+- "sound_blast_rings": concentric shockwave blast rings expanding from center on heavy 808s
+- "shattered_glass": sharp flying glass shards exploding outward from center
+- "sound_bars_vintage": classic hi-fi graphic equalizer spectrum bars dancing along bottom
+- "rain_window": slanted falling rain streaks with splashes on bottom for melancholy and rain
+- "cassette_spool": retro dual spinning cassette tape hubs for analog nostalgia and lo-fi tapes
+- "equalizer_radial": circular 360-degree audio spectrum ring orbiting around text
+- "vinyl_grooves": concentric turntable record grooves with rotating center label for DJ/groove
 - "manga_speedlines": radial tapered focus lines converging around text
 - "anime_rush": horizontal rapid speed barrage streaks
 - "crown_royal": gothic 3-point crown for kings, bosses, wealth, royalty, supreme power

@@ -16,7 +16,12 @@ export type MotionArchetype =
   | 'gentle_float'
   | 'dither_dissolve'
   | 'typewriter_ribbon'
-  | 'waveform_karaoke';
+  | 'waveform_karaoke'
+  | 'anvil_stomp'
+  | 'fracture_shatter'
+  | 'pendulum_sway'
+  | 'prism_shimmer'
+  | 'squash_bounce';
 
 export interface ArchetypeMeta {
   id: MotionArchetype;
@@ -138,6 +143,41 @@ export const ARCHETYPE_METADATA: Record<MotionArchetype, ArchetypeMeta> = {
     name: 'WAVEFORM KARAOKE',
     tag: 'MELODY',
     description: 'Rock-solid centered lyric with fluid vocal wave and tracking runner beacon'
+  },
+  anvil_stomp: {
+    id: 'anvil_stomp',
+    icon: '🔨',
+    name: 'ANVIL STOMP',
+    tag: 'STOMP',
+    description: 'Massive vertical slam crashing onto baseline with baseline shock dust and zero rebound'
+  },
+  fracture_shatter: {
+    id: 'fracture_shatter',
+    icon: '⚡',
+    name: 'FRACTURE SHATTER',
+    tag: 'FRACTURE',
+    description: 'Angular diagonal fissure crack splitting letterforms into upper and lower shearing halves'
+  },
+  pendulum_sway: {
+    id: 'pendulum_sway',
+    icon: '🕰️',
+    name: 'PENDULUM SWAY',
+    tag: 'SWAY',
+    description: 'Harmonic rocking angular tilt rocking smoothly like an acoustic guitar strum or metronome'
+  },
+  prism_shimmer: {
+    id: 'prism_shimmer',
+    icon: '💎',
+    name: 'PRISM SHIMMER',
+    tag: 'SHIMMER',
+    description: 'Diagonal 1-bit Bayer light beam sweeping smoothly across glyphs with starlight glints'
+  },
+  squash_bounce: {
+    id: 'squash_bounce',
+    icon: '🏀',
+    name: 'SQUASH & BOUNCE',
+    tag: 'BOUNCE',
+    description: 'Elastic Disney squash and stretch physics landing on baseline with rhythmic beat rebound'
   }
 };
 
@@ -151,6 +191,67 @@ export interface TextLayoutResult {
 }
 
 export type WordFontRole = 'hero' | 'action' | 'novelty' | 'anchor';
+
+export type TextDressing =
+  | 'solid'
+  | 'hollow_wireframe'
+  | 'bayer_dither_shade'
+  | 'scanline_slice'
+  | 'echo_trail'
+  | 'inverted_pill';
+
+export interface TextDressingMeta {
+  id: TextDressing;
+  icon: string;
+  name: string;
+  tag: string;
+  description: string;
+}
+
+export const TEXT_DRESSING_METADATA: Record<TextDressing, TextDressingMeta> = {
+  solid: {
+    id: 'solid',
+    icon: '⬛',
+    name: 'Solid Clean',
+    tag: 'SOLID',
+    description: 'Crisp high-contrast solid white glyph fill'
+  },
+  hollow_wireframe: {
+    id: 'hollow_wireframe',
+    icon: '🔲',
+    name: '1px Hollow Wireframe',
+    tag: 'WIRE',
+    description: 'Ultra-clean 1px stroke outline with transparent hollow core'
+  },
+  bayer_dither_shade: {
+    id: 'bayer_dither_shade',
+    icon: '🏁',
+    name: 'Bayer Dither Shade',
+    tag: 'SHADE',
+    description: 'Upper half solid white with lower half shaded in 2x2 Bayer dither mesh'
+  },
+  scanline_slice: {
+    id: 'scanline_slice',
+    icon: '💈',
+    name: 'Scanline Slice',
+    tag: 'SLICE',
+    description: 'Horizontal negative 1px scanline cuts etching through the letterforms'
+  },
+  echo_trail: {
+    id: 'echo_trail',
+    icon: '👥',
+    name: 'Echo Silhouette Trail',
+    tag: 'TRAIL',
+    description: 'Twin offset dithered ghost silhouettes trailing behind main text'
+  },
+  inverted_pill: {
+    id: 'inverted_pill',
+    icon: '🏷️',
+    name: 'Inverted Pill Stamp',
+    tag: 'PILL',
+    description: 'Solid white rounded container badge with punched-out black text'
+  }
+};
 
 export type StylePackId = 
   | 'trap_drill'
@@ -289,7 +390,15 @@ export type VisualMotif =
   | 'heartbeat_pulse'
   | 'water_ripples'
   | 'minimal_frame'
-  | 'lofi_dust_motes';
+  | 'lofi_dust_motes'
+  | 'barbed_wire'
+  | 'sound_blast_rings'
+  | 'shattered_glass'
+  | 'sound_bars_vintage'
+  | 'rain_window'
+  | 'cassette_spool'
+  | 'equalizer_radial'
+  | 'vinyl_grooves';
 
 export type MotifMode = 'off' | 'subtle' | 'dynamic' | 'heavy';
 
@@ -420,6 +529,62 @@ export const MOTIF_METADATA: Record<VisualMotif, MotifMeta> = {
     name: 'Lo-Fi Dust Motes',
     tag: 'DUST',
     description: 'Ambient floating particles dancing lazily in warm light with proximity threads'
+  },
+  barbed_wire: {
+    id: 'barbed_wire',
+    icon: '⛓️',
+    name: 'Barbed Wire Tangle',
+    tag: 'WIRE',
+    description: 'Taut diagonal 1-bit barbed fence wire with sharp razor barb pairs crossing canvas'
+  },
+  sound_blast_rings: {
+    id: 'sound_blast_rings',
+    icon: '📢',
+    name: 'Sound Blast Rings',
+    tag: 'BLAST',
+    description: 'Concentric elliptical shockwave blast rings pulsing outward on heavy bass'
+  },
+  shattered_glass: {
+    id: 'shattered_glass',
+    icon: '💥',
+    name: 'Shattered Glass Shards',
+    tag: 'SHARD',
+    description: 'Angular polygon glass shards bursting and rotating outward from center'
+  },
+  sound_bars_vintage: {
+    id: 'sound_bars_vintage',
+    icon: '📊',
+    name: 'Vintage Equalizer Bars',
+    tag: 'BARS',
+    description: 'Classic hi-fi stereo graphic equalizer spectrum bars dancing along screen floor'
+  },
+  rain_window: {
+    id: 'rain_window',
+    icon: '🌧️',
+    name: 'Window Rain Streaks',
+    tag: 'RAIN',
+    description: 'Slanted 1-bit rain streaks with micro-splash ripples at baseline'
+  },
+  cassette_spool: {
+    id: 'cassette_spool',
+    icon: '📼',
+    name: 'Dual Cassette Spools',
+    tag: 'TAPE',
+    description: 'Retro dual spinning tape spools with 3-spoke hubs and connecting tape ribbon'
+  },
+  equalizer_radial: {
+    id: 'equalizer_radial',
+    icon: '🎛️',
+    name: 'Radial Equalizer Orbit',
+    tag: 'RADIAL',
+    description: 'Circular 360-degree audio spectrum analyzer radiating around center text'
+  },
+  vinyl_grooves: {
+    id: 'vinyl_grooves',
+    icon: '📀',
+    name: 'Turntable Vinyl Grooves',
+    tag: 'VINYL',
+    description: 'Concentric turntable record micro-grooves with spinning center spindle hole'
   }
 };
 
@@ -521,6 +686,7 @@ export interface KineticRenderOptions {
   wordOverrides?: Record<string, MotionArchetype>;
   wordFontOverrides?: Record<string, string>;
   wordMotifOverrides?: Record<string, VisualMotif>;
+  wordDressingOverrides?: Record<string, TextDressing>;
   motifMode?: MotifMode;
   stylePack?: StylePackId;
   customPalette?: StylePackConfig['fonts'];

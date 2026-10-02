@@ -1,4 +1,4 @@
-import { MotionArchetype, StylePackConfig, WordFontRole, STYLE_PACKS, MULTILINGUAL_FALLBACK_FONTS } from './types';
+import { MotionArchetype, StylePackConfig, WordFontRole, TextDressing, STYLE_PACKS, MULTILINGUAL_FALLBACK_FONTS } from './types';
 import { LyricWord } from '../lyrics/types';
 import { detectScript } from './scriptDetector';
 import { getScriptFontStack } from './fontLoader';
@@ -132,6 +132,26 @@ const WAVE_KARAOKE_KEYWORDS = new Set([
   'rhythm', 'acoustic', 'guitar', 'piano', 'notes', 'song'
 ]);
 
+const ANVIL_STOMP_KEYWORDS = new Set([
+  'stomp', 'drop', 'heavy', 'slam', 'ground', 'pound', 'crash', 'crush', 'anvil', 'hammer', 'floor', 'weight'
+]);
+
+const FRACTURE_KEYWORDS = new Set([
+  'break', 'crack', 'shatter', 'fracture', 'split', 'torn', 'broken', 'snap', 'glass', 'bleed', 'rip', 'tear'
+]);
+
+const PENDULUM_KEYWORDS = new Set([
+  'sway', 'swing', 'time', 'clock', 'metronome', 'rock', 'strum', 'pendulum', 'slow'
+]);
+
+const PRISM_KEYWORDS = new Set([
+  'shine', 'shimmer', 'prism', 'beam', 'sparkle', 'diamond', 'glow', 'gleam', 'light', 'bright', 'glint'
+]);
+
+const SQUASH_KEYWORDS = new Set([
+  'bounce', 'jump', 'hop', 'rebound', 'elastic', 'skip', 'spring', 'ball', 'dance', 'fun', 'pop'
+]);
+
 /**
  * Normalizes a lyric token across all languages and scripts (Latin, Indic, CJK, Cyrillic, Arabic).
  * Preserves letters (\p{L}), numbers (\p{N}), and combining vowel marks/diacritics (\p{M}).
@@ -182,6 +202,8 @@ export function classifyWordArchetype(
   if (DITHER_DISSOLVE_KEYWORDS.has(clean)) return 'dither_dissolve';
   if (TYPEWRITER_KEYWORDS.has(clean)) return 'typewriter_ribbon';
   if (WAVE_KARAOKE_KEYWORDS.has(clean)) return 'waveform_karaoke';
+  if (PENDULUM_KEYWORDS.has(clean)) return 'pendulum_sway';
+  if (PRISM_KEYWORDS.has(clean)) return 'prism_shimmer';
 
   if (!isChill) {
     if (BLADE_KEYWORDS.has(clean)) return 'blade_slash';
@@ -189,13 +211,19 @@ export function classifyWordArchetype(
     if (ANTHEM_KEYWORDS.has(clean)) return '3d_block_stack';
     if (GLITCH_KEYWORDS.has(clean)) return 'cyber_glitch';
     if (SNAKE_KEYWORDS.has(clean)) return 'snake_slither';
+    if (ANVIL_STOMP_KEYWORDS.has(clean)) return 'anvil_stomp';
+    if (FRACTURE_KEYWORDS.has(clean)) return 'fracture_shatter';
+    if (SQUASH_KEYWORDS.has(clean)) return 'squash_bounce';
   } else {
     // Soften combat keywords in chill/ballad modes
     if (BLADE_KEYWORDS.has(clean)) return 'waveform_karaoke';
+    if (ANVIL_STOMP_KEYWORDS.has(clean)) return 'pendulum_sway';
+    if (FRACTURE_KEYWORDS.has(clean)) return 'dither_dissolve';
     if (IMPACT_KEYWORDS.has(clean)) return 'inverted_badge';
     if (ANTHEM_KEYWORDS.has(clean)) return 'gentle_float';
     if (GLITCH_KEYWORDS.has(clean)) return 'dither_dissolve';
     if (SNAKE_KEYWORDS.has(clean)) return 'gentle_float';
+    if (SQUASH_KEYWORDS.has(clean)) return 'waveform_karaoke';
   }
 
   if (TARGET_KEYWORDS.has(clean)) return 'target_focus';
@@ -220,10 +248,12 @@ export function classifyWordArchetype(
       return (wordIndex % 2 === 0) ? 'waveform_karaoke' : 'smooth_fluid';
     }
 
-    // Chill neutral rotation (Zero violent styles!)
+    // Chill neutral rotation across rich acoustic & melodic styles
     const chillPalette: MotionArchetype[] = [
       'gentle_float',
       'waveform_karaoke',
+      'pendulum_sway',
+      'prism_shimmer',
       'smooth_fluid',
       'typewriter_ribbon',
       'rolling_odometer',
@@ -242,10 +272,10 @@ export function classifyWordArchetype(
 
   // Large preceding silence (>400ms) indicates a dynamic vocal punch
   if (precedingSilenceMs > 400) {
-    return 'manga_impact';
+    return (wordIndex % 2 === 0) ? 'manga_impact' : 'anvil_stomp';
   }
 
-  // Very rapid flows (<220ms) look best with fast glitch or fluid glide
+  // Very rapid flows (<220ms) look best with fast glitch, fracture, or fluid glide
   if (durationMs < 220) {
     return (wordIndex % 2 === 0) ? 'cyber_glitch' : 'smooth_fluid';
   }
@@ -254,10 +284,13 @@ export function classifyWordArchetype(
   const neutralPalette: MotionArchetype[] = [
     'smooth_fluid',
     'blade_slash',
+    'anvil_stomp',
     'rolling_odometer',
     'cyber_glitch',
     'inverted_badge',
+    'fracture_shatter',
     'manga_impact',
+    'squash_bounce',
     'target_focus',
     '3d_block_stack',
     'wiggly_boil',
@@ -339,10 +372,12 @@ export function getWordFontRole(
     case 'inverted_badge':
     case 'gentle_float':
     case 'waveform_karaoke':
+    case 'anvil_stomp':
       return 'hero';
     case 'blade_slash':
     case 'snake_slither':
     case 'typewriter_ribbon':
+    case 'fracture_shatter':
       return 'action';
     case 'cyber_glitch':
     case 'target_focus':
@@ -350,11 +385,74 @@ export function getWordFontRole(
     case 'echo_stack':
     case 'rolling_odometer':
     case 'dither_dissolve':
+    case 'prism_shimmer':
+    case 'squash_bounce':
       return 'novelty';
+    case 'pendulum_sway':
     case 'smooth_fluid':
     default:
       return 'anchor';
   }
+}
+
+/**
+ * Resolves the typographic text dressing for a word based on its archetype,
+ * duration, and audio dynamics.
+ */
+export function getWordEffectiveDressing(
+  word: LyricWord,
+  wordIndex: number,
+  archetype: MotionArchetype,
+  moodProfile?: SongMoodProfile | null,
+  dressingOverrides?: Record<string, TextDressing>
+): TextDressing {
+  const specificKey = `${word.word}_${word.startMs}`;
+  const clean = cleanLyricToken(word.word);
+  const lowerRaw = word.word.trim().toLowerCase();
+
+  if (dressingOverrides) {
+    const override = dressingOverrides[specificKey]
+      || (clean ? dressingOverrides[clean] : undefined)
+      || dressingOverrides[lowerRaw]
+      || dressingOverrides[word.word];
+    if (override) return override;
+  }
+
+  const isChill = moodProfile?.vibe === 'ballad_acoustic' || moodProfile?.vibe === 'chill_pop';
+  const charHash = clean.split('').reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 1), 0);
+
+  // High-intensity or technical archetypes pair well with wireframes or scanlines
+  if (archetype === 'cyber_glitch' || archetype === 'target_focus') {
+    return (wordIndex % 2 === 0) ? 'scanline_slice' : 'hollow_wireframe';
+  }
+
+  if (archetype === 'fracture_shatter' || archetype === 'blade_slash') {
+    return (charHash % 2 === 0) ? 'hollow_wireframe' : 'solid';
+  }
+
+  // Chill / nostalgic archetypes pair well with Bayer dither shading or echo trails
+  if (archetype === 'dither_dissolve' || archetype === 'prism_shimmer') {
+    return (wordIndex % 2 === 0) ? 'bayer_dither_shade' : 'solid';
+  }
+
+  if (archetype === 'echo_stack' || archetype === 'gentle_float') {
+    return (charHash % 3 === 0) ? 'echo_trail' : 'solid';
+  }
+
+  if (archetype === 'inverted_badge') {
+    return 'inverted_pill';
+  }
+
+  // Dynamic subtle rotation for accent words
+  const duration = word.endMs - word.startMs;
+  if (duration >= 350 && (wordIndex % 3 === 2)) {
+    const dressings: TextDressing[] = isChill
+      ? ['solid', 'bayer_dither_shade', 'hollow_wireframe', 'echo_trail']
+      : ['solid', 'hollow_wireframe', 'scanline_slice', 'inverted_pill'];
+    return dressings[(wordIndex + charHash) % dressings.length];
+  }
+
+  return 'solid';
 }
 
 /**

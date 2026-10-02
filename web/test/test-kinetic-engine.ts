@@ -3,18 +3,22 @@ import {
   isFillerWord, 
   classifyWordArchetype, 
   getWordFontRole, 
-  getWordEffectiveFont 
+  getWordEffectiveFont,
+  getWordEffectiveDressing 
 } from '../src/engine/kinetic/semanticClassifier';
 import { 
   STYLE_PACKS, 
   StylePackId, 
   MotionArchetype,
   VisualMotif,
+  TextDressing,
   MOTIF_METADATA,
   ARCHETYPE_METADATA,
+  TEXT_DRESSING_METADATA,
   KineticTransitionType,
   TRANSITION_METADATA
 } from '../src/engine/kinetic/types';
+import { renderMotifBackground } from '../src/engine/kinetic/motifRenderer';
 import { 
   VALID_VISUAL_MOTIFS,
   normalizeMotif,
@@ -242,8 +246,8 @@ console.log('✅ Phantom Future Word Pause Bug verified fixed: gaps enter clean 
 // =========================================================================
 console.log('\n--- Suite 5: 1-Bit Visual Motifs & LLM Inference Pipeline ---');
 
-// 1. Verify all 17 motifs exist in metadata
-assert.equal(VALID_VISUAL_MOTIFS.length, 17, 'Expected exactly 17 visual motifs');
+// 1. Verify all 25 motifs exist in metadata
+assert.equal(VALID_VISUAL_MOTIFS.length, 25, 'Expected exactly 25 visual motifs');
 for (const motif of VALID_VISUAL_MOTIFS) {
   const meta = MOTIF_METADATA[motif];
   assert.ok(meta, `Motif "${motif}" must have metadata`);
@@ -251,7 +255,7 @@ for (const motif of VALID_VISUAL_MOTIFS) {
   assert.ok(meta.name, `Motif "${motif}" must have a name`);
   assert.ok(meta.tag, `Motif "${motif}" must have a tag`);
 }
-console.log('✅ All 17 Visual Motifs defined with valid icons, tags, and metadata.');
+console.log('✅ All 25 Visual Motifs defined with valid icons, tags, and metadata.');
 
 // 2. Test motif normalization and fuzzy recovery
 const fuzzyMotifTests: Array<{ raw: string; expected: VisualMotif }> = [
@@ -294,6 +298,22 @@ const fuzzyMotifTests: Array<{ raw: string; expected: VisualMotif }> = [
   { raw: 'border', expected: 'minimal_frame' },
   { raw: 'lofi_dust_motes', expected: 'lofi_dust_motes' },
   { raw: 'dust', expected: 'lofi_dust_motes' },
+  { raw: 'barbed_wire', expected: 'barbed_wire' },
+  { raw: 'wire', expected: 'barbed_wire' },
+  { raw: 'sound_blast_rings', expected: 'sound_blast_rings' },
+  { raw: 'shockwave', expected: 'sound_blast_rings' },
+  { raw: 'shattered_glass', expected: 'shattered_glass' },
+  { raw: 'glass', expected: 'shattered_glass' },
+  { raw: 'sound_bars_vintage', expected: 'sound_bars_vintage' },
+  { raw: 'spectrum', expected: 'sound_bars_vintage' },
+  { raw: 'rain_window', expected: 'rain_window' },
+  { raw: 'rain', expected: 'rain_window' },
+  { raw: 'cassette_spool', expected: 'cassette_spool' },
+  { raw: 'tape', expected: 'cassette_spool' },
+  { raw: 'equalizer_radial', expected: 'equalizer_radial' },
+  { raw: 'radial', expected: 'equalizer_radial' },
+  { raw: 'vinyl_grooves', expected: 'vinyl_grooves' },
+  { raw: 'turntable', expected: 'vinyl_grooves' },
   { raw: 'none', expected: 'none' },
   { raw: 'xyz_random', expected: 'none' }
 ];
@@ -604,6 +624,10 @@ function createFullMockCanvasCtx() {
     restore: () => {},
     beginPath: () => {},
     closePath: () => {},
+    arc: () => {},
+    ellipse: () => {},
+    quadraticCurveTo: () => {},
+    bezierCurveTo: () => {},
     rect: () => {},
     clip: () => {},
     moveTo: () => {},
@@ -613,7 +637,17 @@ function createFullMockCanvasCtx() {
     fillRect: () => {},
     strokeRect: () => {},
     clearRect: () => {},
+    translate: () => {},
+    rotate: () => {},
+    scale: () => {},
+    drawImage: () => {},
+    getImageData: () => ({ data: new Uint8ClampedArray(128 * 64 * 4), width: 128, height: 64 }),
+    putImageData: () => {},
+    createImageData: () => ({ data: new Uint8ClampedArray(128 * 64 * 4), width: 128, height: 64 }),
     fillText: (text: string, x: number, y: number) => {
+      drawnTexts.push({ text, x, y });
+    },
+    strokeText: (text: string, x: number, y: number) => {
       drawnTexts.push({ text, x, y });
     },
     drawnTexts
@@ -1101,6 +1135,122 @@ for (const frame of renderedSeq.frames) {
 assert.equal(nonBinaryPixelCount, 0, `All pixels across rendered sequence must be pure 1-bit (0 or 255), found ${nonBinaryPixelCount} non-binary pixels`);
 console.log(`✅ Full kinetic sequence rendered successfully (${renderedSeq.frames.length} frames). Verified 100% pure 1-bit monochrome.`);
 
-console.log('\n🎉 ALL 10 KINETIC TYPOGRAPHY, MOTIF, ODOMETER & TRANSITION CHOREOGRAPHY TESTS PASSED PERFECTLY!\n');
+// =========================================================================
+// TEST SUITE 11: Combinatorial Vibe Matrix, Archetypes, Motifs & Dressings
+// =========================================================================
+console.log('\n--- Suite 11: Combinatorial Vibe Matrix, Archetypes, Motifs & Dressings ---');
+
+// 1. Verify 21 Motion Archetypes Registered with Metadata
+const all21Archetypes: MotionArchetype[] = [
+  'auto_semantic', 'manga_impact', 'blade_slash', 'cyber_glitch', 'smooth_fluid',
+  '3d_block_stack', 'echo_stack', 'target_focus', 'snake_slither', 'wiggly_boil',
+  'inverted_badge', 'rolling_odometer', 'gentle_float', 'waveform_karaoke',
+  'typewriter_ribbon', 'dither_dissolve', 'anvil_stomp', 'fracture_shatter',
+  'pendulum_sway', 'prism_shimmer', 'squash_bounce'
+];
+
+for (const arch of all21Archetypes) {
+  assert.ok(ARCHETYPE_METADATA[arch], `Missing ARCHETYPE_METADATA for "${arch}"`);
+  assert.ok(ARCHETYPE_METADATA[arch].name, `Missing name for archetype "${arch}"`);
+  assert.ok(ARCHETYPE_METADATA[arch].icon, `Missing icon for archetype "${arch}"`);
+}
+console.log(`✅ All 21 motion archetypes verified with rich metadata.`);
+
+// 2. Verify 6 Text Dressings Registered with Metadata
+const all6Dressings: TextDressing[] = [
+  'solid', 'hollow_wireframe', 'bayer_dither_shade', 'scanline_slice', 'echo_trail', 'inverted_pill'
+];
+for (const dressing of all6Dressings) {
+  assert.ok(TEXT_DRESSING_METADATA[dressing], `Missing TEXT_DRESSING_METADATA for "${dressing}"`);
+  assert.ok(TEXT_DRESSING_METADATA[dressing].name, `Missing name for dressing "${dressing}"`);
+  assert.ok(TEXT_DRESSING_METADATA[dressing].icon, `Missing icon for dressing "${dressing}"`);
+}
+console.log(`✅ All 6 text dressings verified with metadata.`);
+
+// 3. Test getWordEffectiveDressing Deterministic Resolution & Archetype Affinities
+const testWordA: LyricWord = { word: 'HEAVY', startMs: 1000, endMs: 1400 };
+const testWordB: LyricWord = { word: 'CRUSH', startMs: 2000, endMs: 2400 };
+const dressingAnvil = getWordEffectiveDressing(testWordA, 0, 'anvil_stomp');
+assert.ok(['solid', 'inverted_pill', 'echo_trail'].includes(dressingAnvil), `anvil_stomp dressing must match impact family, got: ${dressingAnvil}`);
+
+const dressingFracture = getWordEffectiveDressing(testWordB, 1, 'fracture_shatter');
+assert.ok(['solid', 'hollow_wireframe', 'scanline_slice'].includes(dressingFracture), `fracture_shatter dressing must match fracture family, got: ${dressingFracture}`);
+
+const dressingUserOverride = getWordEffectiveDressing(testWordA, 0, 'anvil_stomp', null, { HEAVY: 'bayer_dither_shade' });
+assert.equal(dressingUserOverride, 'bayer_dither_shade', 'User dressing override must take precedence');
+console.log(`✅ getWordEffectiveDressing deterministic affinity and override priority verified.`);
+
+// 4. Test Rendering of 5 New Archetypes on 1-bit OLED
+const newArchetypeList: MotionArchetype[] = [
+  'anvil_stomp', 'fracture_shatter', 'pendulum_sway', 'prism_shimmer', 'squash_bounce'
+];
+
+for (const arch of newArchetypeList) {
+  const mockCtx = createFullMockCanvasCtx();
+  const sampleLayout = {
+    lines: ['TEST'],
+    fontSize: 26,
+    lineHeight: 30,
+    letterSpacing: 0,
+    totalHeight: 30,
+    yOffsets: [32]
+  };
+
+  // Test across entry, midpoint, and hold
+  for (const progress of [0.1, 0.5, 0.95]) {
+    assert.doesNotThrow(() => {
+      renderArchetypeFrame(mockCtx, arch, 'TEST', progress, sampleLayout, 30);
+    }, `renderArchetypeFrame failed for archetype "${arch}" at progress ${progress}`);
+  }
+}
+console.log(`✅ All 5 new motion archetypes render flawlessly across progress milestones without errors.`);
+
+// 5. Test Procedural Rendering of 8 New Visual Motifs on 1-bit OLED
+const newMotifsList: VisualMotif[] = [
+  'barbed_wire', 'sound_blast_rings', 'shattered_glass', 'sound_bars_vintage',
+  'rain_window', 'cassette_spool', 'equalizer_radial', 'vinyl_grooves'
+];
+
+for (const motif of newMotifsList) {
+  const mockCtx = createFullMockCanvasCtx();
+  for (const progress of [0.0, 0.4, 0.8, 1.0]) {
+    assert.doesNotThrow(() => {
+      renderMotifBackground(mockCtx, motif, progress, 15);
+    }, `renderMotifBackground failed for motif "${motif}" at progress ${progress}`);
+  }
+}
+console.log(`✅ All 8 new visual motifs render flawlessly across progress milestones without errors.`);
+
+// 6. Test Multi-Layer Permutation Combinations (Physics x Dressing x Motif)
+const samplePermutations: Array<{ arch: MotionArchetype; dressing: TextDressing; motif: VisualMotif }> = [
+  { arch: 'anvil_stomp', dressing: 'inverted_pill', motif: 'sound_blast_rings' },
+  { arch: 'fracture_shatter', dressing: 'scanline_slice', motif: 'shattered_glass' },
+  { arch: 'pendulum_sway', dressing: 'bayer_dither_shade', motif: 'vinyl_grooves' },
+  { arch: 'prism_shimmer', dressing: 'hollow_wireframe', motif: 'equalizer_radial' },
+  { arch: 'squash_bounce', dressing: 'echo_trail', motif: 'sound_bars_vintage' },
+  { arch: 'gentle_float', dressing: 'bayer_dither_shade', motif: 'rain_window' },
+  { arch: 'waveform_karaoke', dressing: 'solid', motif: 'cassette_spool' }
+];
+
+for (const p of samplePermutations) {
+  const mockCtx = createFullMockCanvasCtx();
+  const sampleLayout = {
+    lines: ['VIBE'],
+    fontSize: 24,
+    lineHeight: 28,
+    letterSpacing: 0,
+    totalHeight: 28,
+    yOffsets: [32]
+  };
+
+  assert.doesNotThrow(() => {
+    renderMotifBackground(mockCtx, p.motif, 0.5, 15);
+    renderArchetypeFrame(mockCtx, p.arch, 'VIBE', 0.5, sampleLayout, 30, undefined, undefined, p.dressing);
+  }, `Permutation failed for [${p.arch} x ${p.dressing} x ${p.motif}]`);
+}
+console.log(`✅ Multi-layer combinatorial permutations (Physics x Dressing x Motif) render flawlessly.`);
+
+console.log('\n🎉 ALL 11 KINETIC TYPOGRAPHY, MOTIF, DRESSING & COMBINATORIAL MATRIX TESTS PASSED PERFECTLY!\n');
+
 
 

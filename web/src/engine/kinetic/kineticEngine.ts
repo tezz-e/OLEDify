@@ -1,9 +1,9 @@
 import { ExtractedFrame, DecodedMedia } from '../../types/media';
-import { KineticRenderOptions, MotionArchetype, STYLE_PACKS, KineticTransitionType } from './types';
+import { KineticRenderOptions, MotionArchetype, STYLE_PACKS, KineticTransitionType, TextDressing } from './types';
 import { computeSafeTextLayout } from './kineticLayout';
 import { renderArchetypeFrame, getScratchCanvas, BAYER_4X4 } from './kineticArchetypes';
 import { renderMotifBackground } from './motifRenderer';
-import { getWordEffectiveArchetype, getWordEffectiveFont, cleanLyricToken } from './semanticClassifier';
+import { getWordEffectiveArchetype, getWordEffectiveFont, getWordEffectiveDressing, cleanLyricToken } from './semanticClassifier';
 import { LyricWord } from '../lyrics/types';
 import { isRTL } from './scriptDetector';
 import { ensureFontForText } from './fontLoader';
@@ -189,6 +189,8 @@ export async function renderKineticSequence(
       arc: () => {},
       ellipse: () => {},
       arcTo: () => {},
+      quadraticCurveTo: () => {},
+      bezierCurveTo: () => {},
       roundRect: () => {},
       fillText: () => {},
       strokeText: () => {},
@@ -201,6 +203,7 @@ export async function renderKineticSequence(
       measureText: (text: string) => ({ width: text.length * 8 }),
       getImageData: () => ({ data: mockPixels, width: 128, height: 64 }),
       putImageData: () => {},
+      drawImage: () => {},
       createImageData: () => ({ data: new Uint8ClampedArray(128 * 64 * 4), width: 128, height: 64 }),
       font: '',
       fillStyle: '',
@@ -326,21 +329,36 @@ export async function renderKineticSequence(
         const isImportantWord = wordDuration >= 350 || (audioFrame?.isBeat && wordDuration >= 200);
         if (isImportantWord && activeWordIndex % 2 === 1) {
           switch (effectiveArchetype) {
-            case 'manga_impact': wordMotif = 'manga_speedlines'; break;
-            case 'blade_slash': wordMotif = 'razor_blade'; break;
-            case 'cyber_glitch': wordMotif = 'lightning_arc'; break;
+            case 'manga_impact': wordMotif = (activeWordIndex % 4 === 1) ? 'manga_speedlines' : 'sound_blast_rings'; break;
+            case 'blade_slash': wordMotif = (activeWordIndex % 4 === 1) ? 'razor_blade' : 'barbed_wire'; break;
+            case 'cyber_glitch': wordMotif = (activeWordIndex % 4 === 1) ? 'lightning_arc' : 'shattered_glass'; break;
+            case 'anvil_stomp': wordMotif = 'sound_blast_rings'; break;
+            case 'fracture_shatter': wordMotif = 'shattered_glass'; break;
             case 'target_focus': wordMotif = 'tactical_scope'; break;
-            case 'gentle_float': wordMotif = 'floating_notes'; break;
-            case 'waveform_karaoke': wordMotif = 'water_ripples'; break;
+            case 'gentle_float': wordMotif = (activeWordIndex % 4 === 1) ? 'floating_notes' : 'starlight_glimmer'; break;
+            case 'waveform_karaoke': wordMotif = (activeWordIndex % 4 === 1) ? 'water_ripples' : 'sound_bars_vintage'; break;
+            case 'pendulum_sway': wordMotif = 'sound_bars_vintage'; break;
+            case 'prism_shimmer': wordMotif = 'starlight_glimmer'; break;
+            case 'squash_bounce': wordMotif = (activeWordIndex % 4 === 1) ? 'equalizer_radial' : 'vinyl_grooves'; break;
             case '3d_block_stack': wordMotif = 'chrome_star'; break;
-            case 'rolling_odometer': wordMotif = 'comic_burst'; break;
+            case 'rolling_odometer': wordMotif = (activeWordIndex % 4 === 1) ? 'comic_burst' : 'vinyl_grooves'; break;
             case 'snake_slither': wordMotif = 'flame_tongue'; break;
-            case 'dither_dissolve': wordMotif = 'starlight_glimmer'; break;
+            case 'dither_dissolve': wordMotif = (activeWordIndex % 4 === 1) ? 'rain_window' : 'starlight_glimmer'; break;
+            case 'typewriter_ribbon': wordMotif = (activeWordIndex % 4 === 1) ? 'cassette_spool' : 'minimal_frame'; break;
             case 'inverted_badge': wordMotif = 'minimal_frame'; break;
             default: break;
           }
         }
       }
+
+      // Resolve orthogonal text dressing
+      const wordDressing = getWordEffectiveDressing(
+        activeWord,
+        activeWordIndex,
+        effectiveArchetype,
+        moodProfile,
+        options.wordDressingOverrides
+      );
 
       // Render background motif layer before text
       if (effectiveMotifMode !== 'off' && wordMotif !== 'none') {
@@ -367,8 +385,8 @@ export async function renderKineticSequence(
         ctx.translate(shakeX, shakeY);
       }
 
-      // Render Archetype Frame with effective font and moodProfile
-      renderArchetypeFrame(ctx, effectiveArchetype, activeWord.word, tau, layout, f, effectiveFont, audioFrame, moodProfile);
+      // Render Archetype Frame with effective font, moodProfile, and text dressing
+      renderArchetypeFrame(ctx, effectiveArchetype, activeWord.word, tau, layout, f, effectiveFont, audioFrame, moodProfile, wordDressing);
       ctx.restore();
 
       // Dynamic 1-Bit Transition Choreography between consecutive words (legato phrasing)
