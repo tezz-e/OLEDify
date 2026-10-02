@@ -386,13 +386,18 @@ export function getWordEffectiveFont(
   }
 
   // 4. Low-Resolution 128x64 Aperture Safety Guard:
-  // If the font is ornate blackletter or delicate cursive ('Wilhelm Gotisch', 'Vendetta')
-  // and the word has 5+ characters (not a short 1-4 punchline like 'NO', 'WAR', 'ICE'),
-  // upgrade to a high-legibility geometric display font ('Lemon Milk') so counters and apertures stay open.
+  // If the font is ornate blackletter or delicate cursive ('Wilhelm Gotisch', 'Vendetta'):
+  // - Any word with 5+ characters (e.g. 'GLITCH', 'SYSTEM')
+  // - OR any word with lowercase/mixed-case characters >= 3 chars (e.g. 'ikky', 'drill', 'trap')
+  //   because lowercase blackletter glyphs have dense hairline loops and internal hatching
+  //   that completely collapse into unreadable pixel soup on 1-bit OLED displays!
+  // Short uppercase words (e.g. 'OG', 'NO', 'WAR', 'GOTH') retain blackletter punch.
+  const rawLetters = word.word.replace(/[^a-zA-Z0-9]/g, '');
+  const isAllUpper = rawLetters.length > 0 && rawLetters === rawLetters.toUpperCase();
   if (
     !wordFontOverrides?.[cleanKey] &&
     /wilhelm|vendetta/i.test(baseFont) &&
-    word.word.replace(/[^a-zA-Z0-9]/g, '').length >= 5
+    (rawLetters.length >= 5 || (!isAllUpper && rawLetters.length >= 3))
   ) {
     baseFont = `'Lemon Milk', ${MULTILINGUAL_FALLBACK_FONTS}, sans-serif`;
   }

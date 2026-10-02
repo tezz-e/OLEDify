@@ -131,8 +131,10 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
   // --- PARSED LYRICS & SELECTION ---
   const [parsedLyrics, setParsedLyrics] = useState<ParsedLyrics>(() => parseLrc(SAMPLE_FALLBACK_LRC));
-  const [selectedStartIndex, setSelectedStartIndex] = useState(0);
-  const [selectedEndIndex, setSelectedEndIndex] = useState(3);
+  const [selectedLineIndices, setSelectedLineIndices] = useState<number[]>([0, 1, 2, 3]);
+  const [anchorIndex, setAnchorIndex] = useState<number>(0);
+  const selectedStartIndex = selectedLineIndices.length > 0 ? Math.min(...selectedLineIndices) : 0;
+  const selectedEndIndex = selectedLineIndices.length > 0 ? Math.max(...selectedLineIndices) : 0;
 
   // --- AUDIO & PLAYBACK PREVIEW ---
   const [isPlaying, setIsPlaying] = useState(false);
@@ -456,27 +458,44 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
       if (cached) {
         const parsed = parseLrc(cached);
         setParsedLyrics(parsed);
+        const savedIndicesRaw = sessionStorage.getItem('oled_studio_sel_indices');
+        if (savedIndicesRaw) {
+          try {
+            const parsedIdxs = JSON.parse(savedIndicesRaw);
+            if (Array.isArray(parsedIdxs) && parsedIdxs.length > 0) {
+              const valid = parsedIdxs.filter(i => i < parsed.lines.length);
+              if (valid.length > 0) {
+                setSelectedLineIndices(valid);
+                setAnchorIndex(valid[0]);
+                return;
+              }
+            }
+          } catch (_) {}
+        }
         const savedStart = Number(sessionStorage.getItem('oled_studio_sel_start') || 0);
         const savedEnd = Number(sessionStorage.getItem('oled_studio_sel_end') || Math.min(3, parsed.lines.length - 1));
-        setSelectedStartIndex(Math.min(parsed.lines.length - 1, Math.max(0, savedStart)));
-        setSelectedEndIndex(Math.min(parsed.lines.length - 1, Math.max(0, savedEnd)));
+        const s = Math.min(parsed.lines.length - 1, Math.max(0, savedStart));
+        const e = Math.min(parsed.lines.length - 1, Math.max(0, savedEnd));
+        setSelectedLineIndices(Array.from({ length: e - s + 1 }, (_, i) => s + i));
+        setAnchorIndex(s);
         return;
       }
     } catch (_) {}
 
     const defaultParsed = parseLrc(SAMPLE_FALLBACK_LRC);
     setParsedLyrics(defaultParsed);
-    setSelectedStartIndex(0);
-    setSelectedEndIndex(Math.min(3, defaultParsed.lines.length - 1));
+    setSelectedLineIndices(Array.from({ length: Math.min(4, defaultParsed.lines.length) }, (_, i) => i));
+    setAnchorIndex(0);
   }, []);
 
   // Persist selection indices to session storage
   useEffect(() => {
     try {
+      sessionStorage.setItem('oled_studio_sel_indices', JSON.stringify(selectedLineIndices));
       sessionStorage.setItem('oled_studio_sel_start', String(selectedStartIndex));
       sessionStorage.setItem('oled_studio_sel_end', String(selectedEndIndex));
     } catch (_) {}
-  }, [selectedStartIndex, selectedEndIndex]);
+  }, [selectedLineIndices, selectedStartIndex, selectedEndIndex]);
 
   // Search LRCLIB
   const handleSearch = async (e?: React.FormEvent) => {
@@ -517,16 +536,16 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
       if (!parsed.title && track.trackName) parsed.title = track.trackName;
       if (!parsed.artist && track.artistName) parsed.artist = track.artistName;
       setParsedLyrics(parsed);
-      setSelectedStartIndex(0);
-      setSelectedEndIndex(Math.min(3, parsed.lines.length - 1));
+      setSelectedLineIndices(Array.from({ length: Math.min(4, parsed.lines.length) }, (_, i) => i));
+      setAnchorIndex(0);
       setPlayheadMs(parsed.lines[0]?.startMs || 0);
     } else if (track.plainLyrics) {
       const parsed = parsePlainTextLyrics(track.plainLyrics, track.duration * 1000);
       if (!parsed.title && track.trackName) parsed.title = track.trackName;
       if (!parsed.artist && track.artistName) parsed.artist = track.artistName;
       setParsedLyrics(parsed);
-      setSelectedStartIndex(0);
-      setSelectedEndIndex(Math.min(3, parsed.lines.length - 1));
+      setSelectedLineIndices(Array.from({ length: Math.min(4, parsed.lines.length) }, (_, i) => i));
+      setAnchorIndex(0);
       setPlayheadMs(0);
     }
     setHasUserSelectedStylePack(false);
@@ -555,8 +574,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
     const parsed = parseLrc(pastedLrcText);
     setParsedLyrics(parsed);
-    setSelectedStartIndex(0);
-    setSelectedEndIndex(Math.min(3, parsed.lines.length - 1));
+    setSelectedLineIndices(Array.from({ length: Math.min(4, parsed.lines.length) }, (_, i) => i));
+    setAnchorIndex(0);
     setPlayheadMs(parsed.lines[0]?.startMs || 0);
   };
 
@@ -732,12 +751,10 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     return false;
   }, [isPlaying, audioAnalysis, playheadMs]);
 
-  // Selected lines range calculation
+  // Selected lines calculation (supports non-contiguous lines via Ctrl+click)
   const selectedLines = useMemo(() => {
-    const start = Math.min(selectedStartIndex, selectedEndIndex);
-    const end = Math.max(selectedStartIndex, selectedEndIndex);
-    return parsedLyrics.lines.slice(start, end + 1);
-  }, [parsedLyrics, selectedStartIndex, selectedEndIndex]);
+    return parsedLyrics.lines.filter((_, idx) => selectedLineIndices.includes(idx));
+  }, [parsedLyrics, selectedLineIndices]);
 
   const rangeStartMs = selectedLines.length > 0 ? selectedLines[0].startMs : 0;
   const rangeEndMs = selectedLines.length > 0 ? selectedLines[selectedLines.length - 1].endMs : 5000;
@@ -906,14 +923,42 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     return `${mins}:${secs}s`;
   }, [playheadMs]);
 
-  // Line selection click handler
+  // Line selection click handler (supports Shift for range, Ctrl/Cmd for toggle)
   const handleLineClick = (idx: number, e: React.MouseEvent) => {
-    if (e.shiftKey) {
-      // Range expand from start to clicked index
-      setSelectedEndIndex(idx);
+    if (e.ctrlKey || e.metaKey) {
+      // Ctrl / Cmd + Click: Toggle individual line selection
+      setSelectedLineIndices(prev => {
+        if (prev.includes(idx)) {
+          // If only 1 line selected, don't allow empty selection
+          if (prev.length <= 1) return prev;
+          return prev.filter(i => i !== idx);
+        } else {
+          return [...prev, idx].sort((a, b) => a - b);
+        }
+      });
+      setAnchorIndex(idx);
+      setPlayheadMs(parsedLyrics.lines[idx].startMs);
+      if (audioRef.current) {
+        audioRef.current.currentTime = parsedLyrics.lines[idx].startMs / 1000;
+      }
+    } else if (e.shiftKey) {
+      // Shift + Click: Range expand from anchor to clicked index
+      const anchor = anchorIndex ?? 0;
+      const start = Math.min(anchor, idx);
+      const end = Math.max(anchor, idx);
+      const range: number[] = [];
+      for (let i = start; i <= end; i++) {
+        range.push(i);
+      }
+      setSelectedLineIndices(range);
+      setPlayheadMs(parsedLyrics.lines[idx].startMs);
+      if (audioRef.current) {
+        audioRef.current.currentTime = parsedLyrics.lines[idx].startMs / 1000;
+      }
     } else {
-      setSelectedStartIndex(idx);
-      setSelectedEndIndex(idx);
+      // Normal Click: Single line select
+      setSelectedLineIndices([idx]);
+      setAnchorIndex(idx);
       setPlayheadMs(parsedLyrics.lines[idx].startMs);
       if (audioRef.current) {
         audioRef.current.currentTime = parsedLyrics.lines[idx].startMs / 1000;
@@ -961,19 +1006,21 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
   // Quick range helpers
   const handleSelectAll = () => {
-    setSelectedStartIndex(0);
-    setSelectedEndIndex(Math.max(0, parsedLyrics.lines.length - 1));
+    setSelectedLineIndices(parsedLyrics.lines.map((_, i) => i));
+    setAnchorIndex(0);
   };
 
   const handleExpandRange = (delta: number) => {
-    const start = Math.min(selectedStartIndex, selectedEndIndex);
-    const end = Math.max(selectedStartIndex, selectedEndIndex);
+    if (parsedLyrics.lines.length === 0) return;
     if (delta > 0) {
-      setSelectedStartIndex(start);
-      setSelectedEndIndex(Math.min(parsedLyrics.lines.length - 1, end + 1));
-    } else if (delta < 0 && end > start) {
-      setSelectedStartIndex(start);
-      setSelectedEndIndex(end - 1);
+      const max = selectedLineIndices.length > 0 ? Math.max(...selectedLineIndices) : -1;
+      const nextIdx = Math.min(parsedLyrics.lines.length - 1, max + 1);
+      if (!selectedLineIndices.includes(nextIdx)) {
+        setSelectedLineIndices(prev => [...prev, nextIdx].sort((a, b) => a - b));
+      }
+    } else if (delta < 0 && selectedLineIndices.length > 1) {
+      const max = Math.max(...selectedLineIndices);
+      setSelectedLineIndices(prev => prev.filter(i => i !== max));
     }
   };
 
@@ -1331,6 +1378,32 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
       setIsPlaying(false);
     }
   };
+
+  // Global spacebar playback shortcut
+  useEffect(() => {
+    if (isOpen === false) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept spacebar if user is typing in an input, textarea, or contentEditable
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isPlaying, playheadMs, scrubScope, rangeStartMs, rangeEndMs, songTotalDurationMs]);
 
   // Audio playback loop
   useEffect(() => {
@@ -1821,11 +1894,15 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                 <span className={themeMode === 'dark' ? 'text-white' : 'text-[#141413]'}>2. Lyrics Timeline</span>
               </span>
               <span className={`text-[10px] font-sans hidden sm:inline ${themeMode === 'dark' ? 'text-white/40' : 'text-[#777]'}`}>
-                Click line to seek • Click word to customize
+                Click: Seek • Shift: Range • Ctrl: Toggle • Space: Play/Pause
               </span>
               {/* Prominent Selection Stanza Badge */}
               <span className="px-2.5 py-0.5 rounded-full bg-[#D97757]/15 border border-[#D97757]/30 text-[#D97757] font-mono text-[10px] font-semibold flex items-center gap-1">
-                <span>Selected: Lines {Math.min(selectedStartIndex, selectedEndIndex) + 1}–{Math.max(selectedStartIndex, selectedEndIndex) + 1}</span>
+                <span>
+                  {selectedLineIndices.length === 1
+                    ? `Selected: Line ${selectedLineIndices[0] + 1}`
+                    : `Selected: Lines ${Math.min(...selectedLineIndices) + 1}–${Math.max(...selectedLineIndices) + 1}`}
+                </span>
                 <span className="opacity-40">•</span>
                 <span>{selectedLines.length} {selectedLines.length === 1 ? 'line' : 'lines'}</span>
                 <span className="opacity-40">•</span>
@@ -1904,12 +1981,11 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               }}
             >
             {parsedLyrics.lines.map((line, idx) => {
-              const start = Math.min(selectedStartIndex, selectedEndIndex);
-              const end = Math.max(selectedStartIndex, selectedEndIndex);
-              const isSelected = idx >= start && idx <= end;
+              const isSelected = selectedLineIndices.includes(idx);
               const isActiveLine = idx === activeLineIndex;
-              const isStartPin = idx === start;
-              const isEndPin = idx === end;
+              const isStartPin = selectedLineIndices.length > 0 && idx === Math.min(...selectedLineIndices);
+              const isEndPin = selectedLineIndices.length > 0 && idx === Math.max(...selectedLineIndices);
+              const isPauseLine = (!line.words || line.words.length === 0) && !line.text.trim();
 
               return isSelected ? (
                 <div key={idx} id={`lyric-line-${idx}`} className="w-full max-w-xl transition-all duration-200">
@@ -1972,9 +2048,22 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                         </div>
                       </div>
 
-                      {/* Clean Apple Music Typography - Words are directly interactive */}
+                      {/* Clean Apple Music Typography or Pause Break */}
                       <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1.5">
-                        {line.words && line.words.length > 0 ? (
+                        {isPauseLine ? (
+                          <div className="flex items-center gap-2.5 py-1.5 px-3 rounded-lg bg-[#D97757]/10 border border-[#D97757]/20 text-[#D97757] w-full">
+                            <Pause className="w-3.5 h-3.5 shrink-0" />
+                            <span className="text-xs font-mono font-bold tracking-wider uppercase">
+                              Instrumental / Vocal Pause
+                            </span>
+                            <span className="text-[10px] font-mono opacity-70">
+                              ({((line.endMs - line.startMs) / 1000).toFixed(1)}s)
+                            </span>
+                            <span className="text-[10px] opacity-75 ml-auto italic">
+                              Ctrl+Click to deselect
+                            </span>
+                          </div>
+                        ) : line.words && line.words.length > 0 ? (
                           line.words.map((w, wIdx) => {
                             const isWordActive = isActiveLine && playheadMs >= w.startMs && playheadMs < w.endMs;
                             const isWordPast = isActiveLine ? playheadMs >= w.endMs : idx < activeLineIndex;
@@ -2122,9 +2211,16 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     ) : (
                       <span className="w-1.5 h-1.5 rounded-full bg-current opacity-20 shrink-0" />
                     )}
-                    <span className="text-lg font-medium transition-colors">
-                      {line.text}
-                    </span>
+                    {isPauseLine ? (
+                      <div className="flex items-center gap-2 italic text-[11px] text-[#D97757]/70">
+                        <Pause className="w-3 h-3 text-[#D97757]/60 shrink-0" />
+                        <span>[Instrumental / Vocal Pause • {((line.endMs - line.startMs) / 1000).toFixed(1)}s • Ctrl+click to select]</span>
+                      </div>
+                    ) : (
+                      <span className="text-lg font-medium transition-colors">
+                        {line.text}
+                      </span>
+                    )}
                   </div>
                 </div>
               );
