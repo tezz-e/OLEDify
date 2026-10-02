@@ -24,6 +24,7 @@ import { ThemeSwitch } from './ThemeSwitch';
 import { OllamaInspectorModal } from './OllamaInspectorModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NumberFlow } from './NumberFlow';
+import { LoaderGooeyBlobs } from '../../ui/loaders-gooey-blobs';
 
 interface LyricsStudioViewProps {
   onClose: () => void;
@@ -163,6 +164,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const [fontFamily, setFontFamily] = useState<string>(() => STYLE_PACKS.trap_drill.fonts.hero);
   const [isRendering, setIsRendering] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 
   // --- SONG MOOD PROFILE (Derived from Audio Telemetry, Lyric Pacing & AI Director) ---
   const [aiDetectedVibe, setAiDetectedVibe] = useState<SongVibe | null>(null);
@@ -994,6 +996,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     let active = true;
     const renderLivePreview = async () => {
       if (selectedLines.length === 0) return;
+      setIsPreviewLoading(true);
       try {
         const miniMedia = await renderKineticSequence({
           lyrics: selectedLines,
@@ -1023,6 +1026,10 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         }
       } catch (err) {
         console.error('Preview render error:', err);
+      } finally {
+        if (active) {
+          setIsPreviewLoading(false);
+        }
       }
     };
 
@@ -2428,8 +2435,32 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               }`} />
 
               {/* Hardware Display Box */}
-              <div className="bg-black p-1 rounded-md shadow-inner flex items-center justify-center border border-white/10 ring-1 ring-black/80">
+              <div className="bg-black p-1 rounded-md shadow-inner flex items-center justify-center border border-white/10 ring-1 ring-black/80 relative overflow-hidden">
                 <OledCanvas frameData={previewFrame} theme="cyan" scale={6} />
+
+                {/* Live Buffer / Render Progress Overlay */}
+                <AnimatePresence>
+                  {(isPreviewLoading || isRendering) && (
+                    <motion.div
+                      key="oled-loader-overlay"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute inset-0 bg-black/85 backdrop-blur-[2px] flex flex-col items-center justify-center gap-3 z-20 pointer-events-none"
+                    >
+                      <LoaderGooeyBlobs size={12} color="#D97757" duration={1.3} />
+                      <div className="flex flex-col items-center gap-0.5 text-center px-4">
+                        <span className="text-[11px] font-mono font-bold text-[#D97757] tracking-wider uppercase">
+                          {isRendering ? `Rendering Sequence (${renderProgress}%)` : 'Buffering Preview...'}
+                        </span>
+                        <span className="text-[9px] font-mono text-white/50 tracking-wide">
+                          {isRendering ? 'Generating full 30 FPS media' : 'Computing kinetic sequence'}
+                        </span>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
 
@@ -3134,7 +3165,12 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             {/* Live Render State & Telemetry Row */}
             <div className="flex items-center justify-between text-[10px] font-mono">
               <div className="flex items-center gap-1.5 truncate">
-                {renderedMediaBuffer && !isDirty ? (
+                {isPreviewLoading ? (
+                  <span className="flex items-center gap-1.5 text-[#D97757] font-semibold truncate">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#D97757] animate-ping shrink-0" />
+                    <span>BUFFERING PREVIEW...</span>
+                  </span>
+                ) : renderedMediaBuffer && !isDirty ? (
                   <span className="flex items-center gap-1 text-emerald-500 font-semibold truncate">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                     <span>BUFFERED ({lastRenderedMode === 'heuristic' ? 'AUTO' : 'AI'})</span>
