@@ -1264,10 +1264,11 @@ function MainApp() {
             }}
           />
         )}
-        {activeView === 'lyrics-studio' && (
+        <div className={activeView === 'lyrics-studio' ? 'contents' : 'hidden'}>
           <LyricsStudioView 
+            isOpen={activeView === 'lyrics-studio'}
             onClose={() => setActiveView('editor')}
-            onInjectToTimeline={(kineticMedia) => {
+            onInjectToTimeline={(kineticMedia, shouldClose = true) => {
               const assetId = "asset_kinetic_" + Date.now();
               const clipId = "clip_" + Date.now();
               setAssets(prev => ({ ...prev, [assetId]: { id: assetId, media: kineticMedia } }));
@@ -1275,10 +1276,12 @@ function MainApp() {
                 ...prev,
                 { id: clipId, assetId, inFrame: 0, outFrame: kineticMedia.frames.length - 1 }
               ]);
-              setActiveView('editor');
+              if (shouldClose) {
+                setActiveView('editor');
+              }
             }}
           />
-        )}
+        </div>
       </React.Suspense>
     </div>
   );

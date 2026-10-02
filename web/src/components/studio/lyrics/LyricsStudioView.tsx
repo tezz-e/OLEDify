@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, Music, FileText, Upload, Play, Pause, ArrowLeft, Sparkles, Check, RefreshCw, X, RotateCcw, ChevronUp, ChevronDown, CheckCheck, Bot, Cpu, Activity, Zap, Volume2, Terminal, Sliders, Layers, Type } from 'lucide-react';
+import { Search, Music, FileText, Upload, Play, Pause, ArrowLeft, ArrowRight, Plus, Sparkles, Check, RefreshCw, X, RotateCcw, ChevronUp, ChevronDown, CheckCheck, Bot, Cpu, Activity, Zap, Volume2, Terminal, Sliders, Layers, Type } from 'lucide-react';
 import { searchLrclib, getLrclibExact, searchLyricsOvhFallback } from '../../../engine/lyrics/lrclibClient';
 import { parseLrc, parsePlainTextLyrics } from '../../../engine/lyrics/lrcParser';
 import { LrclibTrack, ParsedLyrics, LyricLine, LyricWord } from '../../../engine/lyrics/types';
@@ -26,7 +26,8 @@ import { NumberFlow } from './NumberFlow';
 
 interface LyricsStudioViewProps {
   onClose: () => void;
-  onInjectToTimeline: (media: DecodedMedia) => void;
+  onInjectToTimeline: (media: DecodedMedia, shouldClose?: boolean) => void;
+  isOpen?: boolean;
 }
 
 const SAMPLE_FALLBACK_LRC = `[ti:OLED Kinetic Intro]
@@ -63,16 +64,45 @@ interface EditingWordTarget {
 export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   onClose,
   onInjectToTimeline,
+  isOpen = true,
 }) => {
-  // --- THEME STATE (UNIFORM LIGHT / DARK MODE) ---
-  const [themeMode, setThemeMode] = useState<'light' | 'dark'>('light');
+  // --- THEME STATE (PERSISTENT LIGHT / DARK MODE) ---
+  const [themeMode, setThemeMode] = useState<'light' | 'dark'>(() => {
+    try {
+      const saved = localStorage.getItem('oled_studio_theme');
+      if (saved === 'light' || saved === 'dark') return saved;
+    } catch (_) {}
+    return 'dark';
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('oled_studio_theme', themeMode);
+    } catch (_) {}
+  }, [themeMode]);
+
+  // Auto pause audio if studio view is hidden/backgrounded
+  useEffect(() => {
+    if (isOpen === false) {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      setIsPlaying(false);
+    }
+  }, [isOpen]);
 
   // --- INGESTION STATE ---
   const [ingestTab, setIngestTab] = useState<'search' | 'paste' | 'audio'>('search');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<LrclibTrack[]>([]);
-  const [pastedLrcText, setPastedLrcText] = useState(SAMPLE_FALLBACK_LRC);
+  const [pastedLrcText, setPastedLrcText] = useState(() => {
+    try {
+      return sessionStorage.getItem('oled_studio_lyrics_text') || SAMPLE_FALLBACK_LRC;
+    } catch (_) {
+      return SAMPLE_FALLBACK_LRC;
+    }
+  });
 
   // --- PARSED LYRICS & SELECTION ---
   const [parsedLyrics, setParsedLyrics] = useState<ParsedLyrics>(() => parseLrc(SAMPLE_FALLBACK_LRC));
@@ -104,6 +134,12 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const [fontFamily, setFontFamily] = useState<string>("'Lemon Milk', sans-serif");
   const [isRendering, setIsRendering] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
+
+  // --- RENDER BUFFER & DIRTY TRACKING ---
+  const [renderedMediaBuffer, setRenderedMediaBuffer] = useState<DecodedMedia | null>(null);
+  const [renderedFingerprint, setRenderedFingerprint] = useState<string | null>(null);
+  const [lastRenderedMode, setLastRenderedMode] = useState<'heuristic' | 'ollama' | null>(null);
+  const [injectedToast, setInjectedToast] = useState(false);
 
   // --- LLM INFERENCE STATE (Groq Cloud & Local Ollama) ---
   const [inferenceMode, setInferenceMode] = useState<'heuristic' | 'ollama'>('heuristic');
@@ -297,13 +333,34 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const previewFramesRef = useRef<ExtractedFrame[]>([]);
 
 
-  // Auto-load sample lyrics on mount
+  // Auto-load lyrics on mount from session or fallback
   useEffect(() => {
+    try {
+      const cached = sessionStorage.getItem('oled_studio_lyrics_text');
+      if (cached) {
+        const parsed = parseLrc(cached);
+        setParsedLyrics(parsed);
+        const savedStart = Number(sessionStorage.getItem('oled_studio_sel_start') || 0);
+        const savedEnd = Number(sessionStorage.getItem('oled_studio_sel_end') || Math.min(3, parsed.lines.length - 1));
+        setSelectedStartIndex(Math.min(parsed.lines.length - 1, Math.max(0, savedStart)));
+        setSelectedEndIndex(Math.min(parsed.lines.length - 1, Math.max(0, savedEnd)));
+        return;
+      }
+    } catch (_) {}
+
     const defaultParsed = parseLrc(SAMPLE_FALLBACK_LRC);
     setParsedLyrics(defaultParsed);
     setSelectedStartIndex(0);
     setSelectedEndIndex(Math.min(3, defaultParsed.lines.length - 1));
   }, []);
+
+  // Persist selection indices to session storage
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('oled_studio_sel_start', String(selectedStartIndex));
+      sessionStorage.setItem('oled_studio_sel_end', String(selectedEndIndex));
+    } catch (_) {}
+  }, [selectedStartIndex, selectedEndIndex]);
 
   // Search LRCLIB
   const handleSearch = async (e?: React.FormEvent) => {
@@ -329,6 +386,13 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     setWordMotifOverrides({});
     setOllamaInspectionLogs([]);
     setLastAnalysisNotice(null);
+    setRenderedMediaBuffer(null);
+    setRenderedFingerprint(null);
+
+    const lrcText = track.syncedLyrics || track.plainLyrics || '';
+    try {
+      sessionStorage.setItem('oled_studio_lyrics_text', lrcText);
+    } catch (_) {}
 
     if (track.syncedLyrics) {
       const parsed = parseLrc(track.syncedLyrics);
@@ -354,6 +418,12 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     setWordMotifOverrides({});
     setOllamaInspectionLogs([]);
     setLastAnalysisNotice(null);
+    setRenderedMediaBuffer(null);
+    setRenderedFingerprint(null);
+
+    try {
+      sessionStorage.setItem('oled_studio_lyrics_text', pastedLrcText);
+    } catch (_) {}
 
     const parsed = parseLrc(pastedLrcText);
     setParsedLyrics(parsed);
@@ -643,6 +713,43 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     });
   }, [parsedLyrics.lines, wordOverrides, wordFontOverrides, wordMotifOverrides]);
 
+  // Signature of all active motion/style inputs to track dirty unrendered changes
+  const currentFingerprint = useMemo(() => {
+    return JSON.stringify({
+      rangeStartMs,
+      rangeEndMs,
+      lineCount: selectedLines.length,
+      lines: selectedLines.map(l => ({ s: l.startMs, e: l.endMs, t: l.text })),
+      archetype,
+      fontFamily,
+      stylePack,
+      motifMode,
+      wordOverrides,
+      wordFontOverrides,
+      wordMotifOverrides,
+      inferenceMode,
+      hasAudio: !!audioAnalysis
+    });
+  }, [
+    rangeStartMs,
+    rangeEndMs,
+    selectedLines,
+    archetype,
+    fontFamily,
+    stylePack,
+    motifMode,
+    wordOverrides,
+    wordFontOverrides,
+    wordMotifOverrides,
+    inferenceMode,
+    audioAnalysis
+  ]);
+
+  const isDirty = useMemo(() => {
+    if (!renderedMediaBuffer || !renderedFingerprint) return true;
+    return currentFingerprint !== renderedFingerprint;
+  }, [renderedMediaBuffer, renderedFingerprint, currentFingerprint]);
+
   // Live timeline frame counter and playback duration clock
   const currentFrameIndex = useMemo(() => {
     if (totalFrames <= 0) return 0;
@@ -735,6 +842,19 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
   // Live real-time OLED Preview rendering
   useEffect(() => {
+    // If we already have a freshly rendered media buffer, keep it synced without background re-renders
+    if (renderedMediaBuffer && !isDirty) {
+      previewFramesRef.current = renderedMediaBuffer.frames;
+      const offsetMs = Math.max(0, playheadMs - rangeStartMs);
+      const frameIdx = Math.min(
+        renderedMediaBuffer.frames.length - 1,
+        Math.max(0, Math.floor((offsetMs / 1000) * 30))
+      );
+      if (renderedMediaBuffer.frames[frameIdx]) {
+        setPreviewFrame(renderedMediaBuffer.frames[frameIdx].imageData);
+      }
+      return;
+    }
 
     let active = true;
     const renderLivePreview = async () => {
@@ -772,7 +892,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
     renderLivePreview();
     return () => { active = false; };
-  }, [selectedLines, archetype, fontFamily, stylePack, rangeStartMs, rangeEndMs, wordOverrides, wordFontOverrides, wordMotifOverrides, motifMode, audioAnalysis]);
+  }, [selectedLines, archetype, fontFamily, stylePack, rangeStartMs, rangeEndMs, wordOverrides, wordFontOverrides, wordMotifOverrides, motifMode, audioAnalysis, renderedMediaBuffer, isDirty]);
 
   // Synchronize live preview frame when playhead updates
   useEffect(() => {
@@ -1101,8 +1221,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     return () => cancelAnimationFrame(rafId);
   }, [isPlaying, rangeStartMs, rangeEndMs, scrubScope, songTotalDurationMs]);
 
-  // Generate full kinetic sequence and hand-off to NLE Timeline
-  const handleGenerateAndInject = async () => {
+  // 1. Render in Studio (Calculates 30 FPS sequence, buffers locally, does NOT close studio)
+  const handleRenderInStudio = async () => {
     if (selectedLines.length === 0 || isRendering) return;
 
     setIsRendering(true);
@@ -1127,14 +1247,74 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         progress => setRenderProgress(progress)
       );
 
-      // Send to timeline
-      onInjectToTimeline(renderedMedia);
-      onClose();
+      setRenderedMediaBuffer(renderedMedia);
+      setRenderedFingerprint(currentFingerprint);
+      setLastRenderedMode(inferenceMode);
+      previewFramesRef.current = renderedMedia.frames;
+
+      // Update current preview frame immediately to match playhead
+      const offsetMs = Math.max(0, playheadMs - rangeStartMs);
+      const frameIdx = Math.min(
+        renderedMedia.frames.length - 1,
+        Math.max(0, Math.floor((offsetMs / 1000) * 30))
+      );
+      if (renderedMedia.frames[frameIdx]) {
+        setPreviewFrame(renderedMedia.frames[frameIdx].imageData);
+      }
     } catch (err) {
-      console.error('Failed to generate kinetic sequence:', err);
-      alert('Generation failed. Check console for details.');
+      console.error('In-studio render failed:', err);
+      alert('Render failed. Check console for details.');
     } finally {
       setIsRendering(false);
+    }
+  };
+
+  // 2. Add to Timeline (Injects rendered sequence to timeline with option to stay or go)
+  const handleInjectToTimeline = async (shouldClose: boolean = true) => {
+    let mediaToInject = renderedMediaBuffer;
+
+    // If not yet rendered or dirty, render first
+    if (!mediaToInject || isDirty) {
+      setIsRendering(true);
+      setRenderProgress(0);
+      try {
+        mediaToInject = await renderKineticSequence(
+          {
+            lyrics: selectedLines,
+            startMs: rangeStartMs,
+            endMs: rangeEndMs,
+            targetFps: 30,
+            archetype,
+            fontFamily,
+            stylePack,
+            wordOverrides,
+            wordFontOverrides,
+            wordMotifOverrides,
+            motifMode,
+            audioAnalysis: audioAnalysis || undefined
+          },
+          progress => setRenderProgress(progress)
+        );
+        setRenderedMediaBuffer(mediaToInject);
+        setRenderedFingerprint(currentFingerprint);
+        setLastRenderedMode(inferenceMode);
+        previewFramesRef.current = mediaToInject.frames;
+      } catch (err) {
+        console.error('Render and inject failed:', err);
+        alert('Render failed. Check console for details.');
+        setIsRendering(false);
+        return;
+      } finally {
+        setIsRendering(false);
+      }
+    }
+
+    if (mediaToInject) {
+      onInjectToTimeline(mediaToInject, shouldClose);
+      if (!shouldClose) {
+        setInjectedToast(true);
+        setTimeout(() => setInjectedToast(false), 3000);
+      }
     }
   };
 
@@ -2068,10 +2248,12 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           }`}>
             <div className="flex justify-between items-center w-full px-1 mb-2 text-[10px] font-mono">
               <span className="opacity-60 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className={`w-1.5 h-1.5 rounded-full ${renderedMediaBuffer && !isDirty ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`} />
                 <span>128×64 SSD1306</span>
               </span>
-              <span className="text-[#D97757] font-semibold tracking-wider">30 FPS LIVE</span>
+              <span className={`font-semibold tracking-wider ${renderedMediaBuffer && !isDirty ? 'text-emerald-500' : 'text-[#D97757]'}`}>
+                {renderedMediaBuffer && !isDirty ? 'RENDERED BUFFER' : '30 FPS DRAFT'}
+              </span>
             </div>
 
             {/* OLED Monitor with Skiper #107 Knockout Corner L-Brackets */}
@@ -2762,6 +2944,41 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               </div>
             )}
 
+            {/* Live Render State Status Badge */}
+            {renderedMediaBuffer && !isDirty ? (
+              <div className="flex items-center justify-between p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[11px] font-sans">
+                <div className="flex items-center gap-2 truncate">
+                  <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <span className="truncate">
+                    Rendered with {lastRenderedMode === 'heuristic' ? '⚡ Smart Auto Rules' : '✨ AI Cloud Director'} ({renderedMediaBuffer.frames.length} frames • {(rangeDurationSec).toFixed(1)}s)
+                  </span>
+                </div>
+                <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 font-bold shrink-0">
+                  READY
+                </span>
+              </div>
+            ) : renderedMediaBuffer && isDirty ? (
+              <div className="flex items-center justify-between p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-[11px] font-sans">
+                <div className="flex items-center gap-1.5 truncate">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 animate-pulse" />
+                  <span className="truncate">Settings changed since last render — re-render to update final output</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRenderInStudio}
+                  disabled={isRendering}
+                  className="text-[10px] underline font-semibold cursor-pointer shrink-0 ml-1"
+                >
+                  Re-render
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 text-[10px] opacity-70 px-1 font-sans">
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+                <span>Ready to render kinetic sequence for in-studio preview</span>
+              </div>
+            )}
+
             <div className="flex justify-between items-center text-[11px] font-mono">
               <span className={themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}>
                 {selectedLines.length} lines • {rangeDurationSec.toFixed(1)}s
@@ -2770,33 +2987,97 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                 {totalFrames} frames (~{estProgmemKb} KB)
               </span>
             </div>
-            <button
-              onClick={handleGenerateAndInject}
-              disabled={isRendering || selectedLines.length === 0}
-              className={`w-full py-3 bg-[#D97757] hover:bg-[#C66545] text-white text-xs font-sans font-medium tracking-wide rounded-xl shadow-xs transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
-                isRendering ? 'opacity-70 cursor-wait' : ''
-              }`}
-            >
-              {isRendering ? (
-                <div className="flex items-center gap-2">
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Rendering sequence ({renderProgress}%)...</span>
+
+            {/* Action Buttons based on Dirty vs Rendered State */}
+            {isDirty ? (
+              <div className="flex flex-col gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleRenderInStudio}
+                  disabled={isRendering || selectedLines.length === 0}
+                  className={`w-full py-3 bg-[#D97757] hover:bg-[#C66545] text-white text-xs font-sans font-medium tracking-wide rounded-xl shadow-xs transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                    isRendering ? 'opacity-70 cursor-wait' : ''
+                  }`}
+                >
+                  {isRendering ? (
+                    <div className="flex items-center gap-2">
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Rendering in studio ({renderProgress}%)...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-1.5 font-semibold text-xs">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Render in Studio ({directorModeTab === 'auto' ? (inferenceMode === 'heuristic' ? '⚡ Smart Auto Rules' : '✨ AI Cloud Directed') : ARCHETYPE_METADATA[archetype]?.name})</span>
+                      </div>
+                      <span className="text-[10px] opacity-80 font-normal">
+                        Compute 30 FPS kinetic sequence to review before adding to timeline
+                      </span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleInjectToTimeline(true)}
+                  disabled={isRendering || selectedLines.length === 0}
+                  className={`w-full py-2 text-[11px] font-sans font-medium rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    themeMode === 'dark'
+                      ? 'border-white/10 hover:bg-white/5 text-white/70'
+                      : 'border-[#E8E5DE] hover:bg-[#FAF9F5] text-[#5E5D59]'
+                  }`}
+                  title="Render and immediately exit to NLE Timeline"
+                >
+                  <ArrowRight className="w-3.5 h-3.5" />
+                  <span>Render & Jump Directly to Timeline</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleInjectToTimeline(true)}
+                  disabled={isRendering}
+                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-sans font-medium tracking-wide rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <ArrowRight className="w-4 h-4" />
+                  <span className="font-semibold">Add to Timeline & Go to Editor</span>
+                </button>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleInjectToTimeline(false)}
+                    disabled={isRendering}
+                    className={`flex-1 py-2 text-xs font-sans font-medium rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      injectedToast
+                        ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/40'
+                        : themeMode === 'dark'
+                        ? 'border-white/10 hover:bg-white/5 text-white/80'
+                        : 'border-[#E8E5DE] hover:bg-[#FAF9F5] text-[#141413]'
+                    }`}
+                  >
+                    {injectedToast ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Plus className="w-3.5 h-3.5 text-[#D97757]" />}
+                    <span>{injectedToast ? 'Added to Timeline!' : 'Add & Stay in Studio'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleRenderInStudio}
+                    disabled={isRendering}
+                    className={`px-3 py-2 text-xs font-sans font-medium rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                      themeMode === 'dark'
+                        ? 'border-white/10 hover:bg-white/5 text-white/70'
+                        : 'border-[#E8E5DE] hover:bg-[#FAF9F5] text-[#5E5D59]'
+                    }`}
+                    title="Force re-render sequence"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Re-render</span>
+                  </button>
                 </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-1.5 font-semibold text-xs">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Render {selectedLines.length} Lines to Timeline</span>
-                  </div>
-                  <span className="text-[10px] opacity-80 font-normal">
-                    {directorModeTab === 'auto'
-                      ? (selectedStanzaStats.hasOverrides ? '✨ AI Overrides + Auto' : '⚡ Smart Auto Rules')
-                      : ARCHETYPE_METADATA[archetype]?.name
-                    } • {STYLE_PACKS[stylePack]?.name}
-                  </span>
-                </>
-              )}
-            </button>
+              </div>
+            )}
           </div>
         </section>
 
