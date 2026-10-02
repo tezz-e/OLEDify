@@ -22,6 +22,19 @@ function findLastEndedWord(wordsList: LyricWord[], timeMs: number): { word?: Lyr
 }
 
 /**
+ * Calculates adaptive hold/dwell duration tailored to the word's physical duration and genre vibe.
+ * Fast words (e.g. 150-250ms at 128 BPM) get proportionally shorter holds (e.g. 40-75ms)
+ * to ensure at least 60% of the word's duration is available for entry motion physics.
+ * Slow words (e.g. 600-800ms) get a dignified, solid hold (up to 240ms).
+ */
+export function computeAdaptiveWordHold(wordDurationMs: number, moodProfile: SongMoodProfile): number {
+  const baseRatio = (moodProfile.vibe === 'ballad_acoustic') ? 0.45 : (moodProfile.vibe === 'chill_pop' ? 0.38 : 0.28);
+  const minHold = Math.min(50, Math.round(wordDurationMs * 0.25));
+  const maxHold = Math.round(180 * moodProfile.dwellDecayFactor);
+  return Math.max(minHold, Math.min(maxHold, Math.round(wordDurationMs * baseRatio * moodProfile.dwellDecayFactor)));
+}
+
+/**
  * Intelligently resolves the dynamic transition choreography between consecutive words.
  * Adapts between Banger suites (razor slices, glitch tears, impact flashes) and Smooth suites
  * (reading glides, starry dither sweeps, elevator drifts) based on song vibe, audio transients & rhythm.
@@ -219,7 +232,7 @@ export async function renderKineticSequence(
 
   const extractedFrames: ExtractedFrame[] = [];
 
-  const moodProfile = computeSongMoodProfile(audioAnalysis, lyrics);
+  const moodProfile = computeSongMoodProfile(audioAnalysis, lyrics, '', '', options.vibe);
   const holdDurationMs = Math.round(140 * moodProfile.dwellDecayFactor);
 
   for (let f = 0; f < frameCount; f++) {
@@ -237,12 +250,15 @@ export async function renderKineticSequence(
       // Check if preceding word just ended within adaptive tail hold + soft dissolve
       const { word: prevWord, index: prevIndex } = findLastEndedWord(words, currentMs);
       const exitFadeMs = moodProfile.crossfadeOverlapMs > 0 ? 80 : 0;
-      if (prevWord && (currentMs - prevWord.endMs) <= (holdDurationMs + exitFadeMs)) {
+      const prevWordDuration = prevWord ? Math.max(80, prevWord.endMs - prevWord.startMs) : 400;
+      const prevWordHoldMs = prevWord ? computeAdaptiveWordHold(prevWordDuration, moodProfile) : holdDurationMs;
+
+      if (prevWord && (currentMs - prevWord.endMs) <= (prevWordHoldMs + exitFadeMs)) {
         activeWord = prevWord;
         activeWordIndex = prevIndex;
-        if (exitFadeMs > 0 && (currentMs - prevWord.endMs) > holdDurationMs) {
+        if (exitFadeMs > 0 && (currentMs - prevWord.endMs) > prevWordHoldMs) {
           isTailFade = true;
-          tailFadeProgress = Math.min(1, (currentMs - prevWord.endMs - holdDurationMs) / exitFadeMs);
+          tailFadeProgress = Math.min(1, (currentMs - prevWord.endMs - prevWordHoldMs) / exitFadeMs);
         }
       } else {
         isPauseState = true;

@@ -1488,6 +1488,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           wordMotifOverrides,
           motifMode,
           transitionStyle,
+          vibe: songMoodProfile.vibe,
           audioAnalysis: audioAnalysis || undefined
         },
         progress => setRenderProgress(progress)
@@ -1538,6 +1539,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             wordMotifOverrides,
             motifMode,
             transitionStyle,
+            vibe: songMoodProfile.vibe,
             audioAnalysis: audioAnalysis || undefined
           },
           progress => setRenderProgress(progress)

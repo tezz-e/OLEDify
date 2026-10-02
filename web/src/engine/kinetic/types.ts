@@ -689,6 +689,7 @@ export interface KineticRenderOptions {
   wordDressingOverrides?: Record<string, TextDressing>;
   motifMode?: MotifMode;
   stylePack?: StylePackId;
+  vibe?: import('./moodProfileEngine').SongVibe;
   customPalette?: StylePackConfig['fonts'];
   audioAnalysis?: AudioAnalysisResult;
   transitionStyle?: KineticTransitionType;

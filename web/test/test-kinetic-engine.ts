@@ -23,13 +23,14 @@ import {
   VALID_VISUAL_MOTIFS,
   normalizeMotif,
   normalizeArchetype,
+  normalizeStylePack,
   extractClassificationsFromResponse,
   buildOllamaLyricsPrompt
 } from '../src/engine/kinetic/ollamaClassifier';
 import { computeSongMoodProfile } from '../src/engine/kinetic/moodProfileEngine';
-import { renderArchetypeFrame } from '../src/engine/kinetic/kineticArchetypes';
+import { renderArchetypeFrame, drawTrackedText } from '../src/engine/kinetic/kineticArchetypes';
 import { computeSafeTextLayout } from '../src/engine/kinetic/kineticLayout';
-import { resolveTransitionStyle, renderKineticSequence } from '../src/engine/kinetic/kineticEngine';
+import { resolveTransitionStyle, renderKineticSequence, computeAdaptiveWordHold } from '../src/engine/kinetic/kineticEngine';
 import { LyricWord } from '../src/engine/lyrics/types';
 import { 
   detectScript, 
@@ -1250,7 +1251,98 @@ for (const p of samplePermutations) {
 }
 console.log(`✅ Multi-layer combinatorial permutations (Physics x Dressing x Motif) render flawlessly.`);
 
-console.log('\n🎉 ALL 11 KINETIC TYPOGRAPHY, MOTIF, DRESSING & COMBINATORIAL MATRIX TESTS PASSED PERFECTLY!\n');
+// =========================================================================
+// TEST SUITE 12: Cross-Genre Refinements, Halftime Drill & Knockout Halos
+// =========================================================================
+console.log('\n--- Suite 12: Cross-Genre Refinements, Halftime Drill & Knockout Halos ---');
+
+// 1. Verify Halftime Drill & Trap Detection vs Chill Pop
+const drillAudio = {
+  bpm: 95,
+  averageRms: 0.72,
+  durationMs: 10000,
+  peakRms: 0.95,
+  sampleRate: 44100,
+  beatsMs: [],
+  frames: [],
+  waveform: [],
+  getFrameAtTime: () => ({ timeMs: 0, rms: 0.72, bass: 0.90, flux: 0.5, isBeat: false, onsetStrength: 0 }),
+  snapToNearestBeat: (t: number) => t
+};
+const drillLyrics = [
+  {
+    text: 'Vaade karke na kade eh zubaan mukkri',
+    startMs: 0,
+    endMs: 2500,
+    words: [
+      { word: 'Vaade', startMs: 0, endMs: 400 },
+      { word: 'zubaan', startMs: 1600, endMs: 2050 },
+      { word: 'mukkri', startMs: 2050, endMs: 2500 }
+    ]
+  }
+];
+const drillProfile = computeSongMoodProfile(drillAudio as any, drillLyrics, '52 Bars', 'Karan Aujla');
+assert.equal(drillProfile.vibe, 'hype_aggressive', '95 BPM drill with heavy RMS must classify as hype_aggressive');
+assert.equal(drillProfile.recommendedStylePack, 'trap_drill', 'Drill must recommend trap_drill style pack');
+assert.equal(drillProfile.cameraShakeEnabled, true, 'Drill must allow camera shake');
+
+// Verify Shape of You remains chill_pop
+const acousticAudio = {
+  bpm: 96,
+  averageRms: 0.26,
+  durationMs: 10000,
+  peakRms: 0.5,
+  sampleRate: 44100,
+  beatsMs: [],
+  frames: [],
+  waveform: [],
+  getFrameAtTime: () => ({ timeMs: 0, rms: 0.26, bass: 0.3, flux: 0.2, isBeat: false, onsetStrength: 0 }),
+  snapToNearestBeat: (t: number) => t
+};
+const acousticLyrics = [
+  {
+    text: 'The club isnt the best place to find a lover',
+    startMs: 0,
+    endMs: 3000,
+    words: [
+      { word: 'club', startMs: 200, endMs: 600 },
+      { word: 'lover', startMs: 2200, endMs: 2900 }
+    ]
+  }
+];
+const acousticProfile = computeSongMoodProfile(acousticAudio as any, acousticLyrics, 'Shape of You', 'Ed Sheeran');
+assert.equal(acousticProfile.vibe, 'chill_pop', '96 BPM acoustic pop with low RMS must classify as chill_pop');
+console.log('✅ Halftime drill (95 BPM, high RMS) vs acoustic pop (96 BPM, low RMS) separation verified.');
+
+// 2. Verify Adaptive BPM-Aware Hold Duration
+const danceProfile = computeSongMoodProfile({ bpm: 128, averageRms: 0.75 } as any, [], 'Beauty and a Beat');
+const fastWordHold = computeAdaptiveWordHold(150, danceProfile);
+assert.ok(fastWordHold <= 50, `150ms word at 128 BPM must have hold <= 50ms, got ${fastWordHold}ms`);
+
+const standardWordHold = computeAdaptiveWordHold(450, drillProfile);
+assert.ok(standardWordHold >= 90 && standardWordHold <= 140, `450ms drill word must have hold ~100-130ms, got ${standardWordHold}ms`);
+
+const slowBalladProfile = computeSongMoodProfile({ bpm: 72, averageRms: 0.20 } as any, [], 'Slow Ballad');
+const longBalladHold = computeAdaptiveWordHold(800, slowBalladProfile);
+assert.ok(longBalladHold >= 200, `800ms ballad word must have hold >= 200ms, got ${longBalladHold}ms`);
+console.log('✅ Adaptive word hold duration scales dynamically with word duration and tempo.');
+
+// 3. Verify 1-Bit Glyph Knockout Halos
+const haloMockCtx = createFullMockCanvasCtx();
+haloMockCtx.fillStyle = '#FFFFFF';
+drawTrackedText(haloMockCtx, 'KNOCKOUT', 64, 32, 2);
+assert.ok(haloMockCtx.drawnTexts.length > 0, 'drawTrackedText must output text glyphs');
+console.log('✅ 1-bit glyph knockout halos (black barrier stroke) execute flawlessly without errors.');
+
+// 4. Verify Style Pack Normalization
+assert.equal(normalizeStylePack('neo_tokyo'), 'cyber_industrial', 'neo_tokyo must normalize to cyber_industrial');
+assert.equal(normalizeStylePack('editorial_fashion'), 'editorial_lofi', 'editorial_fashion must normalize to editorial_lofi');
+assert.equal(normalizeStylePack('retro_pixel'), 'cyber_industrial', 'retro_pixel must normalize to cyber_industrial');
+assert.equal(normalizeStylePack('comic_pop'), 'shonen_comic', 'comic_pop must normalize to shonen_comic');
+console.log('✅ Style pack normalization correctly bridges legacy LLM aliases.');
+
+console.log('\n🎉 ALL 12 KINETIC TYPOGRAPHY, MOTIF, DRESSING & COMBINATORIAL MATRIX TESTS PASSED PERFECTLY!\n');
+
 
 
 

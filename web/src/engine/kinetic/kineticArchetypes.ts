@@ -93,6 +93,35 @@ export function drawTrackedText(
     ctx.lineWidth = 1;
   }
 
+  // 1-Bit Glyph Knockout Halo:
+  // When filling white text over background motifs, stroke a 2.5px solid black halo first to cleanly
+  // decouple letter strokes from any underlying background motif vectors (barbed wire, shards, speedlines).
+  if (!effectiveStroke && ctx.fillStyle === '#FFFFFF') {
+    ctx.save();
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2.5;
+
+    if (letterSpacing <= 0 || !text || text.length <= 1) {
+      if (typeof ctx.strokeText === 'function') ctx.strokeText(text, centerX, y);
+    } else {
+      const graphemes = getGraphemes(text);
+      const rtl = ctx.direction === 'rtl';
+      const widths = graphemes.map(g => ctx.measureText(g).width);
+      const totalW = widths.reduce((sum, w) => sum + w, 0) + (graphemes.length - 1) * letterSpacing;
+      let haloX = rtl ? (centerX + totalW / 2) : (centerX - totalW / 2);
+      const prevAlign = ctx.textAlign;
+      ctx.textAlign = rtl ? 'right' : 'left';
+      if (typeof ctx.strokeText === 'function') {
+        for (let i = 0; i < graphemes.length; i++) {
+          ctx.strokeText(graphemes[i], haloX, y);
+          haloX += (rtl ? -1 : 1) * (widths[i] + letterSpacing);
+        }
+      }
+      ctx.textAlign = prevAlign;
+    }
+    ctx.restore();
+  }
+
   if (letterSpacing <= 0 || !text || text.length <= 1) {
     if (effectiveStroke) ctx.strokeText(text, centerX, y);
     else ctx.fillText(text, centerX, y);

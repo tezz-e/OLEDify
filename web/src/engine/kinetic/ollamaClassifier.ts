@@ -284,6 +284,23 @@ export function normalizeArchetype(
 }
 
 /**
+ * Normalizes fuzzy style pack strings returned by LLMs.
+ */
+export function normalizeStylePack(raw?: string): StylePackId | undefined {
+  if (!raw || typeof raw !== 'string') return undefined;
+  const clean = raw.toLowerCase().replace(/[-\s]/g, '_').trim();
+  if (clean in STYLE_PACKS) return clean as StylePackId;
+  if (clean.includes('tokyo') || clean.includes('cyber') || clean.includes('industrial') || clean.includes('tech')) return 'cyber_industrial';
+  if (clean.includes('comic') || clean.includes('shonen') || clean.includes('action') || clean.includes('manga')) return 'shonen_comic';
+  if (clean.includes('bounce') || clean.includes('cartoon') || clean.includes('playful') || clean.includes('pop_art')) return 'cartoon_bounce';
+  if (clean.includes('drill') || clean.includes('trap') || clean.includes('heavy') || clean.includes('metal')) return 'trap_drill';
+  if (clean.includes('pop') || clean.includes('acoustic') || clean.includes('melody')) return 'pop_acoustic';
+  if (clean.includes('serif') || clean.includes('editorial') || clean.includes('fashion') || clean.includes('lofi') || clean.includes('chic')) return 'editorial_lofi';
+  if (clean.includes('pixel') || clean.includes('arcade') || clean.includes('retro') || clean.includes('8bit')) return 'cyber_industrial';
+  return undefined;
+}
+
+/**
  * Resilient multi-strategy extractor that recovers classifications from:
  * 1. Valid JSON arrays { classifications: [...] }
  * 2. Key-value JSON maps { "word": "archetype" }
@@ -440,13 +457,12 @@ DIRECTOR MISSION:
    - "ballad_acoustic": slow emotional ballads, deep heartbreak, quiet acoustic poetry.
    - "groove_dance": upbeat rhythmic dance, disco, funk, bouncy midtempo beats.
 3. Recommend the best matching typography style pack:
-   - "trap_drill": aggressive display fonts, high contrast, hard cuts.
-   - "pop_acoustic": clean modern sans, friendly rounded geometry, elegant.
-   - "editorial_fashion": high-fashion editorial serif, chic, emotional.
-   - "neo_tokyo": cyberpunk condensed gothic, high velocity.
-   - "retro_pixel": 8-bit / arcade chiptune aesthetic.
-   - "comic_pop": playful cartoon, expressive pop-art.
-   - "gothic_metal": heavy blackletter, intense, dark energy.
+   - "trap_drill": aggressive display fonts, high contrast, hard 808 cuts, heavy punches.
+   - "pop_acoustic": clean modern sans, friendly rounded geometry, warm acoustic melody.
+   - "editorial_lofi": elegant high-contrast fashion serif & cursive, emotional poetry, deep ballads, lo-fi warmth.
+   - "cyber_industrial": cyberpunk brutalist gothic, futuristic synths, EDM club dance, tech velocity.
+   - "shonen_comic": high-octane manga action, explosive comic block lettering, superhero energy.
+   - "cartoon_bounce": rubber-hose animation, playful bouncy funk, Y2K bubblegum rhythm.
 4. Select 2 to 4 key expressive words per line (punchlines, verbs, core metaphors, climax words). Direct the kinetic choreography so every line feels dynamic and alive.
    - NEVER classify generic connective filler words, prepositions, conjunctions, or weak pronouns (e.g. "and", "the", "with", "of", "to", "in", "it", "my", "you", "me", "is", "a", "an", or their equivalents in any language).
    - ANTI-MONOTONY & MAXIMUM VISUAL VARIETY MANDATE:
@@ -457,8 +473,12 @@ DIRECTOR MISSION:
      * Hard punchlines, threats, flexes, fast flow: use "manga_impact", "blade_slash", "cyber_glitch", "3d_block_stack", "echo_stack" with motifs like "razor_blade", "tactical_scope", "flame_tongue", "manga_speedlines", "lightning_arc".
      * Gentle vocal runs, love confessions, dreamy drift: use "gentle_float", "waveform_karaoke", "typewriter_ribbon", "dither_dissolve", "smooth_fluid" with motifs like "floating_notes", "starlight_glimmer", "heartbeat_pulse", "water_ripples", "minimal_frame".
      * Rhythmic counts, bets, slot tumbling, bouncy lines: use "rolling_odometer", "inverted_badge", "target_focus", "wiggly_boil" with motifs like "chrome_star", "comic_burst", "floating_notes".
-5. ALWAYS assign an evocative background visual motif ("motif") to key punchlines and emotional climaxes matching the imagery. If no motif fits, use "none". Rotate motifs dynamically across lines to maintain visual freshness.
-6. For each selected word, provide its meaning and rationale for the motion choice.
+5. VIBE SEMANTIC GUARDRAILS (CRITICAL FOR AESTHETIC RELEVANCE):
+   - In "hype_aggressive" (rap, drill, trap, metal, flex tracks): NEVER assign soft/dreamy motifs like "starlight_glimmer", "water_ripples", or "floating_notes". Treat colloquial street slang (police/FIR cases, rivalries, brawls, weapons, respect) as hard-hitting punchlines. Pair with "anvil_stomp", "fracture_shatter", "manga_impact", "blade_slash" and motifs like "sound_blast_rings", "barbed_wire", "shattered_glass", "crown_royal".
+   - In "groove_dance" (pop, dance, disco, EDM, club): NEVER assign lethal combat/gore motifs like "razor_blade" or "barbed_wire" to dancefloor commands (e.g. "body rock", "move", "complete", "party"). Treat "rock" and "move" as kinetic groove cues, using "rolling_odometer", "wiggly_boil", "squash_bounce", "prism_shimmer" with motifs like "sound_bars_vintage", "equalizer_radial", "vinyl_grooves", "comic_burst".
+   - In "chill_pop" & "ballad_acoustic": Avoid violent combat cuts ("blade_slash", "anvil_stomp"). Favor "gentle_float", "waveform_karaoke", "pendulum_sway", "dither_dissolve" with motifs like "heartbeat_pulse", "rain_window", "starlight_glimmer", "minimal_frame".
+6. ALWAYS assign an evocative background visual motif ("motif") to key punchlines and emotional climaxes matching the imagery. If no motif fits, use "none". Rotate motifs dynamically across lines to maintain visual freshness.
+7. For each selected word, provide its meaning and rationale for the motion choice.
 
 Choose from these 20 visual archetypes:
 - "gentle_float": weightless acoustic drift, floating, romance, calm breeze, dreaming
@@ -659,8 +679,8 @@ export async function classifyLyricsWithOllama(
           if (!detectedSongVibe && parsed.songVibe && ['hype_aggressive', 'chill_pop', 'ballad_acoustic', 'groove_dance'].includes(parsed.songVibe)) {
             detectedSongVibe = parsed.songVibe as SongVibe;
           }
-          if (!detectedStylePack && parsed.recommendedStylePack && parsed.recommendedStylePack in STYLE_PACKS) {
-            detectedStylePack = parsed.recommendedStylePack as StylePackId;
+          if (!detectedStylePack && parsed.recommendedStylePack) {
+            detectedStylePack = normalizeStylePack(parsed.recommendedStylePack);
           }
         } catch (_) {}
 

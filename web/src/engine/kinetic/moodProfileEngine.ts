@@ -42,6 +42,8 @@ export function computeSongMoodProfile(
   if (audioAnalysis?.frames && audioAnalysis.frames.length > 0) {
     const totalRms = audioAnalysis.frames.reduce((acc, f) => acc + f.rms, 0);
     averageRms = totalRms / audioAnalysis.frames.length;
+  } else if (audioAnalysis?.averageRms) {
+    averageRms = audioAnalysis.averageRms;
   }
 
   // 2. Physical Lyric Delivery Pacing (duration per word)
@@ -79,9 +81,9 @@ export function computeSongMoodProfile(
     // Pure physical sound wave metrics
     if (bpm < 84 || (bpm < 92 && energyScore < 0.28)) {
       vibe = 'ballad_acoustic';
-    } else if (bpm >= 128 && energyScore >= 0.58) {
-      vibe = 'hype_aggressive';
-    } else if (bpm >= 115 || energyScore >= 0.45) {
+    } else if ((bpm >= 128 && energyScore >= 0.58) || (bpm >= 80 && bpm <= 108 && energyScore >= 0.50)) {
+      vibe = 'hype_aggressive'; // Uptempo hype OR Halftime Drill/Trap/Boom-Bap with heavy 808s
+    } else if (bpm >= 115 || energyScore >= 0.42) {
       vibe = 'groove_dance';
     } else {
       vibe = 'chill_pop';

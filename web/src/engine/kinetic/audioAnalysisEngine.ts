@@ -30,6 +30,8 @@ export interface AudioAnalysisResult {
   durationMs: number;
   sampleRate: number;
   bpm: number;
+  /** Average RMS loudness across the entire audio track [0..1] */
+  averageRms?: number;
   /** Array of timestamps (in ms) where beats or drum hits peak */
   beatsMs: number[];
   /** 30 FPS telemetry frames aligned to display clock */
@@ -358,6 +360,7 @@ export async function analyzeAudioFile(
     durationMs,
     sampleRate,
     bpm: estimatedBpm,
+    averageRms: frames.length > 0 ? (frames.reduce((sum, f) => sum + f.rms, 0) / frames.length) : 0,
     beatsMs,
     frames,
     waveform,
