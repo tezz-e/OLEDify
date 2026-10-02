@@ -1,7 +1,7 @@
 import { ExtractedFrame, DecodedMedia } from '../../types/media';
 import { KineticRenderOptions, MotionArchetype, STYLE_PACKS } from './types';
 import { computeSafeTextLayout } from './kineticLayout';
-import { renderArchetypeFrame } from './kineticArchetypes';
+import { renderArchetypeFrame, getScratchCanvas, BAYER_4X4 } from './kineticArchetypes';
 import { renderMotifBackground } from './motifRenderer';
 import { getWordEffectiveArchetype, getWordEffectiveFont, cleanLyricToken } from './semanticClassifier';
 import { LyricWord } from '../lyrics/types';
@@ -89,13 +89,20 @@ export async function renderKineticSequence(
     let activeWordIndex = words.findIndex(w => currentMs >= w.startMs && currentMs < w.endMs);
     let activeWord = activeWordIndex !== -1 ? words[activeWordIndex] : undefined;
     let isPauseState = false;
+    let isTailFade = false;
+    let tailFadeProgress = 0;
 
     if (!activeWord) {
-      // Check if preceding word just ended within adaptive tail hold
+      // Check if preceding word just ended within adaptive tail hold + soft dissolve
       const { word: prevWord, index: prevIndex } = findLastEndedWord(words, currentMs);
-      if (prevWord && (currentMs - prevWord.endMs) <= holdDurationMs) {
+      const exitFadeMs = moodProfile.crossfadeOverlapMs > 0 ? 80 : 0;
+      if (prevWord && (currentMs - prevWord.endMs) <= (holdDurationMs + exitFadeMs)) {
         activeWord = prevWord;
         activeWordIndex = prevIndex;
+        if (exitFadeMs > 0 && (currentMs - prevWord.endMs) > holdDurationMs) {
+          isTailFade = true;
+          tailFadeProgress = Math.min(1, (currentMs - prevWord.endMs - holdDurationMs) / exitFadeMs);
+        }
       } else {
         isPauseState = true;
       }
@@ -192,18 +199,110 @@ export async function renderKineticSequence(
       // Compute Zero-Clip Layout with the effective font
       const layout = computeSafeTextLayout(activeWord.word, ctx, effectiveFont);
 
-      // Apply micro camera shake on heavy bass kicks / transients
+      // Apply micro camera shake on heavy bass kicks / transients ONLY when enabled in mood profile
       ctx.save();
-      if (audioFrame?.isBeat || (audioFrame && audioFrame.bass > 0.8)) {
+      if (moodProfile.cameraShakeEnabled && (audioFrame?.isBeat || (audioFrame && audioFrame.bass > 0.85))) {
         const punchAmp = audioFrame.isBeat ? (audioFrame.onsetStrength > 0.6 ? 2 : 1) : 1;
         const shakeX = (f % 2 === 0 ? 1 : -1) * punchAmp;
         const shakeY = (f % 3 === 0 ? -1 : 1) * punchAmp;
         ctx.translate(shakeX, shakeY);
       }
 
-      // Render Archetype Frame with effective font
-      renderArchetypeFrame(ctx, effectiveArchetype, activeWord.word, tau, layout, f, effectiveFont, audioFrame);
+      // Render Archetype Frame with effective font and moodProfile
+      renderArchetypeFrame(ctx, effectiveArchetype, activeWord.word, tau, layout, f, effectiveFont, audioFrame, moodProfile);
       ctx.restore();
+
+      // Smooth 1-Bit Bayer Dither Cross-Fade between consecutive words (silky legato transitions)
+      if (moodProfile.crossfadeOverlapMs > 0 && activeWordIndex > 0) {
+        const prevWord = words[activeWordIndex - 1];
+        const dtFromStart = currentMs - activeWord.startMs;
+        const isCrossfadeActive = prevWord 
+          && dtFromStart >= 0 
+          && dtFromStart < moodProfile.crossfadeOverlapMs 
+          && (activeWord.startMs - prevWord.endMs) <= 350;
+
+        if (isCrossfadeActive) {
+          const { ctx: tCtx } = getScratchCanvas();
+          tCtx.clearRect(0, 0, 128, 64);
+          tCtx.fillStyle = '#000000';
+          tCtx.fillRect(0, 0, 128, 64);
+
+          const prevArchetype = getWordEffectiveArchetype(
+            prevWord,
+            activeWordIndex - 1,
+            archetype,
+            wordOverrides,
+            activeWordIndex > 1 ? words[activeWordIndex - 2] : undefined,
+            moodProfile
+          );
+          const prevEffectiveArch = prevArchetype === 'auto_semantic' ? moodProfile.defaultArchetype : prevArchetype;
+          const prevFont = getWordEffectiveFont(
+            prevWord,
+            prevEffectiveArch,
+            activePackConfig,
+            options.wordFontOverrides,
+            fontFamily
+          );
+          const prevLayout = computeSafeTextLayout(prevWord.word, tCtx, prevFont);
+
+          renderArchetypeFrame(
+            tCtx,
+            prevEffectiveArch,
+            prevWord.word,
+            1.0,
+            prevLayout,
+            f,
+            prevFont,
+            audioFrame,
+            moodProfile
+          );
+
+          // Blend active word and previous word using Bayer 4x4 ordered dither threshold
+          const crossfadeProgress = dtFromStart / moodProfile.crossfadeOverlapMs;
+          const activeImg = ctx.getImageData(0, 0, 128, 64);
+          const prevImg = tCtx.getImageData(0, 0, 128, 64);
+          const aData = activeImg.data;
+          const pData = prevImg.data;
+
+          for (let y = 0; y < 64; y++) {
+            const rowOffset = y * 128;
+            const bayerRow = BAYER_4X4[y % 4];
+            for (let x = 0; x < 128; x++) {
+              const idx = (rowOffset + x) * 4;
+              const threshold = bayerRow[x % 4] / 16;
+              // If threshold >= progress, show previous word (fades out as progress approaches 1)
+              if (threshold >= crossfadeProgress) {
+                aData[idx] = pData[idx];
+                aData[idx + 1] = pData[idx + 1];
+                aData[idx + 2] = pData[idx + 2];
+                aData[idx + 3] = pData[idx + 3];
+              }
+            }
+          }
+          ctx.putImageData(activeImg, 0, 0);
+        }
+      }
+
+      // Soft tail exit dissolve into rest state
+      if (isTailFade) {
+        const img = ctx.getImageData(0, 0, 128, 64);
+        const data = img.data;
+        for (let y = 0; y < 64; y++) {
+          const rowOffset = y * 128;
+          const bayerRow = BAYER_4X4[y % 4];
+          for (let x = 0; x < 128; x++) {
+            const idx = (rowOffset + x) * 4;
+            const threshold = bayerRow[x % 4] / 16;
+            if (threshold < tailFadeProgress) {
+              data[idx] = 0;
+              data[idx + 1] = 0;
+              data[idx + 2] = 0;
+              data[idx + 3] = 255;
+            }
+          }
+        }
+        ctx.putImageData(img, 0, 0);
+      }
     }
 
     // Extract 128x64 RGBA

@@ -1,12 +1,13 @@
 import { MotionArchetype, TextLayoutResult } from './types';
 import { AudioFrameData } from './audioAnalysisEngine';
 import { isRTL, getGraphemes } from './scriptDetector';
+import { SongMoodProfile } from './moodProfileEngine';
 
 // Pooled scratch canvas to eliminate per-frame GC allocations
 let cachedScratchCanvas: OffscreenCanvas | HTMLCanvasElement | null = null;
 let cachedScratchCtx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null = null;
 
-function getScratchCanvas(): { canvas: OffscreenCanvas | HTMLCanvasElement; ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D } {
+export function getScratchCanvas(): { canvas: OffscreenCanvas | HTMLCanvasElement; ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D } {
   if (!cachedScratchCanvas || !cachedScratchCtx) {
     if (typeof OffscreenCanvas !== 'undefined') {
       cachedScratchCanvas = new OffscreenCanvas(128, 64);
@@ -107,7 +108,8 @@ export function renderArchetypeFrame(
   layout: TextLayoutResult,
   frameIndex: number,
   fontFamily: string = '"IBM Plex Mono", monospace',
-  audioFrame?: AudioFrameData
+  audioFrame?: AudioFrameData,
+  moodProfile?: SongMoodProfile | null
 ) {
   const rtl = isRTL(text);
   ctx.direction = rtl ? 'rtl' : 'ltr';
@@ -123,7 +125,7 @@ export function renderArchetypeFrame(
       renderCyberGlitch(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
       break;
     case 'smooth_fluid':
-      renderSmoothFluid(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
+      renderSmoothFluid(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame, moodProfile);
       break;
     case '3d_block_stack':
       render3DBlockStack(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
@@ -147,7 +149,7 @@ export function renderArchetypeFrame(
       renderRollingOdometer(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
       break;
     case 'gentle_float':
-      renderGentleFloat(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
+      renderGentleFloat(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame, moodProfile);
       break;
     case 'dither_dissolve':
       renderDitherDissolve(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
@@ -159,7 +161,7 @@ export function renderArchetypeFrame(
       renderWaveformKaraoke(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
       break;
     default:
-      renderSmoothFluid(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
+      renderSmoothFluid(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame, moodProfile);
       break;
   }
 }
@@ -392,21 +394,32 @@ function renderSmoothFluid(
   layout: TextLayoutResult,
   frameIndex: number,
   fontFamily: string,
-  audioFrame?: AudioFrameData
+  audioFrame?: AudioFrameData,
+  moodProfile?: SongMoodProfile | null
 ) {
-  const easeProgress = Math.min(1, tau / 0.3);
-  const slideProgress = 1 - Math.pow(1 - easeProgress, 3);
-  const startYOffset = 18 * (1 - slideProgress);
+  const isGentleMode = moodProfile?.vibe === 'ballad_acoustic' || moodProfile?.vibe === 'chill_pop';
+  const maxDisplacement = moodProfile ? moodProfile.maxEntryDisplacementPx : 18;
+  const easeProgress = Math.min(1, tau / 0.35);
 
-  // Audio energy modulates the idle floating bob
-  const audioBob = audioFrame ? audioFrame.bass * 2.5 : 0;
-  const idleBob = tau > 0.3 ? (Math.sin((tau - 0.3) * Math.PI * 4) * 1.5 - audioBob) : 0;
+  // In gentle mode: smooth C1/C2 cubic ease with zero initial velocity (no starting whiplash/kick)
+  // In hype mode: punchy ease-out
+  const slideProgress = isGentleMode
+    ? (easeProgress < 0.5 ? 4 * easeProgress * easeProgress * easeProgress : 1 - Math.pow(-2 * easeProgress + 2, 3) / 2)
+    : (1 - Math.pow(1 - easeProgress, 3));
+  const startYOffset = Math.round(maxDisplacement * (1 - slideProgress));
+
+  // Audio energy modulates the idle floating bob gently
+  const audioBob = audioFrame ? (isGentleMode ? audioFrame.bass * 0.8 : audioFrame.bass * 2.5) : 0;
+  const idleBob = tau > 0.35 
+    ? (Math.sin((tau - 0.35) * Math.PI * (isGentleMode ? 2 : 4)) * (isGentleMode ? 0.8 : 1.5) - audioBob) 
+    : 0;
   const currentY = startYOffset + idleBob;
 
   ctx.font = getSafeFontSpec(layout.fontSize, fontFamily);
   ctx.textAlign = 'center';
 
-  if (tau < 0.25) {
+  // Only draw motion trail duplicate in hype mode (omitted in gentle mode to prevent double-image jitter)
+  if (!isGentleMode && tau < 0.25) {
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = 2;
     for (let i = 0; i < layout.lines.length; i++) {
@@ -438,10 +451,11 @@ function renderSmoothFluid(
 
     if (i === layout.lines.length - 1) {
       const metrics = ctx.measureText(line);
-      const baseWidth = metrics.width + 8;
-      const energyPulse = audioFrame ? audioFrame.rms * 12 : 0;
+      const baseWidth = metrics.width + 6;
+      const energyPulse = audioFrame ? (isGentleMode ? audioFrame.rms * 4 : audioFrame.rms * 12) : 0;
       const pillWidth = Math.min(120, Math.min(baseWidth + energyPulse, (baseWidth + energyPulse) * Math.min(1, tau / 0.4)));
-      ctx.fillRect(Math.floor(64 - pillWidth / 2), Math.min(61, Math.floor(y + 3)), Math.floor(pillWidth), 2);
+      const pillHeight = isGentleMode ? 1 : 2;
+      ctx.fillRect(Math.floor(64 - pillWidth / 2), Math.min(61, Math.floor(y + 3)), Math.floor(pillWidth), pillHeight);
     }
   }
 }
@@ -936,7 +950,7 @@ function renderRollingOdometer(
 /**
  * Bayer 4x4 dither threshold matrix for zero-jitter 1-bit dissolves
  */
-const BAYER_4X4: number[][] = [
+export const BAYER_4X4: number[][] = [
   [ 0,  8,  2, 10],
   [12,  4, 14,  6],
   [ 3, 11,  1,  9],
@@ -953,18 +967,23 @@ function renderGentleFloat(
   layout: TextLayoutResult,
   frameIndex: number,
   fontFamily: string,
-  audioFrame?: AudioFrameData
+  audioFrame?: AudioFrameData,
+  moodProfile?: SongMoodProfile | null
 ) {
   const rtl = isRTL(text);
-  // Entry: easeInOutSine slide up into position
-  const entryProgress = Math.min(1, tau / 0.35);
-  const entryEase = -(Math.cos(Math.PI * entryProgress) - 1) / 2; // easeInOutSine
-  const entryY = Math.round((1 - entryEase) * 12);
+  const maxDisplacement = moodProfile ? moodProfile.maxEntryDisplacementPx : 3;
 
-  // Sustain: harmonic Lissajous drift
-  const audioSwell = audioFrame ? audioFrame.rms * 1.5 : 0;
-  const floatY = tau > 0.35 ? Math.round(Math.sin((frameIndex / 30) * Math.PI * 0.8) * (1.5 + audioSwell)) : 0;
-  const floatX = tau > 0.35 ? Math.round(Math.cos((frameIndex / 30) * Math.PI * 0.4) * 0.8) : 0;
+  // Zero initial velocity smootherstep entry (C1 continuous, no initial whip or kick)
+  const entryProgress = Math.min(1, tau / 0.4);
+  const entryEase = entryProgress < 0.5 
+    ? 4 * entryProgress * entryProgress * entryProgress 
+    : 1 - Math.pow(-2 * entryProgress + 2, 3) / 2;
+  const entryY = Math.round((1 - entryEase) * Math.min(3, maxDisplacement));
+
+  // Sustain: peaceful harmonic Lissajous drift without jerky bob
+  const audioSwell = audioFrame ? audioFrame.rms * 0.8 : 0;
+  const floatY = tau > 0.3 ? Math.round(Math.sin((frameIndex / 30) * Math.PI * 0.6) * (1.0 + audioSwell)) : 0;
+  const floatX = tau > 0.3 ? Math.round(Math.cos((frameIndex / 30) * Math.PI * 0.3) * 0.5) : 0;
 
   const curX = 64 + floatX;
   const curY = entryY + floatY;

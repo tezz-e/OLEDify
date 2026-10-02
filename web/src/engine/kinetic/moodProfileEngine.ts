@@ -16,6 +16,9 @@ export interface SongMoodProfile {
   allowedMotifs: VisualMotif[];
   dwellDecayFactor: number;   // Multiplier for hold duration (1.0 = standard, 1.8 = relaxed)
   easingCurvature: number;   // Easing power (0.6 = soft sine, 1.0 = standard, 1.8 = sharp snappy)
+  cameraShakeEnabled: boolean; // Disables camera shake for chill/ballad to eliminate visual jarring
+  maxEntryDisplacementPx: number; // Max vertical jump on entry (3px for ballad, 5px for chill pop, 18px for hype)
+  crossfadeOverlapMs: number; // Duration of gentle 1-bit Bayer dither cross-fade between consecutive words
 }
 
 /**
@@ -131,7 +134,10 @@ export function computeSongMoodProfile(
           'water_ripples'
         ],
         dwellDecayFactor: 1.6,
-        easingCurvature: 0.6
+        easingCurvature: 0.6,
+        cameraShakeEnabled: false,
+        maxEntryDisplacementPx: 3,
+        crossfadeOverlapMs: 120
       };
 
     case 'chill_pop':
@@ -163,7 +169,10 @@ export function computeSongMoodProfile(
           'lofi_dust_motes'
         ],
         dwellDecayFactor: 1.3,
-        easingCurvature: 0.8
+        easingCurvature: 0.8,
+        cameraShakeEnabled: false,
+        maxEntryDisplacementPx: 5,
+        crossfadeOverlapMs: 100
       };
 
     case 'groove_dance':
@@ -192,7 +201,10 @@ export function computeSongMoodProfile(
           'heartbeat_pulse'
         ],
         dwellDecayFactor: 1.0,
-        easingCurvature: 1.0
+        easingCurvature: 1.0,
+        cameraShakeEnabled: true,
+        maxEntryDisplacementPx: 10,
+        crossfadeOverlapMs: 50
       };
 
     case 'hype_aggressive':
@@ -230,7 +242,10 @@ export function computeSongMoodProfile(
           'comic_burst'
         ],
         dwellDecayFactor: 1.0,
-        easingCurvature: 1.5
+        easingCurvature: 1.5,
+        cameraShakeEnabled: true,
+        maxEntryDisplacementPx: 18,
+        crossfadeOverlapMs: 0
       };
   }
 }

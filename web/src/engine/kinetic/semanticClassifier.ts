@@ -172,6 +172,9 @@ export function classifyWordArchetype(
 
   // 2. Connective / Filler words stay clean and non-distracting
   if (isFillerWord(clean)) {
+    if (isChill) {
+      return moodProfile?.vibe === 'ballad_acoustic' ? 'gentle_float' : 'waveform_karaoke';
+    }
     return 'smooth_fluid';
   }
 

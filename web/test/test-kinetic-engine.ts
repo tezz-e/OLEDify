@@ -775,7 +775,10 @@ assert.ok(shapeOfYouProfile.allowedArchetypes.includes('gentle_float'));
 assert.ok(shapeOfYouProfile.allowedArchetypes.includes('waveform_karaoke'));
 assert.ok(shapeOfYouProfile.allowedArchetypes.includes('typewriter_ribbon'));
 assert.ok(shapeOfYouProfile.allowedArchetypes.includes('dither_dissolve'));
-console.log(`✅ "Shape of You" profile verified: ${shapeOfYouProfile.label}, Pack: ${shapeOfYouProfile.recommendedStylePack}, Hold Factor: ${shapeOfYouProfile.dwellDecayFactor}`);
+assert.equal(shapeOfYouProfile.cameraShakeEnabled, false, 'Camera shake must be disabled for chill_pop');
+assert.ok(shapeOfYouProfile.maxEntryDisplacementPx <= 5, 'Chill pop max displacement must be <= 5px');
+assert.ok(shapeOfYouProfile.crossfadeOverlapMs >= 100, 'Chill pop must have >= 100ms crossfade overlap');
+console.log(`✅ "Shape of You" profile verified: ${shapeOfYouProfile.label}, Pack: ${shapeOfYouProfile.recommendedStylePack}, Hold Factor: ${shapeOfYouProfile.dwellDecayFactor}, Camera Shake: ${shapeOfYouProfile.cameraShakeEnabled}, Max Offset: ${shapeOfYouProfile.maxEntryDisplacementPx}px`);
 
 // 3. Test SongMoodProfile for Slow Acoustic Ballad (72 BPM)
 const balladLyrics = [
@@ -797,7 +800,9 @@ const balladProfile = computeSongMoodProfile(
 assert.equal(balladProfile.vibe, 'ballad_acoustic', '72 BPM slow ballad must classify as ballad_acoustic');
 assert.equal(balladProfile.defaultArchetype, 'gentle_float', 'ballad_acoustic must default to gentle_float');
 assert.ok(balladProfile.dwellDecayFactor >= 1.5, 'ballad_acoustic must provide generous dwell hold time');
-console.log(`✅ Slow Ballad profile verified: ${balladProfile.label}, Default: ${balladProfile.defaultArchetype}, Hold Factor: ${balladProfile.dwellDecayFactor}`);
+assert.equal(balladProfile.cameraShakeEnabled, false, 'Camera shake must be disabled for ballad');
+assert.equal(balladProfile.maxEntryDisplacementPx, 3, 'Ballad max displacement must be 3px');
+console.log(`✅ Slow Ballad profile verified: ${balladProfile.label}, Default: ${balladProfile.defaultArchetype}, Hold Factor: ${balladProfile.dwellDecayFactor}, Camera Shake: ${balladProfile.cameraShakeEnabled}, Max Offset: ${balladProfile.maxEntryDisplacementPx}px`);
 
 // 4. Test Semantic Classifier under Chill Pop Profile (No violent jumps or 3D block traps)
 // In a chill song, a word held for 700ms ("shape") should NOT be forced into '3d_block_stack'
@@ -806,6 +811,12 @@ const archChill = classifyWordArchetype(popWord.word, 700, 150, 0, shapeOfYouPro
 assert.notEqual(archChill, '3d_block_stack', 'Chill pop track must NOT force 700ms vocal note into 3d_block_stack');
 assert.notEqual(archChill, 'manga_impact', 'Chill pop track must NOT force silence into manga_impact');
 assert.ok(['waveform_karaoke', 'gentle_float', 'smooth_fluid', 'typewriter_ribbon', 'dither_dissolve'].includes(archChill), `Expected chill/fluid archetype, got: ${archChill}`);
+
+// Filler words in chill/ballad modes must remain anchored and non-jarring (not jump 18px with smooth_fluid)
+const chillFiller = classifyWordArchetype('in', 200, 0, 0, shapeOfYouProfile);
+assert.equal(chillFiller, 'waveform_karaoke', 'Filler word "in" under chill pop should map to stationary/fluid waveform_karaoke');
+const balladFiller = classifyWordArchetype('in', 200, 0, 0, balladProfile);
+assert.equal(balladFiller, 'gentle_float', 'Filler word "in" under ballad should map to gentle_float');
 
 // Pop keyword dictionary tests
 const loveArch = classifyWordArchetype('love', 400, 0, 0, shapeOfYouProfile);
