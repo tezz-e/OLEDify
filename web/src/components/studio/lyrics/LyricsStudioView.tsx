@@ -145,6 +145,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const [showTokenBadges, setShowTokenBadges] = useState<boolean>(false);
   const [wordCustomizerTab, setWordCustomizerTab] = useState<'archetype' | 'font' | 'motif'>('archetype');
   const [stylePack, setStylePack] = useState<StylePackId>('trap_drill');
+  const [showFontHierarchy, setShowFontHierarchy] = useState<boolean>(false);
   const [manualWordOverrides, setManualWordOverrides] = useState<Record<string, MotionArchetype>>({});
   const [manualFontOverrides, setManualFontOverrides] = useState<Record<string, string>>({});
   const [manualMotifOverrides, setManualMotifOverrides] = useState<Record<string, VisualMotif>>({});
@@ -2323,10 +2324,10 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         {/* ============================================================== */}
         {/* COLUMN 3: MOTION & OLED PREVIEW                               */}
         {/* ============================================================== */}
-        <section className={`w-[360px] flex flex-col shrink-0 min-h-0 transition-colors duration-200 ${
+        <section className={`w-[370px] flex flex-col shrink-0 min-h-0 transition-colors duration-200 ${
           themeMode === 'dark' ? 'bg-[#18181A] text-white' : 'bg-white text-[#141413]'
         }`}>
-          <div className={`p-3 border-b shrink-0 ${
+          <div className={`p-2.5 border-b shrink-0 flex items-center justify-between ${
             themeMode === 'dark' ? 'border-[#2C2B29] bg-[#1E1E20]' : 'border-[#E8E5DE] bg-[#F5F2EB]'
           }`}>
             <h2 className={`text-[11px] font-sans font-semibold tracking-wide flex items-center gap-2 ${
@@ -2335,16 +2336,21 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               <span className="w-1.5 h-1.5 rounded-full bg-[#D97757]" />
               <span>3. Motion & Display</span>
             </h2>
+            <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${
+              themeMode === 'dark' ? 'bg-white/5 text-white/50' : 'bg-black/5 text-[#5E5D59]'
+            }`}>
+              128×64 SSD1306
+            </span>
           </div>
 
-          {/* Fixed Live OLED Display Preview with Technical HUD Knockout Brackets */}
-          <div className={`p-3.5 border-b flex flex-col items-center shrink-0 ${
+          {/* Compact Live OLED Display Preview with Technical HUD Corner L-Brackets */}
+          <div className={`p-2.5 border-b flex flex-col items-center shrink-0 ${
             themeMode === 'dark' ? 'bg-[#141418] border-[#2C2B29]' : 'bg-[#FAF9F5] border-[#E8E5DE]'
           }`}>
-            <div className="flex justify-between items-center w-full px-1 mb-2 text-[10px] font-mono">
+            <div className="flex justify-between items-center w-full px-0.5 mb-1.5 text-[10px] font-mono">
               <span className="opacity-60 flex items-center gap-1.5">
                 <span className={`w-1.5 h-1.5 rounded-full ${renderedMediaBuffer && !isDirty ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`} />
-                <span>128×64 SSD1306</span>
+                <span>OLED PREVIEW</span>
               </span>
               <span className={`font-semibold tracking-wider ${renderedMediaBuffer && !isDirty ? 'text-emerald-500' : 'text-[#D97757]'}`}>
                 {renderedMediaBuffer && !isDirty ? 'RENDERED BUFFER' : '30 FPS DRAFT'}
@@ -2352,29 +2358,29 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             </div>
 
             {/* OLED Monitor with Skiper #107 Knockout Corner L-Brackets */}
-            <div className="relative p-2 flex items-center justify-center">
+            <div className="relative p-1.5 flex items-center justify-center">
               {/* Corner L-Brackets */}
-              <div className={`absolute top-0 left-0 w-3.5 h-3.5 border-t-2 border-l-2 transition-all duration-150 pointer-events-none ${
+              <div className={`absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 transition-all duration-150 pointer-events-none ${
                 isLiveBeat ? 'border-[#D97757] scale-110 shadow-[0_0_8px_rgba(217,119,87,0.9)]' : 'border-[#D97757]/70'
               }`} />
-              <div className={`absolute top-0 right-0 w-3.5 h-3.5 border-t-2 border-r-2 transition-all duration-150 pointer-events-none ${
+              <div className={`absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 transition-all duration-150 pointer-events-none ${
                 isLiveBeat ? 'border-[#D97757] scale-110 shadow-[0_0_8px_rgba(217,119,87,0.9)]' : 'border-[#D97757]/70'
               }`} />
-              <div className={`absolute bottom-0 left-0 w-3.5 h-3.5 border-b-2 border-l-2 transition-all duration-150 pointer-events-none ${
+              <div className={`absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 transition-all duration-150 pointer-events-none ${
                 isLiveBeat ? 'border-[#D97757] scale-110 shadow-[0_0_8px_rgba(217,119,87,0.9)]' : 'border-[#D97757]/70'
               }`} />
-              <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 border-b-2 border-r-2 transition-all duration-150 pointer-events-none ${
+              <div className={`absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 transition-all duration-150 pointer-events-none ${
                 isLiveBeat ? 'border-[#D97757] scale-110 shadow-[0_0_8px_rgba(217,119,87,0.9)]' : 'border-[#D97757]/70'
               }`} />
 
               {/* Hardware Display Box */}
               <div className="bg-black p-1 rounded-md shadow-inner flex items-center justify-center border border-white/10 ring-1 ring-black/80">
-                <OledCanvas frameData={previewFrame} theme="cyan" scale={8} />
+                <OledCanvas frameData={previewFrame} theme="cyan" scale={6} />
               </div>
             </div>
 
             {/* Hardware Telemetry Rolling Counters */}
-            <div className="flex justify-between items-center w-full px-1 mt-2 text-[10px] font-mono">
+            <div className="flex justify-between items-center w-full px-0.5 mt-1.5 text-[10px] font-mono">
               <NumberFlow
                 value={frameCounterStr}
                 className="text-[#D97757] font-semibold"
@@ -2386,32 +2392,49 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             </div>
           </div>
 
-          {/* Director Mode Segmented Tabs with Sliding Pill Physics */}
-          <div className={`p-2.5 border-b shrink-0 ${
+          {/* Unified Director Mode Segmented Bar (Auto Rules, AI Director, Single Style) */}
+          <div className={`p-2 border-b shrink-0 ${
             themeMode === 'dark' ? 'border-[#2C2B29] bg-[#18181A]' : 'border-[#E8E5DE] bg-white'
           }`}>
-            <div className={`flex p-1 rounded-xl border gap-1 relative ${
+            <div className={`flex p-0.5 rounded-xl border gap-0.5 relative ${
               themeMode === 'dark' ? 'bg-[#141418] border-white/10' : 'bg-[#FAF9F5] border-[#E8E5DE]'
             }`}>
               {[
-                { id: 'auto' as const, label: 'Smart Director', Icon: Sparkles },
-                { id: 'manual' as const, label: 'Single Style', Icon: Sliders }
+                { id: 'auto' as const, label: 'Auto Rules', Icon: Zap },
+                { id: 'ai' as const, label: 'AI Director', Icon: Sparkles },
+                { id: 'manual' as const, label: 'Single Style', Icon: Sliders },
               ].map(tab => {
-                const isActive = directorModeTab === tab.id;
+                const activeDirectorMode: 'auto' | 'ai' | 'manual' = 
+                  directorModeTab === 'manual'
+                    ? 'manual'
+                    : inferenceMode === 'ollama'
+                      ? 'ai'
+                      : 'auto';
+                const isActive = activeDirectorMode === tab.id;
                 const TabIcon = tab.Icon;
                 return (
                   <button
                     key={tab.id}
                     type="button"
                     onClick={() => {
-                      setDirectorModeTab(tab.id);
                       if (tab.id === 'auto') {
+                        setDirectorModeTab('auto');
+                        setInferenceMode('heuristic');
                         setArchetype('auto_semantic');
-                      } else if (archetype === 'auto_semantic') {
-                        setArchetype('blade_slash');
+                      } else if (tab.id === 'ai') {
+                        setDirectorModeTab('auto');
+                        setInferenceMode('ollama');
+                        setArchetype('auto_semantic');
+                      } else {
+                        setDirectorModeTab('manual');
+                        if (archetype === 'auto_semantic') {
+                          setArchetype('blade_slash');
+                        }
                       }
+                      setRenderedMediaBuffer(null);
+                      setRenderedFingerprint(null);
                     }}
-                    className={`relative flex-1 py-1.5 text-xs font-sans rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1.5 z-10 ${
+                    className={`relative flex-1 py-1.5 text-[11px] font-sans rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1 z-10 ${
                       isActive
                         ? 'text-white font-semibold'
                         : themeMode === 'dark' ? 'text-white/50 hover:text-white' : 'text-[#5E5D59] hover:text-[#141413]'
@@ -2419,602 +2442,81 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                   >
                     {isActive && (
                       <motion.div
-                        layoutId="director-tab-pill"
+                        layoutId="director-mode-pill"
                         className="absolute inset-0 bg-[#D97757] rounded-lg shadow-xs -z-10"
                         transition={{ type: 'spring', bounce: 0.16, duration: 0.35 }}
                       />
                     )}
-                    <TabIcon className="w-3.5 h-3.5" />
-                    <span>{tab.label}</span>
+                    <TabIcon className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">{tab.label}</span>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* Scrollable Middle Controls */}
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 min-h-0">
-            {directorModeTab === 'auto' ? (
-              <>
-                {/* 1. Contextual Target & Director Engine Panel (Top Priority) */}
-                <div className={`p-3 border rounded-xl flex flex-col gap-3 ${
-                  themeMode === 'dark' ? 'bg-[#16161A] border-white/10' : 'bg-[#FAF9F5] border-[#E8E5DE]'
-                }`}>
-                  {/* Active Target Stanza Status Card */}
-                  <div className={`p-2.5 rounded-lg border flex flex-col gap-1.5 ${
-                    themeMode === 'dark' ? 'bg-[#1F1F24] border-white/10' : 'bg-white border-[#E8E5DE]'
-                  }`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <span className={`text-[10px] font-mono uppercase tracking-wider font-semibold ${
-                          themeMode === 'dark' ? 'text-white/60' : 'text-[#87867F]'
-                        }`}>
-                          Current Selection
-                        </span>
-                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-[#D97757]/15 text-[#D97757] border border-[#D97757]/30">
-                          Lines {Math.min(selectedStartIndex, selectedEndIndex) + 1}–{Math.max(selectedStartIndex, selectedEndIndex) + 1}
-                        </span>
-                      </div>
-                      <span className={`text-[10px] font-mono ${themeMode === 'dark' ? 'text-white/40' : 'text-[#87867F]'}`}>
-                        {selectedLines.length} lines • {rangeDurationSec.toFixed(1)}s
-                      </span>
-                    </div>
-
-                    {/* Stanza Applied State Badge & Clear Action */}
-                    <div className="flex items-center justify-between pt-1 border-t border-current/10">
-                      {selectedStanzaStats.hasOverrides ? (
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                          <span className="text-[11px] font-sans font-medium text-emerald-600 dark:text-emerald-400 truncate">
-                            {selectedStanzaStats.overrideCount} custom overrides active
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                          <span className="text-[11px] font-sans font-medium text-emerald-600 dark:text-emerald-400 truncate">
-                            ⚡ Smart Auto Rules Active
-                          </span>
-                        </div>
-                      )}
-
-                      {selectedStanzaStats.hasOverrides && (
-                        <button
-                          type="button"
-                          onClick={handleClearSelectedStanzaOverrides}
-                          className="text-[10px] font-sans text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 flex items-center gap-1 cursor-pointer transition-colors"
-                          title="Reset custom overrides for this stanza to heuristic defaults"
-                        >
-                          <RotateCcw className="w-3 h-3" />
-                          <span>Reset</span>
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Active Archetypes Tags if overrides applied */}
-                    {selectedStanzaStats.activeArchetypes.length > 0 && (
-                      <div className="flex flex-wrap gap-1 pt-1">
-                        {selectedStanzaStats.activeArchetypes.map(arch => (
-                          <span
-                            key={arch}
-                            className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${
-                              themeMode === 'dark'
-                                ? 'bg-white/5 border-white/10 text-white/70'
-                                : 'bg-[#FAF9F5] border-[#E8E5DE] text-[#5E5D59]'
-                            }`}
-                          >
-                            {arch}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Director Mode Switcher */}
-                  <div className="flex items-center justify-between pt-0.5">
-                    <span className={`text-[11px] font-sans font-medium ${themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'}`}>
-                      Director Mode
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setInferenceMode('heuristic');
-                          setRenderedMediaBuffer(null);
-                          setRenderedFingerprint(null);
-                        }}
-                        className={`px-2.5 py-1 text-[10px] font-sans font-medium rounded-lg border transition-colors cursor-pointer shadow-xs ${
-                          inferenceMode === 'heuristic'
-                            ? 'bg-[#141413] text-white border-[#141413]'
-                            : themeMode === 'dark' ? 'border-white/10 text-white/60 hover:text-white bg-[#232220]' : 'border-[#E8E5DE] text-[#5E5D59] bg-white'
-                        }`}
-                      >
-                        Auto Rules
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setInferenceMode('ollama');
-                          setRenderedMediaBuffer(null);
-                          setRenderedFingerprint(null);
-                        }}
-                        className={`px-2.5 py-1 text-[10px] font-sans font-medium rounded-lg border transition-colors cursor-pointer flex items-center gap-1 shadow-xs ${
-                          inferenceMode === 'ollama'
-                            ? 'bg-[#D97757] text-white border-[#D97757]'
-                            : themeMode === 'dark' ? 'border-white/10 text-white/60 hover:text-white bg-[#232220]' : 'border-[#E8E5DE] text-[#5E5D59] bg-white'
-                        }`}
-                      >
-                        <Bot className="w-3 h-3" />
-                        <span>AI Cloud Director</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Mode 1: Auto Rules (High Confidence Breakdown Card) */}
-                  {inferenceMode === 'heuristic' ? (
-                    <div className={`p-3 rounded-xl border flex flex-col gap-2.5 ${
-                      themeMode === 'dark' ? 'bg-[#18181C] border-white/5 text-white/80' : 'bg-white border-[#E8E5DE] text-[#444]'
-                    }`}>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-sans font-semibold flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                          <Sparkles className="w-3.5 h-3.5" />
-                          <span>Smart Pacing Ready</span>
-                        </span>
-                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold">
-                          Ready to Render
-                        </span>
-                      </div>
-                      <p className={`text-[10px] font-sans leading-relaxed ${themeMode === 'dark' ? 'text-white/60' : 'text-[#666]'}`}>
-                        The kinetic engine dynamically balances punchlines and filler rests across your selection at 60 FPS:
-                      </p>
-                      <div className="grid grid-cols-2 gap-1.5 text-[10px] font-mono">
-                        <div className="p-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 flex items-center justify-between">
-                          <span className="text-[#D97757] font-semibold">Hero Words:</span>
-                          <span className="font-bold">{selectedStanzaStats.heroCount}</span>
-                        </div>
-                        <div className="p-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 flex items-center justify-between">
-                          <span className="opacity-75">Action Words:</span>
-                          <span className="font-bold">{selectedStanzaStats.actionCount}</span>
-                        </div>
-                        <div className="p-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 flex items-center justify-between">
-                          <span className="opacity-75">Novelty Accents:</span>
-                          <span className="font-bold">{selectedStanzaStats.noveltyCount}</span>
-                        </div>
-                        <div className="p-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 flex items-center justify-between">
-                          <span className="opacity-60">Anchor Fills:</span>
-                          <span className="font-bold">{selectedStanzaStats.anchorCount}</span>
-                        </div>
-                      </div>
-                      {selectedStanzaStats.topAutoStyles.length > 0 && (
-                        <div className="flex items-center gap-1 pt-0.5 flex-wrap text-[9px] font-mono">
-                          <span className="opacity-50">Top Styles:</span>
-                          {selectedStanzaStats.topAutoStyles.map(st => (
-                            <span key={st} className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 border border-current/10">
-                              {st}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      {selectedStanzaStats.hasOverrides && (
-                        <div className="flex items-center justify-between pt-1.5 border-t border-current/10 text-[10px]">
-                          <span className="text-amber-500 font-medium">
-                            {selectedStanzaStats.overrideCount} custom overrides take priority
-                          </span>
-                          <button
-                            type="button"
-                            onClick={handleClearSelectedStanzaOverrides}
-                            className="text-rose-500 hover:underline flex items-center gap-1 cursor-pointer font-medium"
-                          >
-                            <RotateCcw className="w-3 h-3" />
-                            Reset Stanza
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    /* Mode 2: AI Cloud Director */
-                    <div className="flex flex-col gap-2.5 pt-1 border-t border-current/10">
-                      {/* Analysis Scope Switcher */}
-                      <div className="flex flex-col gap-1">
-                        <span className={`text-[10px] font-sans font-medium ${themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}`}>
-                          Target Range for AI Analysis:
-                        </span>
-                        <div className={`grid grid-cols-2 p-0.5 rounded-lg border text-[10px] font-sans font-medium ${
-                          themeMode === 'dark' ? 'bg-[#18181B] border-white/10' : 'bg-white border-[#E8E5DE]'
-                        }`}>
-                          <button
-                            type="button"
-                            onClick={() => setAnalysisScope('selected')}
-                            className={`py-1 px-1.5 rounded-md transition-all cursor-pointer text-center truncate ${
-                              analysisScope === 'selected'
-                                ? 'bg-[#D97757] text-white shadow-xs font-semibold'
-                                : 'text-[#87867F] hover:text-[#141413] dark:hover:text-white'
-                            }`}
-                          >
-                            Selected ({selectedLines.length} lines)
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setAnalysisScope('all')}
-                            className={`py-1 px-1.5 rounded-md transition-all cursor-pointer text-center truncate ${
-                              analysisScope === 'all'
-                                ? 'bg-[#D97757] text-white shadow-xs font-semibold'
-                                : 'text-[#87867F] hover:text-[#141413] dark:hover:text-white'
-                            }`}
-                          >
-                            Full Song ({parsedLyrics.lines.length} lines)
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Provider Switcher */}
-                      <div className={`flex items-center p-0.5 rounded-lg border text-[10px] font-sans font-medium ${
-                        themeMode === 'dark' ? 'bg-[#18181B] border-white/10' : 'bg-white border-[#E8E5DE]'
-                      }`}>
-                        <button
-                          type="button"
-                          onClick={() => setLlmProvider('groq')}
-                          className={`flex-1 py-1 rounded-md transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                            llmProvider === 'groq'
-                              ? 'bg-[#D97757] text-white shadow-xs font-semibold'
-                              : 'text-[#87867F] hover:text-[#141413] dark:hover:text-white'
-                          }`}
-                        >
-                          <Zap className="w-3 h-3" />
-                          <span>Groq Cloud (120B)</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setLlmProvider('ollama')}
-                          className={`flex-1 py-1 rounded-md transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                            llmProvider === 'ollama'
-                              ? 'bg-[#D97757] text-white shadow-xs font-semibold'
-                              : 'text-[#87867F] hover:text-[#141413] dark:hover:text-white'
-                          }`}
-                        >
-                          <Cpu className="w-3 h-3" />
-                          <span>Local Ollama</span>
-                        </button>
-                      </div>
-
-                      {llmProvider === 'groq' ? (
-                        <button
-                          type="button"
-                          onClick={handleRunOllamaAnalysis}
-                          disabled={isAnalyzingOllama}
-                          className={`w-full py-2 px-3 text-xs font-sans font-medium rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
-                            isAnalyzingOllama
-                              ? 'bg-[#D97757]/40 text-white cursor-wait'
-                              : 'bg-[#D97757] text-white hover:bg-[#C66545]'
-                          }`}
-                        >
-                          {isAnalyzingOllama ? (
-                            <>
-                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                              <span className="truncate">{ollamaProgress?.message || 'Analyzing...'}</span>
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                              <span className="truncate">
-                                Analyze {analysisScope === 'selected' ? `Selected (${selectedLines.length} lines)` : `Full Song (${parsedLyrics.lines.length} lines)`} (Groq 120B)
-                              </span>
-                            </>
-                          )}
-                        </button>
-                      ) : (
-                        <>
-                          <div className="flex items-center justify-between text-[10px]">
-                            <span className={themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}>GPU Status:</span>
-                            <span className="font-medium flex items-center gap-1.5">
-                              <span className={`w-1.5 h-1.5 rounded-full ${ollamaStatus?.online ? 'bg-[#D97757]' : 'bg-zinc-400'}`} />
-                              {ollamaStatus?.online ? 'Connected' : 'Offline'}
-                            </span>
-                          </div>
-                          {ollamaStatus?.online && (
-                            <select
-                              value={selectedOllamaModel}
-                              onChange={(e) => setSelectedOllamaModel(e.target.value)}
-                              className={`text-xs font-sans p-1.5 rounded-lg border outline-none shadow-xs ${
-                                themeMode === 'dark' ? 'bg-[#232220] text-white border-white/10' : 'bg-white text-[#141413] border-[#E8E5DE]'
-                              }`}
-                            >
-                              {(ollamaStatus.models.length > 0 ? ollamaStatus.models : RECOMMENDED_OLLAMA_MODELS).map(m => (
-                                <option key={m} value={m}>{m}</option>
-                              ))}
-                            </select>
-                          )}
-                          <button
-                            type="button"
-                            onClick={handleRunOllamaAnalysis}
-                            disabled={isAnalyzingOllama || !ollamaStatus?.online}
-                            className={`w-full py-2 px-3 text-xs font-sans font-medium rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
-                              isAnalyzingOllama
-                                ? 'bg-[#D97757]/40 text-white cursor-wait'
-                                : ollamaStatus?.online
-                                ? 'bg-[#D97757] text-white hover:bg-[#C66545]'
-                                : 'bg-black/10 dark:bg-white/10 text-[#87867F] cursor-not-allowed'
-                            }`}
-                          >
-                            {isAnalyzingOllama ? (
-                              <>
-                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                <span className="truncate">{ollamaProgress?.message || 'Analyzing...'}</span>
-                              </>
-                            ) : (
-                              <>
-                                <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                                <span className="truncate">
-                                  Analyze {analysisScope === 'selected' ? `Selected (${selectedLines.length} lines)` : `Full Song (${parsedLyrics.lines.length} lines)`} ({selectedOllamaModel})
-                                </span>
-                              </>
-                            )}
-                          </button>
-                        </>
-                      )}
-
-                      {/* Notice banner after successful analysis */}
-                      {lastAnalysisNotice && (
-                        <div className="flex items-center justify-between p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[11px] font-sans">
-                          <div className="flex items-center gap-1.5 truncate">
-                            <Check className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
-                            <span className="truncate">{lastAnalysisNotice.message}</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setLastAnalysisNotice(null)}
-                            className="p-0.5 hover:opacity-75 cursor-pointer shrink-0"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Active AI Styles summary with Reset button */}
-                      {Object.keys(aiWordOverrides).length > 0 && (
-                        <div className="flex items-center justify-between p-2 rounded-xl bg-[#D97757]/10 border border-[#D97757]/25 text-[11px] font-sans">
-                          <div className="flex items-center gap-1.5 text-[#D97757] font-medium truncate">
-                            <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                            <span>{Object.keys(aiWordOverrides).length} AI styles applied</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setAiWordOverrides({});
-                              setAiMotifOverrides({});
-                              setRenderedMediaBuffer(null);
-                              setRenderedFingerprint(null);
-                            }}
-                            className="text-[10px] text-rose-500 hover:text-rose-600 flex items-center gap-1 cursor-pointer font-medium hover:underline"
-                            title="Reset all AI director overrides"
-                          >
-                            <RotateCcw className="w-3 h-3" />
-                            <span>Clear AI</span>
-                          </button>
-                        </div>
-                      )}
-
-                      {ollamaProgress && (
-                        <div className="w-full bg-black/10 dark:bg-white/10 h-1 rounded-full overflow-hidden">
-                          <div
-                            className="bg-[#D97757] h-full transition-all duration-300 rounded-full"
-                            style={{ width: `${ollamaProgress.percent}%` }}
-                          />
-                        </div>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() => setShowOllamaInspector(true)}
-                        className={`w-full py-1.5 px-2.5 text-[10px] font-sans font-medium rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1.5 opacity-70 hover:opacity-100 ${
-                          themeMode === 'dark' 
-                            ? 'border-white/10 hover:bg-white/5 text-white/70' 
-                            : 'border-[#E8E5DE] hover:bg-[#F2EFE9] text-[#5E5D59]'
-                        }`}
-                      >
-                        <Terminal className="w-3 h-3 text-[#D97757]" />
-                        <span>View Prompts & AI Logs {ollamaInspectionLogs.length > 0 ? `(${ollamaInspectionLogs.length})` : ''}</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* 2. Thematic 4-Font Style Pack Selector (With Live Visual Specimens) */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className={`text-[11px] font-sans font-medium block ${
-                      themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'
-                    }`}>
-                      Thematic Style Pack
-                    </label>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 mb-2.5">
-                    {(['trap_drill', 'shonen_comic', 'cartoon_bounce', 'cyber_industrial'] as StylePackId[]).map(packId => {
-                      const pack = STYLE_PACKS[packId];
-                      const isSelected = stylePack === packId;
-                      return (
-                        <button
-                          key={packId}
-                          type="button"
-                          onClick={() => {
-                            setStylePack(packId);
-                            setFontFamily(pack.fonts.hero);
-                          }}
-                          className={`p-2.5 border rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between ${
-                            isSelected
-                              ? themeMode === 'dark'
-                                ? 'border-[#D97757] bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs'
-                                : 'border-[#D97757] bg-[#FAF0EB] ring-1 ring-[#D97757]/30 shadow-xs'
-                              : themeMode === 'dark'
-                              ? 'border-white/10 hover:border-white/20 bg-[#1C1C20]'
-                              : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-white shadow-xs'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between w-full">
-                            <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded ${
-                              themeMode === 'dark' ? 'bg-white/10 text-white/80' : 'bg-[#FAF9F5] text-[#5E5D59] border border-[#E8E5DE]'
-                            }`}>
-                              {pack.tag}
-                            </span>
-                            {/* Live Visual Specimen */}
-                            <span
-                              style={{ fontFamily: pack.fonts.hero }}
-                              className="text-xs font-bold opacity-80"
-                            >
-                              Ag
-                            </span>
-                          </div>
-                          <span className={`text-xs font-sans font-medium mt-2 truncate ${
-                            themeMode === 'dark' ? 'text-white' : 'text-[#141413]'
-                          }`}>
-                            {pack.name}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Monochromatic Font Hierarchy Matrix with Plain-English Role Definitions */}
-                  {stylePack && STYLE_PACKS[stylePack] && (
-                    <div className={`p-3 rounded-xl border text-[11px] font-sans space-y-1.5 ${
-                      themeMode === 'dark' ? 'bg-[#16161A] border-white/10 text-white/80' : 'bg-[#FAF9F5] border-[#E8E5DE] text-[#444]'
-                    }`}>
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium text-[#D97757] flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#D97757]" />
-                          Hero (Climax)
-                        </span>
-                        <span className="font-mono text-[10px] text-right">{STYLE_PACKS[stylePack].fonts.hero.split(',')[0].replace(/'/g, '')}</span>
-                      </div>
-                      <div className="flex justify-between items-center opacity-85">
-                        <span className="font-medium flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-current opacity-40" />
-                          Action (Beats)
-                        </span>
-                        <span className="font-mono text-[10px] text-right">{STYLE_PACKS[stylePack].fonts.action.split(',')[0].replace(/'/g, '')}</span>
-                      </div>
-                      <div className="flex justify-between items-center opacity-85">
-                        <span className="font-medium flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-current opacity-40" />
-                          Novelty (Tech/Glitch)
-                        </span>
-                        <span className="font-mono text-[10px] text-right">{STYLE_PACKS[stylePack].fonts.novelty.split(',')[0].replace(/'/g, '')}</span>
-                      </div>
-                      <div className="flex justify-between items-center opacity-70">
-                        <span className="font-medium flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-current opacity-30" />
-                          Anchor (Filler Rest)
-                        </span>
-                        <span className="font-mono text-[10px] text-right">{STYLE_PACKS[stylePack].fonts.anchor.split(',')[0].replace(/['"]/g, '')}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* 3. Visual Motifs & Manga Layering */}
-                <div>
-                  <label className={`text-[11px] font-sans font-medium block mb-2 ${
-                    themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'
-                  }`}>
-                    Visual Motifs & Manga Layering
-                  </label>
-                  <div className="grid grid-cols-4 gap-1.5 mb-2">
-                    {[
-                      { id: 'off' as MotifMode, label: 'Off', desc: 'Clean typography only. Zero background visuals.' },
-                      { id: 'subtle' as MotifMode, label: 'Subtle', desc: 'Minimal speedline flares on beat transients.' },
-                      { id: 'dynamic' as MotifMode, label: 'Dynamic', desc: 'AI-directed motif assignment per lyric meaning.' },
-                      { id: 'heavy' as MotifMode, label: 'Heavy', desc: 'Full manga layering with Bayer halftones.' },
-                    ].map(mode => {
-                      const isSelected = motifMode === mode.id;
-                      return (
-                        <button
-                          key={mode.id}
-                          type="button"
-                          onClick={() => setMotifMode(mode.id)}
-                          className={`py-1.5 px-2 border rounded-xl text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
-                            isSelected
-                              ? themeMode === 'dark'
-                                ? 'border-[#D97757] bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs'
-                                : 'border-[#D97757] bg-[#FAF0EB] ring-1 ring-[#D97757]/30 shadow-xs'
-                              : themeMode === 'dark'
-                              ? 'border-white/10 hover:border-white/20 bg-[#1C1C20]'
-                              : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-white shadow-xs'
-                          }`}
-                          title={mode.desc}
-                        >
-                          <span className={`text-[11px] font-sans font-medium ${
-                            themeMode === 'dark' ? 'text-white' : 'text-[#141413]'
-                          }`}>
-                            {mode.label}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <p className={`text-[10px] font-sans leading-tight ${
-                    themeMode === 'dark' ? 'text-white/40' : 'text-[#87867F]'
-                  }`}>
-                    {motifMode === 'off' && 'Clean typography only. Zero background visuals.'}
-                    {motifMode === 'subtle' && 'Minimal speedline flares on beat transients.'}
-                    {motifMode === 'dynamic' && 'Semantic motif assignment (crowns, scopes, flames & stars).'}
-                    {motifMode === 'heavy' && 'Full manga layering with Bayer halftones and speedlines.'}
-                  </p>
-                </div>
-              </>
-            ) : (
-              <>
-                {/* Manual Motion Archetypes Grid */}
-                <div>
-                  <label className={`text-[11px] font-sans font-medium block mb-2 ${
-                    themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'
+          {/* Scrollable Middle Controls with custom clean scrollbar */}
+          <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3 min-h-0">
+            {/* 1. DIRECTOR ENGINE PANEL */}
+            {directorModeTab === 'manual' ? (
+              /* Single Style Uniform Archetypes & Hero Font */
+              <div className="flex flex-col gap-2.5">
+                <div className="flex items-center justify-between">
+                  <label className={`text-[11px] font-sans font-semibold ${
+                    themeMode === 'dark' ? 'text-white/80' : 'text-[#141413]'
                   }`}>
                     Uniform Motion Style
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {MANUAL_ARCHETYPES.map(archKey => {
-                      const meta = ARCHETYPE_METADATA[archKey];
-                      return (
-                        <button
-                          key={archKey}
-                          onClick={() => setArchetype(archKey)}
-                          className={`p-2.5 border text-left transition-all cursor-pointer flex flex-col justify-between rounded-xl ${
-                            archetype === archKey
-                              ? themeMode === 'dark'
-                                ? 'border-[#D97757] bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs'
-                                : 'border-[#D97757] bg-[#FAF0EB] ring-1 ring-[#D97757]/30 shadow-xs'
-                              : themeMode === 'dark'
-                              ? 'border-white/10 hover:border-white/25 bg-[#1C1C20]'
-                              : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-white shadow-xs'
-                          }`}
-                        >
-                          <div className="flex justify-between items-center">
-                            <span className="text-base">{meta.icon}</span>
-                            <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${
-                              themeMode === 'dark' ? 'bg-white/10 text-white/80' : 'bg-[#FAF9F5] text-[#5E5D59] border border-[#E8E5DE]'
-                            }`}>
-                              {meta.tag}
-                            </span>
-                          </div>
-                          <span className={`text-xs font-sans font-medium mt-1.5 ${themeMode === 'dark' ? 'text-white' : 'text-[#141413]'}`}>
+                  <span className={`text-[9px] font-mono ${themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}`}>
+                    {ARCHETYPE_METADATA[archetype]?.name}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5 max-h-[175px] overflow-y-auto pr-0.5">
+                  {MANUAL_ARCHETYPES.map(archKey => {
+                    const meta = ARCHETYPE_METADATA[archKey];
+                    const isSelected = archetype === archKey;
+                    return (
+                      <button
+                        key={archKey}
+                        type="button"
+                        onClick={() => setArchetype(archKey)}
+                        className={`p-1.5 px-2 border text-left transition-all cursor-pointer flex items-center justify-between rounded-xl ${
+                          isSelected
+                            ? themeMode === 'dark'
+                              ? 'border-[#D97757] bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs'
+                              : 'border-[#D97757] bg-[#FAF0EB] ring-1 ring-[#D97757]/30 shadow-xs'
+                            : themeMode === 'dark'
+                            ? 'border-white/10 hover:border-white/25 bg-[#1C1C20]'
+                            : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-white shadow-xs'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-sm shrink-0">{meta.icon}</span>
+                          <span className={`text-[11px] font-sans font-medium truncate ${themeMode === 'dark' ? 'text-white' : 'text-[#141413]'}`}>
                             {meta.name}
                           </span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                        </div>
+                        <span className={`text-[8px] font-mono px-1 py-0.2 rounded shrink-0 uppercase ${
+                          themeMode === 'dark' ? 'bg-white/10 text-white/70' : 'bg-[#FAF9F5] text-[#5E5D59] border border-[#E8E5DE]'
+                        }`}>
+                          {meta.tag}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
 
-                {/* Hero Font Override */}
+                {/* Hero Font Override for Single Style */}
                 <div>
-                  <label className={`text-[11px] font-sans font-medium block mb-1.5 ${
-                    themeMode === 'dark' ? 'text-white/70' : 'text-[#5E5D59]'
+                  <label className={`text-[10px] font-sans font-medium block mb-1 ${
+                    themeMode === 'dark' ? 'text-white/60' : 'text-[#5E5D59]'
                   }`}>
                     Hero Font
                   </label>
                   <select
                     value={fontFamily}
                     onChange={e => setFontFamily(e.target.value)}
-                    className={`w-full p-2.5 text-xs font-sans rounded-xl focus:outline-none focus:border-[#D97757] focus:ring-1 focus:ring-[#D97757] cursor-pointer border shadow-xs transition-colors ${
+                    className={`w-full p-2 text-xs font-sans rounded-xl focus:outline-none focus:border-[#D97757] focus:ring-1 focus:ring-[#D97757] cursor-pointer border shadow-xs transition-colors ${
                       themeMode === 'dark'
                         ? 'bg-[#1C1C20] border-white/10 text-white'
                         : 'bg-white border-[#E8E5DE] text-[#141413]'
@@ -3049,18 +2551,439 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     </optgroup>
                   </select>
                 </div>
-              </>
+              </div>
+            ) : inferenceMode === 'heuristic' ? (
+              /* Auto Rules Deterministic Breakdown Card */
+              <div className={`p-2.5 rounded-xl border flex flex-col gap-2 ${
+                themeMode === 'dark' ? 'bg-[#16161A] border-white/10' : 'bg-[#FAF9F5] border-[#E8E5DE]'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[11px] font-sans font-semibold text-emerald-600 dark:text-emerald-400">
+                      Deterministic Heuristic Pacer
+                    </span>
+                  </div>
+                  {selectedStanzaStats.hasOverrides && (
+                    <button
+                      type="button"
+                      onClick={handleClearSelectedStanzaOverrides}
+                      className="text-[10px] font-sans text-rose-500 hover:text-rose-600 flex items-center gap-1 cursor-pointer font-medium"
+                      title="Reset custom word overrides for this selection"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>Reset ({selectedStanzaStats.overrideCount})</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* 4 Micro Stat Chips */}
+                <div className="grid grid-cols-4 gap-1 text-[10px] font-mono text-center">
+                  <div className="p-1 rounded-lg bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10">
+                    <div className="text-[9px] opacity-60">Hero</div>
+                    <div className="font-bold text-[#D97757]">{selectedStanzaStats.heroCount}</div>
+                  </div>
+                  <div className="p-1 rounded-lg bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10">
+                    <div className="text-[9px] opacity-60">Action</div>
+                    <div className="font-bold">{selectedStanzaStats.actionCount}</div>
+                  </div>
+                  <div className="p-1 rounded-lg bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10">
+                    <div className="text-[9px] opacity-60">Accents</div>
+                    <div className="font-bold">{selectedStanzaStats.noveltyCount}</div>
+                  </div>
+                  <div className="p-1 rounded-lg bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10">
+                    <div className="text-[9px] opacity-60">Anchor</div>
+                    <div className="font-bold opacity-75">{selectedStanzaStats.anchorCount}</div>
+                  </div>
+                </div>
+
+                {/* Applied tags */}
+                {selectedStanzaStats.activeArchetypes.length > 0 ? (
+                  <div className="flex items-center gap-1 text-[9px] font-mono flex-wrap pt-0.5">
+                    <span className="opacity-50">Custom:</span>
+                    {selectedStanzaStats.activeArchetypes.map(arch => (
+                      <span key={arch} className="px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                        {arch}
+                      </span>
+                    ))}
+                  </div>
+                ) : selectedStanzaStats.topAutoStyles.length > 0 ? (
+                  <div className="flex items-center gap-1 text-[9px] font-mono flex-wrap pt-0.5">
+                    <span className="opacity-50">Styles:</span>
+                    {selectedStanzaStats.topAutoStyles.map(st => (
+                      <span key={st} className="px-1.5 py-0.2 rounded bg-black/5 dark:bg-white/5 border border-current/10">
+                        {st}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              /* AI Cloud Director Command Deck */
+              <div className={`p-2.5 rounded-xl border flex flex-col gap-2 ${
+                themeMode === 'dark' ? 'bg-[#16161A] border-white/10' : 'bg-[#FAF9F5] border-[#E8E5DE]'
+              }`}>
+                {/* Scope & Provider Selector Row */}
+                <div className="grid grid-cols-2 gap-1.5">
+                  <div className={`flex p-0.5 rounded-lg border text-[10px] font-sans font-medium ${
+                    themeMode === 'dark' ? 'bg-[#1F1F24] border-white/10' : 'bg-white border-[#E8E5DE]'
+                  }`}>
+                    <button
+                      type="button"
+                      onClick={() => setAnalysisScope('selected')}
+                      className={`flex-1 py-1 px-1 rounded-md transition-all cursor-pointer text-center truncate ${
+                        analysisScope === 'selected'
+                          ? 'bg-[#D97757] text-white shadow-xs font-semibold'
+                          : 'text-[#87867F] hover:text-[#141413] dark:hover:text-white'
+                      }`}
+                      title="Analyze selected lines"
+                    >
+                      Selected ({selectedLines.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAnalysisScope('all')}
+                      className={`flex-1 py-1 px-1 rounded-md transition-all cursor-pointer text-center truncate ${
+                        analysisScope === 'all'
+                          ? 'bg-[#D97757] text-white shadow-xs font-semibold'
+                          : 'text-[#87867F] hover:text-[#141413] dark:hover:text-white'
+                      }`}
+                      title="Analyze full song"
+                    >
+                      All ({parsedLyrics.lines.length})
+                    </button>
+                  </div>
+
+                  <div className={`flex p-0.5 rounded-lg border text-[10px] font-sans font-medium ${
+                    themeMode === 'dark' ? 'bg-[#1F1F24] border-white/10' : 'bg-white border-[#E8E5DE]'
+                  }`}>
+                    <button
+                      type="button"
+                      onClick={() => setLlmProvider('groq')}
+                      className={`flex-1 py-1 px-1 rounded-md transition-all cursor-pointer flex items-center justify-center gap-1 truncate ${
+                        llmProvider === 'groq'
+                          ? 'bg-[#D97757] text-white shadow-xs font-semibold'
+                          : 'text-[#87867F] hover:text-[#141413] dark:hover:text-white'
+                      }`}
+                      title="Groq Cloud 120B Fast AI"
+                    >
+                      <Zap className="w-3 h-3 shrink-0" />
+                      <span className="truncate">Groq 120B</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLlmProvider('ollama')}
+                      className={`flex-1 py-1 px-1 rounded-md transition-all cursor-pointer flex items-center justify-center gap-1 truncate ${
+                        llmProvider === 'ollama'
+                          ? 'bg-[#D97757] text-white shadow-xs font-semibold'
+                          : 'text-[#87867F] hover:text-[#141413] dark:hover:text-white'
+                      }`}
+                      title="Local Ollama GPU"
+                    >
+                      <Cpu className="w-3 h-3 shrink-0" />
+                      <span className="truncate">Ollama</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Optional Ollama Model Selector */}
+                {llmProvider === 'ollama' && (
+                  <div className="flex items-center gap-1.5 text-[10px]">
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className={`w-1.5 h-1.5 rounded-full ${ollamaStatus?.online ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
+                      <span className={themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}>
+                        {ollamaStatus?.online ? 'GPU Ready' : 'Offline'}
+                      </span>
+                    </div>
+                    {ollamaStatus?.online ? (
+                      <select
+                        value={selectedOllamaModel}
+                        onChange={(e) => setSelectedOllamaModel(e.target.value)}
+                        className={`flex-1 text-[10px] font-sans p-1 rounded-md border outline-none truncate ${
+                          themeMode === 'dark' ? 'bg-[#232220] text-white border-white/10' : 'bg-white text-[#141413] border-[#E8E5DE]'
+                        }`}
+                      >
+                        {(ollamaStatus.models.length > 0 ? ollamaStatus.models : RECOMMENDED_OLLAMA_MODELS).map(m => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="text-[10px] text-amber-500 truncate">Run &apos;ollama serve&apos;</span>
+                    )}
+                  </div>
+                )}
+
+                {/* Primary Action Button */}
+                <button
+                  type="button"
+                  onClick={handleRunOllamaAnalysis}
+                  disabled={isAnalyzingOllama || (llmProvider === 'ollama' && !ollamaStatus?.online)}
+                  className={`w-full py-2 px-3 text-xs font-sans font-semibold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
+                    isAnalyzingOllama
+                      ? 'bg-[#D97757]/40 text-white cursor-wait'
+                      : llmProvider === 'ollama' && !ollamaStatus?.online
+                      ? 'bg-black/10 dark:bg-white/10 text-[#87867F] cursor-not-allowed'
+                      : 'bg-[#D97757] text-white hover:bg-[#C66545] active:scale-[0.99]'
+                  }`}
+                >
+                  {isAnalyzingOllama ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span className="truncate">{ollamaProgress?.message || 'Directing Motion...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">
+                        Direct {analysisScope === 'selected' ? `${selectedLines.length} Selected Lines` : `Full Song (${parsedLyrics.lines.length} Lines)`}
+                      </span>
+                    </>
+                  )}
+                </button>
+
+                {/* Progress bar */}
+                {ollamaProgress && (
+                  <div className="w-full bg-black/10 dark:bg-white/10 h-1 rounded-full overflow-hidden -mt-1">
+                    <div
+                      className="bg-[#D97757] h-full transition-all duration-300 rounded-full"
+                      style={{ width: `${ollamaProgress.percent}%` }}
+                    />
+                  </div>
+                )}
+
+                {/* Status & Quick Action Row */}
+                <div className="flex items-center justify-between text-[10px] font-sans pt-0.5">
+                  {Object.keys(aiWordOverrides).length > 0 ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-emerald-500 font-medium flex items-center gap-1">
+                        <Check className="w-3 h-3" />
+                        <span>{Object.keys(aiWordOverrides).length} AI Styles Applied</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAiWordOverrides({});
+                          setAiMotifOverrides({});
+                          setRenderedMediaBuffer(null);
+                          setRenderedFingerprint(null);
+                        }}
+                        className="text-rose-500 hover:text-rose-600 cursor-pointer font-medium hover:underline"
+                        title="Clear all AI director overrides"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  ) : (
+                    <span className={themeMode === 'dark' ? 'text-white/40' : 'text-[#87867F]'}>
+                      No AI overrides active
+                    </span>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setShowOllamaInspector(true)}
+                    className={`flex items-center gap-1 font-mono transition-opacity cursor-pointer ${
+                      themeMode === 'dark' ? 'text-white/60 hover:text-white' : 'text-[#5E5D59] hover:text-[#141413]'
+                    }`}
+                    title="Inspect LLM raw prompts and response JSON"
+                  >
+                    <Terminal className="w-3 h-3 text-[#D97757]" />
+                    <span>Logs{ollamaInspectionLogs.length > 0 ? ` (${ollamaInspectionLogs.length})` : ''}</span>
+                  </button>
+                </div>
+
+                {/* Notice banner */}
+                {lastAnalysisNotice && (
+                  <div className="flex items-center justify-between p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-sans">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <Check className="w-3 h-3 shrink-0 text-emerald-500" />
+                      <span className="truncate">{lastAnalysisNotice.message}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setLastAnalysisNotice(null)}
+                      className="p-0.5 hover:opacity-75 cursor-pointer shrink-0"
+                    >
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
+
+            {/* 2. THEMATIC STYLE PACK SELECTOR (for Auto & AI modes) */}
+            {directorModeTab !== 'manual' && (
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <label className={`text-[11px] font-sans font-semibold flex items-center gap-1.5 ${
+                    themeMode === 'dark' ? 'text-white/80' : 'text-[#141413]'
+                  }`}>
+                    <span>Thematic Style Pack</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowFontHierarchy(!showFontHierarchy)}
+                    className="text-[10px] font-sans text-[#D97757] hover:underline cursor-pointer flex items-center gap-0.5 font-medium"
+                  >
+                    <span>{showFontHierarchy ? 'Hide Roles' : 'Font Roles'}</span>
+                    {showFontHierarchy ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                  </button>
+                </div>
+
+                {/* 4 Compact Cards */}
+                <div className="grid grid-cols-2 gap-1.5">
+                  {(['trap_drill', 'shonen_comic', 'cartoon_bounce', 'cyber_industrial'] as StylePackId[]).map(packId => {
+                    const pack = STYLE_PACKS[packId];
+                    const isSelected = stylePack === packId;
+                    return (
+                      <button
+                        key={packId}
+                        type="button"
+                        onClick={() => {
+                          setStylePack(packId);
+                          setFontFamily(pack.fonts.hero);
+                        }}
+                        className={`p-1.5 px-2 border rounded-xl text-left transition-all cursor-pointer flex items-center justify-between ${
+                          isSelected
+                            ? themeMode === 'dark'
+                              ? 'border-[#D97757] bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs'
+                              : 'border-[#D97757] bg-[#FAF0EB] ring-1 ring-[#D97757]/30 shadow-xs'
+                            : themeMode === 'dark'
+                            ? 'border-white/10 hover:border-white/20 bg-[#1C1C20]'
+                            : 'border-[#E8E5DE] hover:border-[#D5D0C5] bg-white shadow-xs'
+                        }`}
+                      >
+                        <div className="min-w-0 pr-1">
+                          <span className={`text-[8px] font-mono font-bold px-1 py-0.2 rounded uppercase ${
+                            isSelected ? 'bg-[#D97757] text-white' : themeMode === 'dark' ? 'bg-white/10 text-white/70' : 'bg-black/5 text-[#5E5D59]'
+                          }`}>
+                            {pack.tag}
+                          </span>
+                          <div className={`text-[11px] font-sans font-semibold mt-0.5 truncate ${
+                            themeMode === 'dark' ? 'text-white' : 'text-[#141413]'
+                          }`}>
+                            {pack.name}
+                          </div>
+                        </div>
+                        {/* Live Visual Specimen */}
+                        <span
+                          style={{ fontFamily: pack.fonts.hero }}
+                          className="text-base font-bold opacity-80 shrink-0"
+                        >
+                          Ag
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Collapsible Font Hierarchy Matrix */}
+                <AnimatePresence>
+                  {showFontHierarchy && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className={`p-2 rounded-xl border text-[10px] font-sans space-y-1 ${
+                        themeMode === 'dark' ? 'bg-[#16161A] border-white/10 text-white/80' : 'bg-[#FAF9F5] border-[#E8E5DE] text-[#444]'
+                      }`}>
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-[#D97757] flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#D97757]" />
+                            Hero (Climax)
+                          </span>
+                          <span className="font-mono text-right">{STYLE_PACKS[stylePack].fonts.hero.split(',')[0].replace(/'/g, '')}</span>
+                        </div>
+                        <div className="flex justify-between items-center opacity-85">
+                          <span className="font-medium flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-current opacity-40" />
+                            Action (Beats)
+                          </span>
+                          <span className="font-mono text-right">{STYLE_PACKS[stylePack].fonts.action.split(',')[0].replace(/'/g, '')}</span>
+                        </div>
+                        <div className="flex justify-between items-center opacity-85">
+                          <span className="font-medium flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-current opacity-40" />
+                            Novelty (Tech/Glitch)
+                          </span>
+                          <span className="font-mono text-right">{STYLE_PACKS[stylePack].fonts.novelty.split(',')[0].replace(/'/g, '')}</span>
+                        </div>
+                        <div className="flex justify-between items-center opacity-70">
+                          <span className="font-medium flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-current opacity-30" />
+                            Anchor (Filler Rest)
+                          </span>
+                          <span className="font-mono text-right">{STYLE_PACKS[stylePack].fonts.anchor.split(',')[0].replace(/['"]/g, '')}</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+
+            {/* 3. VISUAL MOTIFS & MANGA LAYERING */}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <label className={`text-[11px] font-sans font-semibold ${
+                  themeMode === 'dark' ? 'text-white/80' : 'text-[#141413]'
+                }`}>
+                  Visual Motifs & FX Layering
+                </label>
+                <span className={`text-[10px] font-mono ${themeMode === 'dark' ? 'text-white/40' : 'text-[#87867F]'}`}>
+                  {motifMode.toUpperCase()}
+                </span>
+              </div>
+
+              <div className={`flex p-0.5 rounded-xl border ${
+                themeMode === 'dark' ? 'bg-[#141418] border-white/10' : 'bg-[#FAF9F5] border-[#E8E5DE]'
+              }`}>
+                {[
+                  { id: 'off' as MotifMode, label: 'Off', desc: 'Clean typography only. Zero background visuals.' },
+                  { id: 'subtle' as MotifMode, label: 'Subtle', desc: 'Minimal speedline flares on beat transients.' },
+                  { id: 'dynamic' as MotifMode, label: 'Dynamic', desc: 'Semantic motif assignment per lyric meaning.' },
+                  { id: 'heavy' as MotifMode, label: 'Heavy', desc: 'Full manga layering with Bayer halftones.' },
+                ].map(mode => {
+                  const isSelected = motifMode === mode.id;
+                  return (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      onClick={() => setMotifMode(mode.id)}
+                      className={`flex-1 py-1 text-[11px] font-sans font-medium rounded-lg transition-all cursor-pointer text-center ${
+                        isSelected
+                          ? 'bg-[#D97757] text-white shadow-xs font-semibold'
+                          : themeMode === 'dark' ? 'text-white/60 hover:text-white' : 'text-[#5E5D59] hover:text-[#141413]'
+                      }`}
+                      title={mode.desc}
+                    >
+                      {mode.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className={`text-[10px] font-sans leading-tight ${
+                themeMode === 'dark' ? 'text-white/40' : 'text-[#87867F]'
+              }`}>
+                {motifMode === 'off' && 'Clean typography only. Zero background visuals.'}
+                {motifMode === 'subtle' && 'Minimal speedline flares on beat transients.'}
+                {motifMode === 'dynamic' && 'Semantic motif assignment (crowns, scopes, flames & stars).'}
+                {motifMode === 'heavy' && 'Full manga layering with Bayer halftones and speedlines.'}
+              </p>
+            </div>
           </div>
 
-          {/* Pinned Action Dock (Always visible at bottom!) */}
-          <div className={`p-4 border-t flex flex-col gap-2.5 shrink-0 ${
+          {/* Pinned Action Dock (Always visible at bottom, sleek and compact) */}
+          <div className={`p-2.5 border-t flex flex-col gap-2 shrink-0 ${
             themeMode === 'dark' ? 'border-[#2C2B29] bg-[#18181A]' : 'border-[#E8E5DE] bg-white'
           }`}>
             {/* Scope Mismatch Warning Banner */}
             {analysisScope === 'all' && selectedLines.length < parsedLyrics.lines.length && (
-              <div className="flex items-center justify-between text-[10px] text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1.5 rounded-lg">
-                <span className="truncate">AI styles applied to all {parsedLyrics.lines.length} lines. Rendering selected {selectedLines.length}.</span>
+              <div className="flex items-center justify-between text-[10px] text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded-lg">
+                <span className="truncate">AI directed all {parsedLyrics.lines.length} lines. Rendering {selectedLines.length} selected.</span>
                 <button
                   type="button"
                   onClick={handleSelectAll}
@@ -3071,75 +2994,55 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               </div>
             )}
 
-            {/* Live Render State Status Badge */}
-            {renderedMediaBuffer && !isDirty ? (
-              <div className="flex items-center justify-between p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[11px] font-sans">
-                <div className="flex items-center gap-2 truncate">
-                  <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span className="truncate">
-                    Rendered with {lastRenderedMode === 'heuristic' ? '⚡ Smart Auto Rules' : '✨ AI Cloud Director'} ({renderedMediaBuffer.frames.length} frames • {(rangeDurationSec).toFixed(1)}s)
+            {/* Live Render State & Telemetry Row */}
+            <div className="flex items-center justify-between text-[10px] font-mono">
+              <div className="flex items-center gap-1.5 truncate">
+                {renderedMediaBuffer && !isDirty ? (
+                  <span className="flex items-center gap-1 text-emerald-500 font-semibold truncate">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    <span>BUFFERED ({lastRenderedMode === 'heuristic' ? 'AUTO' : 'AI'})</span>
                   </span>
-                </div>
-                <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 font-bold shrink-0">
-                  READY
+                ) : renderedMediaBuffer && isDirty ? (
+                  <span className="flex items-center gap-1 text-amber-500 font-semibold truncate">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                    <span>SETTINGS CHANGED</span>
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 opacity-60 truncate">
+                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 shrink-0" />
+                    <span>DRAFT READY</span>
+                  </span>
+                )}
+                <span className="opacity-40 shrink-0">•</span>
+                <span className={`truncate ${themeMode === 'dark' ? 'text-white/60' : 'text-[#5E5D59]'}`}>
+                  {selectedLines.length}L • {rangeDurationSec.toFixed(1)}s
                 </span>
               </div>
-            ) : renderedMediaBuffer && isDirty ? (
-              <div className="flex items-center justify-between p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-[11px] font-sans">
-                <div className="flex items-center gap-1.5 truncate">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 animate-pulse" />
-                  <span className="truncate">Settings changed since last render — re-render to update final output</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleRenderInStudio}
-                  disabled={isRendering}
-                  className="text-[10px] underline font-semibold cursor-pointer shrink-0 ml-1"
-                >
-                  Re-render
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 text-[10px] opacity-70 px-1 font-sans">
-                <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
-                <span>Ready to render kinetic sequence for in-studio preview</span>
-              </div>
-            )}
-
-            <div className="flex justify-between items-center text-[11px] font-mono">
-              <span className={themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}>
-                {selectedLines.length} lines • {rangeDurationSec.toFixed(1)}s
-              </span>
-              <span className="text-[#D97757] font-semibold">
-                {totalFrames} frames (~{estProgmemKb} KB)
+              <span className="text-[#D97757] font-semibold shrink-0 ml-1">
+                {totalFrames}F (~{estProgmemKb} KB)
               </span>
             </div>
 
             {/* Action Buttons based on Dirty vs Rendered State */}
             {isDirty ? (
-              <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={handleRenderInStudio}
                   disabled={isRendering || selectedLines.length === 0}
-                  className={`w-full py-3 bg-[#D97757] hover:bg-[#C66545] text-white text-xs font-sans font-medium tracking-wide rounded-xl shadow-xs transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                  className={`flex-1 py-2 px-3 bg-[#D97757] hover:bg-[#C66545] text-white text-xs font-sans font-semibold rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                     isRendering ? 'opacity-70 cursor-wait' : ''
                   }`}
                 >
                   {isRendering ? (
-                    <div className="flex items-center gap-2">
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Rendering in studio ({renderProgress}%)...</span>
-                    </div>
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Rendering ({renderProgress}%)...</span>
+                    </>
                   ) : (
                     <>
-                      <div className="flex items-center gap-1.5 font-semibold text-xs">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>Render in Studio ({directorModeTab === 'auto' ? (inferenceMode === 'heuristic' ? '⚡ Smart Auto Rules' : '✨ AI Cloud Directed') : ARCHETYPE_METADATA[archetype]?.name})</span>
-                      </div>
-                      <span className="text-[10px] opacity-80 font-normal">
-                        Compute 30 FPS kinetic sequence to review before adding to timeline
-                      </span>
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Render Preview</span>
                     </>
                   )}
                 </button>
@@ -3148,15 +3051,15 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                   type="button"
                   onClick={() => handleInjectToTimeline(true)}
                   disabled={isRendering || selectedLines.length === 0}
-                  className={`w-full py-2 text-[11px] font-sans font-medium rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  className={`py-2 px-3 text-xs font-sans font-medium rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1 shrink-0 ${
                     themeMode === 'dark'
-                      ? 'border-white/10 hover:bg-white/5 text-white/70'
+                      ? 'border-white/10 hover:bg-white/5 text-white/80'
                       : 'border-[#E8E5DE] hover:bg-[#FAF9F5] text-[#5E5D59]'
                   }`}
-                  title="Render and immediately exit to NLE Timeline"
+                  title="Render sequence and immediately jump to timeline editor"
                 >
-                  <ArrowRight className="w-3.5 h-3.5" />
-                  <span>Render & Jump Directly to Timeline</span>
+                  <span>Timeline</span>
+                  <ArrowRight className="w-3 h-3" />
                 </button>
               </div>
             ) : (
@@ -3165,18 +3068,18 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                   type="button"
                   onClick={() => handleInjectToTimeline(true)}
                   disabled={isRendering}
-                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-sans font-medium tracking-wide rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-sans font-semibold tracking-wide rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
                 >
-                  <ArrowRight className="w-4 h-4" />
-                  <span className="font-semibold">Add to Timeline & Go to Editor</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                  <span>Add to Timeline & Go to Editor</span>
                 </button>
 
-                <div className="flex gap-2">
+                <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => handleInjectToTimeline(false)}
                     disabled={isRendering}
-                    className={`flex-1 py-2 text-xs font-sans font-medium rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    className={`flex-1 py-1.5 text-[11px] font-sans font-medium rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1 ${
                       injectedToast
                         ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/40'
                         : themeMode === 'dark'
@@ -3184,22 +3087,22 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                         : 'border-[#E8E5DE] hover:bg-[#FAF9F5] text-[#141413]'
                     }`}
                   >
-                    {injectedToast ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Plus className="w-3.5 h-3.5 text-[#D97757]" />}
-                    <span>{injectedToast ? 'Added to Timeline!' : 'Add & Stay in Studio'}</span>
+                    {injectedToast ? <Check className="w-3 h-3 text-emerald-500" /> : <Plus className="w-3 h-3 text-[#D97757]" />}
+                    <span>{injectedToast ? 'Added to Timeline!' : 'Add & Stay'}</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleRenderInStudio}
                     disabled={isRendering}
-                    className={`px-3 py-2 text-xs font-sans font-medium rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                    className={`px-3 py-1.5 text-[11px] font-sans font-medium rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1 shrink-0 ${
                       themeMode === 'dark'
                         ? 'border-white/10 hover:bg-white/5 text-white/70'
                         : 'border-[#E8E5DE] hover:bg-[#FAF9F5] text-[#5E5D59]'
                     }`}
                     title="Force re-render sequence"
                   >
-                    <RefreshCw className="w-3.5 h-3.5" />
+                    <RefreshCw className="w-3 h-3" />
                     <span>Re-render</span>
                   </button>
                 </div>
