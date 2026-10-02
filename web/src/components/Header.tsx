@@ -3,6 +3,7 @@ import { Settings, Cpu, Sun, Moon } from 'lucide-react';
 import { DecryptedText } from './reactbits/DecryptedText';
 import { ClickSpark } from './reactbits/ClickSpark';
 import SpecularButton from './reactbits/SpecularButton';
+import { ThemeToggle } from './reactbits/ThemeToggle';
 import { detectGpu, GpuTelemetry } from '../engine/gpuDetector';
 
 interface HeaderProps {
@@ -120,28 +121,12 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         )}
 
-        {/* Global Theme Toggle Button */}
+        {/* Skiper UI & React Bits Theme Toggle */}
         {onThemeToggle && (
-          <ClickSpark
-            sparkColor={isDark ? "#00F0FF" : "#E85D2A"}
-            sparkCount={8}
-            sparkSize={6}
-            sparkRadius={18}
-            duration={300}
-          >
-            <button
-              onClick={onThemeToggle}
-              className={`p-2 border transition-all duration-150 cursor-pointer flex items-center justify-center ${
-                isDark 
-                  ? 'bg-[#181328] border-[#2D2344] text-[#E2FF00] hover:border-[#00F0FF] hover:bg-[#221A38]' 
-                  : 'bg-white border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white'
-              }`}
-              title={isDark ? "Switch to Blueprint Light Mode" : "Switch to Arcade Neo-Pop Dark Mode"}
-              aria-label="Toggle theme"
-            >
-              {isDark ? <Sun className="w-4 h-4 text-[#E2FF00]" /> : <Moon className="w-4 h-4 text-[#1A1A1A]" />}
-            </button>
-          </ClickSpark>
+          <ThemeToggle
+            themeMode={themeMode}
+            onToggle={onThemeToggle}
+          />
         )}
 
         <button 
