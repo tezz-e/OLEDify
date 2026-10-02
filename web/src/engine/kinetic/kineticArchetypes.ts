@@ -28,6 +28,9 @@ export function getScratchCanvas(): { canvas: OffscreenCanvas | HTMLCanvasElemen
         fillText: () => {},
         strokeText: () => {},
         beginPath: () => {},
+        closePath: () => {},
+        arcTo: () => {},
+        roundRect: () => {},
         moveTo: () => {},
         lineTo: () => {},
         stroke: () => {},
@@ -784,13 +787,25 @@ function roundRect(
   h: number,
   r: number
 ) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
+  if (typeof (ctx as any).roundRect === 'function') {
+    (ctx as any).roundRect(x, y, w, h, r);
+    return;
+  }
+  if (typeof (ctx as any).arcTo === 'function') {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+    return;
+  }
+  if (typeof ctx.rect === 'function') {
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.closePath();
+  }
 }
 
 /**

@@ -227,8 +227,39 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const [ollamaProgress, setOllamaProgress] = useState<{ percent: number; message: string } | null>(null);
   const [showOllamaInspector, setShowOllamaInspector] = useState<boolean>(false);
   const [ollamaInspectionLogs, setOllamaInspectionLogs] = useState<OllamaInspectionLog[]>([]);
-  const [analysisScope, setAnalysisScope] = useState<'selected' | 'all'>('selected');
+  const [analysisScope, setAnalysisScope] = useState<'unprocessed' | 'selected' | 'all'>('selected');
   const [lastAnalysisNotice, setLastAnalysisNotice] = useState<{ message: string; count: number; timestamp: number } | null>(null);
+
+  // Selected lines calculation (supports non-contiguous lines via Ctrl+click)
+  const selectedLines = useMemo(() => {
+    return parsedLyrics.lines.filter((_, idx) => selectedLineIndices.includes(idx));
+  }, [parsedLyrics, selectedLineIndices]);
+
+  // Lines in current selection that do not yet have AI-directed overrides
+  const selectedUnprocessedLines = useMemo(() => {
+    return selectedLines.filter(line => {
+      if (!line.words || line.words.length === 0) return false;
+      const isDirected = line.words.some(w => {
+        const specificKey = `${w.word}_${w.startMs}`;
+        const cleanKey = cleanLyricToken(w.word);
+        const lowerRaw = w.word.toLowerCase();
+        return !!(
+          aiWordOverrides[specificKey] || (cleanKey && aiWordOverrides[cleanKey]) || aiWordOverrides[lowerRaw] ||
+          aiMotifOverrides[specificKey] || (cleanKey && aiMotifOverrides[cleanKey]) || aiMotifOverrides[lowerRaw]
+        );
+      });
+      return !isDirected;
+    });
+  }, [selectedLines, aiWordOverrides, aiMotifOverrides]);
+
+  const hasPartialUnprocessed = selectedUnprocessedLines.length > 0 && selectedUnprocessedLines.length < selectedLines.length;
+
+  // Auto-adapt scope to 'unprocessed' when user selects newly added/unprocessed lines alongside existing ones
+  useEffect(() => {
+    if (hasPartialUnprocessed) {
+      setAnalysisScope('unprocessed');
+    }
+  }, [hasPartialUnprocessed]);
 
   // Check Ollama status when user toggles to Ollama mode
   useEffect(() => {
@@ -246,14 +277,17 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     if (!parsedLyrics || parsedLyrics.lines.length === 0) return;
     setIsAnalyzingOllama(true);
 
-    const start = Math.min(selectedStartIndex, selectedEndIndex);
-    const end = Math.max(selectedStartIndex, selectedEndIndex);
-    const targetLines = analysisScope === 'selected'
-      ? parsedLyrics.lines.slice(start, end + 1)
+    const isUnprocessedMode = analysisScope === 'unprocessed' || (hasPartialUnprocessed && analysisScope !== 'selected' && analysisScope !== 'all');
+    const targetLines = (isUnprocessedMode && selectedUnprocessedLines.length > 0)
+      ? selectedUnprocessedLines
+      : analysisScope === 'selected'
+      ? selectedLines
       : parsedLyrics.lines;
 
-    const targetLabel = analysisScope === 'selected'
-      ? `Stanza (Lines ${start + 1}–${end + 1})`
+    const targetLabel = (isUnprocessedMode && selectedUnprocessedLines.length > 0)
+      ? `${targetLines.length} New Lines`
+      : analysisScope === 'selected'
+      ? `${targetLines.length} Selected Lines`
       : `Full Song (${parsedLyrics.lines.length} lines)`;
 
     const providerLabel = llmProvider === 'groq' ? 'Groq 120B Cloud' : selectedOllamaModel;
@@ -750,11 +784,6 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     if (high >= 0 && Math.abs(beats[high] - playheadMs) <= 85) return true;
     return false;
   }, [isPlaying, audioAnalysis, playheadMs]);
-
-  // Selected lines calculation (supports non-contiguous lines via Ctrl+click)
-  const selectedLines = useMemo(() => {
-    return parsedLyrics.lines.filter((_, idx) => selectedLineIndices.includes(idx));
-  }, [parsedLyrics, selectedLineIndices]);
 
   const rangeStartMs = selectedLines.length > 0 ? selectedLines[0].startMs : 0;
   const rangeEndMs = selectedLines.length > 0 ? selectedLines[selectedLines.length - 1].endMs : 5000;
@@ -2809,17 +2838,31 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                   <div className={`flex p-0.5 rounded-lg border text-[10px] font-sans font-medium ${
                     themeMode === 'dark' ? 'bg-[#1F1F24] border-white/10' : 'bg-white border-[#E8E5DE]'
                   }`}>
+                    {hasPartialUnprocessed && (
+                      <button
+                        type="button"
+                        onClick={() => setAnalysisScope('unprocessed')}
+                        className={`flex-1 py-1 px-1 rounded-md transition-all cursor-pointer text-center truncate ${
+                          analysisScope === 'unprocessed'
+                            ? 'bg-[#D97757] text-white shadow-xs font-semibold'
+                            : 'text-[#87867F] hover:text-[#141413] dark:hover:text-white'
+                        }`}
+                        title={`Direct only the ${selectedUnprocessedLines.length} newly added/unprocessed lines`}
+                      >
+                        New ({selectedUnprocessedLines.length})
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => setAnalysisScope('selected')}
                       className={`flex-1 py-1 px-1 rounded-md transition-all cursor-pointer text-center truncate ${
-                        analysisScope === 'selected'
+                        analysisScope === 'selected' || (!hasPartialUnprocessed && analysisScope === 'unprocessed')
                           ? 'bg-[#D97757] text-white shadow-xs font-semibold'
                           : 'text-[#87867F] hover:text-[#141413] dark:hover:text-white'
                       }`}
-                      title="Analyze selected lines"
+                      title="Analyze all selected lines"
                     >
-                      Selected ({selectedLines.length})
+                      {hasPartialUnprocessed ? `Sel (${selectedLines.length})` : `Selected (${selectedLines.length})`}
                     </button>
                     <button
                       type="button"
@@ -2916,7 +2959,13 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     <>
                       <Sparkles className="w-3.5 h-3.5 shrink-0" />
                       <span className="truncate">
-                        Direct {analysisScope === 'selected' ? `${selectedLines.length} Selected Lines` : `Full Song (${parsedLyrics.lines.length} Lines)`}
+                        Direct {
+                          (analysisScope === 'unprocessed' && selectedUnprocessedLines.length > 0)
+                            ? `${selectedUnprocessedLines.length} New Lines`
+                            : analysisScope === 'selected' || (analysisScope === 'unprocessed' && selectedUnprocessedLines.length === 0)
+                            ? `${selectedLines.length} Selected Lines`
+                            : `Full Song (${parsedLyrics.lines.length} Lines)`
+                        }
                       </span>
                     </>
                   )}

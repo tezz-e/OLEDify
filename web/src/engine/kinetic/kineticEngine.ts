@@ -185,8 +185,11 @@ export async function renderKineticSequence(
       strokeRect: () => {},
       rect: () => {},
       clip: () => {},
+      closePath: () => {},
       arc: () => {},
       ellipse: () => {},
+      arcTo: () => {},
+      roundRect: () => {},
       fillText: () => {},
       strokeText: () => {},
       beginPath: () => {},
@@ -310,13 +313,34 @@ export async function renderKineticSequence(
       const specificKey = `${activeWord.word}_${activeWord.startMs}`;
       const cleanWord = cleanLyricToken(activeWord.word);
       const lowerRaw = activeWord.word.trim().toLowerCase();
-      const wordMotif = options.wordMotifOverrides?.[specificKey] 
+      let wordMotif = options.wordMotifOverrides?.[specificKey] 
         || (cleanWord ? options.wordMotifOverrides?.[cleanWord] : undefined) 
         || options.wordMotifOverrides?.[lowerRaw] 
         || options.wordMotifOverrides?.[activeWord.word] 
         || 'none';
 
       const effectiveMotifMode = options.motifMode || 'dynamic';
+
+      // Auto-synthesize complementary motif for hero/accent words when motif is unassigned
+      if (effectiveMotifMode !== 'off' && wordMotif === 'none') {
+        const isImportantWord = wordDuration >= 350 || (audioFrame?.isBeat && wordDuration >= 200);
+        if (isImportantWord && activeWordIndex % 2 === 1) {
+          switch (effectiveArchetype) {
+            case 'manga_impact': wordMotif = 'manga_speedlines'; break;
+            case 'blade_slash': wordMotif = 'razor_blade'; break;
+            case 'cyber_glitch': wordMotif = 'lightning_arc'; break;
+            case 'target_focus': wordMotif = 'tactical_scope'; break;
+            case 'gentle_float': wordMotif = 'floating_notes'; break;
+            case 'waveform_karaoke': wordMotif = 'water_ripples'; break;
+            case '3d_block_stack': wordMotif = 'chrome_star'; break;
+            case 'rolling_odometer': wordMotif = 'comic_burst'; break;
+            case 'snake_slither': wordMotif = 'flame_tongue'; break;
+            case 'dither_dissolve': wordMotif = 'starlight_glimmer'; break;
+            case 'inverted_badge': wordMotif = 'minimal_frame'; break;
+            default: break;
+          }
+        }
+      }
 
       // Render background motif layer before text
       if (effectiveMotifMode !== 'off' && wordMotif !== 'none') {

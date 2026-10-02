@@ -230,7 +230,8 @@ export function classifyWordArchetype(
       'dither_dissolve',
       'inverted_badge'
     ];
-    return chillPalette[wordIndex % chillPalette.length];
+    const charHash = clean.split('').reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 1), 0);
+    return chillPalette[(wordIndex * 2 + charHash) % chillPalette.length];
   }
 
   // Standard/Hype heuristics
@@ -249,18 +250,23 @@ export function classifyWordArchetype(
     return (wordIndex % 2 === 0) ? 'cyber_glitch' : 'smooth_fluid';
   }
 
-  // 5. Dynamic Variety Rotation for neutral words (never monotonous)
+  // 5. Dynamic Variety Rotation across ALL vibrant archetypes (never monotonous)
   const neutralPalette: MotionArchetype[] = [
     'smooth_fluid',
+    'blade_slash',
     'rolling_odometer',
+    'cyber_glitch',
     'inverted_badge',
+    'manga_impact',
+    'target_focus',
     '3d_block_stack',
     'wiggly_boil',
-    'cyber_glitch',
-    'manga_impact'
+    'snake_slither',
+    'echo_stack'
   ];
 
-  return neutralPalette[wordIndex % neutralPalette.length];
+  const charHash = clean.split('').reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 1), 0);
+  return neutralPalette[(wordIndex * 2 + charHash) % neutralPalette.length];
 }
 
 /**
@@ -289,7 +295,24 @@ export function getWordEffectiveArchetype(
   if (globalArchetype === 'auto_semantic') {
     const durationMs = Math.max(80, word.endMs - word.startMs);
     const precedingSilence = precedingWord ? Math.max(0, word.startMs - precedingWord.endMs) : 0;
-    return classifyWordArchetype(word.word, durationMs, wordIndex, precedingSilence, moodProfile);
+    let arch = classifyWordArchetype(word.word, durationMs, wordIndex, precedingSilence, moodProfile);
+
+    // Anti-repetition: If archetype is identical to preceding word, advance to prevent monotonous repetition
+    if (precedingWord) {
+      const prevSpecific = `${precedingWord.word}_${precedingWord.startMs}`;
+      const prevArch = wordOverrides?.[prevSpecific] 
+        || (cleanLyricToken(precedingWord.word) ? wordOverrides?.[cleanLyricToken(precedingWord.word)] : undefined)
+        || classifyWordArchetype(precedingWord.word, Math.max(80, precedingWord.endMs - precedingWord.startMs), Math.max(0, wordIndex - 1), 0, moodProfile);
+      if (arch === prevArch) {
+        const isChill = moodProfile?.vibe === 'ballad_acoustic' || moodProfile?.vibe === 'chill_pop';
+        const altPalette: MotionArchetype[] = isChill
+          ? ['gentle_float', 'waveform_karaoke', 'typewriter_ribbon', 'dither_dissolve', 'smooth_fluid']
+          : ['blade_slash', 'manga_impact', 'cyber_glitch', '3d_block_stack', 'rolling_odometer', 'target_focus', 'smooth_fluid'];
+        const curIdx = altPalette.indexOf(arch);
+        arch = altPalette[(curIdx + 1) % altPalette.length];
+      }
+    }
+    return arch;
   }
 
   return globalArchetype;

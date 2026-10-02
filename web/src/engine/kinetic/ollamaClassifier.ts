@@ -420,12 +420,15 @@ DIRECTOR MISSION:
    - "gothic_metal": heavy blackletter, intense, dark energy.
 4. Select 2 to 4 key expressive words per line (punchlines, verbs, core metaphors, climax words). Direct the kinetic choreography so every line feels dynamic and alive.
    - NEVER classify generic connective filler words, prepositions, conjunctions, or weak pronouns (e.g. "and", "the", "with", "of", "to", "in", "it", "my", "you", "me", "is", "a", "an", or their equivalents in any language).
-   - VARY YOUR ARCHETYPES INTENTIONALLY: Do not pick the same archetype for consecutive words.
+   - ANTI-MONOTONY & MAXIMUM VISUAL VARIETY MANDATE:
+     * Over long sequences, repeating the same archetype or motif feels robotic. Distribute choices broadly across the entire palette!
+     * NEVER assign the same archetype twice to consecutive words or adjacent lines.
+     * Balance high-impact punches ("manga_impact", "blade_slash", "cyber_glitch", "3d_block_stack") with structural and mechanical maneuvers ("rolling_odometer", "inverted_badge", "target_focus", "snake_slither", "wiggly_boil", "echo_stack", "gentle_float", "typewriter_ribbon").
    - Tailor the motion archetype and background motif to match the word's genuine intensity:
      * Hard punchlines, threats, flexes, fast flow: use "manga_impact", "blade_slash", "cyber_glitch", "3d_block_stack", "echo_stack" with motifs like "razor_blade", "tactical_scope", "flame_tongue", "manga_speedlines", "lightning_arc".
      * Gentle vocal runs, love confessions, dreamy drift: use "gentle_float", "waveform_karaoke", "typewriter_ribbon", "dither_dissolve", "smooth_fluid" with motifs like "floating_notes", "starlight_glimmer", "heartbeat_pulse", "water_ripples", "minimal_frame".
      * Rhythmic counts, bets, slot tumbling, bouncy lines: use "rolling_odometer", "inverted_badge", "target_focus", "wiggly_boil" with motifs like "chrome_star", "comic_burst", "floating_notes".
-5. ALWAYS assign an evocative background visual motif ("motif") to key punchlines and emotional climaxes matching the imagery. If no motif fits, use "none".
+5. ALWAYS assign an evocative background visual motif ("motif") to key punchlines and emotional climaxes matching the imagery. If no motif fits, use "none". Rotate motifs dynamically across lines to maintain visual freshness.
 6. For each selected word, provide its meaning and rationale for the motion choice.
 
 Choose from these 15 visual archetypes:
