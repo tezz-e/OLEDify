@@ -500,17 +500,22 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
     if (track.syncedLyrics) {
       const parsed = parseLrc(track.syncedLyrics);
+      if (!parsed.title && track.trackName) parsed.title = track.trackName;
+      if (!parsed.artist && track.artistName) parsed.artist = track.artistName;
       setParsedLyrics(parsed);
       setSelectedStartIndex(0);
       setSelectedEndIndex(Math.min(3, parsed.lines.length - 1));
       setPlayheadMs(parsed.lines[0]?.startMs || 0);
     } else if (track.plainLyrics) {
       const parsed = parsePlainTextLyrics(track.plainLyrics, track.duration * 1000);
+      if (!parsed.title && track.trackName) parsed.title = track.trackName;
+      if (!parsed.artist && track.artistName) parsed.artist = track.artistName;
       setParsedLyrics(parsed);
       setSelectedStartIndex(0);
       setSelectedEndIndex(Math.min(3, parsed.lines.length - 1));
       setPlayheadMs(0);
     }
+    setHasUserSelectedStylePack(false);
   };
 
   // Parse pasted LRC / plain lyrics

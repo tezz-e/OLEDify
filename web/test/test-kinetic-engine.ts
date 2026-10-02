@@ -807,6 +807,58 @@ assert.equal(balladProfile.cameraShakeEnabled, false, 'Camera shake must be disa
 assert.equal(balladProfile.maxEntryDisplacementPx, 3, 'Ballad max displacement must be 3px');
 console.log(`✅ Slow Ballad profile verified: ${balladProfile.label}, Default: ${balladProfile.defaultArchetype}, Hold Factor: ${balladProfile.dwellDecayFactor}, Camera Shake: ${balladProfile.cameraShakeEnabled}, Max Offset: ${balladProfile.maxEntryDisplacementPx}px`);
 
+// 3c. Verify "52 Bars" by Karan Aujla (hard Punjabi drill/trap track, lyrics-only, no audio) classifies as hype_aggressive
+const punjabiDrillLyrics = [
+  { text: "Tu vi janda ni assi kaun aan", startMs: 0, endMs: 1800, words: [
+    { word: "Tu", startMs: 0, endMs: 200 },
+    { word: "vi", startMs: 200, endMs: 400 },
+    { word: "janda", startMs: 400, endMs: 700 },
+    { word: "ni", startMs: 700, endMs: 900 },
+    { word: "assi", startMs: 900, endMs: 1200 },
+    { word: "kaun", startMs: 1200, endMs: 1500 },
+    { word: "aan", startMs: 1500, endMs: 1800 }
+  ]},
+  { text: "School'an vich padh ke na sikhe jo asool aan", startMs: 1900, endMs: 3800, words: [
+    { word: "School'an", startMs: 1900, endMs: 2200 },
+    { word: "vich", startMs: 2200, endMs: 2400 },
+    { word: "padh", startMs: 2400, endMs: 2600 },
+    { word: "ke", startMs: 2600, endMs: 2800 },
+    { word: "na", startMs: 2800, endMs: 3000 },
+    { word: "sikhe", startMs: 3000, endMs: 3300 },
+    { word: "jo", startMs: 3300, endMs: 3500 },
+    { word: "asool", startMs: 3500, endMs: 3700 },
+    { word: "aan", startMs: 3700, endMs: 3800 }
+  ]},
+  { text: "Velliyaan de tole toduga", startMs: 3900, endMs: 5200, words: [
+    { word: "Velliyaan", startMs: 3900, endMs: 4300 },
+    { word: "de", startMs: 4300, endMs: 4500 },
+    { word: "tole", startMs: 4500, endMs: 4800 },
+    { word: "toduga", startMs: 4800, endMs: 5200 }
+  ]}
+];
+
+const aujlaBarsProfile = computeSongMoodProfile(
+  null, // No audio uploaded! Lyrics & metadata only
+  punjabiDrillLyrics as any,
+  "52 Bars",
+  "Karan Aujla"
+);
+
+assert.equal(aujlaBarsProfile.vibe, 'hype_aggressive', '52 Bars by Karan Aujla must classify as hype_aggressive even without audio');
+assert.equal(aujlaBarsProfile.recommendedStylePack, 'trap_drill', '52 Bars must recommend trap_drill style pack');
+assert.equal(aujlaBarsProfile.defaultArchetype, 'manga_impact', 'Hype track must default to manga_impact');
+assert.ok(aujlaBarsProfile.cameraShakeEnabled, 'Camera shake must be enabled for hard tracks');
+assert.ok(aujlaBarsProfile.maxEntryDisplacementPx >= 15, 'Hype tracks must allow high dynamic entry displacement');
+console.log(`✅ "52 Bars" hard track profile verified: ${aujlaBarsProfile.label}, Pack: ${aujlaBarsProfile.recommendedStylePack}, Default: ${aujlaBarsProfile.defaultArchetype}, Camera Shake: ${aujlaBarsProfile.cameraShakeEnabled}`);
+
+// Verify Ollama prompt for 52 Bars receives HIGH-ENERGY / HYPE directive
+const hypePrompt = buildOllamaLyricsPrompt(punjabiDrillLyrics as any, "52 Bars", "Karan Aujla", aujlaBarsProfile);
+assert.ok(hypePrompt.includes('HIGH-ENERGY / HYPE'), 'Prompt for 52 Bars must indicate HIGH-ENERGY / HYPE');
+assert.ok(hypePrompt.includes('aggressive kinetic cuts'), 'Prompt must instruct aggressive typography');
+assert.ok(hypePrompt.includes('manga_impact'), 'Prompt must recommend manga_impact');
+assert.ok(hypePrompt.includes('razor_blade'), 'Prompt must recommend razor_blade motif');
+console.log('✅ Ollama/Groq prompt generation embeds dynamic Hype/Drill Director directives for hard tracks.');
+
 // 4. Test Semantic Classifier under Chill Pop Profile (No violent jumps or 3D block traps)
 // In a chill song, a word held for 700ms ("shape") should NOT be forced into '3d_block_stack'
 const popWord = { word: 'shape', startMs: 1250, endMs: 1950 }; // 700ms duration

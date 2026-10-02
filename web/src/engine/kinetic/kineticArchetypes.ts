@@ -20,18 +20,32 @@ export function getScratchCanvas(): { canvas: OffscreenCanvas | HTMLCanvasElemen
     } else {
       const mockCtx: any = {
         fillRect: () => {},
+        strokeRect: () => {},
+        rect: () => {},
+        clip: () => {},
+        arc: () => {},
+        ellipse: () => {},
         fillText: () => {},
         strokeText: () => {},
+        beginPath: () => {},
+        moveTo: () => {},
+        lineTo: () => {},
+        stroke: () => {},
+        fill: () => {},
         clearRect: () => {},
         getImageData: () => ({ data: new Uint8ClampedArray(128 * 64 * 4) }),
         putImageData: () => {},
         measureText: (text: string) => ({ width: text.length * 8 }),
         save: () => {},
         restore: () => {},
+        translate: () => {},
+        rotate: () => {},
+        scale: () => {},
         font: '',
         fillStyle: '',
         strokeStyle: '',
         textAlign: 'center',
+        textBaseline: 'middle',
         lineWidth: 1
       };
       return { canvas: {} as any, ctx: mockCtx };
