@@ -12,6 +12,7 @@ interface ExportModalProps {
   frameCount: number;
   targetFps: number;
   xbmpFrames: Uint8Array[];
+  themeMode?: 'light' | 'dark';
 }
 
 export const ExportModal: React.FC<ExportModalProps> = ({
@@ -21,7 +22,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   frameCount,
   targetFps,
   xbmpFrames,
+  themeMode = 'light',
 }) => {
+  const isDark = themeMode === 'dark';
   const [activeTab, setActiveTab] = useState<'flash' | 'save' | 'download' | 'copy'>('flash');
   const [copied, setCopied] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -84,13 +87,24 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-fade-in">
-      <div className="max-w-2xl w-full flex flex-col animate-slide-up bg-white border-2 border-[#1A1A1A] shadow-[8px_8px_0_0_#1A1A1A]">
+      <div className={`max-w-2xl w-full flex flex-col animate-slide-up border-2 transition-all ${
+        isDark 
+          ? 'bg-[#161126] border-[#00F0FF] shadow-[8px_8px_0_0_#FF2A85]' 
+          : 'bg-white border-[#1A1A1A] shadow-[8px_8px_0_0_#1A1A1A]'
+      }`}>
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b-2 border-[#1A1A1A]">
-          <h3 className="text-xs font-bold tracking-widest text-[#1A1A1A] uppercase font-mono">
+        <div className={`flex items-center justify-between p-4 border-b-2 ${isDark ? 'border-[#2D2344]' : 'border-[#1A1A1A]'}`}>
+          <h3 className={`text-xs font-bold tracking-widest uppercase font-mono ${isDark ? 'text-[#00F0FF]' : 'text-[#1A1A1A]'}`}>
             <DecryptedText text="EXPORT_CPP_ARRAY" speed={30} animateOn="view" />
           </h3>
-          <button onClick={onClose} className="text-[#6B6B6B] hover:text-[#1A1A1A] transition-colors p-1 border border-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white cursor-pointer">
+          <button 
+            onClick={onClose} 
+            className={`transition-colors p-1 border cursor-pointer ${
+              isDark 
+                ? 'text-[#A59CB8] border-[#2D2344] hover:bg-[#00F0FF] hover:text-[#100D1C] hover:border-[#00F0FF]' 
+                : 'text-[#6B6B6B] border-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white'
+            }`}
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -100,7 +114,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           {/* Actions Sidebar */}
           <div className="w-full md:w-48 space-y-2 shrink-0">
             <ClickSpark
-              sparkColor="#FFFFFF"
+              sparkColor={isDark ? "#00F0FF" : "#FFFFFF"}
               sparkCount={16}
               sparkSize={8}
               sparkRadius={26}
@@ -112,8 +126,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 disabled={flashStatus === 'flashing'}
                 className={`w-full flex items-center justify-between px-3 py-2 text-[10px] font-bold tracking-widest uppercase font-mono transition-colors border cursor-pointer ${
                   activeTab === 'flash' 
-                    ? 'bg-[#E85D2A] border-[#1A1A1A] text-white' 
-                    : 'bg-white border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white'
+                    ? (isDark ? 'bg-[#00F0FF] border-[#00F0FF] text-[#100D1C]' : 'bg-[#E85D2A] border-[#1A1A1A] text-white')
+                    : (isDark ? 'bg-[#1A142C] border-[#2D2344] text-[#F1EEF8] hover:bg-[#00F0FF] hover:text-[#100D1C]' : 'bg-white border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white')
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -123,10 +137,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               </button>
             </ClickSpark>
             
-            <div className="my-2 border-t border-[#1A1A1A]"></div>
+            <div className={`my-2 border-t ${isDark ? 'border-[#2D2344]' : 'border-[#1A1A1A]'}`}></div>
 
             <ClickSpark
-              sparkColor="#E85D2A"
+              sparkColor={isDark ? "#FF2A85" : "#E85D2A"}
               sparkCount={8}
               sparkSize={6}
               sparkRadius={18}
@@ -137,8 +151,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 onClick={() => { setActiveTab('save'); handleSaveToProject(); }}
                 className={`w-full flex items-center justify-between px-3 py-2 text-[10px] font-bold tracking-widest uppercase font-mono transition-colors border cursor-pointer ${
                   activeTab === 'save' 
-                    ? 'bg-[#1A1A1A] border-[#1A1A1A] text-white' 
-                    : 'bg-[#1A1A1A] text-white hover:bg-white hover:text-[#1A1A1A]'
+                    ? (isDark ? 'bg-[#FF2A85] border-[#FF2A85] text-white' : 'bg-[#1A1A1A] border-[#1A1A1A] text-white')
+                    : (isDark ? 'bg-[#1A142C] border-[#2D2344] text-[#F1EEF8] hover:bg-[#FF2A85] hover:text-white' : 'bg-[#1A1A1A] text-white hover:bg-white hover:text-[#1A1A1A]')
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -149,7 +163,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             </ClickSpark>
             
             <ClickSpark
-              sparkColor="#E85D2A"
+              sparkColor={isDark ? "#00F0FF" : "#E85D2A"}
               sparkCount={8}
               sparkSize={6}
               sparkRadius={18}
@@ -160,8 +174,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 onClick={() => { setActiveTab('download'); handleDownload(); }}
                 className={`w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold tracking-widest uppercase font-mono transition-colors border cursor-pointer ${
                   activeTab === 'download' 
-                    ? 'bg-[#1A1A1A] border-[#1A1A1A] text-white' 
-                    : 'bg-white border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white'
+                    ? (isDark ? 'bg-[#00F0FF] border-[#00F0FF] text-[#100D1C]' : 'bg-[#1A1A1A] border-[#1A1A1A] text-white')
+                    : (isDark ? 'bg-[#1A142C] border-[#2D2344] text-[#F1EEF8] hover:bg-[#00F0FF] hover:text-[#100D1C]' : 'bg-white border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white')
                 }`}
               >
                 <Download className="w-4 h-4" />
@@ -170,7 +184,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             </ClickSpark>
             
             <ClickSpark
-              sparkColor="#E85D2A"
+              sparkColor={isDark ? "#00F0FF" : "#E85D2A"}
               sparkCount={8}
               sparkSize={6}
               sparkRadius={18}
@@ -181,8 +195,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 onClick={() => { setActiveTab('copy'); handleCopy(); }}
                 className={`w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold tracking-widest uppercase font-mono transition-colors border cursor-pointer ${
                   activeTab === 'copy' 
-                    ? 'bg-[#1A1A1A] border-[#1A1A1A] text-white' 
-                    : 'bg-white border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white'
+                    ? (isDark ? 'bg-[#00F0FF] border-[#00F0FF] text-[#100D1C]' : 'bg-[#1A1A1A] border-[#1A1A1A] text-white')
+                    : (isDark ? 'bg-[#1A142C] border-[#2D2344] text-[#F1EEF8] hover:bg-[#00F0FF] hover:text-[#100D1C]' : 'bg-white border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white')
                 }`}
               >
                 {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -192,23 +206,29 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           </div>
 
           {/* Preview Panel */}
-          <div className="flex-1 border-2 border-[#1A1A1A] overflow-hidden flex flex-col">
-            <div className="px-3 py-2 bg-[#F5F0EB] border-b border-[#1A1A1A] flex justify-between items-center text-[10px] font-mono text-[#6B6B6B]">
+          <div className={`flex-1 border-2 overflow-hidden flex flex-col ${isDark ? 'border-[#2D2344]' : 'border-[#1A1A1A]'}`}>
+            <div className={`px-3 py-2 border-b flex justify-between items-center text-[10px] font-mono ${
+              isDark ? 'bg-[#140F24] border-[#2D2344] text-[#A59CB8]' : 'bg-[#F5F0EB] border-[#1A1A1A] text-[#6B6B6B]'
+            }`}>
               <span>PREVIEW: frames.h</span>
-              <span className="text-[#E85D2A] font-bold flex items-center gap-1">
+              <span className={`font-bold flex items-center gap-1 ${isDark ? 'text-[#00F0FF]' : 'text-[#E85D2A]'}`}>
                 <span>PROGMEM: ~</span>
                 <CountUp to={Math.round((validFrameCount * 1024) / 1024)} duration={0.8} />
                 <span>KB</span>
               </span>
             </div>
-            <pre className="p-3 text-[10px] leading-relaxed text-[#1A1A1A] font-mono overflow-auto h-[200px] bg-white">
+            <pre className={`p-3 text-[10px] leading-relaxed font-mono overflow-auto h-[200px] ${
+              isDark ? 'bg-[#0E0B1A] text-[#00F0FF]' : 'bg-white text-[#1A1A1A]'
+            }`}>
               {previewLines}
             </pre>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-3 border-t-2 border-[#1A1A1A] bg-[#F5F0EB] flex justify-between items-center text-[10px] font-mono text-[#6B6B6B]">
+        <div className={`px-4 py-3 border-t-2 flex justify-between items-center text-[10px] font-mono ${
+          isDark ? 'border-[#2D2344] bg-[#140F24] text-[#A59CB8]' : 'border-[#1A1A1A] bg-[#F5F0EB] text-[#6B6B6B]'
+        }`}>
           <span className="flex items-center gap-1">
             <CountUp to={validFrameCount} duration={0.8} />
             <span>FRAMES_EXPORTED</span>

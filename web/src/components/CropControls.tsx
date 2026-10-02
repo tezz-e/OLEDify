@@ -7,9 +7,11 @@ interface CropControlsProps {
   onChange: (settings: CropSettings) => void;
   disabled?: boolean;
   sourceFrame?: ImageData | null;
+  themeMode?: 'light' | 'dark';
 }
 
-export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, disabled, sourceFrame }) => {
+export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, disabled, sourceFrame, themeMode = 'light' }) => {
+  const isDark = themeMode === 'dark';
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dragStart, setDragStart] = useState<{
@@ -147,7 +149,7 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
                 width={settings.width} 
                 height={settings.height} 
                 fill="none" 
-                stroke="#E85D2A" 
+                stroke={isDark ? "#00F0FF" : "#E85D2A"} 
                 strokeWidth={Math.max(2, sourceFrame.width / 100)} 
                 strokeDasharray={`${Math.max(4, sourceFrame.width/50)}`}
               />
@@ -180,31 +182,39 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
                     cx={cx}
                     cy={cy}
                     r={Math.max(5, sourceFrame.width / 45)}
-                    fill="#F5F0EB"
-                    stroke="#E85D2A"
+                    fill={isDark ? "#100D1C" : "#F5F0EB"}
+                    stroke={isDark ? "#E2FF00" : "#E85D2A"}
                     strokeWidth={Math.max(2, sourceFrame.width / 150)}
                     pointerEvents="all"
                     className={handle === 'nw' || handle === 'se' ? 'cursor-nwse-resize' : handle === 'ne' || handle === 'sw' ? 'cursor-nesw-resize' : handle === 'n' || handle === 's' ? 'cursor-ns-resize' : 'cursor-ew-resize'}
                   />
                 );
               })}
-              <circle cx={settings.x + settings.width/2} cy={settings.y + settings.height/2} r={Math.max(2, sourceFrame.width/150)} fill="#E85D2A" pointerEvents="none" />
+              <circle cx={settings.x + settings.width/2} cy={settings.y + settings.height/2} r={Math.max(2, sourceFrame.width/150)} fill={isDark ? "#00F0FF" : "#E85D2A"} pointerEvents="none" />
             </svg>
           </div>
         </div>
       )}
 
       <div className="space-y-2">
-        <label className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">Crop Mode</label>
-        <div className="bg-[#F5F0EB] border border-[#1A1A1A] p-1 flex gap-1">
+        <label className={`text-[10px] font-bold tracking-widest uppercase font-mono ${
+          isDark ? 'text-[#00F0FF]' : 'text-[#6B6B6B]'
+        }`}>Crop Mode</label>
+        <div className={`border p-1 flex gap-1 ${
+          isDark ? 'bg-[#140F24] border-[#2D2344]' : 'bg-[#F5F0EB] border-[#1A1A1A]'
+        }`}>
           {modes.map((mode) => (
             <button
               key={mode}
               onClick={() => handleModeChange(mode)}
-              className={`flex-1 text-[10px] font-mono font-bold tracking-wide py-1.5 transition-colors duration-150 border border-[#1A1A1A] uppercase ${
+              className={`flex-1 text-[10px] font-mono font-bold tracking-wide py-1.5 transition-all duration-150 border uppercase ${
                 settings.mode === mode
-                  ? 'bg-[#1A1A1A] text-white'
-                  : 'bg-white text-[#6B6B6B] hover:bg-[#1A1A1A] hover:text-white'
+                  ? isDark
+                    ? 'bg-[#00F0FF] text-[#100D1C] border-[#00F0FF] shadow-[2px_2px_0_0_#FF2A85]'
+                    : 'bg-[#1A1A1A] text-white border-[#1A1A1A]'
+                  : isDark
+                    ? 'bg-[#181328] text-[#7E7694] border-[#2D2344] hover:border-[#00F0FF] hover:text-[#00F0FF]'
+                    : 'bg-white text-[#6B6B6B] border-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white'
               }`}
             >
               {mode}
@@ -214,41 +224,56 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
       </div>
 
       <div className="flex items-center justify-between pt-2">
-        <label className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">Bicubic Smoothing</label>
+        <label className={`text-[10px] font-bold tracking-widest uppercase font-mono ${
+          isDark ? 'text-[#7E7694]' : 'text-[#6B6B6B]'
+        }`}>Bicubic Smoothing</label>
         <input
           type="checkbox"
           checked={settings.smoothing}
           onChange={(e) => onChange({ ...settings, smoothing: e.target.checked })}
-          className="w-4 h-4 accent-[#E85D2A] cursor-pointer"
+          className="w-4 h-4 cursor-pointer"
+          style={{ accentColor: isDark ? '#00F0FF' : '#E85D2A' }}
         />
       </div>
 
       {settings.mode === 'manual' && (
       <div className="flex gap-2 pt-2">
         <div className="flex-1 space-y-1">
-          <label className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">Pan X</label>
+          <label className={`text-[10px] font-bold tracking-widest uppercase font-mono ${
+            isDark ? 'text-[#7E7694]' : 'text-[#6B6B6B]'
+          }`}>Pan X</label>
           <input
             type="number"
             value={settings.x}
             disabled={disabled || settings.mode !== 'manual'}
             onChange={(e) => onChange({ ...settings, x: parseInt(e.target.value) || 0 })}
-            className="w-full bg-white border border-[#1A1A1A] px-2 py-1 text-xs font-mono disabled:opacity-40 disabled:cursor-not-allowed"
+            className={`w-full px-2 py-1 text-xs font-mono disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
+              isDark 
+                ? 'bg-[#181328] border border-[#2D2344] text-[#F1EEF8] focus:border-[#00F0FF]' 
+                : 'bg-white border border-[#1A1A1A] text-[#1A1A1A]'
+            }`}
           />
         </div>
         <div className="flex-1 space-y-1">
-          <label className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">Pan Y</label>
+          <label className={`text-[10px] font-bold tracking-widest uppercase font-mono ${
+            isDark ? 'text-[#7E7694]' : 'text-[#6B6B6B]'
+          }`}>Pan Y</label>
           <input
             type="number"
             value={settings.y}
             disabled={disabled || settings.mode !== 'manual'}
             onChange={(e) => onChange({ ...settings, y: parseInt(e.target.value) || 0 })}
-            className="w-full bg-white border border-[#1A1A1A] px-2 py-1 text-xs font-mono disabled:opacity-40 disabled:cursor-not-allowed"
+            className={`w-full px-2 py-1 text-xs font-mono disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
+              isDark 
+                ? 'bg-[#181328] border border-[#2D2344] text-[#F1EEF8] focus:border-[#00F0FF]' 
+                : 'bg-white border border-[#1A1A1A] text-[#1A1A1A]'
+            }`}
           />
         </div>
       </div>
       )}
 
-      {settings.mode === 'manual' && <div className="text-[10px] font-mono text-[#6B6B6B]">
+      {settings.mode === 'manual' && <div className={`text-[10px] font-mono ${isDark ? 'text-[#7E7694]' : 'text-[#6B6B6B]'}`}>
         Source: {settings.sourceWidth}×{settings.sourceHeight} <br />
         Crop: {Math.round(settings.width)}×{Math.round(settings.height)}
       </div>}

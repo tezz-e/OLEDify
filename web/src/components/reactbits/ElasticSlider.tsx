@@ -14,6 +14,7 @@ interface ElasticSliderProps {
   rightIcon?: React.ReactNode;
   onChange?: (val: number) => void;
   formatValue?: (val: number) => string | number;
+  themeMode?: 'light' | 'dark';
 }
 
 const ElasticSlider: React.FC<ElasticSliderProps> = ({
@@ -26,7 +27,8 @@ const ElasticSlider: React.FC<ElasticSliderProps> = ({
   leftIcon = <>-</>,
   rightIcon = <>+</>,
   onChange,
-  formatValue
+  formatValue,
+  themeMode = 'light'
 }) => {
   return (
     <div className={`flex items-center justify-center ${className}`}>
@@ -40,6 +42,7 @@ const ElasticSlider: React.FC<ElasticSliderProps> = ({
         rightIcon={rightIcon}
         onChange={onChange}
         formatValue={formatValue}
+        themeMode={themeMode}
       />
     </div>
   );
@@ -55,6 +58,7 @@ interface SliderProps {
   rightIcon: React.ReactNode;
   onChange?: (val: number) => void;
   formatValue?: (val: number) => string | number;
+  themeMode?: 'light' | 'dark';
 }
 
 const Slider: React.FC<SliderProps> = ({
@@ -66,8 +70,10 @@ const Slider: React.FC<SliderProps> = ({
   leftIcon,
   rightIcon,
   onChange,
-  formatValue
+  formatValue,
+  themeMode = 'light'
 }) => {
+  const isDark = themeMode === 'dark';
   const [value, setValue] = useState<number>(defaultValue);
   const sliderRef = useRef<HTMLDivElement>(null);
   const [region, setRegion] = useState<'left' | 'middle' | 'right'>('middle');
@@ -150,7 +156,9 @@ const Slider: React.FC<SliderProps> = ({
           style={{
             x: useTransform(() => (region === 'left' ? -overflow.get() / scale.get() : 0))
           }}
-          className="text-[#1A1A1A] font-bold font-mono text-lg shrink-0 w-auto min-w-4 px-1 text-center cursor-pointer flex items-center justify-center"
+          className={`font-bold font-mono text-lg shrink-0 w-auto min-w-4 px-1 text-center cursor-pointer flex items-center justify-center transition-colors ${
+            isDark ? 'text-[#00F0FF]' : 'text-[#1A1A1A]'
+          }`}
         >
           {leftIcon}
         </motion.div>
@@ -187,8 +195,17 @@ const Slider: React.FC<SliderProps> = ({
             }}
             className="flex flex-grow"
           >
-            <div className="relative h-full flex-grow overflow-hidden bg-[#E8E4DF] border border-[#1A1A1A]">
-              <div className="absolute h-full bg-[#E85D2A] border-r border-[#1A1A1A]" style={{ width: `${getRangePercentage()}%` }} />
+            <div className={`relative h-full flex-grow overflow-hidden ${
+              isDark ? 'bg-[#181329] border border-[#2D2344]' : 'bg-[#E8E4DF] border border-[#1A1A1A]'
+            }`}>
+              <div 
+                className={`absolute h-full transition-colors ${
+                  isDark 
+                    ? 'bg-[#00F0FF] border-r border-[#FF2A85] shadow-[0_0_6px_rgba(0,240,255,0.4)]' 
+                    : 'bg-[#E85D2A] border-r border-[#1A1A1A]'
+                }`} 
+                style={{ width: `${getRangePercentage()}%` }} 
+              />
             </div>
           </motion.div>
         </div>
@@ -201,7 +218,9 @@ const Slider: React.FC<SliderProps> = ({
           style={{
             x: useTransform(() => (region === 'right' ? overflow.get() / scale.get() : 0))
           }}
-          className="text-[#1A1A1A] font-bold font-mono text-xs shrink-0 w-3 text-center cursor-pointer flex items-center justify-center"
+          className={`font-bold font-mono text-xs shrink-0 w-3 text-center cursor-pointer flex items-center justify-center transition-colors ${
+            isDark ? 'text-[#00F0FF]' : 'text-[#1A1A1A]'
+          }`}
         >
           {rightIcon}
         </motion.div>

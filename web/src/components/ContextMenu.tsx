@@ -14,6 +14,7 @@ interface ContextMenuProps {
   onSelectClips?: (ids: string[]) => void;
   onZoomChange?: (zoom: number) => void;
   onClose: () => void;
+  themeMode?: 'light' | 'dark';
 }
 
 export const ContextMenu: React.FC<ContextMenuProps> = ({ 
@@ -26,8 +27,10 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   onSplitClip,
   onSelectClips,
   onZoomChange,
-  onClose 
+  onClose,
+  themeMode = 'light'
 }) => {
+  const isDark = themeMode === 'dark';
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -163,15 +166,27 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
           e.preventDefault();
           e.stopPropagation();
         }}
-        className="fixed z-[99999] w-[220px] max-h-[calc(100vh-16px)] overflow-y-auto bg-[#FAF7F2] text-[#1A1A1A] border-2 border-[#1A1A1A] shadow-[4px_4px_0_0_#1A1A1A] p-1.5 select-none font-mono text-xs pointer-events-auto rounded-none"
+        className={`fixed z-[99999] w-[220px] max-h-[calc(100vh-16px)] overflow-y-auto border-2 p-1.5 select-none font-mono text-xs pointer-events-auto rounded-none transition-colors ${
+          isDark 
+            ? 'bg-[#161126] text-[#F1EEF8] border-[#00F0FF] shadow-[4px_4px_0_0_#FF2A85]' 
+            : 'bg-[#FAF7F2] text-[#1A1A1A] border-[#1A1A1A] shadow-[4px_4px_0_0_#1A1A1A]'
+        }`}
       >
-        {/* Paper Blueprint Header Badge */}
-        <div className="px-2.5 py-1.5 mb-2 bg-[#EFECE6] border border-[#1A1A1A] flex justify-between items-center shadow-[1px_1px_0_0_#1A1A1A]">
-          <span className="text-[9px] font-bold tracking-widest text-[#E85D2A] uppercase flex items-center gap-1.5 font-mono">
-            <span className="w-2 h-2 bg-[#E85D2A] border border-[#1A1A1A] animate-pulse shrink-0" />
+        {/* Header Badge */}
+        <div className={`px-2.5 py-1.5 mb-2 border flex justify-between items-center ${
+          isDark 
+            ? 'bg-[#1E1635] border-[#2D2344] shadow-[1px_1px_0_0_#FF2A85]' 
+            : 'bg-[#EFECE6] border-[#1A1A1A] shadow-[1px_1px_0_0_#1A1A1A]'
+        }`}>
+          <span className={`text-[9px] font-bold tracking-widest uppercase flex items-center gap-1.5 font-mono ${
+            isDark ? 'text-[#00F0FF]' : 'text-[#E85D2A]'
+          }`}>
+            <span className={`w-2 h-2 border animate-pulse shrink-0 ${
+              isDark ? 'bg-[#E2FF00] border-[#00F0FF]' : 'bg-[#E85D2A] border-[#1A1A1A]'
+            }`} />
             {hasSpecificClip ? 'CLIP EDITING' : 'TIMELINE MENU'}
           </span>
-          <span className="text-[8px] font-mono text-[#6B6B6B] font-bold tracking-wider">NLE // 2.0</span>
+          <span className={`text-[8px] font-mono font-bold tracking-wider ${isDark ? 'text-[#7E7694]' : 'text-[#6B6B6B]'}`}>NLE // 2.0</span>
         </div>
 
         <div className="space-y-0.5 relative">
@@ -185,12 +200,20 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                 onSplitClip();
                 onClose();
               }}
-              className="w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group hover:bg-[#E85D2A] hover:text-white hover:border-[#1A1A1A] border border-transparent rounded-none text-[#1A1A1A] font-bold"
+              className={`w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group border border-transparent rounded-none font-bold ${
+                isDark 
+                  ? 'text-[#F1EEF8] hover:bg-[#00F0FF] hover:text-[#100D1C] hover:border-[#00F0FF]' 
+                  : 'text-[#1A1A1A] hover:bg-[#E85D2A] hover:text-white hover:border-[#1A1A1A]'
+              }`}
             >
               <span className="flex items-center gap-2 font-medium text-[10px]">
-                <span className="text-[#E85D2A] group-hover:text-white">✂</span> Split at Playhead
+                <span className={isDark ? 'text-[#00F0FF] group-hover:text-[#100D1C]' : 'text-[#E85D2A] group-hover:text-white'}>✂</span> Split at Playhead
               </span>
-              <kbd className="text-[8px] bg-white border border-[#1A1A1A] px-1 py-0.5 text-[#1A1A1A] font-mono font-bold shadow-[1px_1px_0_0_#1A1A1A] group-hover:bg-[#1A1A1A] group-hover:text-white group-hover:border-white">Ctrl+B</kbd>
+              <kbd className={`text-[8px] border px-1 py-0.5 font-mono font-bold ${
+                isDark 
+                  ? 'bg-[#1E1635] border-[#2D2344] text-[#00F0FF] group-hover:bg-[#100D1C] group-hover:text-[#00F0FF]' 
+                  : 'bg-white border-[#1A1A1A] text-[#1A1A1A] shadow-[1px_1px_0_0_#1A1A1A] group-hover:bg-[#1A1A1A] group-hover:text-white group-hover:border-white'
+              }`}>Ctrl+B</kbd>
             </motion.button>
           )}
 
@@ -204,12 +227,20 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                   e.stopPropagation();
                   handleDuplicate();
                 }}
-                className="w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group hover:bg-[#E85D2A] hover:text-white hover:border-[#1A1A1A] border border-transparent rounded-none text-[#1A1A1A] font-bold"
+                className={`w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group border border-transparent rounded-none font-bold ${
+                  isDark 
+                    ? 'text-[#F1EEF8] hover:bg-[#00F0FF] hover:text-[#100D1C] hover:border-[#00F0FF]' 
+                    : 'text-[#1A1A1A] hover:bg-[#E85D2A] hover:text-white hover:border-[#1A1A1A]'
+                }`}
               >
                 <span className="flex items-center gap-2 font-medium text-[10px]">
                   <span>📄</span> Duplicate Clip
                 </span>
-                <kbd className="text-[8px] bg-white border border-[#1A1A1A] px-1 py-0.5 text-[#1A1A1A] font-mono font-bold shadow-[1px_1px_0_0_#1A1A1A] group-hover:bg-[#1A1A1A] group-hover:text-white group-hover:border-white">Ctrl+D</kbd>
+                <kbd className={`text-[8px] border px-1 py-0.5 font-mono font-bold ${
+                  isDark 
+                    ? 'bg-[#1E1635] border-[#2D2344] text-[#00F0FF] group-hover:bg-[#100D1C] group-hover:text-[#00F0FF]' 
+                    : 'bg-white border-[#1A1A1A] text-[#1A1A1A] shadow-[1px_1px_0_0_#1A1A1A] group-hover:bg-[#1A1A1A] group-hover:text-white group-hover:border-white'
+                }`}>Ctrl+D</kbd>
               </motion.button>
 
               {/* Reset Trim */}
@@ -220,7 +251,11 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                   e.stopPropagation();
                   handleResetTrim();
                 }}
-                className="w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group hover:bg-[#E85D2A] hover:text-white hover:border-[#1A1A1A] border border-transparent rounded-none text-[#1A1A1A] font-bold"
+                className={`w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group border border-transparent rounded-none font-bold ${
+                  isDark 
+                    ? 'text-[#F1EEF8] hover:bg-[#00F0FF] hover:text-[#100D1C] hover:border-[#00F0FF]' 
+                    : 'text-[#1A1A1A] hover:bg-[#E85D2A] hover:text-white hover:border-[#1A1A1A]'
+                }`}
               >
                 <span className="flex items-center gap-2 font-medium text-[10px]">
                   <span>↺</span> Reset Trim Bounds
@@ -236,7 +271,11 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                       e.stopPropagation();
                       handleMoveClip('left');
                     }}
-                    className="flex-1 px-1.5 py-0.5 text-[8px] font-mono font-bold border border-[#1A1A1A] bg-white hover:bg-[#E85D2A] hover:text-white shadow-[1px_1px_0_0_#1A1A1A] transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                    className={`flex-1 px-1.5 py-0.5 text-[8px] font-mono font-bold border transition-colors flex items-center justify-center gap-1 cursor-pointer ${
+                      isDark 
+                        ? 'border-[#2D2344] bg-[#1E1635] text-[#F1EEF8] hover:bg-[#00F0FF] hover:text-[#100D1C] shadow-[1px_1px_0_0_#FF2A85]' 
+                        : 'border-[#1A1A1A] bg-white hover:bg-[#E85D2A] hover:text-white shadow-[1px_1px_0_0_#1A1A1A]'
+                    }`}
                     title="Move clip left in timeline"
                   >
                     ⬅ Left
@@ -247,7 +286,11 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                       e.stopPropagation();
                       handleMoveClip('right');
                     }}
-                    className="flex-1 px-1.5 py-0.5 text-[8px] font-mono font-bold border border-[#1A1A1A] bg-white hover:bg-[#E85D2A] hover:text-white shadow-[1px_1px_0_0_#1A1A1A] transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                    className={`flex-1 px-1.5 py-0.5 text-[8px] font-mono font-bold border transition-colors flex items-center justify-center gap-1 cursor-pointer ${
+                      isDark 
+                        ? 'border-[#2D2344] bg-[#1E1635] text-[#F1EEF8] hover:bg-[#00F0FF] hover:text-[#100D1C] shadow-[1px_1px_0_0_#FF2A85]' 
+                        : 'border-[#1A1A1A] bg-white hover:bg-[#E85D2A] hover:text-white shadow-[1px_1px_0_0_#1A1A1A]'
+                    }`}
                     title="Move clip right in timeline"
                   >
                     Right ➡️
@@ -255,7 +298,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                 </div>
               )}
 
-              <div className="h-px bg-[#1A1A1A]/20 my-0.5 mx-0.5" />
+              <div className={`h-px my-0.5 mx-0.5 ${isDark ? 'bg-[#2D2344]' : 'bg-[#1A1A1A]/20'}`} />
 
               {/* Delete Clip */}
               <motion.button 
@@ -265,18 +308,26 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                   e.stopPropagation();
                   handleDelete();
                 }}
-                className="w-full text-left px-2 py-1 flex justify-between items-center text-[#D32F2F] hover:bg-[#D32F2F] hover:text-white transition-all cursor-pointer group border border-transparent hover:border-[#1A1A1A] font-bold"
+                className={`w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group border border-transparent font-bold ${
+                  isDark
+                    ? 'text-[#FF4365] hover:bg-[#FF4365] hover:text-white hover:border-[#FF4365]'
+                    : 'text-[#D32F2F] hover:bg-[#D32F2F] hover:text-white hover:border-[#1A1A1A]'
+                }`}
               >
                 <span className="flex items-center gap-2 font-medium text-[10px]">
                   <span>🗑</span> Delete Clip
                 </span>
-                <kbd className="text-[8px] bg-white border border-[#1A1A1A] px-1 py-0.5 text-[#1A1A1A] font-mono font-bold shadow-[1px_1px_0_0_#1A1A1A] group-hover:bg-[#1A1A1A] group-hover:text-white group-hover:border-white">DEL</kbd>
+                <kbd className={`text-[8px] border px-1 py-0.5 font-mono font-bold ${
+                  isDark
+                    ? 'bg-[#1E1635] border-[#2D2344] text-[#FF4365] group-hover:bg-[#100D1C] group-hover:text-white'
+                    : 'bg-white border-[#1A1A1A] text-[#1A1A1A] shadow-[1px_1px_0_0_#1A1A1A] group-hover:bg-[#1A1A1A] group-hover:text-white group-hover:border-white'
+                }`}>DEL</kbd>
               </motion.button>
             </>
           )}
 
           {/* Section Divider */}
-          <div className="h-px bg-[#1A1A1A]/20 my-0.5 mx-0.5" />
+          <div className={`h-px my-0.5 mx-0.5 ${isDark ? 'bg-[#2D2344]' : 'bg-[#1A1A1A]/20'}`} />
 
           {/* Timeline & Selection Actions */}
           <motion.button 
@@ -286,12 +337,20 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
               e.stopPropagation();
               handleSelectAll();
             }}
-            className="w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group hover:bg-[#E85D2A] hover:text-white hover:border-[#1A1A1A] border border-transparent rounded-none text-[#1A1A1A] font-bold"
+            className={`w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group border border-transparent rounded-none font-bold ${
+              isDark 
+                ? 'text-[#F1EEF8] hover:bg-[#00F0FF] hover:text-[#100D1C] hover:border-[#00F0FF]' 
+                : 'text-[#1A1A1A] hover:bg-[#E85D2A] hover:text-white hover:border-[#1A1A1A]'
+            }`}
           >
             <span className="flex items-center gap-2 font-medium text-[10px]">
               <span>🎯</span> Select All Clips
             </span>
-            <kbd className="text-[8px] bg-white border border-[#1A1A1A] px-1 py-0.5 text-[#1A1A1A] font-mono font-bold shadow-[1px_1px_0_0_#1A1A1A] group-hover:bg-[#1A1A1A] group-hover:text-white group-hover:border-white">Ctrl+A</kbd>
+            <kbd className={`text-[8px] border px-1 py-0.5 font-mono font-bold ${
+              isDark 
+                ? 'bg-[#1E1635] border-[#2D2344] text-[#00F0FF] group-hover:bg-[#100D1C] group-hover:text-[#00F0FF]' 
+                : 'bg-white border-[#1A1A1A] text-[#1A1A1A] shadow-[1px_1px_0_0_#1A1A1A] group-hover:bg-[#1A1A1A] group-hover:text-white group-hover:border-white'
+            }`}>Ctrl+A</kbd>
           </motion.button>
 
           <motion.button 
@@ -301,7 +360,11 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
               e.stopPropagation();
               handleDeselectAll();
             }}
-            className="w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group hover:bg-[#E85D2A] hover:text-white hover:border-[#1A1A1A] border border-transparent rounded-none text-[#1A1A1A] font-bold"
+            className={`w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group border border-transparent rounded-none font-bold ${
+              isDark 
+                ? 'text-[#F1EEF8] hover:bg-[#00F0FF] hover:text-[#100D1C] hover:border-[#00F0FF]' 
+                : 'text-[#1A1A1A] hover:bg-[#E85D2A] hover:text-white hover:border-[#1A1A1A]'
+            }`}
           >
             <span className="flex items-center gap-2 font-medium text-[10px]">
               <span>✖</span> Deselect All
@@ -316,7 +379,11 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                 e.stopPropagation();
                 handleResetZoom();
               }}
-              className="w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group hover:bg-[#E85D2A] hover:text-white hover:border-[#1A1A1A] border border-transparent rounded-none text-[#1A1A1A] font-bold"
+              className={`w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group border border-transparent rounded-none font-bold ${
+                isDark 
+                  ? 'text-[#F1EEF8] hover:bg-[#00F0FF] hover:text-[#100D1C] hover:border-[#00F0FF]' 
+                  : 'text-[#1A1A1A] hover:bg-[#E85D2A] hover:text-white hover:border-[#1A1A1A]'
+              }`}
             >
               <span className="flex items-center gap-2 font-medium text-[10px]">
                 <span>🔍</span> Reset Zoom (100%)
@@ -326,7 +393,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 
           {!hasSpecificClip && clips.length > 0 && (
             <>
-              <div className="h-px bg-[#1A1A1A]/20 my-0.5 mx-0.5" />
+              <div className={`h-px my-0.5 mx-0.5 ${isDark ? 'bg-[#2D2344]' : 'bg-[#1A1A1A]/20'}`} />
               <motion.button 
                 whileHover={{ x: 2 }}
                 whileTap={{ scale: 0.97 }}
@@ -334,7 +401,11 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                   e.stopPropagation();
                   handleClearAll();
                 }}
-                className="w-full text-left px-2 py-1 flex justify-between items-center text-[#D32F2F] hover:bg-[#D32F2F] hover:text-white transition-all cursor-pointer group border border-transparent hover:border-[#1A1A1A] font-bold"
+                className={`w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group border border-transparent font-bold ${
+                  isDark
+                    ? 'text-[#FF4365] hover:bg-[#FF4365] hover:text-white hover:border-[#FF4365]'
+                    : 'text-[#D32F2F] hover:bg-[#D32F2F] hover:text-white hover:border-[#1A1A1A]'
+                }`}
               >
                 <span className="flex items-center gap-2 font-medium text-[10px]">
                   <span>🧹</span> Clear All Clips

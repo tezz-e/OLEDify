@@ -87,6 +87,21 @@ function MainApp() {
 
   // UI State
   const [activeView, setActiveView] = useState<'editor' | 'lyrics-studio'>('editor');
+  const [themeMode, setThemeMode] = useState<'light' | 'dark'>(() => {
+    try {
+      const saved = localStorage.getItem('oled_studio_theme');
+      if (saved === 'light' || saved === 'dark') return saved;
+    } catch (_) {}
+    return 'dark';
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('oled_studio_theme', themeMode);
+    } catch (_) {}
+  }, [themeMode]);
+
+  const isDark = themeMode === 'dark';
   const [mediaPoolTab, setMediaPoolTab] = useState<'import' | 'samples' | 'recent' | 'create'>('import');
   const [studioOpen, setStudioOpen] = useState(false);
   const [serialConnected, setSerialConnected] = useState(false);
@@ -661,7 +676,7 @@ function MainApp() {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden text-[#1A1A1A] relative">
+    <div className={`h-screen flex flex-col overflow-hidden relative transition-colors ${isDark ? 'bg-[#0E0B1A] text-[#F1EEF8]' : 'bg-[#F5F0EB] text-[#1A1A1A]'}`}>
       <Header 
         serialConnected={serialConnected}
         onSerialToggle={handleSerialToggle}
@@ -673,22 +688,29 @@ function MainApp() {
         exportError={exportError}
         activeView={activeView}
         onViewChange={setActiveView}
+        themeMode={themeMode}
+        onThemeToggle={() => setThemeMode(m => m === 'light' ? 'dark' : 'light')}
       />
 
       <main className="flex-1 flex flex-col min-h-0 z-10">
         {/* Top: New 3-Column Preview Section */}
-        <section className="flex-1 flex items-stretch bg-[#F5F0EB] relative min-h-0 border-b border-[#1A1A1A]/20" style={{
-          backgroundImage: `
-            repeating-linear-gradient(0deg, #e0dbd5 0 1px, transparent 1px 40px),
-            repeating-linear-gradient(90deg, #e0dbd5 0 1px, transparent 1px 40px)
-          `
+        <section className={`flex-1 flex items-stretch relative min-h-0 border-b transition-colors ${
+          isDark ? 'bg-[#100D1C] border-[#2D2344]' : 'bg-[#F5F0EB] border-[#1A1A1A]/20'
+        }`} style={{
+          backgroundImage: isDark
+            ? `repeating-linear-gradient(0deg, rgba(0, 240, 255, 0.06) 0 1px, transparent 1px 40px),
+               repeating-linear-gradient(90deg, rgba(255, 42, 133, 0.06) 0 1px, transparent 1px 40px)`
+            : `repeating-linear-gradient(0deg, #e0dbd5 0 1px, transparent 1px 40px),
+               repeating-linear-gradient(90deg, #e0dbd5 0 1px, transparent 1px 40px)`
         }}>
           {/* Column 1: Full Preview */}
-          <div className="flex-[2.5] p-2 lg:p-4 flex flex-col items-center justify-start relative border-r border-[#1A1A1A]/20 min-w-0 h-full">
+          <div className={`flex-[2.5] p-2 lg:p-4 flex flex-col items-center justify-start relative border-r min-w-0 h-full transition-colors ${
+            isDark ? 'border-[#2D2344]' : 'border-[#1A1A1A]/20'
+          }`}>
             <div className="w-full flex flex-col items-center justify-start h-full min-h-0">
               <div className="mb-1.5 shrink-0 text-center w-full">
-                <h3 className="font-mono font-bold text-xs tracking-wider text-[#1A1A1A]">FULL PREVIEW</h3>
-                <p className="font-mono text-[10px] text-[#6B6B6B]">See the full video/animation here at normal scale</p>
+                <h3 className={`font-mono font-bold text-xs tracking-wider ${isDark ? 'text-[#00F0FF]' : 'text-[#1A1A1A]'}`}>FULL PREVIEW</h3>
+                <p className={`font-mono text-[10px] ${isDark ? 'text-[#7E7694]' : 'text-[#6B6B6B]'}`}>See the full video/animation here at normal scale</p>
               </div>
               
               <div className="flex-1 w-full relative min-h-0">
@@ -706,7 +728,11 @@ function MainApp() {
                     />
 
                     {/* Actual Black Container Box overlaying the exact expanded bounds */}
-                    <div className="absolute inset-0 bg-[#080808] border-2 border-[#1A1A1A] rounded-md shadow-[4px_4px_0_0_#1A1A1A] flex flex-col justify-between p-2 overflow-hidden">
+                    <div className={`absolute inset-0 border-2 rounded-md flex flex-col justify-between p-2 overflow-hidden transition-all ${
+                      isDark 
+                        ? 'bg-[#0A0713] border-[#00F0FF]/60 shadow-[4px_4px_0_0_#FF2A85]' 
+                        : 'bg-[#080808] border-[#1A1A1A] shadow-[4px_4px_0_0_#1A1A1A]'
+                    }`}>
                       {/* Media Display Area */}
                       <div className="flex-1 w-full min-h-0 relative flex items-center justify-center overflow-hidden">
                         {rawSourceFrame ? (
@@ -716,30 +742,38 @@ function MainApp() {
                             style={{ imageRendering: 'pixelated' }}
                           />
                         ) : (
-                          <div className="flex items-center justify-center w-full h-full bg-[#111]">
-                            <span className="font-mono text-[#6B6B6B] text-xs">NO MEDIA</span>
+                          <div className={`flex items-center justify-center w-full h-full ${isDark ? 'bg-[#0E0A1A]' : 'bg-[#111]'}`}>
+                            <span className={`font-mono text-xs ${isDark ? 'text-[#7E7694]' : 'text-[#6B6B6B]'}`}>NO MEDIA</span>
                           </div>
                         )}
                       </div>
                       
                       {/* Playback Control Bar */}
-                      <div className="h-7 flex items-center px-2 gap-2 text-white bg-[#111]/90 backdrop-blur rounded border border-white/10 shrink-0 mt-1 z-10">
+                      <div className={`h-7 flex items-center px-2 gap-2 rounded border shrink-0 mt-1 z-10 transition-colors ${
+                        isDark 
+                          ? 'bg-[#140F24]/90 backdrop-blur border-[#2D2344] text-[#F1EEF8]' 
+                          : 'bg-[#111]/90 backdrop-blur border-white/10 text-white'
+                      }`}>
                         <button 
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             setIsPlaying(p => !p);
                           }} 
-                          className="text-xs font-bold text-[#E85D2A] hover:text-white transition-colors cursor-pointer px-1 py-1"
+                          className={`text-xs font-bold transition-colors cursor-pointer px-1 py-1 ${
+                            isDark ? 'text-[#00F0FF] hover:text-[#E2FF00]' : 'text-[#E85D2A] hover:text-white'
+                          }`}
                         >
                           {isPlaying ? '❚❚' : '▶'}
                         </button>
-                        <div className="text-[9px] font-mono whitespace-nowrap opacity-70">
+                        <div className={`text-[9px] font-mono whitespace-nowrap ${isDark ? 'text-[#00F0FF]/90' : 'opacity-70'}`}>
                           {(activeFrameIndex / targetFps).toFixed(2)}s
                         </div>
-                        <div className="flex-1 h-1 bg-white/20 rounded-full relative min-w-[30px]">
+                        <div className={`flex-1 h-1 rounded-full relative min-w-[30px] ${isDark ? 'bg-white/10' : 'bg-white/20'}`}>
                           <div 
-                            className="absolute inset-y-0 left-0 bg-[#E85D2A] rounded-full" 
+                            className={`absolute inset-y-0 left-0 rounded-full ${
+                              isDark ? 'bg-[#00F0FF] shadow-[0_0_6px_#00F0FF]' : 'bg-[#E85D2A]'
+                            }`} 
                             style={{ width: media && media.frames.length ? `${(activeFrameIndex / media.frames.length) * 100}%` : '0%' }}
                           />
                         </div>
@@ -749,12 +783,18 @@ function MainApp() {
                             e.stopPropagation();
                             setPreviewFitMode(m => m === 'cover' ? 'contain' : 'cover');
                           }} 
-                          className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-white/10 hover:bg-[#E85D2A] text-white transition-colors cursor-pointer uppercase tracking-wider"
+                          className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded transition-colors cursor-pointer uppercase tracking-wider ${
+                            isDark 
+                              ? 'bg-[#1E1635] border border-[#2D2344] text-[#00F0FF] hover:bg-[#00F0FF] hover:text-[#100D1C]' 
+                              : 'bg-white/10 hover:bg-[#E85D2A] text-white'
+                          }`}
                           title="Toggle FIT (contain full frame) vs FILL (zoom to fill box)"
                         >
                           {previewFitMode === 'cover' ? 'FILL' : 'FIT'}
                         </button>
-                        <div className="text-[9px] font-mono whitespace-nowrap text-[#E85D2A] font-bold">{targetFps} FPS</div>
+                        <div className={`text-[9px] font-mono whitespace-nowrap font-bold ${
+                          isDark ? 'text-[#E2FF00]' : 'text-[#E85D2A]'
+                        }`}>{targetFps} FPS</div>
                       </div>
                     </div>
 
@@ -768,20 +808,24 @@ function MainApp() {
           {/* Column 2: True OLED Preview */}
           <div className="flex-1 p-3 flex flex-col items-center justify-center relative min-w-0">
             <div className="text-center mb-2 shrink-0">
-              <h3 className="font-mono font-bold text-xs tracking-wider text-[#1A1A1A]">TRUE OLED PREVIEW (128 × 64)</h3>
-              <p className="font-mono text-[10px] text-[#6B6B6B]">Exact physical scale • 1:1 pixels</p>
+              <h3 className={`font-mono font-bold text-xs tracking-wider ${isDark ? 'text-[#00F0FF]' : 'text-[#1A1A1A]'}`}>TRUE OLED PREVIEW (128 × 64)</h3>
+              <p className={`font-mono text-[10px] ${isDark ? 'text-[#7E7694]' : 'text-[#6B6B6B]'}`}>Exact physical scale • 1:1 pixels</p>
             </div>
 
             <div className="relative flex items-center justify-center w-full max-h-full flex-1 min-h-0 gap-3">
               {/* Hardware Bezel */}
-              <div className="bg-[#2A2A2A] rounded-xl p-3 shadow-[0_10px_30px_rgba(0,0,0,0.5),inset_0_2px_1px_rgba(255,255,255,0.1),inset_0_-2px_1px_rgba(0,0,0,0.5)] border border-[#111] relative z-10 shrink-0 max-w-full max-h-full flex flex-col justify-center">
+              <div className={`rounded-xl p-3 border relative z-10 shrink-0 max-w-full max-h-full flex flex-col justify-center transition-all ${
+                isDark 
+                  ? 'bg-[#161226] border-[#2D2344] shadow-[0_10px_35px_rgba(0,240,255,0.12),inset_0_2px_1px_rgba(255,255,255,0.1),inset_0_-2px_1px_rgba(0,0,0,0.5)]' 
+                  : 'bg-[#2A2A2A] border-[#111] shadow-[0_10px_30px_rgba(0,0,0,0.5),inset_0_2px_1px_rgba(255,255,255,0.1),inset_0_-2px_1px_rgba(0,0,0,0.5)]'
+              }`}>
                 {/* Screws */}
                 <div className="absolute top-2 left-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-45"><div className="w-full h-[1px] bg-[#333]" /></div>
                 <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-12"><div className="w-full h-[1px] bg-[#333]" /></div>
                 <div className="absolute bottom-2 left-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center -rotate-12"><div className="w-full h-[1px] bg-[#333]" /></div>
                 <div className="absolute bottom-2 right-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-90"><div className="w-full h-[1px] bg-[#333]" /></div>
                 
-                <div className="text-[#555] font-mono text-[8px] text-center mb-1">SSD1306 128x64</div>
+                <div className={`font-mono text-[8px] text-center mb-1 ${isDark ? 'text-[#7E7694]' : 'text-[#555]'}`}>SSD1306 128x64</div>
                 
                 <div className="bg-[#000] p-1 shadow-[inset_0_0_10px_#000] rounded shrink flex items-center justify-center">
                   <div className="pointer-events-auto w-[128px]">
@@ -789,14 +833,18 @@ function MainApp() {
                   </div>
                 </div>
 
-                <div className="text-[#555] font-mono text-[8px] text-center mt-1">I²C 0x3C</div>
+                <div className={`font-mono text-[8px] text-center mt-1 ${isDark ? 'text-[#7E7694]' : 'text-[#555]'}`}>I²C 0x3C</div>
               </div>
 
               {/* Decorative Sticky Note (Right) */}
               <div className="hidden xl:block shrink-0">
-                <div className="bg-[#FFD485] text-[#1A1A1A] p-2.5 font-mono text-[9px] w-32 shadow-lg rotate-2">
+                <div className={`p-2.5 font-mono text-[9px] w-32 rotate-2 transition-all ${
+                  isDark 
+                    ? 'bg-[#1E1735] text-[#00F0FF] border border-[#00F0FF]/40 shadow-[3px_3px_0_#FF2A85]' 
+                    : 'bg-[#FFD485] text-[#1A1A1A] shadow-lg'
+                }`}>
                   <div className="flex justify-between items-start mb-1">
-                    <div className="w-2 h-2 rounded-full bg-[#1A1A1A]/20" />
+                    <div className={`w-2 h-2 rounded-full ${isDark ? 'bg-[#FF2A85]' : 'bg-[#1A1A1A]/20'}`} />
                     <span>💡</span>
                   </div>
                   OLED output shows 1:1 true scale.
@@ -806,15 +854,23 @@ function MainApp() {
           </div>
 
           {/* Column 3: Display Info */}
-          <div className="w-[180px] shrink-0 p-4 border-l border-[#1A1A1A]/20 flex flex-col justify-start overflow-y-auto">
-            <div className="bg-white border-2 border-[#1A1A1A] shadow-[3px_3px_0_0_#1A1A1A] p-3 font-mono text-xs flex flex-col gap-4 mb-auto">
+          <div className={`w-[180px] shrink-0 p-4 border-l flex flex-col justify-start overflow-y-auto transition-colors ${
+            isDark ? 'border-[#2D2344]' : 'border-[#1A1A1A]/20'
+          }`}>
+            <div className={`border-2 p-3 font-mono text-xs flex flex-col gap-4 mb-auto transition-all ${
+              isDark 
+                ? 'bg-[#161126] border-[#2D2344] shadow-[3px_3px_0_0_#FF2A85] text-[#F1EEF8]' 
+                : 'bg-white border-[#1A1A1A] shadow-[3px_3px_0_0_#1A1A1A] text-[#1A1A1A]'
+            }`}>
               
               <div>
-                <div className="bg-[#1A1A1A] text-white px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider mb-2 flex justify-between items-center">
+                <div className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider mb-2 flex justify-between items-center ${
+                  isDark ? 'bg-[#1E1635] text-[#00F0FF]' : 'bg-[#1A1A1A] text-white'
+                }`}>
                   <span>DISPLAY INFO</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#E85D2A]"></span>
+                  <span className={`w-1.5 h-1.5 rounded-full ${isDark ? 'bg-[#E2FF00]' : 'bg-[#E85D2A]'}`}></span>
                 </div>
-                <div className="flex flex-col gap-0.5 text-[#6B6B6B] text-[11px]">
+                <div className={`flex flex-col gap-0.5 text-[11px] ${isDark ? 'text-[#A59CB8]' : 'text-[#6B6B6B]'}`}>
                   <div>128 × 64</div>
                   <div>1-BIT (MONO)</div>
                   <div>I²C 0x3C</div>
@@ -822,19 +878,23 @@ function MainApp() {
                 </div>
               </div>
 
-              <div className="h-px bg-[#1A1A1A]/20" />
+              <div className={`h-px ${isDark ? 'bg-[#2D2344]' : 'bg-[#1A1A1A]/20'}`} />
 
               <div>
-                <div className="text-[9px] font-bold uppercase tracking-wider text-[#1A1A1A] mb-1">CURRENT FRAME</div>
-                <div className="text-[#6B6B6B] text-[11px]">{activeFrameIndex.toString().padStart(3, '0')} / {media ? media.frames.length.toString().padStart(3, '0') : '000'}</div>
-                <div className="text-[#6B6B6B] text-[11px]">{(activeFrameIndex / targetFps).toFixed(2)}s</div>
+                <div className={`text-[9px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-[#F1EEF8]' : 'text-[#1A1A1A]'}`}>CURRENT FRAME</div>
+                <div className={`text-[11px] ${isDark ? 'text-[#A59CB8]' : 'text-[#6B6B6B]'}`}>
+                  {activeFrameIndex.toString().padStart(3, '0')} / {media ? media.frames.length.toString().padStart(3, '0') : '000'}
+                </div>
+                <div className={`text-[11px] ${isDark ? 'text-[#A59CB8]' : 'text-[#6B6B6B]'}`}>
+                  {(activeFrameIndex / targetFps).toFixed(2)}s
+                </div>
               </div>
 
-              <div className="h-px bg-[#1A1A1A]/20" />
+              <div className={`h-px ${isDark ? 'bg-[#2D2344]' : 'bg-[#1A1A1A]/20'}`} />
 
               <div>
-                <div className="text-[9px] font-bold uppercase tracking-wider text-[#1A1A1A] mb-1">OUTPUT SIZE</div>
-                <div className="text-[#6B6B6B] text-[11px] mb-1">1024 bytes/frame</div>
+                <div className={`text-[9px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-[#F1EEF8]' : 'text-[#1A1A1A]'}`}>OUTPUT SIZE</div>
+                <div className={`text-[11px] ${isDark ? 'text-[#A59CB8]' : 'text-[#6B6B6B]'}`}>1024 bytes/frame</div>
               </div>
 
             </div>
@@ -842,21 +902,27 @@ function MainApp() {
         </section>
 
         {/* Bottom Console — Technical Control Panel */}
-        <aside className="h-[340px] shrink-0 bg-white flex z-20 p-4 gap-4 relative border-t-2 border-[#1A1A1A]">
+        <aside className={`h-[340px] shrink-0 flex z-20 p-4 gap-4 relative border-t-2 transition-colors ${
+          isDark ? 'bg-[#100D1C] border-[#2D2344]' : 'bg-white border-[#1A1A1A]'
+        }`}>
           
           {/* Zone 1: Media Pool (Left) */}
-          <BlueprintHoverCard className="w-[280px] shrink-0 min-w-0">
-            <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6B6B6B] px-4 py-3 border-b-2 border-[#1A1A1A] font-mono z-[2] relative flex items-center gap-2">
-              <span className="w-2 h-2 bg-[#E85D2A]"></span>
-              <span className="text-[#1A1A1A]">MEDIA_POOL</span>
+          <BlueprintHoverCard className="w-[280px] shrink-0 min-w-0" themeMode={themeMode}>
+            <h2 className={`text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-3 border-b-2 font-mono z-[2] relative flex items-center gap-2 ${
+              isDark ? 'bg-[#140F24] border-[#2D2344] text-[#A59CB8]' : 'bg-transparent border-[#1A1A1A] text-[#6B6B6B]'
+            }`}>
+              <span className={`w-2 h-2 ${isDark ? 'bg-[#00F0FF]' : 'bg-[#E85D2A]'}`}></span>
+              <span className={isDark ? 'text-[#00F0FF]' : 'text-[#1A1A1A]'}>MEDIA_POOL</span>
             </h2>
             
             {/* Tabs */}
-            <div className="flex border-b border-[#1A1A1A]/20 bg-[#F5F0EB] shrink-0">
+            <div className={`flex border-b shrink-0 ${isDark ? 'border-[#2D2344] bg-[#140F24]' : 'border-[#1A1A1A]/20 bg-[#F5F0EB]'}`}>
               <button 
                 onClick={() => setMediaPoolTab('import')}
                 className={`flex-1 py-2 text-[9px] font-bold font-mono tracking-widest cursor-pointer transition-colors ${
-                  mediaPoolTab === 'import' ? 'text-[#1A1A1A] border-b-2 border-[#E85D2A] bg-white' : 'text-[#6B6B6B] hover:text-[#1A1A1A]'
+                  mediaPoolTab === 'import' 
+                    ? (isDark ? 'text-[#00F0FF] border-b-2 border-[#00F0FF] bg-[#1A142C]' : 'text-[#1A1A1A] border-b-2 border-[#E85D2A] bg-white') 
+                    : (isDark ? 'text-[#7E7694] hover:text-[#00F0FF]' : 'text-[#6B6B6B] hover:text-[#1A1A1A]')
                 }`}
               >
                 + IMPORT
@@ -864,7 +930,9 @@ function MainApp() {
               <button 
                 onClick={() => setMediaPoolTab('samples')}
                 className={`flex-1 py-2 text-[9px] font-bold font-mono tracking-widest cursor-pointer transition-colors ${
-                  mediaPoolTab === 'samples' ? 'text-[#1A1A1A] border-b-2 border-[#E85D2A] bg-white' : 'text-[#6B6B6B] hover:text-[#1A1A1A]'
+                  mediaPoolTab === 'samples' 
+                    ? (isDark ? 'text-[#00F0FF] border-b-2 border-[#00F0FF] bg-[#1A142C]' : 'text-[#1A1A1A] border-b-2 border-[#E85D2A] bg-white') 
+                    : (isDark ? 'text-[#7E7694] hover:text-[#00F0FF]' : 'text-[#6B6B6B] hover:text-[#1A1A1A]')
                 }`}
               >
                 SAMPLES
@@ -872,7 +940,9 @@ function MainApp() {
               <button 
                 onClick={() => setMediaPoolTab('recent')}
                 className={`flex-1 py-2 text-[9px] font-bold font-mono tracking-widest cursor-pointer transition-colors ${
-                  mediaPoolTab === 'recent' ? 'text-[#1A1A1A] border-b-2 border-[#E85D2A] bg-white' : 'text-[#6B6B6B] hover:text-[#1A1A1A]'
+                  mediaPoolTab === 'recent' 
+                    ? (isDark ? 'text-[#00F0FF] border-b-2 border-[#00F0FF] bg-[#1A142C]' : 'text-[#1A1A1A] border-b-2 border-[#E85D2A] bg-white') 
+                    : (isDark ? 'text-[#7E7694] hover:text-[#00F0FF]' : 'text-[#6B6B6B] hover:text-[#1A1A1A]')
                 }`}
               >
                 RECENT
@@ -880,7 +950,9 @@ function MainApp() {
               <button 
                 onClick={() => setMediaPoolTab('create')}
                 className={`flex-1 py-2 text-[9px] font-bold font-mono tracking-widest cursor-pointer transition-colors ${
-                  mediaPoolTab === 'create' ? 'text-[#1A1A1A] border-b-2 border-[#E85D2A] bg-white' : 'text-[#e85d2a] hover:text-[#1A1A1A]'
+                  mediaPoolTab === 'create' 
+                    ? (isDark ? 'text-[#FF2A85] border-b-2 border-[#FF2A85] bg-[#1A142C]' : 'text-[#1A1A1A] border-b-2 border-[#E85D2A] bg-white') 
+                    : (isDark ? 'text-[#FF2A85]/80 hover:text-[#FF2A85]' : 'text-[#e85d2a] hover:text-[#1A1A1A]')
                 }`}
               >
                 ✨ CREATE
@@ -890,12 +962,14 @@ function MainApp() {
             <div className="flex-1 flex flex-col min-h-0 overflow-y-auto z-[2] relative">
               {mediaPoolTab === 'import' && (
                 <>
-                  <DropZone onMediaLoaded={handleMediaLoaded} currentMedia={null} />
+                  <DropZone onMediaLoaded={handleMediaLoaded} currentMedia={null} themeMode={themeMode} />
                   
                   {/* Asset Pool Grid */}
                   <div className="p-2.5">
                     {Object.values(assets).length === 0 ? (
-                      <p className="text-[9px] font-mono text-[#6B6B6B] text-center py-6 border border-dashed border-[#1A1A1A]/30">
+                      <p className={`text-[9px] font-mono text-center py-6 border border-dashed ${
+                        isDark ? 'text-[#7E7694] border-[#2D2344]' : 'text-[#6B6B6B] border-[#1A1A1A]/30'
+                      }`}>
                         No imported video assets yet. Drop a file above to add to your bin!
                       </p>
                     ) : (
@@ -911,7 +985,9 @@ function MainApp() {
                                 e.dataTransfer.setData('text/plain', asset.id);
                               }}
                               onDoubleClick={() => handleAddAssetToTimeline(asset.id)}
-                              className="bg-[#080808] border-2 border-[#1A1A1A] hover:border-[#E85D2A] transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-sm"
+                              className={`bg-[#080808] border-2 transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-sm ${
+                                isDark ? 'border-[#2D2344] hover:border-[#00F0FF]' : 'border-[#1A1A1A] hover:border-[#E85D2A]'
+                              }`}
                               title={`Double click or drag ${asset.media.sourceInfo.filename} to timeline`}
                             >
                               {/* Thumbnail Image */}
@@ -932,7 +1008,9 @@ function MainApp() {
                                 )}
 
                                 {/* Frame badge */}
-                                <span className="absolute top-1 right-1 bg-black/80 text-[7px] text-white font-mono px-1 py-0.5 border border-white/20 font-bold">
+                                <span className={`absolute top-1 right-1 bg-black/80 text-[7px] font-mono px-1 py-0.5 border font-bold ${
+                                  isDark ? 'text-[#00F0FF] border-[#00F0FF]/40' : 'text-white border-white/20'
+                                }`}>
                                   {asset.media.frames.length}f
                                 </span>
 
@@ -943,16 +1021,24 @@ function MainApp() {
 
                                 {/* Hover Action Overlay */}
                                 <div className="absolute inset-0 bg-black/85 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-1.5 gap-1.5 z-10">
-                                  <span className="text-[7px] font-mono text-[#E85D2A] font-bold uppercase tracking-wider">DRAG OR CHOOSE</span>
+                                  <span className={`text-[7px] font-mono font-bold uppercase tracking-wider ${
+                                    isDark ? 'text-[#00F0FF]' : 'text-[#E85D2A]'
+                                  }`}>
+                                    DRAG OR CHOOSE
+                                  </span>
                                   <button 
                                     onClick={(e) => { e.stopPropagation(); handleAddAssetToTimeline(asset.id); }}
-                                    className="w-full py-1 text-[8px] font-bold bg-[#E85D2A] text-white hover:bg-white hover:text-[#1A1A1A] transition-colors cursor-pointer uppercase font-mono tracking-wider"
+                                    className={`w-full py-1 text-[8px] font-bold transition-colors cursor-pointer uppercase font-mono tracking-wider ${
+                                      isDark ? 'bg-[#00F0FF] text-[#100D1C] hover:bg-[#FF2A85] hover:text-white' : 'bg-[#E85D2A] text-white hover:bg-white hover:text-[#1A1A1A]'
+                                    }`}
                                   >
                                     + ADD CLIP
                                   </button>
                                   <button 
                                     onClick={(e) => { e.stopPropagation(); handleReplaceTimelineWithAsset(asset.id); }}
-                                    className="w-full py-0.5 text-[7px] font-bold border border-white/40 text-white hover:bg-white hover:text-[#1A1A1A] transition-colors cursor-pointer uppercase font-mono tracking-wider"
+                                    className={`w-full py-0.5 text-[7px] font-bold transition-colors cursor-pointer uppercase font-mono tracking-wider ${
+                                      isDark ? 'border border-[#00F0FF]/40 text-[#00F0FF] hover:bg-[#00F0FF] hover:text-[#100D1C]' : 'border border-white/40 text-white hover:bg-white hover:text-[#1A1A1A]'
+                                    }`}
                                   >
                                     REPLACE
                                   </button>
@@ -970,8 +1056,10 @@ function MainApp() {
               {mediaPoolTab === 'samples' && (
                 <div className="p-2.5">
                   <div className="flex justify-between items-center mb-2 px-1">
-                    <span className="text-[8px] font-mono text-[#6B6B6B] uppercase tracking-wider font-bold">SAMPLE ANIMATION BIN</span>
-                    <span className="text-[7px] font-mono text-[#888]">Double-click or drag card</span>
+                    <span className={`text-[8px] font-mono uppercase tracking-wider font-bold ${
+                      isDark ? 'text-[#A59CB8]' : 'text-[#6B6B6B]'
+                    }`}>SAMPLE ANIMATION BIN</span>
+                    <span className={`text-[7px] font-mono ${isDark ? 'text-[#7E7694]' : 'text-[#888]'}`}>Double-click or drag card</span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
@@ -1007,7 +1095,9 @@ function MainApp() {
                           e.dataTransfer.setData('text/plain', sample.id);
                         }}
                         onDoubleClick={() => handleLoadSample(sample.id as any, 'append')}
-                        className="bg-[#080808] border-2 border-[#1A1A1A] hover:border-[#E85D2A] transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-sm"
+                        className={`bg-[#080808] border-2 transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-sm ${
+                          isDark ? 'border-[#2D2344] hover:border-[#00F0FF]' : 'border-[#1A1A1A] hover:border-[#E85D2A]'
+                        }`}
                         title={`Double click or drag ${sample.name} to timeline`}
                       >
                         {/* Thumbnail Image */}
@@ -1023,7 +1113,9 @@ function MainApp() {
                           )}
 
                           {/* FPS Badge */}
-                          <span className="absolute top-1 right-1 bg-black/80 text-[7px] text-white font-mono px-1 py-0.5 border border-white/20 font-bold">
+                          <span className={`absolute top-1 right-1 bg-black/80 text-[7px] font-mono px-1 py-0.5 border font-bold ${
+                            isDark ? 'text-[#00F0FF] border-[#00F0FF]/40' : 'text-white border-white/20'
+                          }`}>
                             {sample.tag}
                           </span>
 
@@ -1037,17 +1129,23 @@ function MainApp() {
 
                           {/* Hover Action Overlay */}
                           <div className="absolute inset-0 bg-black/85 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-1.5 gap-1.5 z-10">
-                            <span className="text-[7px] font-mono text-[#E85D2A] font-bold uppercase tracking-wider">DRAG OR CHOOSE</span>
+                            <span className={`text-[7px] font-mono font-bold uppercase tracking-wider ${
+                              isDark ? 'text-[#00F0FF]' : 'text-[#E85D2A]'
+                            }`}>DRAG OR CHOOSE</span>
                             <button 
                               onClick={(e) => { e.stopPropagation(); handleLoadSample(sample.id as any, 'append'); }}
-                              className="w-full py-1 text-[8px] font-bold bg-[#E85D2A] text-white hover:bg-white hover:text-[#1A1A1A] transition-colors cursor-pointer uppercase font-mono tracking-wider"
+                              className={`w-full py-1 text-[8px] font-bold transition-colors cursor-pointer uppercase font-mono tracking-wider ${
+                                isDark ? 'bg-[#00F0FF] text-[#100D1C] hover:bg-[#FF2A85] hover:text-white' : 'bg-[#E85D2A] text-white hover:bg-white hover:text-[#1A1A1A]'
+                              }`}
                               title="Append sample animation to timeline"
                             >
                               + ADD CLIP
                             </button>
                             <button 
                               onClick={(e) => { e.stopPropagation(); handleLoadSample(sample.id as any, 'replace'); }}
-                              className="w-full py-0.5 text-[7px] font-bold border border-white/40 text-white hover:bg-white hover:text-[#1A1A1A] transition-colors cursor-pointer uppercase font-mono tracking-wider"
+                              className={`w-full py-0.5 text-[7px] font-bold transition-colors cursor-pointer uppercase font-mono tracking-wider ${
+                                isDark ? 'border border-[#00F0FF]/40 text-[#00F0FF] hover:bg-[#00F0FF] hover:text-[#100D1C]' : 'border border-white/40 text-white hover:bg-white hover:text-[#1A1A1A]'
+                              }`}
                               title="Replace sequence with this sample animation"
                             >
                               REPLACE
@@ -1061,11 +1159,19 @@ function MainApp() {
               )}
 
               {mediaPoolTab === 'create' && (
-                <div className="p-4 flex-1 flex flex-col items-center justify-center text-center gap-4 border border-dashed border-[#1A1A1A]/30 m-2">
-                  <p className="text-[10px] font-mono text-[#6B6B6B]">Generate pure beat-synced kinetic typography with Apple Music fluid glass selector</p>
+                <div className={`p-4 flex-1 flex flex-col items-center justify-center text-center gap-4 border border-dashed m-2 ${
+                  isDark ? 'border-[#2D2344]' : 'border-[#1A1A1A]/30'
+                }`}>
+                  <p className={`text-[10px] font-mono ${isDark ? 'text-[#A59CB8]' : 'text-[#6B6B6B]'}`}>
+                    Generate pure beat-synced kinetic typography with Apple Music fluid glass selector
+                  </p>
                   <button
                     onClick={() => setActiveView('lyrics-studio')}
-                    className="py-3 px-6 bg-[#E85D2A] text-[#f5f0eb] text-xs font-mono font-bold tracking-widest border-2 border-[#1A1A1A] shadow-[4px_4px_0_#1A1A1A] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#1A1A1A] transition-all cursor-pointer"
+                    className={`py-3 px-6 text-xs font-mono font-bold tracking-widest border-2 transition-all cursor-pointer ${
+                      isDark 
+                        ? 'bg-[#FF2A85] text-white border-[#00F0FF] shadow-[4px_4px_0_#00F0FF] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#00F0FF]'
+                        : 'bg-[#E85D2A] text-[#f5f0eb] border-[#1A1A1A] shadow-[4px_4px_0_#1A1A1A] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#1A1A1A]'
+                    }`}
                   >
                     ✨ LAUNCH KINETIC LYRICS STUDIO
                   </button>
@@ -1075,7 +1181,9 @@ function MainApp() {
               {mediaPoolTab === 'recent' && (
                 <div className="p-2.5">
                   {Object.values(assets).length === 0 ? (
-                    <p className="text-[9px] font-mono text-[#6B6B6B] text-center py-6 border border-dashed border-[#1A1A1A]/30">
+                    <p className={`text-[9px] font-mono text-center py-6 border border-dashed ${
+                      isDark ? 'text-[#7E7694] border-[#2D2344]' : 'text-[#6B6B6B] border-[#1A1A1A]/30'
+                    }`}>
                       No recent files.
                     </p>
                   ) : (
@@ -1091,7 +1199,9 @@ function MainApp() {
                               e.dataTransfer.setData('text/plain', asset.id);
                             }}
                             onDoubleClick={() => handleAddAssetToTimeline(asset.id)}
-                            className="bg-[#080808] border-2 border-[#1A1A1A] hover:border-[#E85D2A] transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-sm"
+                            className={`bg-[#080808] border-2 transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-sm ${
+                              isDark ? 'border-[#2D2344] hover:border-[#00F0FF]' : 'border-[#1A1A1A] hover:border-[#E85D2A]'
+                            }`}
                           >
                             <div className="flex-1 w-full h-full relative overflow-hidden bg-[#050505]">
                               {firstFrame && (
@@ -1108,7 +1218,9 @@ function MainApp() {
                                   alt={asset.id} 
                                 />
                               )}
-                              <span className="absolute top-1 right-1 bg-black/80 text-[7px] text-white font-mono px-1 py-0.5 border border-white/20 font-bold">
+                              <span className={`absolute top-1 right-1 bg-black/80 text-[7px] font-mono px-1 py-0.5 border font-bold ${
+                                isDark ? 'text-[#00F0FF] border-[#00F0FF]/40' : 'text-white border-white/20'
+                              }`}>
                                 {asset.media.frames.length}f
                               </span>
                               <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/90 to-transparent p-1 pt-3">
@@ -1117,13 +1229,17 @@ function MainApp() {
                               <div className="absolute inset-0 bg-black/85 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-1.5 gap-1.5 z-10">
                                 <button 
                                   onClick={(e) => { e.stopPropagation(); handleAddAssetToTimeline(asset.id); }}
-                                  className="w-full py-1 text-[8px] font-bold bg-[#E85D2A] text-white hover:bg-white hover:text-[#1A1A1A] transition-colors cursor-pointer uppercase font-mono tracking-wider"
+                                  className={`w-full py-1 text-[8px] font-bold transition-colors cursor-pointer uppercase font-mono tracking-wider ${
+                                    isDark ? 'bg-[#00F0FF] text-[#100D1C] hover:bg-[#FF2A85] hover:text-white' : 'bg-[#E85D2A] text-white hover:bg-white hover:text-[#1A1A1A]'
+                                  }`}
                                 >
                                   + ADD CLIP
                                 </button>
                                 <button 
                                   onClick={(e) => { e.stopPropagation(); handleReplaceTimelineWithAsset(asset.id); }}
-                                  className="w-full py-0.5 text-[7px] font-bold border border-white/40 text-white hover:bg-white hover:text-[#1A1A1A] transition-colors cursor-pointer uppercase font-mono tracking-wider"
+                                  className={`w-full py-0.5 text-[7px] font-bold transition-colors cursor-pointer uppercase font-mono tracking-wider ${
+                                    isDark ? 'border border-[#00F0FF]/40 text-[#00F0FF] hover:bg-[#00F0FF] hover:text-[#100D1C]' : 'border border-white/40 text-white hover:bg-white hover:text-[#1A1A1A]'
+                                  }`}
                                 >
                                   REPLACE
                                 </button>
@@ -1140,13 +1256,15 @@ function MainApp() {
           </BlueprintHoverCard>
 
           {/* Zone 2: Timeline & Trimming (Center) */}
-          <BlueprintHoverCard className="flex-1 min-w-0 flex flex-col overflow-hidden">
-            <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6B6B6B] px-6 py-3 border-b-2 border-[#1A1A1A] font-mono z-[2] relative flex justify-between items-center bg-[#F5F0EB] shrink-0">
+          <BlueprintHoverCard className="flex-1 min-w-0 flex flex-col overflow-hidden" themeMode={themeMode}>
+            <h2 className={`text-[10px] font-bold uppercase tracking-[0.2em] px-6 py-3 border-b-2 font-mono z-[2] relative flex justify-between items-center shrink-0 ${
+              isDark ? 'bg-[#140F24] border-[#2D2344] text-[#A59CB8]' : 'bg-[#F5F0EB] border-[#1A1A1A] text-[#6B6B6B]'
+            }`}>
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-[#E85D2A]"></span>
-                <span className="text-[#1A1A1A]">TIMELINE</span>
+                <span className={`w-2 h-2 ${isDark ? 'bg-[#00F0FF]' : 'bg-[#E85D2A]'}`}></span>
+                <span className={isDark ? 'text-[#00F0FF]' : 'text-[#1A1A1A]'}>TIMELINE</span>
               </div>
-              {media && <span>{media.frames.length} FRAMES | {targetFps} FPS</span>}
+              {media && <span className={isDark ? 'text-[#A59CB8]' : ''}>{media.frames.length} FRAMES | {targetFps} FPS</span>}
             </h2>
 
             {/* Timeline track — fills remaining space */}
@@ -1173,11 +1291,14 @@ function MainApp() {
                 onSelectClips={setSelectedClipIds}
                 onAssetDrop={handleAddAssetToTimeline}
                 onSplitClip={handleSplitClip}
+                themeMode={themeMode}
               />
             </div>
 
             {/* Playback bar — always at the bottom, never scrolled away */}
-            <div className="shrink-0 px-6 py-3 border-t border-[#1A1A1A]/20 bg-[#F5F0EB] z-[2]">
+            <div className={`shrink-0 px-6 py-3 border-t z-[2] ${
+              isDark ? 'border-[#2D2344] bg-[#140F24]' : 'border-[#1A1A1A]/20 bg-[#F5F0EB]'
+            }`}>
               <PlaybackBar 
                 isPlaying={isPlaying}
                 onTogglePlay={() => setIsPlaying(p => !p)}
@@ -1193,22 +1314,26 @@ function MainApp() {
                   setIsPlaying(false);
                   setActiveFrameIndex(0);
                 }}
+                themeMode={themeMode}
               />
             </div>
           </BlueprintHoverCard>
 
           {/* Zone 3: Inspector (Right) */}
-          <BlueprintHoverCard className="w-[340px] shrink-0 min-w-0">
-            <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#E85D2A] px-4 py-3 border-b-2 border-[#1A1A1A] font-mono z-[2] relative">INSPECTOR</h2>
+          <BlueprintHoverCard className="w-[340px] shrink-0 min-w-0" themeMode={themeMode}>
+            <h2 className={`text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-3 border-b-2 font-mono z-[2] relative ${
+              isDark ? 'text-[#00F0FF] border-[#2D2344] bg-[#140F24]' : 'text-[#E85D2A] border-[#1A1A1A]'
+            }`}>INSPECTOR</h2>
             <div className="flex-1 overflow-y-auto pr-4 px-4 py-4 space-y-6 z-[2] relative">
               <div>
                 <DitherControls 
                   config={ditherConfig} 
                   onChange={setDitherConfig} 
                   disabled={!media} 
+                  themeMode={themeMode}
                 />
               </div>
-              <div className="border-t border-[#1A1A1A] pt-4">
+              <div className={`border-t pt-4 ${isDark ? 'border-[#2D2344]' : 'border-[#1A1A1A]'}`}>
                 <CropControls 
                   settings={cropSettings} 
                   onChange={(newSettings) => {
@@ -1221,6 +1346,7 @@ function MainApp() {
                   }} 
                   disabled={!media}
                   sourceFrame={rawSourceFrame}
+                  themeMode={themeMode}
                 />
               </div>
             </div>
@@ -1237,6 +1363,7 @@ function MainApp() {
             onClose={() => setSettingsOpen(false)} 
             config={hardwareConfig} 
             onChange={setHardwareConfig} 
+            themeMode={themeMode}
           />
         )}
         {exportModalOpen && (
@@ -1247,6 +1374,7 @@ function MainApp() {
             frameCount={media ? media.frames.length : 0}
             targetFps={targetFps}
             xbmpFrames={exportXbmpFrames}
+            themeMode={themeMode}
           />
         )}
         {studioOpen && (
@@ -1268,6 +1396,8 @@ function MainApp() {
           <LyricsStudioView 
             isOpen={activeView === 'lyrics-studio'}
             onClose={() => setActiveView('editor')}
+            themeMode={themeMode}
+            onThemeChange={setThemeMode}
             onInjectToTimeline={(kineticMedia, shouldClose = true) => {
               const assetId = "asset_kinetic_" + Date.now();
               const clipId = "clip_" + Date.now();

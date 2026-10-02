@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Search, Music, FileText, Upload, Play, Pause, ArrowLeft, ArrowRight, Plus, Sparkles, Check, RefreshCw, X, RotateCcw, ChevronUp, ChevronDown, CheckCheck, Bot, Cpu, Activity, Zap, Volume2, Terminal, Sliders, Layers, Type } from 'lucide-react';
 import { searchLrclib, getLrclibExact, searchLyricsOvhFallback } from '../../../engine/lyrics/lrclibClient';
 import { parseLrc, parsePlainTextLyrics } from '../../../engine/lyrics/lrcParser';
@@ -28,6 +28,8 @@ interface LyricsStudioViewProps {
   onClose: () => void;
   onInjectToTimeline: (media: DecodedMedia, shouldClose?: boolean) => void;
   isOpen?: boolean;
+  themeMode?: 'light' | 'dark';
+  onThemeChange?: (theme: 'light' | 'dark') => void;
 }
 
 const SAMPLE_FALLBACK_LRC = `[ti:OLED Kinetic Intro]
@@ -65,15 +67,32 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   onClose,
   onInjectToTimeline,
   isOpen = true,
+  themeMode: externalThemeMode,
+  onThemeChange,
 }) => {
   // --- THEME STATE (PERSISTENT LIGHT / DARK MODE) ---
-  const [themeMode, setThemeMode] = useState<'light' | 'dark'>(() => {
+  const [internalThemeMode, setInternalThemeMode] = useState<'light' | 'dark'>(() => {
     try {
       const saved = localStorage.getItem('oled_studio_theme');
       if (saved === 'light' || saved === 'dark') return saved;
     } catch (_) {}
     return 'dark';
   });
+
+  const themeMode = externalThemeMode ?? internalThemeMode;
+  const setThemeMode = useCallback((mode: 'light' | 'dark') => {
+    setInternalThemeMode(mode);
+    onThemeChange?.(mode);
+    try {
+      localStorage.setItem('oled_studio_theme', mode);
+    } catch (_) {}
+  }, [onThemeChange]);
+
+  useEffect(() => {
+    if (externalThemeMode && externalThemeMode !== internalThemeMode) {
+      setInternalThemeMode(externalThemeMode);
+    }
+  }, [externalThemeMode, internalThemeMode]);
 
   useEffect(() => {
     try {
