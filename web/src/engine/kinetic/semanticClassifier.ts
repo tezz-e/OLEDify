@@ -2,6 +2,7 @@ import { MotionArchetype, StylePackConfig, WordFontRole, STYLE_PACKS, MULTILINGU
 import { LyricWord } from '../lyrics/types';
 import { detectScript } from './scriptDetector';
 import { getScriptFontStack } from './fontLoader';
+import { SongMoodProfile } from './moodProfileEngine';
 
 // Common English, Punjabi, Hindi, Japanese & Arabic Filler / Connective Words
 export const FILLER_WORDS = new Set([
@@ -116,6 +117,28 @@ const ODOMETER_KEYWORDS = new Set([
   'stats', 'speedometer', 'counter', 'digits', 'reels', 'tumbler', '777'
 ]);
 
+const GENTLE_FLOAT_KEYWORDS = new Set([
+  'drift', 'float', 'cloud', 'air', 'breeze', 'wind', 'fly', 'sky', 'breathe', 'feather',
+  'weightless', 'soft', 'gentle', 'slow', 'dream', 'sleep', 'rest', 'peace', 'quiet',
+  'silent', 'calm', 'whisper', 'hawa', 'udna', 'neend', 'khwaab'
+]);
+
+const DITHER_DISSOLVE_KEYWORDS = new Set([
+  'fade', 'ghost', 'memory', 'remember', 'past', 'vanish', 'disappear', 'shadow',
+  'smoke', 'mist', 'fog', 'haze', 'blur', 'yesterday', 'lost', 'gone', 'dusk', 'dawn',
+  'glow', 'shine', 'twilight'
+]);
+
+const TYPEWRITER_KEYWORDS = new Set([
+  'story', 'tell', 'write', 'letter', 'words', 'diary', 'read', 'book', 'paper',
+  'lines', 'message', 'text', 'type', 'record', 'page', 'ink', 'pen'
+]);
+
+const WAVE_KARAOKE_KEYWORDS = new Set([
+  'sing', 'melody', 'harmony', 'tune', 'music', 'chorus', 'sound', 'voice', 'groove',
+  'rhythm', 'acoustic', 'guitar', 'piano', 'notes', 'song', 'gaana', 'sangeet', 'sur', 'taal'
+]);
+
 /**
  * Normalizes a lyric token across all languages and scripts (Latin, Indic, CJK, Cyrillic, Arabic).
  * Preserves letters (\p{L}), numbers (\p{N}), and combining vowel marks/diacritics (\p{M}).
@@ -127,22 +150,24 @@ export function cleanLyricToken(word: string): string {
 
 /**
  * Classifies a lyric word into its optimal visual kinetic archetype based on
- * semantics, phonetics, and vocal duration.
+ * semantics, phonetics, vocal duration, and song mood/tempo profile.
  */
 export function classifyWordArchetype(
   word: string,
   durationMs: number = 400,
   wordIndex: number = 0,
-  precedingSilenceMs: number = 0
+  precedingSilenceMs: number = 0,
+  moodProfile?: SongMoodProfile | null
 ): MotionArchetype {
   const clean = cleanLyricToken(word);
+  const isChill = moodProfile?.vibe === 'ballad_acoustic' || moodProfile?.vibe === 'chill_pop';
 
   // 1. Punctuation & Structural Markers (Shouts or questions)
   if (word.includes('!') || word.endsWith('!!')) {
-    return 'manga_impact';
+    return isChill ? 'inverted_badge' : 'manga_impact';
   }
   if (word.includes('?') || word.includes('...')) {
-    return 'target_focus';
+    return isChill ? 'dither_dissolve' : 'target_focus';
   }
 
   // 2. Connective / Filler words stay clean and non-distracting
@@ -151,19 +176,62 @@ export function classifyWordArchetype(
   }
 
   // 3. Direct Semantic Keyword Matching
-  if (BLADE_KEYWORDS.has(clean)) return 'blade_slash';
-  if (IMPACT_KEYWORDS.has(clean)) return 'manga_impact';
-  if (ANTHEM_KEYWORDS.has(clean)) return '3d_block_stack';
+  if (GENTLE_FLOAT_KEYWORDS.has(clean)) return 'gentle_float';
+  if (DITHER_DISSOLVE_KEYWORDS.has(clean)) return 'dither_dissolve';
+  if (TYPEWRITER_KEYWORDS.has(clean)) return 'typewriter_ribbon';
+  if (WAVE_KARAOKE_KEYWORDS.has(clean)) return 'waveform_karaoke';
+
+  if (!isChill) {
+    if (BLADE_KEYWORDS.has(clean)) return 'blade_slash';
+    if (IMPACT_KEYWORDS.has(clean)) return 'manga_impact';
+    if (ANTHEM_KEYWORDS.has(clean)) return '3d_block_stack';
+    if (GLITCH_KEYWORDS.has(clean)) return 'cyber_glitch';
+    if (SNAKE_KEYWORDS.has(clean)) return 'snake_slither';
+  } else {
+    // Soften combat keywords in chill/ballad modes
+    if (BLADE_KEYWORDS.has(clean)) return 'waveform_karaoke';
+    if (IMPACT_KEYWORDS.has(clean)) return 'inverted_badge';
+    if (ANTHEM_KEYWORDS.has(clean)) return 'gentle_float';
+    if (GLITCH_KEYWORDS.has(clean)) return 'dither_dissolve';
+    if (SNAKE_KEYWORDS.has(clean)) return 'gentle_float';
+  }
+
   if (TARGET_KEYWORDS.has(clean)) return 'target_focus';
-  if (SNAKE_KEYWORDS.has(clean)) return 'snake_slither';
-  if (GLITCH_KEYWORDS.has(clean)) return 'cyber_glitch';
   if (ODOMETER_KEYWORDS.has(clean)) return 'rolling_odometer';
-  if (ECHO_KEYWORDS.has(clean)) return 'echo_stack';
+  if (ECHO_KEYWORDS.has(clean)) return isChill ? 'gentle_float' : 'echo_stack';
   if (BADGE_KEYWORDS.has(clean)) return 'inverted_badge';
-  if (FLUID_KEYWORDS.has(clean)) return 'smooth_fluid';
-  if (WIGGLY_KEYWORDS.has(clean)) return 'wiggly_boil';
+  if (FLUID_KEYWORDS.has(clean)) return isChill ? 'gentle_float' : 'smooth_fluid';
+  if (WIGGLY_KEYWORDS.has(clean)) return isChill ? 'waveform_karaoke' : 'wiggly_boil';
 
   // 4. Rhythmic & Duration Heuristics
+  if (isChill) {
+    // In chill/ballad deliveries, syllables are naturally longer: only trigger holds if >1000ms
+    if (durationMs > 1000) {
+      return (wordIndex % 2 === 0) ? 'gentle_float' : 'dither_dissolve';
+    }
+    // Breaths (>600ms) enter gentle float or typewriter reveal instead of violent manga speedlines
+    if (precedingSilenceMs > 600) {
+      return (wordIndex % 2 === 0) ? 'typewriter_ribbon' : 'gentle_float';
+    }
+    // Quick syllables
+    if (durationMs < 250) {
+      return (wordIndex % 2 === 0) ? 'waveform_karaoke' : 'smooth_fluid';
+    }
+
+    // Chill neutral rotation (Zero violent styles!)
+    const chillPalette: MotionArchetype[] = [
+      'gentle_float',
+      'waveform_karaoke',
+      'smooth_fluid',
+      'typewriter_ribbon',
+      'rolling_odometer',
+      'dither_dissolve',
+      'inverted_badge'
+    ];
+    return chillPalette[wordIndex % chillPalette.length];
+  }
+
+  // Standard/Hype heuristics
   // Long sustained notes (>650ms) need active hold motion (Echo Stack or 3D Block)
   if (durationMs > 650) {
     return (wordIndex % 2 === 0) ? 'echo_stack' : '3d_block_stack';
@@ -202,7 +270,8 @@ export function getWordEffectiveArchetype(
   wordIndex: number,
   globalArchetype: MotionArchetype,
   wordOverrides?: Record<string, MotionArchetype>,
-  precedingWord?: LyricWord
+  precedingWord?: LyricWord,
+  moodProfile?: SongMoodProfile | null
 ): MotionArchetype {
   const specificKey = `${word.word}_${word.startMs}`;
   const cleanKey = cleanLyricToken(word.word);
@@ -218,7 +287,7 @@ export function getWordEffectiveArchetype(
   if (globalArchetype === 'auto_semantic') {
     const durationMs = Math.max(80, word.endMs - word.startMs);
     const precedingSilence = precedingWord ? Math.max(0, word.startMs - precedingWord.endMs) : 0;
-    return classifyWordArchetype(word.word, durationMs, wordIndex, precedingSilence);
+    return classifyWordArchetype(word.word, durationMs, wordIndex, precedingSilence, moodProfile);
   }
 
   return globalArchetype;
@@ -243,15 +312,19 @@ export function getWordFontRole(
     case 'manga_impact':
     case '3d_block_stack':
     case 'inverted_badge':
+    case 'gentle_float':
+    case 'waveform_karaoke':
       return 'hero';
     case 'blade_slash':
     case 'snake_slither':
+    case 'typewriter_ribbon':
       return 'action';
     case 'cyber_glitch':
     case 'target_focus':
     case 'wiggly_boil':
     case 'echo_stack':
     case 'rolling_odometer':
+    case 'dither_dissolve':
       return 'novelty';
     case 'smooth_fluid':
     default:

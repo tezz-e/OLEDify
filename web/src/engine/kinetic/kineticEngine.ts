@@ -7,6 +7,7 @@ import { getWordEffectiveArchetype, getWordEffectiveFont, cleanLyricToken } from
 import { LyricWord } from '../lyrics/types';
 import { isRTL } from './scriptDetector';
 import { ensureFontForText } from './fontLoader';
+import { computeSongMoodProfile } from './moodProfileEngine';
 
 function findLastEndedWord(wordsList: LyricWord[], timeMs: number): { word?: LyricWord; index: number } {
   for (let i = wordsList.length - 1; i >= 0; i--) {
@@ -77,6 +78,9 @@ export async function renderKineticSequence(
 
   const extractedFrames: ExtractedFrame[] = [];
 
+  const moodProfile = computeSongMoodProfile(audioAnalysis, lyrics);
+  const holdDurationMs = Math.round(140 * moodProfile.dwellDecayFactor);
+
   for (let f = 0; f < frameCount; f++) {
     const currentMs = startMs + f * frameIntervalMs;
     const audioFrame = audioAnalysis ? audioAnalysis.getFrameAtTime(currentMs) : undefined;
@@ -87,9 +91,9 @@ export async function renderKineticSequence(
     let isPauseState = false;
 
     if (!activeWord) {
-      // Check if preceding word just ended within 140ms tail hold
+      // Check if preceding word just ended within adaptive tail hold
       const { word: prevWord, index: prevIndex } = findLastEndedWord(words, currentMs);
-      if (prevWord && (currentMs - prevWord.endMs) <= 140) {
+      if (prevWord && (currentMs - prevWord.endMs) <= holdDurationMs) {
         activeWord = prevWord;
         activeWordIndex = prevIndex;
       } else {
@@ -129,24 +133,27 @@ export async function renderKineticSequence(
       const wordDuration = Math.max(80, activeWord.endMs - activeWord.startMs);
       const tau = Math.max(0, Math.min(1, (currentMs - activeWord.startMs) / wordDuration));
 
-      // Resolve dynamic semantic motion archetype per word
+      // Resolve dynamic semantic motion archetype per word with moodProfile
       const precedingWord = activeWordIndex > 0 ? words[activeWordIndex - 1] : undefined;
       let effectiveArchetype = getWordEffectiveArchetype(
         activeWord,
         activeWordIndex,
         archetype,
         wordOverrides,
-        precedingWord
+        precedingWord,
+        moodProfile
       );
 
       if (effectiveArchetype === 'auto_semantic') {
-        effectiveArchetype = 'smooth_fluid';
+        effectiveArchetype = moodProfile.defaultArchetype;
       }
 
       // Resolve active style pack
       const activePackConfig = options.customPalette
         ? { id: 'custom' as const, name: 'Custom', icon: '⚙️', tag: 'CUSTOM', description: '', fonts: options.customPalette }
-        : (options.stylePack && STYLE_PACKS[options.stylePack]) ? STYLE_PACKS[options.stylePack] : STYLE_PACKS.trap_drill;
+        : (options.stylePack && STYLE_PACKS[options.stylePack]) 
+          ? STYLE_PACKS[options.stylePack] 
+          : STYLE_PACKS[moodProfile.recommendedStylePack] || STYLE_PACKS.trap_drill;
 
       // Resolve dynamic font per word matching semantic role & pack
       const effectiveFont = getWordEffectiveFont(

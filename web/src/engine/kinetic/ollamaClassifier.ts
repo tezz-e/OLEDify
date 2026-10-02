@@ -1,6 +1,7 @@
 import { MotionArchetype, VisualMotif } from './types';
 import { LyricLine, LyricWord } from '../lyrics/types';
 import { cleanLyricToken } from './semanticClassifier';
+import { SongMoodProfile } from './moodProfileEngine';
 
 export interface OllamaModelInfo {
   name: string;
@@ -164,6 +165,10 @@ export const VALID_MOTION_ARCHETYPES: MotionArchetype[] = [
   'smooth_fluid',
   'wiggly_boil',
   'rolling_odometer',
+  'gentle_float',
+  'dither_dissolve',
+  'typewriter_ribbon',
+  'waveform_karaoke',
 ];
 
 export const VALID_VISUAL_MOTIFS: VisualMotif[] = [
@@ -178,6 +183,12 @@ export const VALID_VISUAL_MOTIFS: VisualMotif[] = [
   'chrome_star',
   'lightning_arc',
   'comic_burst',
+  'floating_notes',
+  'starlight_glimmer',
+  'heartbeat_pulse',
+  'water_ripples',
+  'minimal_frame',
+  'lofi_dust_motes',
 ];
 
 /**
@@ -192,6 +203,12 @@ export function normalizeMotif(
   if (valid.includes(clean as VisualMotif)) return clean as VisualMotif;
 
   // Fuzzy keyword matching for motifs
+  if (clean.includes('note') || clean.includes('music') || clean.includes('melody') || clean.includes('clef')) return 'floating_notes';
+  if (clean.includes('starlight') || clean.includes('twinkle') || clean.includes('constellation')) return 'starlight_glimmer';
+  if (clean.includes('heart') || clean.includes('pulse') || clean.includes('cardiac') || clean.includes('love')) return 'heartbeat_pulse';
+  if (clean.includes('ripple') || clean.includes('water') || clean.includes('wave') || clean.includes('ocean')) return 'water_ripples';
+  if (clean.includes('frame') || clean.includes('border') || clean.includes('box') || clean.includes('letterbox')) return 'minimal_frame';
+  if (clean.includes('dust') || clean.includes('mote') || clean.includes('particle') || clean.includes('lofi')) return 'lofi_dust_motes';
   if (clean.includes('speed') || clean.includes('wedge') || clean.includes('focus') || clean.includes('radial')) return 'manga_speedlines';
   if (clean.includes('rush') || clean.includes('dash') || clean.includes('run') || clean.includes('nagare')) return 'anime_rush';
   if (clean.includes('crown') || clean.includes('king') || clean.includes('royal') || clean.includes('queen') || clean.includes('boss')) return 'crown_royal';
@@ -218,6 +235,10 @@ export function normalizeArchetype(
   if (valid.includes(clean as MotionArchetype)) return clean as MotionArchetype;
 
   // Fuzzy keyword matching
+  if (clean.includes('float') || clean.includes('drift') || clean.includes('breeze') || clean.includes('cloud')) return 'gentle_float';
+  if (clean.includes('dither') || clean.includes('dissolve') || clean.includes('fade') || clean.includes('crossfade')) return 'dither_dissolve';
+  if (clean.includes('typewriter') || clean.includes('ribbon') || clean.includes('type') || clean.includes('story') || clean.includes('typing')) return 'typewriter_ribbon';
+  if (clean.includes('karaoke') || clean.includes('waveform') || clean.includes('runner') || clean.includes('wave')) return 'waveform_karaoke';
   if (clean.includes('manga') || clean.includes('impact') || clean.includes('punch') || clean.includes('boom')) return 'manga_impact';
   if (clean.includes('glitch') || clean.includes('cyber') || clean.includes('static') || clean.includes('electric')) return 'cyber_glitch';
   if (clean.includes('block') || clean.includes('3d') || clean.includes('stack') || clean.includes('cube')) return '3d_block_stack';
@@ -226,7 +247,7 @@ export function normalizeArchetype(
   if (clean.includes('snake') || clean.includes('slither') || clean.includes('venom') || clean.includes('poison') || clean.includes('crawl')) return 'snake_slither';
   if (clean.includes('echo') || clean.includes('chant') || clean.includes('reverb') || clean.includes('vocal')) return 'echo_stack';
   if (clean.includes('badge') || clean.includes('invert') || clean.includes('stamp') || clean.includes('rule') || clean.includes('stop')) return 'inverted_badge';
-  if (clean.includes('fluid') || clean.includes('smooth') || clean.includes('float') || clean.includes('glide')) return 'smooth_fluid';
+  if (clean.includes('fluid') || clean.includes('smooth') || clean.includes('glide')) return 'smooth_fluid';
   if (clean.includes('boil') || clean.includes('wiggly') || clean.includes('shake') || clean.includes('jitter') || clean.includes('chaos')) return 'wiggly_boil';
   if (clean.includes('odometer') || clean.includes('rolling') || clean.includes('roller') || clean.includes('slot') || clean.includes('reel') || clean.includes('tumbler') || clean.includes('counter')) return 'rolling_odometer';
 
@@ -369,14 +390,35 @@ export function extractClassificationsFromResponse(
 export function buildOllamaLyricsPrompt(
   lines: LyricLine[],
   songTitle: string = 'Unknown',
-  artist: string = 'Unknown'
+  artist: string = 'Unknown',
+  profile?: SongMoodProfile | null
 ): string {
   const formattedLines = lines.map((l: LyricLine, i: number) => {
     return `Line ${i + 1}: "${l.text}"`;
   }).join('\n');
 
-  return `You are an elite motion typography director for high-energy 1-bit OLED kinetic lyrics.
+  const isChill = profile?.vibe === 'ballad_acoustic' || profile?.vibe === 'chill_pop';
+  const isGroove = profile?.vibe === 'groove_dance';
+
+  const vibeHeader = isChill
+    ? `SONG VIBE: ${profile?.vibe.toUpperCase()} (${profile?.bpm || 95} BPM - relaxed, melodic acoustic/pop energy).
+DIRECTOR TONE:
+- Deliver elegant, charming, and fluid typography.
+- DO NOT assign aggressive, violent, or chaotic archetypes ("manga_impact", "blade_slash", "cyber_glitch") unless a word explicitly screams violence or digital glitch.
+- Prioritize: "gentle_float" (sine drift), "waveform_karaoke" (fluid singing runner), "typewriter_ribbon" (narrative storytelling), "dither_dissolve" (nostalgic memory/fade), and "smooth_fluid".
+- For motifs, prioritize: "floating_notes", "starlight_glimmer", "heartbeat_pulse", "water_ripples", "minimal_frame", "chrome_star" or "none".`
+    : isGroove
+    ? `SONG VIBE: GROOVE & DANCE (${profile?.bpm || 120} BPM - rhythmic danceable tempo).
+DIRECTOR TONE:
+- Balance rhythm and punch: use "rolling_odometer", "waveform_karaoke", "inverted_badge", "gentle_float".
+- Avoid excessive violence; prioritize musical groove and bouncy accents.`
+    : `SONG VIBE: HIGH-ENERGY / HYPE (${profile?.bpm || 135} BPM - aggressive cuts, heavy punchlines).
+DIRECTOR TONE:
+- Deliver punchy, aggressive kinetic cuts, speedlines, and glitched impacts.`;
+
+  return `You are an elite motion typography director for 1-bit OLED kinetic lyrics.
 Song Context: "${songTitle}" by ${artist}.
+${vibeHeader}
 
 Analyze the emotions, language, cultural slang, metaphors, and rhythm of these lines:
 ${formattedLines}
@@ -384,11 +426,15 @@ ${formattedLines}
 CRITICAL RULES:
 1. Select and direct 2 to 4 key expressive words per line (key nouns, energetic verbs, metaphors, shouting words, tempo shifts, punchlines). Direct the kinetic choreography so every line feels dynamic and alive.
 2. NEVER classify connective filler words, prepositions, conjunctions, or weak pronouns. Specifically DO NOT classify: "te", "de", "da", "di", "naal", "mera", "tera", "ni", "ki", "tainu", "and", "the", "with", "of", "to", "in", "it", "my", "you", "me", "is", "a", "an".
-3. VARY YOUR ARCHETYPES INTENTIONALLY: Do not pick the same archetype for consecutive words. Contrast punchlines ("manga_impact", "3d_block_stack", "inverted_badge") with tempo actions ("blade_slash", "snake_slither", "rolling_odometer"), digital panic ("cyber_glitch", "target_focus", "wiggly_boil"), or sustained chants ("echo_stack").
-4. ALWAYS assign an evocative background visual motif ("motif") to key punchlines and emotional climaxes matching the cultural slang and imagery (e.g. weapons/sharp -> "razor_blade", royalty/boss/hukum -> "crown_royal", speed/rush -> "manga_speedlines" or "anime_rush", heat/fire -> "flame_tongue", luxury/ice/shine -> "chrome_star", electricity/digital -> "lightning_arc", focus/guns/aim -> "tactical_scope", death/danger -> "skull_cross", comic/pop -> "comic_burst"). If no motif fits, use "none".
+3. VARY YOUR ARCHETYPES INTENTIONALLY: Do not pick the same archetype for consecutive words. Contrast punchlines with tempo actions, fluid glides, or sustained chants.
+4. ALWAYS assign an evocative background visual motif ("motif") to key punchlines and emotional climaxes matching the cultural slang and imagery. If no motif fits, use "none".
 5. For each selected word, provide its meaning and rationale for the motion choice.
 
-Choose from these 11 visual archetypes:
+Choose from these 15 visual archetypes:
+- "gentle_float": weightless acoustic drift, floating, romance, calm breeze, dreaming
+- "waveform_karaoke": sing-along melody, catchy choruses, vocal rhythm, musical hooks
+- "typewriter_ribbon": storytelling reveal, confessions, letters, narrative, diary lines
+- "dither_dissolve": nostalgic memory, vintage Game Boy/Mac dither fade, fading away, shadows
 - "manga_impact": explosive hits, punches, loud shouts, beat drops
 - "cyber_glitch": high-tech speed, rapid flows, digital panic, lightning
 - "3d_block_stack": royalty, power, anthems, pride, heavy boss energy, solid blocks
@@ -401,8 +447,14 @@ Choose from these 11 visual archetypes:
 - "wiggly_boil": wild dancing, boiling jitter, chaos, fun, quirky shaking
 - "rolling_odometer": slot machine tumbler, rolling digits, reels, mechanical spin, count, numbers, casino
 
-Choose from these 10 visual motifs (or "none"):
+Choose from these 16 visual motifs (or "none"):
 - "none": clean typography only with zero background visual distractions
+- "floating_notes": drifting music notes (♪ ♫) for melodies, singing, instruments, romance
+- "starlight_glimmer": breathing twinkling stars for dreams, night, magic, sparkling emotions
+- "heartbeat_pulse": romantic heart pulse with concentric ripples for love, feelings, heartbeat
+- "water_ripples": calming ocean waves and liquid ripples along screen floor
+- "minimal_frame": cinematic minimalist border frame with corner cuts for elegant ballads
+- "lofi_dust_motes": cozy floating dust particles for coffee shop / bedroom pop warmth
 - "manga_speedlines": radial tapered focus lines converging around text
 - "anime_rush": horizontal rapid speed barrage streaks
 - "crown_royal": gothic 3-point crown for kings, bosses, wealth, royalty, "hukum", "badshah"
@@ -445,6 +497,7 @@ export async function classifyLyricsWithOllama(
     endpoint?: string;
     songTitle?: string;
     artist?: string;
+    songProfile?: SongMoodProfile | null;
     onProgress?: (percent: number, message: string) => void;
     onInspectionLog?: (log: OllamaInspectionLog) => void;
   } = {}
@@ -473,7 +526,8 @@ export async function classifyLyricsWithOllama(
     const prompt = buildOllamaLyricsPrompt(
       batchLines,
       options.songTitle || 'Unknown',
-      options.artist || 'Unknown'
+      options.artist || 'Unknown',
+      options.songProfile
     );
 
     const logEntry: OllamaInspectionLog = {

@@ -11,11 +11,29 @@ function getScratchCanvas(): { canvas: OffscreenCanvas | HTMLCanvasElement; ctx:
     if (typeof OffscreenCanvas !== 'undefined') {
       cachedScratchCanvas = new OffscreenCanvas(128, 64);
       cachedScratchCtx = cachedScratchCanvas.getContext('2d')!;
-    } else {
+    } else if (typeof document !== 'undefined' && typeof document.createElement === 'function') {
       cachedScratchCanvas = document.createElement('canvas');
       cachedScratchCanvas.width = 128;
       cachedScratchCanvas.height = 64;
       cachedScratchCtx = cachedScratchCanvas.getContext('2d')!;
+    } else {
+      const mockCtx: any = {
+        fillRect: () => {},
+        fillText: () => {},
+        strokeText: () => {},
+        clearRect: () => {},
+        getImageData: () => ({ data: new Uint8ClampedArray(128 * 64 * 4) }),
+        putImageData: () => {},
+        measureText: (text: string) => ({ width: text.length * 8 }),
+        save: () => {},
+        restore: () => {},
+        font: '',
+        fillStyle: '',
+        strokeStyle: '',
+        textAlign: 'center',
+        lineWidth: 1
+      };
+      return { canvas: {} as any, ctx: mockCtx };
     }
   }
   return { canvas: cachedScratchCanvas, ctx: cachedScratchCtx };
@@ -127,6 +145,18 @@ export function renderArchetypeFrame(
       break;
     case 'rolling_odometer':
       renderRollingOdometer(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
+      break;
+    case 'gentle_float':
+      renderGentleFloat(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
+      break;
+    case 'dither_dissolve':
+      renderDitherDissolve(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
+      break;
+    case 'typewriter_ribbon':
+      renderTypewriterRibbon(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
+      break;
+    case 'waveform_karaoke':
+      renderWaveformKaraoke(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
       break;
     default:
       renderSmoothFluid(ctx, text, tau, layout, frameIndex, fontFamily, audioFrame);
@@ -899,6 +929,256 @@ function renderRollingOdometer(
       curX += charW;
     }
   }
+
+  ctx.restore();
+}
+
+/**
+ * Bayer 4x4 dither threshold matrix for zero-jitter 1-bit dissolves
+ */
+const BAYER_4X4: number[][] = [
+  [ 0,  8,  2, 10],
+  [12,  4, 14,  6],
+  [ 3, 11,  1,  9],
+  [15,  7, 13,  5]
+];
+
+/**
+ * 12. GENTLE FLOAT: Weightless acoustic drift with subtle dual-harmonic Lissajous floating
+ */
+function renderGentleFloat(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  text: string,
+  tau: number,
+  layout: TextLayoutResult,
+  frameIndex: number,
+  fontFamily: string,
+  audioFrame?: AudioFrameData
+) {
+  const rtl = isRTL(text);
+  // Entry: easeInOutSine slide up into position
+  const entryProgress = Math.min(1, tau / 0.35);
+  const entryEase = -(Math.cos(Math.PI * entryProgress) - 1) / 2; // easeInOutSine
+  const entryY = Math.round((1 - entryEase) * 12);
+
+  // Sustain: harmonic Lissajous drift
+  const audioSwell = audioFrame ? audioFrame.rms * 1.5 : 0;
+  const floatY = tau > 0.35 ? Math.round(Math.sin((frameIndex / 30) * Math.PI * 0.8) * (1.5 + audioSwell)) : 0;
+  const floatX = tau > 0.35 ? Math.round(Math.cos((frameIndex / 30) * Math.PI * 0.4) * 0.8) : 0;
+
+  const curX = 64 + floatX;
+  const curY = entryY + floatY;
+
+  ctx.save();
+  ctx.direction = rtl ? 'rtl' : 'ltr';
+  ctx.font = getSafeFontSpec(layout.fontSize, fontFamily);
+  ctx.textAlign = 'center';
+
+  // 1-Bit Knockout Halo
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < layout.lines.length; i++) {
+    drawTrackedText(ctx, layout.lines[i], curX, layout.yOffsets[i] + curY, layout.letterSpacing, true);
+  }
+
+  // Crisp White Core
+  ctx.fillStyle = '#FFFFFF';
+  for (let i = 0; i < layout.lines.length; i++) {
+    drawTrackedText(ctx, layout.lines[i], curX, layout.yOffsets[i] + curY, layout.letterSpacing, false);
+  }
+  ctx.restore();
+}
+
+/**
+ * 13. DITHER DISSOLVE: 1-Bit Bayer matrix crossfade with zero temporal crawl
+ */
+function renderDitherDissolve(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  text: string,
+  tau: number,
+  layout: TextLayoutResult,
+  _frameIndex: number,
+  fontFamily: string,
+  _audioFrame?: AudioFrameData
+) {
+  const rtl = isRTL(text);
+  const { canvas: tempCanvas, ctx: tCtx } = getScratchCanvas();
+  tCtx.clearRect(0, 0, 128, 64);
+  tCtx.direction = rtl ? 'rtl' : 'ltr';
+  tCtx.font = getSafeFontSpec(layout.fontSize, fontFamily);
+  tCtx.textAlign = 'center';
+
+  // Draw black knockout halo + crisp white text on scratch canvas
+  tCtx.strokeStyle = '#000000';
+  tCtx.lineWidth = 2;
+  for (let i = 0; i < layout.lines.length; i++) {
+    drawTrackedText(tCtx, layout.lines[i], 64, layout.yOffsets[i], layout.letterSpacing, true);
+  }
+  tCtx.fillStyle = '#FFFFFF';
+  for (let i = 0; i < layout.lines.length; i++) {
+    drawTrackedText(tCtx, layout.lines[i], 64, layout.yOffsets[i], layout.letterSpacing, false);
+  }
+
+  // Calculate threshold: 0..1 during entry (tau <= 0.35), 1 during hold, 1..0 on exit (tau >= 0.85)
+  let dissolveThreshold = 1.0;
+  if (tau < 0.35) {
+    const t = tau / 0.35;
+    dissolveThreshold = 1 - (1 - t) * (1 - t); // easeOutQuad
+  } else if (tau > 0.85) {
+    const t = (1.0 - tau) / 0.15;
+    dissolveThreshold = 1 - (1 - t) * (1 - t);
+  }
+
+  // If fully solid, direct draw
+  if (dissolveThreshold >= 1.0) {
+    if (typeof (ctx as any).drawImage === 'function') {
+      ctx.drawImage(tempCanvas, 0, 0);
+    }
+    return;
+  }
+
+  // Apply screen-space Bayer threshold filter
+  const imgData = tCtx.getImageData(0, 0, 128, 64);
+  const src = imgData.data;
+  ctx.save();
+  ctx.fillStyle = '#FFFFFF';
+
+  for (let y = 0; y < 64; y++) {
+    for (let x = 0; x < 128; x++) {
+      const idx = (y * 128 + x) * 4;
+      if (src[idx + 3] > 64 && src[idx] > 120) { // White pixel
+        const bayerVal = BAYER_4X4[y % 4][x % 4] / 16.0;
+        if (dissolveThreshold > bayerVal) {
+          ctx.fillRect(x, y, 1, 1);
+        }
+      }
+    }
+  }
+  ctx.restore();
+}
+
+/**
+ * 14. TYPEWRITER RIBBON: Progressive storytelling reveal with blinking cursor and underline ribbon
+ */
+function renderTypewriterRibbon(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  text: string,
+  tau: number,
+  layout: TextLayoutResult,
+  frameIndex: number,
+  fontFamily: string,
+  _audioFrame?: AudioFrameData
+) {
+  const rtl = isRTL(text);
+  ctx.save();
+  ctx.direction = rtl ? 'rtl' : 'ltr';
+  ctx.font = getSafeFontSpec(layout.fontSize, fontFamily);
+  ctx.textAlign = 'center';
+
+  for (let lineIdx = 0; lineIdx < layout.lines.length; lineIdx++) {
+    const fullLine = layout.lines[lineIdx];
+    const graphemes = getGraphemes(fullLine);
+    const totalChars = graphemes.length;
+    if (totalChars === 0) continue;
+
+    // Typing reveal progress
+    const typingProgress = Math.min(1, tau / 0.65);
+    const visibleCount = Math.min(totalChars, Math.floor(typingProgress * (totalChars + 1)));
+    const visibleText = graphemes.slice(0, visibleCount).join('');
+    const lineY = layout.yOffsets[lineIdx];
+
+    // Draw visible typed characters with knockout
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2;
+    drawTrackedText(ctx, visibleText, 64, lineY, layout.letterSpacing, true);
+    ctx.fillStyle = '#FFFFFF';
+    drawTrackedText(ctx, visibleText, 64, lineY, layout.letterSpacing, false);
+
+    // Blinking cursor if still typing or just finished (blinks every 8 frames)
+    if (typingProgress < 1.0 || (frameIndex % 8 < 4)) {
+      const fullW = ctx.measureText(fullLine).width;
+      const curW = ctx.measureText(visibleText).width;
+      const cursorX = rtl 
+        ? Math.round(64 + fullW / 2 - curW - 2)
+        : Math.round(64 - fullW / 2 + curW + 2);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(
+        Math.max(2, Math.min(124, cursorX)), 
+        lineY - Math.round(layout.fontSize * 0.75), 
+        2, 
+        Math.max(6, Math.round(layout.fontSize * 0.85))
+      );
+    }
+
+    // Expanding ribbon underline once completed
+    if (tau > 0.65) {
+      const ribbonT = (tau - 0.65) / 0.35;
+      const ribbonProgress = 1 - Math.pow(1 - ribbonT, 3); // easeOutCubic
+      const targetW = ctx.measureText(fullLine).width + 6;
+      const ribbonW = Math.round(targetW * ribbonProgress);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(Math.round(64 - ribbonW / 2), Math.min(62, lineY + 3), ribbonW, 1);
+    }
+  }
+  ctx.restore();
+}
+
+/**
+ * 15. WAVEFORM KARAOKE: Rock-solid text with fluid vocal wave and tracking runner beacon
+ */
+function renderWaveformKaraoke(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  text: string,
+  tau: number,
+  layout: TextLayoutResult,
+  frameIndex: number,
+  fontFamily: string,
+  _audioFrame?: AudioFrameData
+) {
+  const rtl = isRTL(text);
+  ctx.save();
+  ctx.direction = rtl ? 'rtl' : 'ltr';
+  ctx.font = getSafeFontSpec(layout.fontSize, fontFamily);
+  ctx.textAlign = 'center';
+
+  // Draw solid stationary text with knockout halo
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < layout.lines.length; i++) {
+    drawTrackedText(ctx, layout.lines[i], 64, layout.yOffsets[i], layout.letterSpacing, true);
+  }
+  ctx.fillStyle = '#FFFFFF';
+  for (let i = 0; i < layout.lines.length; i++) {
+    drawTrackedText(ctx, layout.lines[i], 64, layout.yOffsets[i], layout.letterSpacing, false);
+  }
+
+  // Draw continuous sinusoidal wave directly beneath the bottom line
+  const bottomLineIdx = layout.lines.length - 1;
+  const lineY = layout.yOffsets[bottomLineIdx];
+  const fullW = ctx.measureText(layout.lines[bottomLineIdx]).width;
+  const startX = Math.max(4, Math.floor(64 - fullW / 2 - 4));
+  const endX = Math.min(124, Math.ceil(64 + fullW / 2 + 4));
+
+  ctx.fillStyle = '#FFFFFF';
+
+  // Continuous fluid wave
+  const waveBaseY = Math.min(61, lineY + 4);
+  for (let x = startX; x <= endX; x++) {
+    const waveY = waveBaseY + Math.round(1.5 * Math.sin(0.18 * x + frameIndex * 0.16));
+    if (waveY >= 0 && waveY < 64) {
+      ctx.fillRect(x, waveY, 1, 1);
+    }
+  }
+
+  // Vocal Progress Runner (Diamond Bead)
+  const runnerX = rtl 
+    ? Math.round(endX - tau * (endX - startX))
+    : Math.round(startX + tau * (endX - startX));
+  const runnerY = waveBaseY + Math.round(1.5 * Math.sin(0.18 * runnerX + frameIndex * 0.16));
+
+  // Draw 3x3 diamond bead
+  ctx.fillRect(runnerX - 1, runnerY, 3, 1);
+  ctx.fillRect(runnerX, runnerY - 1, 1, 3);
 
   ctx.restore();
 }

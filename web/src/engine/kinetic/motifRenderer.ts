@@ -567,5 +567,248 @@ export function renderMotifBackground(
         drawComicBurstBubble(ctx, 64, 32, 26, 38, 14, frameIndex);
       }
       break;
+
+    case 'floating_notes':
+      drawFloatingNotes(ctx, frameIndex);
+      break;
+
+    case 'starlight_glimmer':
+      drawStarlightGlimmer(ctx, frameIndex);
+      break;
+
+    case 'heartbeat_pulse':
+      drawHeartbeatPulse(ctx, frameIndex, tau);
+      break;
+
+    case 'water_ripples':
+      drawWaterRipples(ctx, frameIndex);
+      break;
+
+    case 'minimal_frame':
+      drawMinimalFrame(ctx, tau);
+      break;
+
+    case 'lofi_dust_motes':
+      drawLofiDustMotes(ctx, frameIndex);
+      break;
   }
+}
+
+function drawFloatingNotes(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  frameIndex: number
+) {
+  ctx.save();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  const noteSeeds = [
+    { x0: 16, y0: 50, speed: 0.5, isDouble: false },
+    { x0: 38, y0: 58, speed: 0.7, isDouble: true },
+    { x0: 90, y0: 48, speed: 0.6, isDouble: false },
+    { x0: 112, y0: 56, speed: 0.75, isDouble: true },
+  ];
+
+  for (let i = 0; i < noteSeeds.length; i++) {
+    const seed = noteSeeds[i];
+    const y = Math.round(64 - ((frameIndex * seed.speed + seed.y0) % 70));
+    if (y < 4 || y > 60) continue;
+
+    const sway = Math.round(Math.sin((frameIndex * 0.08) + i * 2) * 3);
+    const x = seed.x0 + sway;
+
+    if (!seed.isDouble) {
+      // Single eighth note (♪)
+      ctx.beginPath();
+      ctx.ellipse(x, y, 2, 1.5, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(x + 1, y - 6, 1, 6);
+      ctx.fillRect(x + 2, y - 6, 2, 1);
+    } else {
+      // Beamed sixteenth pair (♫)
+      ctx.beginPath();
+      ctx.ellipse(x, y, 2, 1.5, -0.2, 0, Math.PI * 2);
+      ctx.ellipse(x + 6, y - 1, 2, 1.5, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(x + 1, y - 6, 1, 6);
+      ctx.fillRect(x + 7, y - 7, 1, 6);
+      ctx.fillRect(x + 1, y - 6, 7, 2);
+    }
+  }
+  ctx.restore();
+}
+
+function drawStarlightGlimmer(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  frameIndex: number
+) {
+  ctx.save();
+  ctx.fillStyle = '#FFFFFF';
+
+  const stars = [
+    { x: 12, y: 10, offset: 0 },
+    { x: 34, y: 14, offset: 12 },
+    { x: 58, y: 8, offset: 24 },
+    { x: 80, y: 12, offset: 36 },
+    { x: 104, y: 10, offset: 48 },
+    { x: 120, y: 18, offset: 16 },
+    { x: 8, y: 52, offset: 30 },
+    { x: 26, y: 56, offset: 42 },
+    { x: 64, y: 54, offset: 18 },
+    { x: 96, y: 56, offset: 6 },
+    { x: 118, y: 50, offset: 28 },
+  ];
+
+  for (const s of stars) {
+    const phase = Math.sin(((frameIndex + s.offset) % 40) / 40 * Math.PI * 2);
+    if (phase < -0.2) continue;
+
+    if (phase < 0.4) {
+      ctx.fillRect(s.x, s.y, 1, 1);
+    } else if (phase < 0.8) {
+      ctx.fillRect(s.x, s.y, 1, 1);
+      ctx.fillRect(s.x - 1, s.y, 3, 1);
+      ctx.fillRect(s.x, s.y - 1, 1, 3);
+    } else {
+      ctx.fillRect(s.x - 1, s.y, 3, 1);
+      ctx.fillRect(s.x, s.y - 1, 1, 3);
+      ctx.fillRect(s.x - 2, s.y, 5, 1);
+      ctx.fillRect(s.x, s.y - 2, 1, 5);
+    }
+  }
+  ctx.restore();
+}
+
+function drawHeartbeatPulse(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  frameIndex: number,
+  _tau: number
+) {
+  ctx.save();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.strokeStyle = '#FFFFFF';
+
+  const cx = 64;
+  const cy = 12;
+
+  const beatCycle = (frameIndex % 32) / 32;
+  const pump1 = Math.exp(-25 * Math.pow(beatCycle - 0.15, 2)) * 0.3;
+  const pump2 = Math.exp(-35 * Math.pow(beatCycle - 0.38, 2)) * 0.15;
+  const scale = 1.0 + pump1 + pump2;
+
+  const HEART_ROWS = [
+    [0, 1, 1, 0, 1, 1, 0],
+    [1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1],
+    [0, 1, 1, 1, 1, 1, 0],
+    [0, 0, 1, 1, 1, 0, 0],
+    [0, 0, 0, 1, 0, 0, 0]
+  ];
+
+  const ox = Math.round(cx - 3.5 * scale);
+  const oy = Math.round(cy - 3 * scale);
+
+  for (let r = 0; r < 6; r++) {
+    for (let c = 0; c < 7; c++) {
+      if (HEART_ROWS[r][c] === 1) {
+        ctx.fillRect(Math.round(ox + c * scale), Math.round(oy + r * scale), Math.max(1, Math.round(scale)), Math.max(1, Math.round(scale)));
+      }
+    }
+  }
+
+  const rippleR = Math.round((beatCycle * 32)) % 28;
+  if (rippleR > 4) {
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + 2, rippleR * 1.4, rippleR * 0.7, 0, 0, Math.PI * 2);
+    if (rippleR % 2 === 0) {
+      ctx.stroke();
+    }
+  }
+
+  ctx.restore();
+}
+
+function drawWaterRipples(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  frameIndex: number
+) {
+  ctx.save();
+  ctx.fillStyle = '#FFFFFF';
+
+  for (let x = 0; x < 128; x++) {
+    const y1 = Math.round(55 + 2.0 * Math.sin(0.09 * x + frameIndex * 0.08));
+    const y2 = Math.round(59 + 1.5 * Math.sin(0.14 * x - frameIndex * 0.06));
+
+    if (y1 >= 0 && y1 < 64) ctx.fillRect(x, y1, 1, 1);
+    if (y2 >= 0 && y2 < 64) ctx.fillRect(x, y2, 1, 1);
+
+    if ((x + frameIndex) % 4 === 0 && (y2 + 2) < 64) {
+      ctx.fillRect(x, y2 + 2, 1, 1);
+    }
+  }
+  ctx.restore();
+}
+
+function drawMinimalFrame(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  _tau: number
+) {
+  ctx.save();
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  const pad = 2;
+  const notch = 6;
+  const x1 = pad, x2 = 127 - pad;
+  const y1 = pad, y2 = 63 - pad;
+
+  ctx.beginPath();
+  ctx.moveTo(x1 + notch, y1);
+  ctx.lineTo(x2 - notch, y1);
+  ctx.moveTo(x1 + notch, y2);
+  ctx.lineTo(x2 - notch, y2);
+  ctx.moveTo(x1, y1 + notch);
+  ctx.lineTo(x1, y2 - notch);
+  ctx.moveTo(x2, y1 + notch);
+  ctx.lineTo(x2, y2 - notch);
+  ctx.stroke();
+
+  ctx.fillRect(x1 + 1, y1 + 1, 2, 2);
+  ctx.fillRect(x2 - 2, y1 + 1, 2, 2);
+  ctx.fillRect(x1 + 1, y2 - 2, 2, 2);
+  ctx.fillRect(x2 - 2, y2 - 2, 2, 2);
+
+  ctx.restore();
+}
+
+function drawLofiDustMotes(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  frameIndex: number
+) {
+  ctx.save();
+  ctx.fillStyle = '#FFFFFF';
+
+  const MOTES = [
+    { x0: 14, y0: 20, vx: 0.2, vy: 0.15 },
+    { x0: 32, y0: 45, vx: -0.15, vy: 0.2 },
+    { x0: 55, y0: 12, vx: 0.25, vy: -0.1 },
+    { x0: 74, y0: 50, vx: -0.2, vy: 0.18 },
+    { x0: 98, y0: 24, vx: 0.18, vy: 0.22 },
+    { x0: 114, y0: 42, vx: -0.12, vy: -0.15 },
+    { x0: 45, y0: 30, vx: 0.1, vy: -0.2 },
+    { x0: 85, y0: 15, vx: -0.16, vy: 0.12 }
+  ];
+
+  for (const m of MOTES) {
+    const x = Math.round((m.x0 + m.vx * frameIndex + Math.sin(frameIndex * 0.05 + m.y0) * 4 + 128) % 128);
+    const y = Math.round((m.y0 + m.vy * frameIndex + Math.cos(frameIndex * 0.05 + m.x0) * 3 + 64) % 64);
+    if ((x + y + frameIndex) % 2 === 0) {
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+
+  ctx.restore();
 }

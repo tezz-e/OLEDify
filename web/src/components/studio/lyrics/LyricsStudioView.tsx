@@ -6,6 +6,7 @@ import { LrclibTrack, ParsedLyrics, LyricLine, LyricWord } from '../../../engine
 import { MotionArchetype, ARCHETYPE_METADATA, STYLE_PACKS, StylePackId, VisualMotif, MotifMode, MOTIF_METADATA } from '../../../engine/kinetic/types';
 import { renderKineticSequence } from '../../../engine/kinetic/kineticEngine';
 import { getWordEffectiveArchetype, getWordEffectiveFont, getWordFontRole, cleanLyricToken } from '../../../engine/kinetic/semanticClassifier';
+import { computeSongMoodProfile, SongMoodProfile } from '../../../engine/kinetic/moodProfileEngine';
 import { analyzeAudioFile, AudioAnalysisResult } from '../../../engine/kinetic/audioAnalysisEngine';
 import {
   checkOllamaHealth,
@@ -40,6 +41,10 @@ const SAMPLE_FALLBACK_LRC = `[ti:OLED Kinetic Intro]
 [00:07.50] HARDWARE READY FOR ESP32`;
 
 const MANUAL_ARCHETYPES: MotionArchetype[] = [
+  'gentle_float',
+  'waveform_karaoke',
+  'typewriter_ribbon',
+  'dither_dissolve',
   'blade_slash',
   'manga_impact',
   'rolling_odometer',
@@ -145,6 +150,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const [showTokenBadges, setShowTokenBadges] = useState<boolean>(false);
   const [wordCustomizerTab, setWordCustomizerTab] = useState<'archetype' | 'font' | 'motif'>('archetype');
   const [stylePack, setStylePack] = useState<StylePackId>('trap_drill');
+  const [hasUserSelectedStylePack, setHasUserSelectedStylePack] = useState(false);
   const [showFontHierarchy, setShowFontHierarchy] = useState<boolean>(false);
   const [manualWordOverrides, setManualWordOverrides] = useState<Record<string, MotionArchetype>>({});
   const [manualFontOverrides, setManualFontOverrides] = useState<Record<string, string>>({});
@@ -156,6 +162,27 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const [fontFamily, setFontFamily] = useState<string>(() => STYLE_PACKS.trap_drill.fonts.hero);
   const [isRendering, setIsRendering] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
+
+  // --- SONG MOOD PROFILE (Derived from Audio Telemetry & Lyrics) ---
+  const songMoodProfile = useMemo(() => {
+    return computeSongMoodProfile(
+      audioAnalysis,
+      parsedLyrics.lines,
+      parsedLyrics.title || searchQuery,
+      parsedLyrics.artist
+    );
+  }, [audioAnalysis, parsedLyrics, searchQuery]);
+
+  // Automatically adapt recommended style pack when song mood profile changes unless manually chosen
+  useEffect(() => {
+    if (!hasUserSelectedStylePack && songMoodProfile?.recommendedStylePack) {
+      setStylePack(songMoodProfile.recommendedStylePack);
+      const pack = STYLE_PACKS[songMoodProfile.recommendedStylePack];
+      if (pack) {
+        setFontFamily(pack.fonts.hero);
+      }
+    }
+  }, [songMoodProfile, hasUserSelectedStylePack]);
 
   // --- LLM INFERENCE STATE (Groq Cloud & Local Ollama) ---
   const [inferenceMode, setInferenceMode] = useState<'heuristic' | 'ollama'>('heuristic');
@@ -236,6 +263,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           model: llmProvider === 'groq' ? 'openai/gpt-oss-120b' : selectedOllamaModel,
           songTitle: parsedLyrics.title || searchQuery,
           artist: parsedLyrics.artist,
+          songProfile: songMoodProfile,
           onProgress: (percent, message) => {
             setOllamaProgress({ percent, message });
           },
@@ -738,7 +766,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
           // Heuristic assignment calculation
           const precedingWord = wIdx > 0 ? line.words[wIdx - 1] : undefined;
-          const effArch = getWordEffectiveArchetype(w, wIdx, archetype, wordOverrides, precedingWord);
+          const effArch = getWordEffectiveArchetype(w, wIdx, archetype, wordOverrides, precedingWord, songMoodProfile);
           const role = getWordFontRole(effArch, w.word);
           if (role === 'hero') heroCount++;
           else if (role === 'action') actionCount++;
@@ -768,7 +796,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
       anchorCount,
       topAutoStyles
     };
-  }, [selectedLines, wordOverrides, wordMotifOverrides, archetype]);
+  }, [selectedLines, wordOverrides, wordMotifOverrides, archetype, songMoodProfile]);
 
   // Global map tracking which lines across the entire song have custom overrides applied
   const lineOverrideStatusMap = useMemo(() => {
@@ -1919,7 +1947,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                             const isWordPast = isActiveLine ? playheadMs >= w.endMs : idx < activeLineIndex;
 
                             const precedingWord = wIdx > 0 ? line.words[wIdx - 1] : undefined;
-                            const wordArch = getWordEffectiveArchetype(w, wIdx, archetype, wordOverrides, precedingWord);
+                            const wordArch = getWordEffectiveArchetype(w, wIdx, archetype, wordOverrides, precedingWord, songMoodProfile);
                             const packConfig = STYLE_PACKS[stylePack] || STYLE_PACKS.trap_drill;
                             const wordFont = getWordEffectiveFont(w, wordArch, packConfig, wordFontOverrides, fontFamily);
                             const specificKey = `${w.word}_${w.startMs}`;
@@ -1987,7 +2015,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                           </span>
                           {line.words.map((w, wIdx) => {
                             const precedingWord = wIdx > 0 ? line.words[wIdx - 1] : undefined;
-                            const wordArch = getWordEffectiveArchetype(w, wIdx, archetype, wordOverrides, precedingWord);
+                            const wordArch = getWordEffectiveArchetype(w, wIdx, archetype, wordOverrides, precedingWord, songMoodProfile);
                             const packConfig = STYLE_PACKS[stylePack] || STYLE_PACKS.trap_drill;
                             const wordFont = getWordEffectiveFont(w, wordArch, packConfig, wordFontOverrides, fontFamily);
                             const meta = ARCHETYPE_METADATA[wordArch] || ARCHETYPE_METADATA.smooth_fluid;
@@ -2819,27 +2847,35 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     themeMode === 'dark' ? 'text-white/80' : 'text-[#141413]'
                   }`}>
                     <span>Thematic Style Pack</span>
+                    {songMoodProfile && (
+                      <span className="text-[9px] font-mono font-normal text-[#D97757] bg-[#D97757]/10 px-1.5 py-0.5 rounded-full border border-[#D97757]/20 truncate max-w-[150px]" title={songMoodProfile.label}>
+                        {songMoodProfile.label}
+                      </span>
+                    )}
                   </label>
                   <button
                     type="button"
                     onClick={() => setShowFontHierarchy(!showFontHierarchy)}
-                    className="text-[10px] font-sans text-[#D97757] hover:underline cursor-pointer flex items-center gap-0.5 font-medium"
+                    className="text-[10px] font-sans text-[#D97757] hover:underline cursor-pointer flex items-center gap-0.5 font-medium shrink-0"
                   >
                     <span>{showFontHierarchy ? 'Hide Roles' : 'Font Roles'}</span>
                     {showFontHierarchy ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                   </button>
                 </div>
 
-                {/* 4 Compact Cards */}
+                {/* 6 Curated Style Pack Cards */}
                 <div className="grid grid-cols-2 gap-1.5">
-                  {(['trap_drill', 'shonen_comic', 'cartoon_bounce', 'cyber_industrial'] as StylePackId[]).map(packId => {
+                  {(['pop_acoustic', 'editorial_lofi', 'trap_drill', 'shonen_comic', 'cartoon_bounce', 'cyber_industrial'] as StylePackId[]).map(packId => {
                     const pack = STYLE_PACKS[packId];
+                    if (!pack) return null;
                     const isSelected = stylePack === packId;
+                    const isRecommended = songMoodProfile?.recommendedStylePack === packId;
                     return (
                       <button
                         key={packId}
                         type="button"
                         onClick={() => {
+                          setHasUserSelectedStylePack(true);
                           setStylePack(packId);
                           setFontFamily(pack.fonts.hero);
                         }}
@@ -2854,11 +2890,18 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                         }`}
                       >
                         <div className="min-w-0 pr-1">
-                          <span className={`text-[8px] font-mono font-bold px-1 py-0.2 rounded uppercase ${
-                            isSelected ? 'bg-[#D97757] text-white' : themeMode === 'dark' ? 'bg-white/10 text-white/70' : 'bg-black/5 text-[#5E5D59]'
-                          }`}>
-                            {pack.tag}
-                          </span>
+                          <div className="flex items-center gap-1">
+                            <span className={`text-[8px] font-mono font-bold px-1 py-0.2 rounded uppercase ${
+                              isSelected ? 'bg-[#D97757] text-white' : themeMode === 'dark' ? 'bg-white/10 text-white/70' : 'bg-black/5 text-[#5E5D59]'
+                            }`}>
+                              {pack.tag}
+                            </span>
+                            {isRecommended && !isSelected && (
+                              <span className="text-[9px] text-[#D97757] font-bold" title="Auto-matched to detected song vibe">
+                                ★
+                              </span>
+                            )}
+                          </div>
                           <div className={`text-[11px] font-sans font-semibold mt-0.5 truncate ${
                             themeMode === 'dark' ? 'text-white' : 'text-[#141413]'
                           }`}>

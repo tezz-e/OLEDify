@@ -17,8 +17,10 @@ import {
   VALID_VISUAL_MOTIFS,
   normalizeMotif,
   normalizeArchetype,
-  extractClassificationsFromResponse 
+  extractClassificationsFromResponse,
+  buildOllamaLyricsPrompt
 } from '../src/engine/kinetic/ollamaClassifier';
+import { computeSongMoodProfile } from '../src/engine/kinetic/moodProfileEngine';
 import { renderArchetypeFrame } from '../src/engine/kinetic/kineticArchetypes';
 import { computeSafeTextLayout } from '../src/engine/kinetic/kineticLayout';
 import { LyricWord } from '../src/engine/lyrics/types';
@@ -75,7 +77,7 @@ console.log('✅ Semantic keyword and punctuation mapping to archetypes and font
 // =========================================================================
 console.log('\n--- Suite 2: 4-Font Style Packs & Semantic Font Resolution ---');
 
-const packIds: StylePackId[] = ['trap_drill', 'shonen_comic', 'cartoon_bounce', 'cyber_industrial', 'custom'];
+const packIds: StylePackId[] = ['trap_drill', 'shonen_comic', 'cartoon_bounce', 'cyber_industrial', 'pop_acoustic', 'editorial_lofi', 'custom'];
 for (const id of packIds) {
   const pack = STYLE_PACKS[id];
   assert.ok(pack, `Pack ${id} exists`);
@@ -84,7 +86,7 @@ for (const id of packIds) {
   assert.ok(pack.fonts.novelty, `Pack ${id} has novelty font`);
   assert.ok(pack.fonts.anchor, `Pack ${id} has anchor font`);
 }
-console.log('✅ All 5 Style Packs properly defined with 4-font semantic roles.');
+console.log('✅ All 7 Style Packs properly defined with 4-font semantic roles.');
 
 // Test font resolution for Trap & Drill pack
 const trapPack = STYLE_PACKS.trap_drill;
@@ -237,8 +239,8 @@ console.log('✅ Phantom Future Word Pause Bug verified fixed: gaps enter clean 
 // =========================================================================
 console.log('\n--- Suite 5: 1-Bit Visual Motifs & LLM Inference Pipeline ---');
 
-// 1. Verify all 11 motifs exist in metadata
-assert.equal(VALID_VISUAL_MOTIFS.length, 11, 'Expected exactly 11 visual motifs');
+// 1. Verify all 17 motifs exist in metadata
+assert.equal(VALID_VISUAL_MOTIFS.length, 17, 'Expected exactly 17 visual motifs');
 for (const motif of VALID_VISUAL_MOTIFS) {
   const meta = MOTIF_METADATA[motif];
   assert.ok(meta, `Motif "${motif}" must have metadata`);
@@ -246,7 +248,7 @@ for (const motif of VALID_VISUAL_MOTIFS) {
   assert.ok(meta.name, `Motif "${motif}" must have a name`);
   assert.ok(meta.tag, `Motif "${motif}" must have a tag`);
 }
-console.log('✅ All 11 Visual Motifs defined with valid icons, tags, and metadata.');
+console.log('✅ All 17 Visual Motifs defined with valid icons, tags, and metadata.');
 
 // 2. Test motif normalization and fuzzy recovery
 const fuzzyMotifTests: Array<{ raw: string; expected: VisualMotif }> = [
@@ -276,6 +278,19 @@ const fuzzyMotifTests: Array<{ raw: string; expected: VisualMotif }> = [
   { raw: 'electric', expected: 'lightning_arc' },
   { raw: 'comic_burst', expected: 'comic_burst' },
   { raw: 'starburst', expected: 'comic_burst' },
+  { raw: 'floating_notes', expected: 'floating_notes' },
+  { raw: 'music', expected: 'floating_notes' },
+  { raw: 'melody', expected: 'floating_notes' },
+  { raw: 'starlight_glimmer', expected: 'starlight_glimmer' },
+  { raw: 'twinkle', expected: 'starlight_glimmer' },
+  { raw: 'heartbeat_pulse', expected: 'heartbeat_pulse' },
+  { raw: 'heart', expected: 'heartbeat_pulse' },
+  { raw: 'water_ripples', expected: 'water_ripples' },
+  { raw: 'wave', expected: 'water_ripples' },
+  { raw: 'minimal_frame', expected: 'minimal_frame' },
+  { raw: 'border', expected: 'minimal_frame' },
+  { raw: 'lofi_dust_motes', expected: 'lofi_dust_motes' },
+  { raw: 'dust', expected: 'lofi_dust_motes' },
   { raw: 'none', expected: 'none' },
   { raw: 'xyz_random', expected: 'none' }
 ];
@@ -716,7 +731,160 @@ assert.doesNotThrow(() => {
   assert.ok(json.includes('manga_impact'));
 }, 'wordOverrides with classification results must serialize without circular references');
 
-console.log('✅ LLM classification output and wordOverrides serialize cleanly with zero circular references.');
+// =========================================================================
+// TEST SUITE 9: Chill Pop, Ballad & Acoustic Motion Architecture
+// =========================================================================
+console.log('\n--- Suite 9: Chill Pop, Ballad & Acoustic Motion Architecture ---');
+
+// 1. Verify 4 new archetypes metadata
+const newArchetypes: MotionArchetype[] = ['gentle_float', 'waveform_karaoke', 'typewriter_ribbon', 'dither_dissolve'];
+for (const arch of newArchetypes) {
+  const meta = ARCHETYPE_METADATA[arch];
+  assert.ok(meta, `Archetype "${arch}" must have metadata`);
+  assert.ok(meta.icon, `Archetype "${arch}" must have an icon`);
+  assert.ok(meta.name, `Archetype "${arch}" must have a name`);
+  assert.ok(meta.tag, `Archetype "${arch}" must have a tag`);
+  assert.ok(meta.description, `Archetype "${arch}" must have a description`);
+}
+console.log('✅ All 4 new Chill Pop archetypes defined with rich metadata.');
+
+// 2. Test SongMoodProfile computation for Ed Sheeran's "Shape of You" style track (96 BPM pop)
+const popLyrics = [
+  { text: "I'm in love with the shape of you", words: [
+    { word: "I'm", startMs: 0, endMs: 250 },
+    { word: "in", startMs: 250, endMs: 400 },
+    { word: "love", startMs: 400, endMs: 900 },
+    { word: "with", startMs: 900, endMs: 1100 },
+    { word: "the", startMs: 1100, endMs: 1250 },
+    { word: "shape", startMs: 1250, endMs: 1950 },
+    { word: "of", startMs: 1950, endMs: 2100 },
+    { word: "you", startMs: 2100, endMs: 2800 },
+  ]}
+];
+const shapeOfYouProfile = computeSongMoodProfile(
+  { bpm: 96, confidence: 0.9, beatsMs: [], frames: [{ timeMs: 0, rms: 0.28, isBeat: false }] } as any,
+  popLyrics as any,
+  "Shape of You",
+  "Ed Sheeran"
+);
+assert.equal(shapeOfYouProfile.vibe, 'chill_pop', '96 BPM pop song must classify as chill_pop');
+assert.equal(shapeOfYouProfile.recommendedStylePack, 'pop_acoustic', 'chill_pop must recommend pop_acoustic style pack');
+assert.ok(shapeOfYouProfile.dwellDecayFactor >= 1.2, 'chill_pop must provide extended relaxed dwell hold factor');
+assert.ok(shapeOfYouProfile.easingCurvature <= 0.85, 'chill_pop must use softer sine-like easing curvature');
+assert.ok(shapeOfYouProfile.allowedArchetypes.includes('gentle_float'));
+assert.ok(shapeOfYouProfile.allowedArchetypes.includes('waveform_karaoke'));
+assert.ok(shapeOfYouProfile.allowedArchetypes.includes('typewriter_ribbon'));
+assert.ok(shapeOfYouProfile.allowedArchetypes.includes('dither_dissolve'));
+console.log(`✅ "Shape of You" profile verified: ${shapeOfYouProfile.label}, Pack: ${shapeOfYouProfile.recommendedStylePack}, Hold Factor: ${shapeOfYouProfile.dwellDecayFactor}`);
+
+// 3. Test SongMoodProfile for Slow Acoustic Ballad (72 BPM)
+const balladLyrics = [
+  { text: "Whisper softly in the quiet night", words: [
+    { word: "Whisper", startMs: 0, endMs: 800 },
+    { word: "softly", startMs: 850, endMs: 1700 },
+    { word: "in", startMs: 1700, endMs: 1900 },
+    { word: "the", startMs: 1900, endMs: 2050 },
+    { word: "quiet", startMs: 2100, endMs: 2900 },
+    { word: "night", startMs: 2950, endMs: 3800 },
+  ]}
+];
+const balladProfile = computeSongMoodProfile(
+  { bpm: 72, confidence: 0.95, beatsMs: [], frames: [{ timeMs: 0, rms: 0.18, isBeat: false }] } as any,
+  balladLyrics as any,
+  "Quiet Night",
+  "Acoustic Duo"
+);
+assert.equal(balladProfile.vibe, 'ballad_acoustic', '72 BPM slow ballad must classify as ballad_acoustic');
+assert.equal(balladProfile.defaultArchetype, 'gentle_float', 'ballad_acoustic must default to gentle_float');
+assert.ok(balladProfile.dwellDecayFactor >= 1.5, 'ballad_acoustic must provide generous dwell hold time');
+console.log(`✅ Slow Ballad profile verified: ${balladProfile.label}, Default: ${balladProfile.defaultArchetype}, Hold Factor: ${balladProfile.dwellDecayFactor}`);
+
+// 4. Test Semantic Classifier under Chill Pop Profile (No violent jumps or 3D block traps)
+// In a chill song, a word held for 700ms ("shape") should NOT be forced into '3d_block_stack'
+const popWord = { word: 'shape', startMs: 1250, endMs: 1950 }; // 700ms duration
+const archChill = classifyWordArchetype(popWord.word, 700, 150, 0, shapeOfYouProfile);
+assert.notEqual(archChill, '3d_block_stack', 'Chill pop track must NOT force 700ms vocal note into 3d_block_stack');
+assert.notEqual(archChill, 'manga_impact', 'Chill pop track must NOT force silence into manga_impact');
+assert.ok(['waveform_karaoke', 'gentle_float', 'smooth_fluid', 'typewriter_ribbon', 'dither_dissolve'].includes(archChill), `Expected chill/fluid archetype, got: ${archChill}`);
+
+// Pop keyword dictionary tests
+const loveArch = classifyWordArchetype('love', 400, 0, 0, shapeOfYouProfile);
+assert.equal(loveArch, 'gentle_float', 'Word "love" under chill profile should map to gentle_float');
+
+const melodyArch = classifyWordArchetype('melody', 400, 0, 0, shapeOfYouProfile);
+assert.equal(melodyArch, 'waveform_karaoke', 'Word "melody" under chill profile should map to waveform_karaoke');
+
+const storyArch = classifyWordArchetype('story', 400, 0, 0, shapeOfYouProfile);
+assert.equal(storyArch, 'typewriter_ribbon', 'Word "story" under chill profile should map to typewriter_ribbon');
+
+const whisperArch = classifyWordArchetype('whisper', 400, 0, 0, shapeOfYouProfile);
+assert.equal(whisperArch, 'gentle_float', 'Word "whisper" under chill profile should map to gentle_float');
+
+const memoryArch = classifyWordArchetype('memory', 400, 0, 0, shapeOfYouProfile);
+assert.equal(memoryArch, 'dither_dissolve', 'Word "memory" under chill profile should map to dither_dissolve');
+console.log('✅ Semantic classifier adapts correctly under chill pop profile without aggressive traps.');
+
+// 5. Test Ollama Prompt Generation with Chill Pop Directive
+const chillPrompt = buildOllamaLyricsPrompt(popLyrics as any, "Shape of You", "Ed Sheeran", shapeOfYouProfile);
+assert.ok(chillPrompt.includes('CHILL_POP'), 'Prompt must indicate CHILL_POP vibe to LLM');
+assert.ok(chillPrompt.includes('DO NOT assign aggressive, violent, or chaotic archetypes'), 'Prompt must instruct LLM against aggressive cuts');
+assert.ok(chillPrompt.includes('gentle_float'), 'Prompt must list gentle_float');
+assert.ok(chillPrompt.includes('waveform_karaoke'), 'Prompt must list waveform_karaoke');
+console.log('✅ Ollama/Groq prompt generation embeds dynamic Chill Pop Director directives.');
+
+// 6. Test Headless Canvas Rasterization for the 4 new Archetypes
+let dummyPixelsDrawn = 0;
+const dummyCtx = {
+  save: () => {},
+  restore: () => {},
+  translate: () => {},
+  rotate: () => {},
+  scale: () => {},
+  fillRect: (_x: number, _y: number, w: number, h: number) => { dummyPixelsDrawn += (w * h); },
+  fillText: (text: string, _x: number, _y: number) => { dummyPixelsDrawn += text.length * 10; },
+  strokeText: (text: string, _x: number, _y: number) => { dummyPixelsDrawn += text.length * 10; },
+  beginPath: () => {},
+  moveTo: () => {},
+  lineTo: () => {},
+  stroke: () => {},
+  fill: () => {},
+  arc: () => {},
+  ellipse: () => {},
+  clearRect: () => {},
+  getImageData: () => ({ data: new Uint8ClampedArray(128 * 64 * 4) }),
+  putImageData: () => {},
+  measureText: (text: string) => ({ width: text.length * 8 }),
+  setLineDash: () => {},
+  font: '',
+  fillStyle: '',
+  strokeStyle: '',
+  lineWidth: 1,
+  textAlign: 'center',
+  textBaseline: 'middle',
+  globalAlpha: 1,
+  globalCompositeOperation: 'source-over'
+} as any;
+
+for (const arch of newArchetypes) {
+  assert.doesNotThrow(() => {
+    renderArchetypeFrame(
+      dummyCtx,
+      arch,
+      'MELODY',
+      0.5,
+      {
+        fontSize: 22,
+        lines: ['MELODY'],
+        yOffsets: [0],
+        totalHeight: 22,
+        lineHeight: 24,
+        letterSpacing: 0
+      },
+      15
+    );
+  }, `Rasterizer for "${arch}" must execute cleanly without error`);
+  console.log(`✅ 1-bit rasterizer for "${arch}" rendered successfully.`);
+}
 
 console.log('\n🎉 ALL KINETIC TYPOGRAPHY, MOTIF & ODOMETER TESTS PASSED PERFECTLY!\n');
 

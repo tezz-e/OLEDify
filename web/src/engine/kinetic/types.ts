@@ -12,7 +12,11 @@ export type MotionArchetype =
   | 'snake_slither'
   | 'wiggly_boil'
   | 'inverted_badge'
-  | 'rolling_odometer';
+  | 'rolling_odometer'
+  | 'gentle_float'
+  | 'dither_dissolve'
+  | 'typewriter_ribbon'
+  | 'waveform_karaoke';
 
 export interface ArchetypeMeta {
   id: MotionArchetype;
@@ -106,6 +110,34 @@ export const ARCHETYPE_METADATA: Record<MotionArchetype, ArchetypeMeta> = {
     name: 'ROLLING ODOMETER',
     tag: 'REEL',
     description: 'Mechanical slot-machine tumbler reels rolling vertically into locked alignment'
+  },
+  gentle_float: {
+    id: 'gentle_float',
+    icon: '🍃',
+    name: 'GENTLE FLOAT',
+    tag: 'DRIFT',
+    description: 'Weightless acoustic drift with subtle dual-harmonic Lissajous floating and volume breathing'
+  },
+  dither_dissolve: {
+    id: 'dither_dissolve',
+    icon: '✨',
+    name: 'DITHER DISSOLVE',
+    tag: 'DITHER',
+    description: 'Nostalgic 1-bit Bayer ordered dither matrix crossfade and dissolve with zero crawling'
+  },
+  typewriter_ribbon: {
+    id: 'typewriter_ribbon',
+    icon: '📜',
+    name: 'TYPEWRITER RIBBON',
+    tag: 'STORY',
+    description: 'Intimate progressive storytelling reveal with blinking block cursor and expanding underline ribbon'
+  },
+  waveform_karaoke: {
+    id: 'waveform_karaoke',
+    icon: '🎵',
+    name: 'WAVEFORM KARAOKE',
+    tag: 'MELODY',
+    description: 'Rock-solid centered lyric with fluid vocal wave and tracking runner beacon'
   }
 };
 
@@ -125,6 +157,8 @@ export type StylePackId =
   | 'shonen_comic'
   | 'cartoon_bounce'
   | 'cyber_industrial'
+  | 'pop_acoustic'
+  | 'editorial_lofi'
   | 'custom';
 
 export interface StylePackConfig {
@@ -197,6 +231,32 @@ export const STYLE_PACKS: Record<StylePackId, StylePackConfig> = {
       anchor: `"IBM Plex Mono", ${MULTILINGUAL_FALLBACK_FONTS}, monospace`
     }
   },
+  pop_acoustic: {
+    id: 'pop_acoustic',
+    name: 'Pop & Acoustic Melodies',
+    icon: '🎸',
+    tag: 'POP',
+    description: 'Rounded Poppins hero, clean DM Sans actions, handwritten Caveat lyrics, and Inter anchor',
+    fonts: {
+      hero: `'Poppins', 'Outfit', ${MULTILINGUAL_FALLBACK_FONTS}, sans-serif`,
+      action: `'DM Sans', 'Plus Jakarta Sans', ${MULTILINGUAL_FALLBACK_FONTS}, sans-serif`,
+      novelty: `'Caveat', 'Patrick Hand', ${MULTILINGUAL_FALLBACK_FONTS}, cursive`,
+      anchor: `'Inter', "IBM Plex Mono", ${MULTILINGUAL_FALLBACK_FONTS}, sans-serif`
+    }
+  },
+  editorial_lofi: {
+    id: 'editorial_lofi',
+    name: 'Editorial & Lo-Fi Chill',
+    icon: '☕',
+    tag: 'LO-FI',
+    description: 'Neoclassical Playfair Display hero, vintage Courier Prime typewriter, Space Mono and IBM Plex',
+    fonts: {
+      hero: `'Playfair Display', 'Lora', ${MULTILINGUAL_FALLBACK_FONTS}, serif`,
+      action: `'Courier Prime', 'Special Elite', ${MULTILINGUAL_FALLBACK_FONTS}, monospace`,
+      novelty: `"Space Mono", ${MULTILINGUAL_FALLBACK_FONTS}, monospace`,
+      anchor: `"IBM Plex Mono", ${MULTILINGUAL_FALLBACK_FONTS}, monospace`
+    }
+  },
   custom: {
     id: 'custom',
     name: 'Custom Curated',
@@ -223,7 +283,13 @@ export type VisualMotif =
   | 'skull_cross'
   | 'chrome_star'
   | 'lightning_arc'
-  | 'comic_burst';
+  | 'comic_burst'
+  | 'floating_notes'
+  | 'starlight_glimmer'
+  | 'heartbeat_pulse'
+  | 'water_ripples'
+  | 'minimal_frame'
+  | 'lofi_dust_motes';
 
 export type MotifMode = 'off' | 'subtle' | 'dynamic' | 'heavy';
 
@@ -312,6 +378,48 @@ export const MOTIF_METADATA: Record<VisualMotif, MotifMeta> = {
     name: 'Comic Starburst',
     tag: 'BURST',
     description: '14-point pop-art comic explosion bubble behind text'
+  },
+  floating_notes: {
+    id: 'floating_notes',
+    icon: '🎶',
+    name: 'Drifting Music Notes',
+    tag: 'NOTES',
+    description: 'Eighth notes and beamed sixteenth pairs drifting softly upward on melodies'
+  },
+  starlight_glimmer: {
+    id: 'starlight_glimmer',
+    icon: '✨',
+    name: 'Twinkling Starlight',
+    tag: 'STARS',
+    description: 'Gentle constellation field of micro-stars breathing with harmonic twinkle'
+  },
+  heartbeat_pulse: {
+    id: 'heartbeat_pulse',
+    icon: '💓',
+    name: 'Heartbeat & Love Ripple',
+    tag: 'HEART',
+    description: 'Acoustic cardiac two-phase heartbeat pulse with concentric expanding ripple rings'
+  },
+  water_ripples: {
+    id: 'water_ripples',
+    icon: '🌊',
+    name: 'Ambient Ocean Waves',
+    tag: 'WAVES',
+    description: 'Gentle horizontal liquid surface waves along screen floor with translucent Bayer stipple'
+  },
+  minimal_frame: {
+    id: 'minimal_frame',
+    icon: '◻️',
+    name: 'Editorial Minimalist Frame',
+    tag: 'FRAME',
+    description: 'Cinematic 1px hairline border with inset corner notches for refined ballad focus'
+  },
+  lofi_dust_motes: {
+    id: 'lofi_dust_motes',
+    icon: '🫧',
+    name: 'Lo-Fi Dust Motes',
+    tag: 'DUST',
+    description: 'Ambient floating particles dancing lazily in warm light with proximity threads'
   }
 };
 
