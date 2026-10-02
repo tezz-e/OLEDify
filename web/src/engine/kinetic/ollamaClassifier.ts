@@ -426,10 +426,10 @@ Output JSON strictly matching this format:
 }`;
 }
 
-export type LLMClassificationOutput = Record<string, MotionArchetype> & {
+export interface LLMClassificationOutput {
   archetypes: Record<string, MotionArchetype>;
   motifs: Record<string, VisualMotif>;
-};
+}
 
 /**
  * Classifies kinetic archetypes and visual motifs for lyric words using local Ollama or cloud Groq inference.
@@ -654,10 +654,10 @@ export async function classifyLyricsWithOllama(
     options.onProgress(100, `Completed LLM semantic analysis!`);
   }
 
-  return Object.assign(archetypeOverrides, {
+  return {
     archetypes: archetypeOverrides,
     motifs: motifOverrides,
-  });
+  };
 }
 
 

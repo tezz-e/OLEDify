@@ -225,16 +225,29 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
       );
 
       let appliedCount = 0;
-      if (results.archetypes && Object.keys(results.archetypes).length > 0) {
-        setWordOverrides(prev => ({ ...prev, ...results.archetypes }));
-        appliedCount += Object.keys(results.archetypes).length;
-      } else if (Object.keys(results).length > 0) {
-        setWordOverrides(prev => ({ ...prev, ...results }));
-        appliedCount += Object.keys(results).length;
+      if (results && results.archetypes && typeof results.archetypes === 'object') {
+        const cleanArchetypes: Record<string, MotionArchetype> = {};
+        for (const [key, val] of Object.entries(results.archetypes)) {
+          if (key !== 'archetypes' && key !== 'motifs' && typeof val === 'string') {
+            cleanArchetypes[key] = val as MotionArchetype;
+          }
+        }
+        if (Object.keys(cleanArchetypes).length > 0) {
+          setWordOverrides(prev => ({ ...prev, ...cleanArchetypes }));
+          appliedCount += Object.keys(cleanArchetypes).length;
+        }
       }
-      if (results.motifs && Object.keys(results.motifs).length > 0) {
-        setWordMotifOverrides(prev => ({ ...prev, ...results.motifs }));
-        appliedCount += Object.keys(results.motifs).length;
+      if (results && results.motifs && typeof results.motifs === 'object') {
+        const cleanMotifs: Record<string, VisualMotif> = {};
+        for (const [key, val] of Object.entries(results.motifs)) {
+          if (key !== 'archetypes' && key !== 'motifs' && typeof val === 'string') {
+            cleanMotifs[key] = val as VisualMotif;
+          }
+        }
+        if (Object.keys(cleanMotifs).length > 0) {
+          setWordMotifOverrides(prev => ({ ...prev, ...cleanMotifs }));
+          appliedCount += Object.keys(cleanMotifs).length;
+        }
       }
 
       setLastAnalysisNotice({
@@ -732,23 +745,27 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     });
   }, [parsedLyrics.lines, wordOverrides, wordFontOverrides, wordMotifOverrides]);
 
-  // Signature of all active motion/style inputs to track dirty unrendered changes
   const currentFingerprint = useMemo(() => {
-    return JSON.stringify({
-      rangeStartMs,
-      rangeEndMs,
-      lineCount: selectedLines.length,
-      lines: selectedLines.map(l => ({ s: l.startMs, e: l.endMs, t: l.text })),
-      archetype,
-      fontFamily,
-      stylePack,
-      motifMode,
-      wordOverrides,
-      wordFontOverrides,
-      wordMotifOverrides,
-      inferenceMode,
-      hasAudio: !!audioAnalysis
-    });
+    try {
+      return JSON.stringify({
+        rangeStartMs,
+        rangeEndMs,
+        lineCount: selectedLines.length,
+        lines: selectedLines.map(l => ({ s: l.startMs, e: l.endMs, t: l.text })),
+        archetype,
+        fontFamily,
+        stylePack,
+        motifMode,
+        wordOverrides,
+        wordFontOverrides,
+        wordMotifOverrides,
+        inferenceMode,
+        hasAudio: !!audioAnalysis
+      });
+    } catch (err) {
+      console.warn('Failed to compute currentFingerprint:', err);
+      return `${rangeStartMs}_${rangeEndMs}_${selectedLines.length}_${archetype}_${fontFamily}_${stylePack}_${motifMode}_${inferenceMode}`;
+    }
   }, [
     rangeStartMs,
     rangeEndMs,

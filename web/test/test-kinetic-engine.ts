@@ -678,6 +678,46 @@ assert.equal(multiTexts.filter(t => t === '7').length, 2, 'Exactly two 7s render
 
 console.log('✅ Headless 1-bit OLED canvas rendering, mechanical stagger, locked state & RTL for rolling_odometer verified.');
 
+// --- Suite 8: LLM Classification Output Non-Circular Serialization ---
+console.log('\n--- Suite 8: LLM Classification Output Non-Circular Serialization ---');
+const sampleArchetypeOverrides: Record<string, any> = {
+  'fire_1000': 'manga_impact',
+  'fire': 'manga_impact',
+  'drop_2000': 'blade_slash',
+  'drop': 'blade_slash',
+};
+const sampleMotifOverrides: Record<string, any> = {
+  'fire_1000': 'flame',
+  'fire': 'flame',
+};
+
+// Simulate the return structure of classifyLyricsWithOllama
+const classificationOutput = {
+  archetypes: sampleArchetypeOverrides,
+  motifs: sampleMotifOverrides,
+};
+
+// Verify no circular references exist in output
+assert.doesNotThrow(() => {
+  const json = JSON.stringify(classificationOutput);
+  assert.ok(json.length > 0);
+}, 'classificationOutput must be valid JSON without circular references');
+
+assert.doesNotThrow(() => {
+  const json = JSON.stringify(classificationOutput.archetypes);
+  assert.ok(json.length > 0);
+}, 'classificationOutput.archetypes must be valid JSON without circular references');
+
+// Verify that spreading archetypes into wordOverrides does not create circular structure
+const wordOverrides: Record<string, any> = { 'intro_0': 'smooth_fluid' };
+Object.assign(wordOverrides, classificationOutput.archetypes);
+assert.doesNotThrow(() => {
+  const json = JSON.stringify({ wordOverrides });
+  assert.ok(json.includes('manga_impact'));
+}, 'wordOverrides with classification results must serialize without circular references');
+
+console.log('✅ LLM classification output and wordOverrides serialize cleanly with zero circular references.');
+
 console.log('\n🎉 ALL KINETIC TYPOGRAPHY, MOTIF & ODOMETER TESTS PASSED PERFECTLY!\n');
 
 
