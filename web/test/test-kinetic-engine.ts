@@ -11,7 +11,9 @@ import {
   MotionArchetype,
   VisualMotif,
   MOTIF_METADATA,
-  ARCHETYPE_METADATA
+  ARCHETYPE_METADATA,
+  KineticTransitionType,
+  TRANSITION_METADATA
 } from '../src/engine/kinetic/types';
 import { 
   VALID_VISUAL_MOTIFS,
@@ -23,6 +25,7 @@ import {
 import { computeSongMoodProfile } from '../src/engine/kinetic/moodProfileEngine';
 import { renderArchetypeFrame } from '../src/engine/kinetic/kineticArchetypes';
 import { computeSafeTextLayout } from '../src/engine/kinetic/kineticLayout';
+import { resolveTransitionStyle, renderKineticSequence } from '../src/engine/kinetic/kineticEngine';
 import { LyricWord } from '../src/engine/lyrics/types';
 import { 
   detectScript, 
@@ -897,6 +900,132 @@ for (const arch of newArchetypes) {
   console.log(`✅ 1-bit rasterizer for "${arch}" rendered successfully.`);
 }
 
-console.log('\n🎉 ALL KINETIC TYPOGRAPHY, MOTIF & ODOMETER TESTS PASSED PERFECTLY!\n');
+// =========================================================================
+// TEST SUITE 10: Dynamic 1-Bit Transition Choreography Matrix
+// =========================================================================
+console.log('\n--- Suite 10: Dynamic 1-Bit Transition Choreography Matrix ---');
+
+// 1. Verify TRANSITION_METADATA has all 6 transition types defined
+const expectedTransitions: KineticTransitionType[] = [
+  'auto',
+  'lateral_glide',
+  'vertical_drift',
+  'bayer_sweep',
+  'curtain_drop',
+  'dither_dissolve'
+];
+
+for (const tId of expectedTransitions) {
+  const meta = TRANSITION_METADATA[tId];
+  assert.ok(meta, `Transition metadata for "${tId}" must exist`);
+  assert.ok(meta.name, `Transition "${tId}" must have a name`);
+  assert.ok(meta.icon, `Transition "${tId}" must have an icon`);
+  assert.ok(meta.tag, `Transition "${tId}" must have a tag`);
+  assert.ok(meta.description, `Transition "${tId}" must have a description`);
+}
+console.log('✅ All 6 Transition styles properly registered with metadata and tags.');
+
+// 2. Test Dynamic Transition Resolution (resolveTransitionStyle)
+// Test sequential word flow cycle (must NEVER return the same transition for consecutive words!)
+const dummyProfile = computeSongMoodProfile(null, [], 'Shape of You', 'Ed Sheeran');
+
+const w0: LyricWord = { word: 'the', startMs: 0, endMs: 200 };
+const w1: LyricWord = { word: 'club', startMs: 220, endMs: 500 };
+const w2: LyricWord = { word: 'isn\'t', startMs: 520, endMs: 800 };
+const w3: LyricWord = { word: 'the', startMs: 820, endMs: 1000 };
+const w4: LyricWord = { word: 'best', startMs: 1020, endMs: 1300 };
+
+const t01 = resolveTransitionStyle(w0, w1, 1, 'waveform_karaoke', 'smooth_fluid', dummyProfile);
+const t12 = resolveTransitionStyle(w1, w2, 2, 'smooth_fluid', 'waveform_karaoke', dummyProfile);
+const t23 = resolveTransitionStyle(w2, w3, 3, 'waveform_karaoke', 'gentle_float', dummyProfile);
+const t34 = resolveTransitionStyle(w3, w4, 4, 'waveform_karaoke', 'typewriter_ribbon', dummyProfile);
+
+assert.equal(t01, 'bayer_sweep', 'Word 1 transition should be bayer_sweep');
+assert.equal(t12, 'vertical_drift', 'Word 2 transition should be vertical_drift');
+// Word 3 enters gentle_float, so it triggers vertical_drift
+assert.equal(t23, 'vertical_drift', 'Entering gentle_float must trigger vertical_drift');
+// Word 4 enters typewriter_ribbon, so it triggers bayer_sweep
+assert.equal(t34, 'bayer_sweep', 'Entering typewriter_ribbon must trigger bayer_sweep');
+
+// Consecutive word pairs in neutral flow must rotate distinct styles
+const nWordA: LyricWord = { word: 'first', startMs: 0, endMs: 250 };
+const nWordB: LyricWord = { word: 'second', startMs: 270, endMs: 500 };
+const nWordC: LyricWord = { word: 'third', startMs: 520, endMs: 750 };
+const nWordD: LyricWord = { word: 'fourth', startMs: 770, endMs: 1000 };
+
+const seqTrans1 = resolveTransitionStyle(nWordA, nWordB, 1, 'smooth_fluid', 'smooth_fluid', dummyProfile);
+const seqTrans2 = resolveTransitionStyle(nWordB, nWordC, 2, 'smooth_fluid', 'smooth_fluid', dummyProfile);
+const seqTrans3 = resolveTransitionStyle(nWordC, nWordD, 3, 'smooth_fluid', 'smooth_fluid', dummyProfile);
+
+assert.notEqual(seqTrans1, seqTrans2, 'Consecutive transitions (1 and 2) must not be identical');
+assert.notEqual(seqTrans2, seqTrans3, 'Consecutive transitions (2 and 3) must not be identical');
+console.log(`✅ Transition variety verified: [${seqTrans1}, ${seqTrans2}, ${seqTrans3}] cycle dynamically.`);
+
+// 3. Test Punctuation and Vocal Pause Heuristics
+const puncWord: LyricWord = { word: 'stop.', startMs: 0, endMs: 400 };
+const nextWord: LyricWord = { word: 'listen', startMs: 450, endMs: 900 };
+const puncTrans = resolveTransitionStyle(puncWord, nextWord, 1, 'inverted_badge', 'smooth_fluid', dummyProfile);
+assert.equal(puncTrans, 'dither_dissolve', 'Sentence period "." must trigger dither_dissolve for dignified pause');
+
+const commaWord: LyricWord = { word: 'baby,', startMs: 0, endMs: 400 };
+const commaTrans = resolveTransitionStyle(commaWord, nextWord, 1, 'gentle_float', 'smooth_fluid', dummyProfile);
+assert.equal(commaTrans, 'dither_dissolve', 'Comma "," must trigger dither_dissolve');
+
+// Gap > 250ms (vocal rest)
+const restWordA: LyricWord = { word: 'breath', startMs: 0, endMs: 400 };
+const restWordB: LyricWord = { word: 'again', startMs: 750, endMs: 1200 }; // 350ms gap
+const restTrans = resolveTransitionStyle(restWordA, restWordB, 2, 'smooth_fluid', 'smooth_fluid', dummyProfile);
+assert.ok(['curtain_drop', 'dither_dissolve'].includes(restTrans), `Vocal gap >250ms must trigger curtain_drop or dither_dissolve, got: ${restTrans}`);
+console.log('✅ Punctuation and vocal rest heuristics verified.');
+
+// 4. Test User Transition Style Override
+const overrideTrans = resolveTransitionStyle(w0, w1, 1, 'waveform_karaoke', 'smooth_fluid', dummyProfile, 'lateral_glide');
+assert.equal(overrideTrans, 'lateral_glide', 'Explicit user transition choice must override auto choreography');
+
+// 5. Test Full Headless Kinetic Sequence Rendering with Transitions
+const testLyrics = [
+  {
+    text: 'the club is where I go',
+    startMs: 1000,
+    endMs: 3000,
+    words: [
+      { word: 'the', startMs: 1000, endMs: 1300 },
+      { word: 'club', startMs: 1350, endMs: 1700 },
+      { word: 'is', startMs: 1750, endMs: 2100 },
+      { word: 'where', startMs: 2150, endMs: 2500 },
+      { word: 'go', startMs: 2550, endMs: 2950 }
+    ]
+  }
+];
+
+const renderedSeq = await renderKineticSequence({
+  lyrics: testLyrics,
+  startMs: 1000,
+  endMs: 3000,
+  targetFps: 30,
+  archetype: 'auto_semantic',
+  transitionStyle: 'auto'
+});
+
+assert.ok(renderedSeq, 'renderKineticSequence must return DecodedMedia object');
+assert.ok(renderedSeq.frames.length >= 60, `Expected at least 60 frames for 2s sequence, got ${renderedSeq.frames.length}`);
+
+// Verify all rendered pixels conform strictly to 1-bit monochrome (either 0 or 255)
+let nonBinaryPixelCount = 0;
+for (const frame of renderedSeq.frames) {
+  const data = frame.imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    if ((r !== 0 && r !== 255) || (g !== 0 && g !== 255) || (b !== 0 && b !== 255)) {
+      nonBinaryPixelCount++;
+    }
+  }
+}
+assert.equal(nonBinaryPixelCount, 0, `All pixels across rendered sequence must be pure 1-bit (0 or 255), found ${nonBinaryPixelCount} non-binary pixels`);
+console.log(`✅ Full kinetic sequence rendered successfully (${renderedSeq.frames.length} frames). Verified 100% pure 1-bit monochrome.`);
+
+console.log('\n🎉 ALL 10 KINETIC TYPOGRAPHY, MOTIF, ODOMETER & TRANSITION CHOREOGRAPHY TESTS PASSED PERFECTLY!\n');
 
 

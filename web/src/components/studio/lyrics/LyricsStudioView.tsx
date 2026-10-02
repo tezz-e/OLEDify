@@ -3,7 +3,7 @@ import { Search, Music, FileText, Upload, Play, Pause, ArrowLeft, ArrowRight, Pl
 import { searchLrclib, getLrclibExact, searchLyricsOvhFallback } from '../../../engine/lyrics/lrclibClient';
 import { parseLrc, parsePlainTextLyrics } from '../../../engine/lyrics/lrcParser';
 import { LrclibTrack, ParsedLyrics, LyricLine, LyricWord } from '../../../engine/lyrics/types';
-import { MotionArchetype, ARCHETYPE_METADATA, STYLE_PACKS, StylePackId, VisualMotif, MotifMode, MOTIF_METADATA } from '../../../engine/kinetic/types';
+import { MotionArchetype, ARCHETYPE_METADATA, STYLE_PACKS, StylePackId, VisualMotif, MotifMode, MOTIF_METADATA, KineticTransitionType, TRANSITION_METADATA } from '../../../engine/kinetic/types';
 import { renderKineticSequence } from '../../../engine/kinetic/kineticEngine';
 import { getWordEffectiveArchetype, getWordEffectiveFont, getWordFontRole, cleanLyricToken } from '../../../engine/kinetic/semanticClassifier';
 import { computeSongMoodProfile, SongMoodProfile } from '../../../engine/kinetic/moodProfileEngine';
@@ -158,6 +158,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const [aiWordOverrides, setAiWordOverrides] = useState<Record<string, MotionArchetype>>({});
   const [aiMotifOverrides, setAiMotifOverrides] = useState<Record<string, VisualMotif>>({});
   const [motifMode, setMotifMode] = useState<MotifMode>('dynamic');
+  const [transitionStyle, setTransitionStyle] = useState<KineticTransitionType>('auto');
   const [editingWordTarget, setEditingWordTarget] = useState<EditingWordTarget | null>(null);
   const [fontFamily, setFontFamily] = useState<string>(() => STYLE_PACKS.trap_drill.fonts.hero);
   const [isRendering, setIsRendering] = useState(false);
@@ -832,6 +833,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         fontFamily,
         stylePack,
         motifMode,
+        transitionStyle,
         wordOverrides,
         wordFontOverrides,
         wordMotifOverrides,
@@ -840,7 +842,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
       });
     } catch (err) {
       console.warn('Failed to compute currentFingerprint:', err);
-      return `${rangeStartMs}_${rangeEndMs}_${selectedLines.length}_${archetype}_${fontFamily}_${stylePack}_${motifMode}_${inferenceMode}`;
+      return `${rangeStartMs}_${rangeEndMs}_${selectedLines.length}_${archetype}_${fontFamily}_${stylePack}_${motifMode}_${transitionStyle}_${inferenceMode}`;
     }
   }, [
     rangeStartMs,
@@ -850,6 +852,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     fontFamily,
     stylePack,
     motifMode,
+    transitionStyle,
     wordOverrides,
     wordFontOverrides,
     wordMotifOverrides,
@@ -984,6 +987,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           wordFontOverrides,
           wordMotifOverrides,
           motifMode,
+          transitionStyle,
           audioAnalysis: audioAnalysis || undefined
         });
         if (active) {
@@ -1004,7 +1008,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
     renderLivePreview();
     return () => { active = false; };
-  }, [selectedLines, archetype, fontFamily, stylePack, rangeStartMs, rangeEndMs, wordOverrides, wordFontOverrides, wordMotifOverrides, motifMode, audioAnalysis, renderedMediaBuffer, isDirty]);
+  }, [selectedLines, archetype, fontFamily, stylePack, rangeStartMs, rangeEndMs, wordOverrides, wordFontOverrides, wordMotifOverrides, motifMode, transitionStyle, audioAnalysis, renderedMediaBuffer, isDirty]);
 
   // Synchronize live preview frame when playhead updates
   useEffect(() => {
@@ -1354,6 +1358,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           wordFontOverrides,
           wordMotifOverrides,
           motifMode,
+          transitionStyle,
           audioAnalysis: audioAnalysis || undefined
         },
         progress => setRenderProgress(progress)
@@ -1403,6 +1408,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             wordFontOverrides,
             wordMotifOverrides,
             motifMode,
+            transitionStyle,
             audioAnalysis: audioAnalysis || undefined
           },
           progress => setRenderProgress(progress)
@@ -3015,6 +3021,58 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                 {motifMode === 'subtle' && 'Minimal speedline flares on beat transients.'}
                 {motifMode === 'dynamic' && 'Semantic motif assignment (crowns, scopes, flames & stars).'}
                 {motifMode === 'heavy' && 'Full manga layering with Bayer halftones and speedlines.'}
+              </p>
+            </div>
+
+            {/* 4. TRANSITION CHOREOGRAPHY */}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <label className={`text-[11px] font-sans font-semibold ${
+                  themeMode === 'dark' ? 'text-white/80' : 'text-[#141413]'
+                }`}>
+                  Transition Flow
+                </label>
+                <span className={`text-[10px] font-mono ${themeMode === 'dark' ? 'text-white/40' : 'text-[#87867F]'}`}>
+                  {TRANSITION_METADATA[transitionStyle]?.tag || 'AUTO'}
+                </span>
+              </div>
+
+              <div className={`flex p-0.5 rounded-xl border ${
+                themeMode === 'dark' ? 'bg-[#141418] border-white/10' : 'bg-[#FAF9F5] border-[#E8E5DE]'
+              }`}>
+                {[
+                  { id: 'auto' as KineticTransitionType, label: 'Auto Flow', desc: 'Auto-adapts between glides, dither sweeps, elevator drifts & dissolves.' },
+                  { id: 'lateral_glide' as KineticTransitionType, label: 'Glide', desc: 'Dynamic horizontal reading-axis slide.' },
+                  { id: 'bayer_sweep' as KineticTransitionType, label: 'Sweep', desc: 'Directional 1-bit Bayer dither curtain wipe.' },
+                  { id: 'vertical_drift' as KineticTransitionType, label: 'Elevator', desc: 'Ethereal vertical float between words.' },
+                  { id: 'dither_dissolve' as KineticTransitionType, label: 'Dissolve', desc: 'Classic stationary 1-bit matrix crossfade.' },
+                ].map(item => {
+                  const isSelected = transitionStyle === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setTransitionStyle(item.id);
+                        setRenderedMediaBuffer(null);
+                        setRenderedFingerprint(null);
+                      }}
+                      className={`flex-1 py-1 text-[11px] font-sans font-medium rounded-lg transition-all cursor-pointer text-center ${
+                        isSelected
+                          ? 'bg-[#D97757] text-white shadow-xs font-semibold'
+                          : themeMode === 'dark' ? 'text-white/60 hover:text-white' : 'text-[#5E5D59] hover:text-[#141413]'
+                      }`}
+                      title={item.desc}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className={`text-[10px] font-sans leading-tight ${
+                themeMode === 'dark' ? 'text-white/40' : 'text-[#87867F]'
+              }`}>
+                {TRANSITION_METADATA[transitionStyle]?.description}
               </p>
             </div>
           </div>

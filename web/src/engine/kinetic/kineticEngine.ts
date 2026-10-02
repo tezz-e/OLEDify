@@ -1,5 +1,5 @@
 import { ExtractedFrame, DecodedMedia } from '../../types/media';
-import { KineticRenderOptions, MotionArchetype, STYLE_PACKS } from './types';
+import { KineticRenderOptions, MotionArchetype, STYLE_PACKS, KineticTransitionType } from './types';
 import { computeSafeTextLayout } from './kineticLayout';
 import { renderArchetypeFrame, getScratchCanvas, BAYER_4X4 } from './kineticArchetypes';
 import { renderMotifBackground } from './motifRenderer';
@@ -7,7 +7,9 @@ import { getWordEffectiveArchetype, getWordEffectiveFont, cleanLyricToken } from
 import { LyricWord } from '../lyrics/types';
 import { isRTL } from './scriptDetector';
 import { ensureFontForText } from './fontLoader';
-import { computeSongMoodProfile } from './moodProfileEngine';
+import { computeSongMoodProfile, SongMoodProfile } from './moodProfileEngine';
+
+let cachedTransitionBuffer: Uint8ClampedArray | null = null;
 
 function findLastEndedWord(wordsList: LyricWord[], timeMs: number): { word?: LyricWord; index: number } {
   for (let i = wordsList.length - 1; i >= 0; i--) {
@@ -16,6 +18,59 @@ function findLastEndedWord(wordsList: LyricWord[], timeMs: number): { word?: Lyr
     }
   }
   return { word: undefined, index: -1 };
+}
+
+/**
+ * Intelligently resolves the dynamic transition choreography between consecutive words.
+ * Cycles through lateral glides, curtain dither sweeps, elevator drifts, and dissolves
+ * to eliminate transition monotony and provide natural lyric reading flow.
+ */
+export function resolveTransitionStyle(
+  prevWord: LyricWord,
+  activeWord: LyricWord,
+  wordIndex: number,
+  prevArchetype: MotionArchetype,
+  activeArchetype: MotionArchetype,
+  moodProfile?: SongMoodProfile | null,
+  userChoice: KineticTransitionType = 'auto'
+): KineticTransitionType {
+  if (userChoice && userChoice !== 'auto') {
+    return userChoice;
+  }
+
+  // 1. Punctuation pauses or sentence endings -> dither_dissolve (dignified calm pause)
+  const prevClean = prevWord.word.trim();
+  if (prevClean.endsWith('.') || prevClean.endsWith('...') || prevClean.endsWith('?') || prevClean.endsWith('!') || prevClean.endsWith(',')) {
+    return 'dither_dissolve';
+  }
+
+  // 2. Significant vocal gap (>250ms silence between words) -> curtain_drop or dither_dissolve
+  const gap = activeWord.startMs - prevWord.endMs;
+  if (gap > 250) {
+    return (wordIndex % 2 === 0) ? 'curtain_drop' : 'dither_dissolve';
+  }
+
+  // 3. Ethereal / Float archetypes -> vertical_drift
+  if (activeArchetype === 'gentle_float' || prevArchetype === 'gentle_float') {
+    return 'vertical_drift';
+  }
+
+  // 4. Dither dissolve or typewriter reveals -> bayer_sweep
+  if (activeArchetype === 'dither_dissolve' || activeArchetype === 'typewriter_ribbon') {
+    return 'bayer_sweep';
+  }
+
+  // 5. Sequential lyric reading flow: cycle through dynamic choreographies so consecutive transitions NEVER look identical!
+  const flowCycle: KineticTransitionType[] = [
+    'lateral_glide',
+    'bayer_sweep',
+    'vertical_drift',
+    'lateral_glide',
+    'curtain_drop',
+    'bayer_sweep'
+  ];
+
+  return flowCycle[wordIndex % flowCycle.length];
 }
 
 /**
@@ -66,14 +121,55 @@ export async function renderKineticSequence(
     }
   }
 
-  // Use standard canvas or OffscreenCanvas
-  const canvas = typeof OffscreenCanvas !== 'undefined'
-    ? new OffscreenCanvas(128, 64)
-    : document.createElement('canvas');
-  canvas.width = 128;
-  canvas.height = 64;
+  // Use standard canvas, OffscreenCanvas, or headless mock
+  let canvas: any;
+  let ctx: CanvasRenderingContext2D | null = null;
 
-  const ctx = canvas.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D;
+  if (typeof OffscreenCanvas !== 'undefined') {
+    canvas = new OffscreenCanvas(128, 64);
+    ctx = canvas.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D;
+  } else if (typeof document !== 'undefined' && typeof document.createElement === 'function') {
+    canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 64;
+    ctx = canvas.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D;
+  } else {
+    // Headless Node.js test fallback
+    const mockPixels = new Uint8ClampedArray(128 * 64 * 4);
+    ctx = {
+      save: () => {},
+      restore: () => {},
+      translate: () => {},
+      rotate: () => {},
+      scale: () => {},
+      fillRect: () => {},
+      strokeRect: () => {},
+      rect: () => {},
+      clip: () => {},
+      arc: () => {},
+      ellipse: () => {},
+      fillText: () => {},
+      strokeText: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      stroke: () => {},
+      fill: () => {},
+      clearRect: () => {},
+      measureText: (text: string) => ({ width: text.length * 8 }),
+      getImageData: () => ({ data: mockPixels, width: 128, height: 64 }),
+      putImageData: () => {},
+      createImageData: () => ({ data: new Uint8ClampedArray(128 * 64 * 4), width: 128, height: 64 }),
+      font: '',
+      fillStyle: '',
+      strokeStyle: '',
+      lineWidth: 1,
+      textAlign: 'center',
+      textBaseline: 'middle',
+      direction: 'ltr',
+      globalCompositeOperation: 'source-over'
+    } as any;
+  }
   if (!ctx) throw new Error('Could not acquire 2D rendering context for kinetic engine');
 
   const extractedFrames: ExtractedFrame[] = [];
@@ -212,7 +308,7 @@ export async function renderKineticSequence(
       renderArchetypeFrame(ctx, effectiveArchetype, activeWord.word, tau, layout, f, effectiveFont, audioFrame, moodProfile);
       ctx.restore();
 
-      // Smooth 1-Bit Bayer Dither Cross-Fade between consecutive words (silky legato transitions)
+      // Dynamic 1-Bit Transition Choreography between consecutive words (legato phrasing)
       if (moodProfile.crossfadeOverlapMs > 0 && activeWordIndex > 0) {
         const prevWord = words[activeWordIndex - 1];
         const dtFromStart = currentMs - activeWord.startMs;
@@ -257,28 +353,131 @@ export async function renderKineticSequence(
             moodProfile
           );
 
-          // Blend active word and previous word using Bayer 4x4 ordered dither threshold
-          const crossfadeProgress = dtFromStart / moodProfile.crossfadeOverlapMs;
+          // Resolve dynamic transition choreography for this pair of words
+          const transStyle = resolveTransitionStyle(
+            prevWord,
+            activeWord,
+            activeWordIndex,
+            prevEffectiveArch,
+            effectiveArchetype,
+            moodProfile,
+            options.transitionStyle || 'auto'
+          );
+
+          const crossfadeProgress = Math.max(0, Math.min(1, dtFromStart / moodProfile.crossfadeOverlapMs));
+          // Smootherstep interpolation (zero initial velocity & zero landing shock)
+          const u = crossfadeProgress < 0.5 
+            ? 2 * crossfadeProgress * crossfadeProgress 
+            : 1 - Math.pow(-2 * crossfadeProgress + 2, 2) / 2;
+
+          const isRTLText = isWordRTL || isRTL(prevWord.word);
+
+          // Compute directional offsets per transition style
+          let dxPrev = 0;
+          let dyPrev = 0;
+          let dxActive = 0;
+          let dyActive = 0;
+
+          if (transStyle === 'lateral_glide') {
+            const slideDist = 16;
+            const exitDist = Math.round(u * slideDist);
+            const enterDist = Math.round((1 - u) * slideDist);
+            dxPrev = isRTLText ? exitDist : -exitDist;
+            dxActive = isRTLText ? -enterDist : enterDist;
+          } else if (transStyle === 'vertical_drift') {
+            const driftDist = 8;
+            dyPrev = -Math.round(u * driftDist);
+            dyActive = Math.round((1 - u) * driftDist);
+          } else if (transStyle === 'bayer_sweep') {
+            // Subtle horizontal breathing during sweep
+            dxPrev = isRTLText ? Math.round(u * 4) : -Math.round(u * 4);
+            dxActive = isRTLText ? -Math.round((1 - u) * 4) : Math.round((1 - u) * 4);
+          } else if (transStyle === 'curtain_drop') {
+            // Subtle vertical shift during drop
+            dyPrev = -Math.round(u * 3);
+            dyActive = Math.round((1 - u) * 3);
+          }
+
           const activeImg = ctx.getImageData(0, 0, 128, 64);
           const prevImg = tCtx.getImageData(0, 0, 128, 64);
           const aData = activeImg.data;
           const pData = prevImg.data;
 
+          // Reusable scratch buffer to prevent in-place sampling overwrite
+          if (!cachedTransitionBuffer || cachedTransitionBuffer.length !== 128 * 64 * 4) {
+            cachedTransitionBuffer = new Uint8ClampedArray(128 * 64 * 4);
+          }
+          cachedTransitionBuffer.set(aData);
+
+          const sweepBandX = 24;
+          const sweepTravelX = 128 + sweepBandX;
+          const sweepCenterX = isRTLText 
+            ? Math.round((1 - crossfadeProgress) * sweepTravelX - sweepBandX / 2)
+            : Math.round(crossfadeProgress * sweepTravelX - sweepBandX / 2);
+
+          const sweepBandY = 16;
+          const sweepTravelY = 64 + sweepBandY;
+          const sweepCenterY = Math.round(crossfadeProgress * sweepTravelY - sweepBandY / 2);
+
           for (let y = 0; y < 64; y++) {
             const rowOffset = y * 128;
             const bayerRow = BAYER_4X4[y % 4];
+
             for (let x = 0; x < 128; x++) {
               const idx = (rowOffset + x) * 4;
-              const threshold = bayerRow[x % 4] / 16;
-              // If threshold >= progress, show previous word (fades out as progress approaches 1)
-              if (threshold >= crossfadeProgress) {
-                aData[idx] = pData[idx];
-                aData[idx + 1] = pData[idx + 1];
-                aData[idx + 2] = pData[idx + 2];
-                aData[idx + 3] = pData[idx + 3];
+
+              // Sample previous word pixel with (dxPrev, dyPrev)
+              const srcPx = x - dxPrev;
+              const srcPy = y - dyPrev;
+              let pVal = 0;
+              if (srcPx >= 0 && srcPx < 128 && srcPy >= 0 && srcPy < 64) {
+                pVal = pData[(srcPy * 128 + srcPx) * 4];
               }
+
+              // Sample active word pixel with (dxActive, dyActive)
+              const srcAx = x - dxActive;
+              const srcAy = y - dyActive;
+              let aVal = 0;
+              if (srcAx >= 0 && srcAx < 128 && srcAy >= 0 && srcAy < 64) {
+                aVal = cachedTransitionBuffer[(srcAy * 128 + srcAx) * 4];
+              }
+
+              let showPrev = false;
+              const threshold = bayerRow[x % 4] / 16;
+
+              if (transStyle === 'bayer_sweep') {
+                const distFromFront = isRTLText ? (sweepCenterX - x) : (x - sweepCenterX);
+                if (distFromFront > sweepBandX / 2) {
+                  showPrev = true;
+                } else if (distFromFront < -sweepBandX / 2) {
+                  showPrev = false;
+                } else {
+                  const localProg = (distFromFront + sweepBandX / 2) / sweepBandX;
+                  showPrev = threshold < localProg;
+                }
+              } else if (transStyle === 'curtain_drop') {
+                const distFromFrontY = y - sweepCenterY;
+                if (distFromFrontY > sweepBandY / 2) {
+                  showPrev = true;
+                } else if (distFromFrontY < -sweepBandY / 2) {
+                  showPrev = false;
+                } else {
+                  const localProgY = (distFromFrontY + sweepBandY / 2) / sweepBandY;
+                  showPrev = threshold < localProgY;
+                }
+              } else {
+                // lateral_glide, vertical_drift, dither_dissolve
+                showPrev = threshold >= crossfadeProgress;
+              }
+
+              const finalVal = showPrev ? pVal : aVal;
+              aData[idx] = finalVal;
+              aData[idx + 1] = finalVal;
+              aData[idx + 2] = finalVal;
+              aData[idx + 3] = 255;
             }
           }
+
           ctx.putImageData(activeImg, 0, 0);
         }
       }

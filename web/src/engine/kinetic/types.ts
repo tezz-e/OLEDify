@@ -423,6 +423,67 @@ export const MOTIF_METADATA: Record<VisualMotif, MotifMeta> = {
   }
 };
 
+export type KineticTransitionType = 
+  | 'auto'
+  | 'lateral_glide'
+  | 'vertical_drift'
+  | 'bayer_sweep'
+  | 'curtain_drop'
+  | 'dither_dissolve';
+
+export interface TransitionMeta {
+  id: KineticTransitionType;
+  icon: string;
+  name: string;
+  tag: string;
+  description: string;
+}
+
+export const TRANSITION_METADATA: Record<KineticTransitionType, TransitionMeta> = {
+  auto: {
+    id: 'auto',
+    icon: '🔀',
+    name: 'Dynamic Choreography',
+    tag: 'AUTO',
+    description: 'Auto-adapts transition flow (glides, dither sweeps, elevator drifts) to song rhythm'
+  },
+  lateral_glide: {
+    id: 'lateral_glide',
+    icon: '➡️',
+    name: 'Lateral Reading Glide',
+    tag: 'GLIDE',
+    description: 'Smooth horizontal reading-axis flow; outgoing word slides away as incoming word glides in'
+  },
+  bayer_sweep: {
+    id: 'bayer_sweep',
+    icon: '🌊',
+    name: 'Bayer Curtain Sweep',
+    tag: 'SWEEP',
+    description: 'Directional 1-bit Bayer dither wavefront sweeping across the display'
+  },
+  vertical_drift: {
+    id: 'vertical_drift',
+    icon: '⬆️',
+    name: 'Vertical Elevator Drift',
+    tag: 'FLOAT',
+    description: 'Ethereal acoustic lift; outgoing word drifts upward while incoming word rises from below'
+  },
+  curtain_drop: {
+    id: 'curtain_drop',
+    icon: '⬇️',
+    name: 'Curtain Blinds Drop',
+    tag: 'DROP',
+    description: 'Top-to-bottom blinds wave unveiling the incoming word with sparkling Bayer fringe'
+  },
+  dither_dissolve: {
+    id: 'dither_dissolve',
+    icon: '✨',
+    name: 'Dither Crossfade',
+    tag: 'FADE',
+    description: 'Classic in-place 1-bit Bayer matrix crossfade for contemplative pauses'
+  }
+};
+
 import { AudioAnalysisResult } from './audioAnalysisEngine';
 
 export interface KineticRenderOptions {
@@ -440,6 +501,7 @@ export interface KineticRenderOptions {
   stylePack?: StylePackId;
   customPalette?: StylePackConfig['fonts'];
   audioAnalysis?: AudioAnalysisResult;
+  transitionStyle?: KineticTransitionType;
 }
 
 

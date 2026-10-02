@@ -173,7 +173,13 @@ export function classifyWordArchetype(
   // 2. Connective / Filler words stay clean and non-distracting
   if (isFillerWord(clean)) {
     if (isChill) {
-      return moodProfile?.vibe === 'ballad_acoustic' ? 'gentle_float' : 'waveform_karaoke';
+      if (wordIndex === 0) {
+        return moodProfile?.vibe === 'ballad_acoustic' ? 'gentle_float' : 'waveform_karaoke';
+      }
+      const chillFillers: MotionArchetype[] = moodProfile?.vibe === 'ballad_acoustic'
+        ? ['gentle_float', 'waveform_karaoke', 'smooth_fluid', 'dither_dissolve']
+        : ['waveform_karaoke', 'gentle_float', 'smooth_fluid', 'typewriter_ribbon'];
+      return chillFillers[wordIndex % chillFillers.length];
     }
     return 'smooth_fluid';
   }
