@@ -5,7 +5,7 @@ import { parseLrc, parsePlainTextLyrics } from '../../../engine/lyrics/lrcParser
 import { LrclibTrack, ParsedLyrics, LyricLine, LyricWord } from '../../../engine/lyrics/types';
 import { MotionArchetype, ARCHETYPE_METADATA, STYLE_PACKS, StylePackId, VisualMotif, MotifMode, MOTIF_METADATA } from '../../../engine/kinetic/types';
 import { renderKineticSequence } from '../../../engine/kinetic/kineticEngine';
-import { getWordEffectiveArchetype, getWordEffectiveFont, getWordFontRole } from '../../../engine/kinetic/semanticClassifier';
+import { getWordEffectiveArchetype, getWordEffectiveFont, getWordFontRole, cleanLyricToken } from '../../../engine/kinetic/semanticClassifier';
 import { analyzeAudioFile, AudioAnalysisResult } from '../../../engine/kinetic/audioAnalysisEngine';
 import {
   checkOllamaHealth,
@@ -145,14 +145,36 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const [showTokenBadges, setShowTokenBadges] = useState<boolean>(false);
   const [wordCustomizerTab, setWordCustomizerTab] = useState<'archetype' | 'font' | 'motif'>('archetype');
   const [stylePack, setStylePack] = useState<StylePackId>('trap_drill');
-  const [wordOverrides, setWordOverrides] = useState<Record<string, MotionArchetype>>({});
-  const [wordFontOverrides, setWordFontOverrides] = useState<Record<string, string>>({});
+  const [manualWordOverrides, setManualWordOverrides] = useState<Record<string, MotionArchetype>>({});
+  const [manualFontOverrides, setManualFontOverrides] = useState<Record<string, string>>({});
+  const [manualMotifOverrides, setManualMotifOverrides] = useState<Record<string, VisualMotif>>({});
+  const [aiWordOverrides, setAiWordOverrides] = useState<Record<string, MotionArchetype>>({});
+  const [aiMotifOverrides, setAiMotifOverrides] = useState<Record<string, VisualMotif>>({});
   const [motifMode, setMotifMode] = useState<MotifMode>('dynamic');
-  const [wordMotifOverrides, setWordMotifOverrides] = useState<Record<string, VisualMotif>>({});
   const [editingWordTarget, setEditingWordTarget] = useState<EditingWordTarget | null>(null);
-  const [fontFamily, setFontFamily] = useState<string>("'Lemon Milk', sans-serif");
+  const [fontFamily, setFontFamily] = useState<string>(() => STYLE_PACKS.trap_drill.fonts.hero);
   const [isRendering, setIsRendering] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
+
+  // --- LLM INFERENCE STATE (Groq Cloud & Local Ollama) ---
+  const [inferenceMode, setInferenceMode] = useState<'heuristic' | 'ollama'>('heuristic');
+
+  // Derived effective overrides based on director inferenceMode:
+  // - In 'heuristic' (Auto Rules): uses pure algorithmic rules without AI overrides.
+  // - In 'ollama' (AI Cloud Director): merges AI director overrides with any manual user tweaks.
+  const wordOverrides = useMemo<Record<string, MotionArchetype>>(() => {
+    if (directorModeTab === 'manual') return manualWordOverrides;
+    if (inferenceMode === 'heuristic') return manualWordOverrides;
+    return { ...aiWordOverrides, ...manualWordOverrides };
+  }, [directorModeTab, inferenceMode, manualWordOverrides, aiWordOverrides]);
+
+  const wordFontOverrides = manualFontOverrides;
+
+  const wordMotifOverrides = useMemo<Record<string, VisualMotif>>(() => {
+    if (directorModeTab === 'manual') return manualMotifOverrides;
+    if (inferenceMode === 'heuristic') return manualMotifOverrides;
+    return { ...aiMotifOverrides, ...manualMotifOverrides };
+  }, [directorModeTab, inferenceMode, manualMotifOverrides, aiMotifOverrides]);
 
   // --- RENDER BUFFER & DIRTY TRACKING ---
   const [renderedMediaBuffer, setRenderedMediaBuffer] = useState<DecodedMedia | null>(null);
@@ -160,8 +182,6 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const [lastRenderedMode, setLastRenderedMode] = useState<'heuristic' | 'ollama' | null>(null);
   const [injectedToast, setInjectedToast] = useState(false);
 
-  // --- LLM INFERENCE STATE (Groq Cloud & Local Ollama) ---
-  const [inferenceMode, setInferenceMode] = useState<'heuristic' | 'ollama'>('heuristic');
   const [llmProvider, setLlmProvider] = useState<LLMProvider>(() => {
     return getEffectiveGroqApiKey() ? 'groq' : 'ollama';
   });
@@ -233,7 +253,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           }
         }
         if (Object.keys(cleanArchetypes).length > 0) {
-          setWordOverrides(prev => ({ ...prev, ...cleanArchetypes }));
+          setAiWordOverrides(prev => ({ ...prev, ...cleanArchetypes }));
           appliedCount += Object.keys(cleanArchetypes).length;
         }
       }
@@ -245,13 +265,18 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           }
         }
         if (Object.keys(cleanMotifs).length > 0) {
-          setWordMotifOverrides(prev => ({ ...prev, ...cleanMotifs }));
+          setAiMotifOverrides(prev => ({ ...prev, ...cleanMotifs }));
           appliedCount += Object.keys(cleanMotifs).length;
         }
       }
 
+      // Automatically activate AI Cloud Director mode and bust stale render buffer
+      setInferenceMode('ollama');
+      setRenderedMediaBuffer(null);
+      setRenderedFingerprint(null);
+
       setLastAnalysisNotice({
-        message: `Applied ${appliedCount} AI styles across ${targetLines.length} lines`,
+        message: `Applied ${appliedCount} AI styles across ${targetLines.length} lines with ${providerLabel}`,
         count: appliedCount,
         timestamp: Date.now()
       });
@@ -273,26 +298,41 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
       if (line.words) {
         for (const w of line.words) {
           keysToRemove.add(`${w.word}_${w.startMs}`);
-          keysToRemove.add(w.word.toLowerCase().replace(/[^a-z0-9]/g, ''));
+          const cK = cleanLyricToken(w.word);
+          if (cK) keysToRemove.add(cK);
+          keysToRemove.add(w.word.toLowerCase());
         }
       }
     }
 
-    setWordOverrides(prev => {
+    setManualWordOverrides(prev => {
       const next = { ...prev };
       for (const k of keysToRemove) delete next[k];
       return next;
     });
-    setWordFontOverrides(prev => {
+    setManualFontOverrides(prev => {
       const next = { ...prev };
       for (const k of keysToRemove) delete next[k];
       return next;
     });
-    setWordMotifOverrides(prev => {
+    setManualMotifOverrides(prev => {
       const next = { ...prev };
       for (const k of keysToRemove) delete next[k];
       return next;
     });
+    setAiWordOverrides(prev => {
+      const next = { ...prev };
+      for (const k of keysToRemove) delete next[k];
+      return next;
+    });
+    setAiMotifOverrides(prev => {
+      const next = { ...prev };
+      for (const k of keysToRemove) delete next[k];
+      return next;
+    });
+
+    setRenderedMediaBuffer(null);
+    setRenderedFingerprint(null);
   };
 
   // Safe word editor snapshot to allow full cancellation
@@ -311,11 +351,11 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     wordMotif: VisualMotif
   ) => {
     const specificKey = `${w.word}_${w.startMs}`;
-    const cleanKey = w.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cleanKey = cleanLyricToken(w.word);
     initialWordStateRef.current = {
-      arch: wordOverrides[specificKey] || wordOverrides[cleanKey],
-      font: wordFontOverrides[specificKey] || wordFontOverrides[cleanKey],
-      motif: wordMotifOverrides[specificKey] || wordMotifOverrides[cleanKey],
+      arch: manualWordOverrides[specificKey] || (cleanKey ? manualWordOverrides[cleanKey] : undefined),
+      font: manualFontOverrides[specificKey] || (cleanKey ? manualFontOverrides[cleanKey] : undefined),
+      motif: manualMotifOverrides[specificKey] || (cleanKey ? manualMotifOverrides[cleanKey] : undefined),
     };
     setEditingWordTarget({
       word: w,
@@ -333,27 +373,27 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
       return;
     }
     const specificKey = `${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`;
-    const cleanKey = editingWordTarget.word.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cleanKey = cleanLyricToken(editingWordTarget.word.word);
     const { arch, font, motif } = initialWordStateRef.current;
 
-    setWordOverrides(prev => {
+    setManualWordOverrides(prev => {
       const next = { ...prev };
       if (arch) next[specificKey] = arch;
-      else { delete next[specificKey]; delete next[cleanKey]; }
+      else { delete next[specificKey]; if (cleanKey) delete next[cleanKey]; }
       return next;
     });
 
-    setWordFontOverrides(prev => {
+    setManualFontOverrides(prev => {
       const next = { ...prev };
       if (font) next[specificKey] = font;
-      else { delete next[specificKey]; delete next[cleanKey]; }
+      else { delete next[specificKey]; if (cleanKey) delete next[cleanKey]; }
       return next;
     });
 
-    setWordMotifOverrides(prev => {
+    setManualMotifOverrides(prev => {
       const next = { ...prev };
       if (motif && motif !== 'none') next[specificKey] = motif;
-      else { delete next[specificKey]; delete next[cleanKey]; }
+      else { delete next[specificKey]; if (cleanKey) delete next[cleanKey]; }
       return next;
     });
 
@@ -413,9 +453,11 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   // Select track from search results
   const handleSelectTrack = (track: LrclibTrack) => {
     // Reset previous song overrides & notices
-    setWordOverrides({});
-    setWordFontOverrides({});
-    setWordMotifOverrides({});
+    setManualWordOverrides({});
+    setManualFontOverrides({});
+    setManualMotifOverrides({});
+    setAiWordOverrides({});
+    setAiMotifOverrides({});
     setOllamaInspectionLogs([]);
     setLastAnalysisNotice(null);
     setRenderedMediaBuffer(null);
@@ -445,9 +487,11 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const handleApplyPastedLrc = () => {
     if (!pastedLrcText.trim()) return;
     // Reset previous song overrides & notices
-    setWordOverrides({});
-    setWordFontOverrides({});
-    setWordMotifOverrides({});
+    setManualWordOverrides({});
+    setManualFontOverrides({});
+    setManualMotifOverrides({});
+    setAiWordOverrides({});
+    setAiMotifOverrides({});
     setOllamaInspectionLogs([]);
     setLastAnalysisNotice(null);
     setRenderedMediaBuffer(null);
@@ -679,9 +723,10 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           const w = line.words[wIdx];
           wordCount++;
           const specificKey = `${w.word}_${w.startMs}`;
-          const cleanKey = w.word.toLowerCase().replace(/[^a-z0-9]/g, '');
-          const arch = wordOverrides[specificKey] || wordOverrides[cleanKey];
-          const motif = wordMotifOverrides[specificKey] || wordMotifOverrides[cleanKey];
+          const cleanKey = cleanLyricToken(w.word);
+          const lowerRaw = w.word.toLowerCase();
+          const arch = wordOverrides[specificKey] || (cleanKey ? wordOverrides[cleanKey] : undefined) || wordOverrides[lowerRaw];
+          const motif = wordMotifOverrides[specificKey] || (cleanKey ? wordMotifOverrides[cleanKey] : undefined) || wordMotifOverrides[lowerRaw];
           if (arch) {
             overrideCount++;
             activeArchetypes.add(ARCHETYPE_METADATA[arch]?.name || arch);
@@ -731,12 +776,14 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
       let count = 0;
       for (const w of line.words) {
         const specificKey = `${w.word}_${w.startMs}`;
-        const cleanKey = w.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const cleanKey = cleanLyricToken(w.word);
+        const lowerRaw = w.word.toLowerCase();
         if (
-          wordOverrides[specificKey] || wordOverrides[cleanKey] ||
-          wordFontOverrides[specificKey] || wordFontOverrides[cleanKey] ||
+          wordOverrides[specificKey] || (cleanKey && wordOverrides[cleanKey]) || wordOverrides[lowerRaw] ||
+          wordFontOverrides[specificKey] || (cleanKey && wordFontOverrides[cleanKey]) || wordFontOverrides[lowerRaw] ||
           (wordMotifOverrides[specificKey] && wordMotifOverrides[specificKey] !== 'none') ||
-          (wordMotifOverrides[cleanKey] && wordMotifOverrides[cleanKey] !== 'none')
+          (cleanKey && wordMotifOverrides[cleanKey] && wordMotifOverrides[cleanKey] !== 'none') ||
+          (wordMotifOverrides[lowerRaw] && wordMotifOverrides[lowerRaw] !== 'none')
         ) {
           count++;
         }
@@ -1847,7 +1894,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                           {lineOverrideStatusMap[idx]?.hasCustom ? (
                             <span className="text-[8px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 flex items-center gap-1 shadow-xs">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                              <span>✨ {lineOverrideStatusMap[idx].count} custom overrides</span>
+                              <span>{inferenceMode === 'ollama' ? '✨ AI Cloud Directed' : '✨ Custom Overrides'} ({lineOverrideStatusMap[idx].count} styles)</span>
                             </span>
                           ) : (
                             <span className="text-[8px] font-mono font-medium px-2 py-0.5 rounded bg-black/5 dark:bg-white/5 text-[#5E5D59] dark:text-white/50 border border-black/5 dark:border-white/10 flex items-center gap-1">
@@ -1875,13 +1922,15 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                             const packConfig = STYLE_PACKS[stylePack] || STYLE_PACKS.trap_drill;
                             const wordFont = getWordEffectiveFont(w, wordArch, packConfig, wordFontOverrides, fontFamily);
                             const specificKey = `${w.word}_${w.startMs}`;
-                            const cleanKey = w.word.toLowerCase().replace(/[^a-z0-9]/g, '');
-                            const wordMotif = wordMotifOverrides[specificKey] || wordMotifOverrides[cleanKey] || 'none';
+                            const cleanKey = cleanLyricToken(w.word);
+                            const lowerRaw = w.word.toLowerCase();
+                            const wordMotif = wordMotifOverrides[specificKey] || (cleanKey ? wordMotifOverrides[cleanKey] : undefined) || wordMotifOverrides[lowerRaw] || 'none';
                             const isOverridden = !!(
-                              wordOverrides[specificKey] || wordOverrides[cleanKey] ||
-                              wordFontOverrides[specificKey] || wordFontOverrides[cleanKey] ||
+                              wordOverrides[specificKey] || (cleanKey && wordOverrides[cleanKey]) || wordOverrides[lowerRaw] ||
+                              wordFontOverrides[specificKey] || (cleanKey && wordFontOverrides[cleanKey]) || wordFontOverrides[lowerRaw] ||
                               (wordMotifOverrides[specificKey] && wordMotifOverrides[specificKey] !== 'none') ||
-                              (wordMotifOverrides[cleanKey] && wordMotifOverrides[cleanKey] !== 'none')
+                              (cleanKey && wordMotifOverrides[cleanKey] && wordMotifOverrides[cleanKey] !== 'none') ||
+                              (wordMotifOverrides[lowerRaw] && wordMotifOverrides[lowerRaw] !== 'none')
                             );
 
                             return (
@@ -1942,14 +1991,16 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                             const wordFont = getWordEffectiveFont(w, wordArch, packConfig, wordFontOverrides, fontFamily);
                             const meta = ARCHETYPE_METADATA[wordArch] || ARCHETYPE_METADATA.smooth_fluid;
                             const specificKey = `${w.word}_${w.startMs}`;
-                            const cleanKey = w.word.toLowerCase().replace(/[^a-z0-9]/g, '');
-                            const wordMotif = wordMotifOverrides[specificKey] || wordMotifOverrides[cleanKey] || 'none';
+                            const cleanKey = cleanLyricToken(w.word);
+                            const lowerRaw = w.word.toLowerCase();
+                            const wordMotif = wordMotifOverrides[specificKey] || (cleanKey ? wordMotifOverrides[cleanKey] : undefined) || wordMotifOverrides[lowerRaw] || 'none';
                             const motifMeta = MOTIF_METADATA[wordMotif];
                             const isOverridden = !!(
-                              wordOverrides[specificKey] || wordOverrides[cleanKey] ||
-                              wordFontOverrides[specificKey] || wordFontOverrides[cleanKey] ||
+                              wordOverrides[specificKey] || (cleanKey && wordOverrides[cleanKey]) || wordOverrides[lowerRaw] ||
+                              wordFontOverrides[specificKey] || (cleanKey && wordFontOverrides[cleanKey]) || wordFontOverrides[lowerRaw] ||
                               (wordMotifOverrides[specificKey] && wordMotifOverrides[specificKey] !== 'none') ||
-                              (wordMotifOverrides[cleanKey] && wordMotifOverrides[cleanKey] !== 'none')
+                              (cleanKey && wordMotifOverrides[cleanKey] && wordMotifOverrides[cleanKey] !== 'none') ||
+                              (wordMotifOverrides[lowerRaw] && wordMotifOverrides[lowerRaw] !== 'none')
                             );
 
                             return (
@@ -2241,7 +2292,15 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                   <div className="flex items-center gap-1.5 bg-[#D97757]/10 border border-[#D97757]/30 px-2.5 py-0.5 rounded-full text-[10px] text-[#D97757] font-medium">
                     <span>{Object.keys(wordOverrides).length} overrides</span>
                     <button
-                      onClick={() => setWordOverrides({})}
+                      onClick={() => {
+                        setManualWordOverrides({});
+                        setManualFontOverrides({});
+                        setManualMotifOverrides({});
+                        setAiWordOverrides({});
+                        setAiMotifOverrides({});
+                        setRenderedMediaBuffer(null);
+                        setRenderedFingerprint(null);
+                      }}
                       className="hover:underline cursor-pointer ml-1 opacity-80 hover:opacity-100"
                     >
                       Reset
@@ -2459,7 +2518,11 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        onClick={() => setInferenceMode('heuristic')}
+                        onClick={() => {
+                          setInferenceMode('heuristic');
+                          setRenderedMediaBuffer(null);
+                          setRenderedFingerprint(null);
+                        }}
                         className={`px-2.5 py-1 text-[10px] font-sans font-medium rounded-lg border transition-colors cursor-pointer shadow-xs ${
                           inferenceMode === 'heuristic'
                             ? 'bg-[#141413] text-white border-[#141413]'
@@ -2470,7 +2533,11 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                       </button>
                       <button
                         type="button"
-                        onClick={() => setInferenceMode('ollama')}
+                        onClick={() => {
+                          setInferenceMode('ollama');
+                          setRenderedMediaBuffer(null);
+                          setRenderedFingerprint(null);
+                        }}
                         className={`px-2.5 py-1 text-[10px] font-sans font-medium rounded-lg border transition-colors cursor-pointer flex items-center gap-1 shadow-xs ${
                           inferenceMode === 'ollama'
                             ? 'bg-[#D97757] text-white border-[#D97757]'
@@ -2699,6 +2766,30 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                             className="p-0.5 hover:opacity-75 cursor-pointer shrink-0"
                           >
                             <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Active AI Styles summary with Reset button */}
+                      {Object.keys(aiWordOverrides).length > 0 && (
+                        <div className="flex items-center justify-between p-2 rounded-xl bg-[#D97757]/10 border border-[#D97757]/25 text-[11px] font-sans">
+                          <div className="flex items-center gap-1.5 text-[#D97757] font-medium truncate">
+                            <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                            <span>{Object.keys(aiWordOverrides).length} AI styles applied</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAiWordOverrides({});
+                              setAiMotifOverrides({});
+                              setRenderedMediaBuffer(null);
+                              setRenderedFingerprint(null);
+                            }}
+                            className="text-[10px] text-rose-500 hover:text-rose-600 flex items-center gap-1 cursor-pointer font-medium hover:underline"
+                            title="Reset all AI director overrides"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                            <span>Clear AI</span>
                           </button>
                         </div>
                       )}
@@ -3213,10 +3304,12 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                       type="button"
                       onClick={() => {
                         const specificKey = `${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`;
-                        setWordOverrides(prev => ({
+                        setManualWordOverrides(prev => ({
                           ...prev,
                           [specificKey]: archKey
                         }));
+                        setRenderedMediaBuffer(null);
+                        setRenderedFingerprint(null);
                         setEditingWordTarget(prev => prev ? { ...prev, currentArchetype: archKey } : null);
                       }}
                       style={{
@@ -3257,15 +3350,18 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                 <select
                   value={
                     wordFontOverrides[`${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`] ||
-                    wordFontOverrides[editingWordTarget.word.word.toLowerCase().replace(/[^a-z0-9]/g, '')] ||
+                    (cleanLyricToken(editingWordTarget.word.word) ? wordFontOverrides[cleanLyricToken(editingWordTarget.word.word)] : undefined) ||
+                    wordFontOverrides[editingWordTarget.word.word.toLowerCase()] ||
                     editingWordTarget.currentFont
                   }
                   onChange={(e) => {
                     const specificKey = `${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`;
-                    setWordFontOverrides(prev => ({
+                    setManualFontOverrides(prev => ({
                       ...prev,
                       [specificKey]: e.target.value
                     }));
+                    setRenderedMediaBuffer(null);
+                    setRenderedFingerprint(null);
                     setEditingWordTarget(prev => prev ? { ...prev, currentFont: e.target.value } : null);
                   }}
                   style={{
@@ -3306,9 +3402,12 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-1">
                 {Object.values(MOTIF_METADATA).map(m => {
                   const specificKey = `${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`;
+                  const cleanKey = cleanLyricToken(editingWordTarget.word.word);
+                  const lowerRaw = editingWordTarget.word.word.toLowerCase();
                   const currentSelected = (
                     wordMotifOverrides[specificKey] ||
-                    wordMotifOverrides[editingWordTarget.word.word.toLowerCase().replace(/[^a-z0-9]/g, '')] ||
+                    (cleanKey ? wordMotifOverrides[cleanKey] : undefined) ||
+                    wordMotifOverrides[lowerRaw] ||
                     editingWordTarget.currentMotif ||
                     'none'
                   );
@@ -3318,10 +3417,12 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                       key={m.id}
                       type="button"
                       onClick={() => {
-                        setWordMotifOverrides(prev => ({
+                        setManualMotifOverrides(prev => ({
                           ...prev,
                           [specificKey]: m.id
                         }));
+                        setRenderedMediaBuffer(null);
+                        setRenderedFingerprint(null);
                         setEditingWordTarget(prev => prev ? { ...prev, currentMotif: m.id } : null);
                       }}
                       style={{
@@ -3372,25 +3473,46 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                 type="button"
                 onClick={() => {
                   const specificKey = `${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`;
-                  const cleanKey = editingWordTarget.word.word.toLowerCase().replace(/[^a-z0-9]/g, '');
-                  setWordOverrides(prev => {
+                  const cleanKey = cleanLyricToken(editingWordTarget.word.word);
+                  const lowerRaw = editingWordTarget.word.word.toLowerCase();
+
+                  setManualWordOverrides(prev => {
                     const next = { ...prev };
                     delete next[specificKey];
-                    delete next[cleanKey];
+                    if (cleanKey) delete next[cleanKey];
+                    delete next[lowerRaw];
                     return next;
                   });
-                  setWordFontOverrides(prev => {
+                  setManualFontOverrides(prev => {
                     const next = { ...prev };
                     delete next[specificKey];
-                    delete next[cleanKey];
+                    if (cleanKey) delete next[cleanKey];
+                    delete next[lowerRaw];
                     return next;
                   });
-                  setWordMotifOverrides(prev => {
+                  setManualMotifOverrides(prev => {
                     const next = { ...prev };
                     delete next[specificKey];
-                    delete next[cleanKey];
+                    if (cleanKey) delete next[cleanKey];
+                    delete next[lowerRaw];
                     return next;
                   });
+                  setAiWordOverrides(prev => {
+                    const next = { ...prev };
+                    delete next[specificKey];
+                    if (cleanKey) delete next[cleanKey];
+                    delete next[lowerRaw];
+                    return next;
+                  });
+                  setAiMotifOverrides(prev => {
+                    const next = { ...prev };
+                    delete next[specificKey];
+                    if (cleanKey) delete next[cleanKey];
+                    delete next[lowerRaw];
+                    return next;
+                  });
+                  setRenderedMediaBuffer(null);
+                  setRenderedFingerprint(null);
                   setEditingWordTarget(null);
                 }}
                 className={`flex-1 py-2 rounded-xl border text-xs font-sans font-medium transition-colors cursor-pointer ${
@@ -3403,7 +3525,11 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => setEditingWordTarget(null)}
+                onClick={() => {
+                  setRenderedMediaBuffer(null);
+                  setRenderedFingerprint(null);
+                  setEditingWordTarget(null);
+                }}
                 className="px-6 py-2 rounded-xl text-xs font-sans font-medium bg-[#D97757] hover:bg-[#C66545] text-white transition-colors cursor-pointer shadow-xs"
               >
                 Apply

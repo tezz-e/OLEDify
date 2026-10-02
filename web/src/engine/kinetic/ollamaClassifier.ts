@@ -1,5 +1,6 @@
 import { MotionArchetype, VisualMotif } from './types';
 import { LyricLine, LyricWord } from '../lyrics/types';
+import { cleanLyricToken } from './semanticClassifier';
 
 export interface OllamaModelInfo {
   name: string;
@@ -381,10 +382,11 @@ Analyze the emotions, language, cultural slang, metaphors, and rhythm of these l
 ${formattedLines}
 
 CRITICAL RULES:
-1. ONLY select 1 to 2 high-impact punchline words per line (e.g. key nouns, weapons, powerful verbs, emotional climaxes, shouting words).
-2. NEVER classify filler words, prepositions, conjunctions, or pronouns. Specifically DO NOT classify: "te", "de", "naal", "mera", "ni", "ki", "tainu", "and", "the", "with", "of", "to", "in", "it", "my", "you", "me".
-3. For each selected word, provide its translated meaning/definition and your artistic reasoning for choosing that visual archetype.
-4. OPTIONALLY assign a background visual motif ("motif") that best captures the cultural slang, metaphor, or imagery of the punchline. If no motif fits, use "none".
+1. Select and direct 2 to 4 key expressive words per line (key nouns, energetic verbs, metaphors, shouting words, tempo shifts, punchlines). Direct the kinetic choreography so every line feels dynamic and alive.
+2. NEVER classify connective filler words, prepositions, conjunctions, or weak pronouns. Specifically DO NOT classify: "te", "de", "da", "di", "naal", "mera", "tera", "ni", "ki", "tainu", "and", "the", "with", "of", "to", "in", "it", "my", "you", "me", "is", "a", "an".
+3. VARY YOUR ARCHETYPES INTENTIONALLY: Do not pick the same archetype for consecutive words. Contrast punchlines ("manga_impact", "3d_block_stack", "inverted_badge") with tempo actions ("blade_slash", "snake_slither", "rolling_odometer"), digital panic ("cyber_glitch", "target_focus", "wiggly_boil"), or sustained chants ("echo_stack").
+4. ALWAYS assign an evocative background visual motif ("motif") to key punchlines and emotional climaxes matching the cultural slang and imagery (e.g. weapons/sharp -> "razor_blade", royalty/boss/hukum -> "crown_royal", speed/rush -> "manga_speedlines" or "anime_rush", heat/fire -> "flame_tongue", luxury/ice/shine -> "chrome_star", electricity/digital -> "lightning_arc", focus/guns/aim -> "tactical_scope", death/danger -> "skull_cross", comic/pop -> "comic_burst"). If no motif fits, use "none".
+5. For each selected word, provide its meaning and rationale for the motion choice.
 
 Choose from these 11 visual archetypes:
 - "manga_impact": explosive hits, punches, loud shouts, beat drops
@@ -555,19 +557,29 @@ export async function classifyLyricsWithOllama(
             reason: item.reason,
           });
 
-          const cleanTarget = item.word.toLowerCase().replace(/[^a-z0-9]/g, '');
-          if (!cleanTarget) continue;
+          const cleanTarget = cleanLyricToken(item.word);
+          const rawTargetLower = item.word.trim().toLowerCase();
+          if (!cleanTarget && !rawTargetLower) continue;
 
           for (const line of batchLines) {
             for (const w of line.words) {
-              const cleanWord = w.word.toLowerCase().replace(/[^a-z0-9]/g, '');
-              if (cleanWord === cleanTarget || (cleanTarget.length > 3 && cleanTarget.includes(cleanWord))) {
+              const cleanWord = cleanLyricToken(w.word);
+              const rawWordLower = w.word.trim().toLowerCase();
+
+              const isMatch = (cleanTarget && cleanWord === cleanTarget) ||
+                rawWordLower === rawTargetLower ||
+                (cleanTarget.length >= 3 && cleanWord.includes(cleanTarget)) ||
+                (cleanWord.length >= 3 && cleanTarget.includes(cleanWord));
+
+              if (isMatch) {
                 const specificKey = `${w.word}_${w.startMs}`;
                 archetypeOverrides[specificKey] = item.archetype;
-                archetypeOverrides[cleanWord] = item.archetype;
+                if (cleanWord) archetypeOverrides[cleanWord] = item.archetype;
+                archetypeOverrides[rawWordLower] = item.archetype;
                 if (item.motif && item.motif !== 'none') {
                   motifOverrides[specificKey] = item.motif;
-                  motifOverrides[cleanWord] = item.motif;
+                  if (cleanWord) motifOverrides[cleanWord] = item.motif;
+                  motifOverrides[rawWordLower] = item.motif;
                 }
               }
             }
@@ -622,19 +634,29 @@ export async function classifyLyricsWithOllama(
             reason: item.reason,
           });
 
-          const cleanTarget = item.word.toLowerCase().replace(/[^a-z0-9]/g, '');
-          if (!cleanTarget) continue;
+          const cleanTarget = cleanLyricToken(item.word);
+          const rawTargetLower = item.word.trim().toLowerCase();
+          if (!cleanTarget && !rawTargetLower) continue;
 
           for (const line of batchLines) {
             for (const w of line.words) {
-              const cleanWord = w.word.toLowerCase().replace(/[^a-z0-9]/g, '');
-              if (cleanWord === cleanTarget || (cleanTarget.length > 3 && cleanTarget.includes(cleanWord))) {
+              const cleanWord = cleanLyricToken(w.word);
+              const rawWordLower = w.word.trim().toLowerCase();
+
+              const isMatch = (cleanTarget && cleanWord === cleanTarget) ||
+                rawWordLower === rawTargetLower ||
+                (cleanTarget.length >= 3 && cleanWord.includes(cleanTarget)) ||
+                (cleanWord.length >= 3 && cleanTarget.includes(cleanWord));
+
+              if (isMatch) {
                 const specificKey = `${w.word}_${w.startMs}`;
                 archetypeOverrides[specificKey] = item.archetype;
-                archetypeOverrides[cleanWord] = item.archetype;
+                if (cleanWord) archetypeOverrides[cleanWord] = item.archetype;
+                archetypeOverrides[rawWordLower] = item.archetype;
                 if (item.motif && item.motif !== 'none') {
                   motifOverrides[specificKey] = item.motif;
-                  motifOverrides[cleanWord] = item.motif;
+                  if (cleanWord) motifOverrides[cleanWord] = item.motif;
+                  motifOverrides[rawWordLower] = item.motif;
                 }
               }
             }
@@ -783,9 +805,13 @@ export async function testSinglePromptWithOllama(
       for (const item of extracted) {
         let sMs = item.startMs;
         if (sMs === undefined) {
-          const cleanT = item.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const cleanT = cleanLyricToken(item.word);
+          const rawTLower = item.word.trim().toLowerCase();
           for (const line of syntheticLines) {
-            const matchW = line.words.find(w => w.word.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanT);
+            const matchW = line.words.find(w => {
+              const cW = cleanLyricToken(w.word);
+              return (cleanT && cW === cleanT) || w.word.trim().toLowerCase() === rawTLower;
+            });
             if (matchW) {
               sMs = matchW.startMs;
               break;
@@ -840,9 +866,13 @@ export async function testSinglePromptWithOllama(
       for (const item of extracted) {
         let sMs = item.startMs;
         if (sMs === undefined) {
-          const cleanT = item.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const cleanT = cleanLyricToken(item.word);
+          const rawTLower = item.word.trim().toLowerCase();
           for (const line of syntheticLines) {
-            const matchW = line.words.find(w => w.word.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanT);
+            const matchW = line.words.find(w => {
+              const cW = cleanLyricToken(w.word);
+              return (cleanT && cW === cleanT) || w.word.trim().toLowerCase() === rawTLower;
+            });
             if (matchW) {
               sMs = matchW.startMs;
               break;

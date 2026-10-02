@@ -3,7 +3,7 @@ import { KineticRenderOptions, MotionArchetype, STYLE_PACKS } from './types';
 import { computeSafeTextLayout } from './kineticLayout';
 import { renderArchetypeFrame } from './kineticArchetypes';
 import { renderMotifBackground } from './motifRenderer';
-import { getWordEffectiveArchetype, getWordEffectiveFont } from './semanticClassifier';
+import { getWordEffectiveArchetype, getWordEffectiveFont, cleanLyricToken } from './semanticClassifier';
 import { LyricWord } from '../lyrics/types';
 import { isRTL } from './scriptDetector';
 import { ensureFontForText } from './fontLoader';
@@ -159,9 +159,11 @@ export async function renderKineticSequence(
 
       // Resolve active motif for word
       const specificKey = `${activeWord.word}_${activeWord.startMs}`;
-      const cleanWord = activeWord.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const cleanWord = cleanLyricToken(activeWord.word);
+      const lowerRaw = activeWord.word.trim().toLowerCase();
       const wordMotif = options.wordMotifOverrides?.[specificKey] 
-        || options.wordMotifOverrides?.[cleanWord] 
+        || (cleanWord ? options.wordMotifOverrides?.[cleanWord] : undefined) 
+        || options.wordMotifOverrides?.[lowerRaw] 
         || options.wordMotifOverrides?.[activeWord.word] 
         || 'none';
 

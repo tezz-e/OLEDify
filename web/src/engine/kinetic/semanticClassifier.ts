@@ -117,6 +117,15 @@ const ODOMETER_KEYWORDS = new Set([
 ]);
 
 /**
+ * Normalizes a lyric token across all languages and scripts (Latin, Indic, CJK, Cyrillic, Arabic).
+ * Preserves letters (\p{L}), numbers (\p{N}), and combining vowel marks/diacritics (\p{M}).
+ */
+export function cleanLyricToken(word: string): string {
+  if (!word || typeof word !== 'string') return '';
+  return word.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}\p{M}]/gu, '');
+}
+
+/**
  * Classifies a lyric word into its optimal visual kinetic archetype based on
  * semantics, phonetics, and vocal duration.
  */
@@ -126,7 +135,7 @@ export function classifyWordArchetype(
   wordIndex: number = 0,
   precedingSilenceMs: number = 0
 ): MotionArchetype {
-  const clean = word.toLowerCase().replace(/[^a-z0-9']/g, '');
+  const clean = cleanLyricToken(word);
 
   // 1. Punctuation & Structural Markers (Shouts or questions)
   if (word.includes('!') || word.endsWith('!!')) {
@@ -196,13 +205,14 @@ export function getWordEffectiveArchetype(
   precedingWord?: LyricWord
 ): MotionArchetype {
   const specificKey = `${word.word}_${word.startMs}`;
-  const cleanKey = word.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const cleanKey = cleanLyricToken(word.word);
+  const lowerRaw = word.word.trim().toLowerCase();
 
-  if (wordOverrides && wordOverrides[specificKey]) {
-    return wordOverrides[specificKey];
-  }
-  if (wordOverrides && wordOverrides[cleanKey]) {
-    return wordOverrides[cleanKey];
+  if (wordOverrides) {
+    if (wordOverrides[specificKey]) return wordOverrides[specificKey];
+    if (cleanKey && wordOverrides[cleanKey]) return wordOverrides[cleanKey];
+    if (wordOverrides[lowerRaw]) return wordOverrides[lowerRaw];
+    if (wordOverrides[word.word]) return wordOverrides[word.word];
   }
 
   if (globalArchetype === 'auto_semantic') {
@@ -261,14 +271,15 @@ export function getWordEffectiveFont(
   globalFont?: string
 ): string {
   const specificKey = `${word.word}_${word.startMs}`;
-  const cleanKey = word.word.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const cleanKey = cleanLyricToken(word.word);
+  const lowerRaw = word.word.trim().toLowerCase();
 
   // 1. Explicit user override for this word takes absolute priority
-  if (wordFontOverrides && wordFontOverrides[specificKey]) {
-    return wordFontOverrides[specificKey];
-  }
-  if (wordFontOverrides && wordFontOverrides[cleanKey]) {
-    return wordFontOverrides[cleanKey];
+  if (wordFontOverrides) {
+    if (wordFontOverrides[specificKey]) return wordFontOverrides[specificKey];
+    if (cleanKey && wordFontOverrides[cleanKey]) return wordFontOverrides[cleanKey];
+    if (wordFontOverrides[lowerRaw]) return wordFontOverrides[lowerRaw];
+    if (wordFontOverrides[word.word]) return wordFontOverrides[word.word];
   }
 
   // 2. Resolve semantic role in the style pack
