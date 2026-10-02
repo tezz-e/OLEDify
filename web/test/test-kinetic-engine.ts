@@ -54,11 +54,11 @@ for (const word of sampleFillers) {
   const role = getWordFontRole(arch, word);
   assert.equal(role, 'anchor', `Expected filler word "${word}" to have anchor role, got ${role}`);
 }
-console.log('✅ All English and Punjabi filler words successfully recognized and subordinated to anchor role.');
+console.log('✅ Filler words successfully recognized and subordinated to anchor role.');
 
 // Test Hero Content & Punchlines
 const heroSamples = [
-  { word: 'SHASHTAR', expectedArch: 'blade_slash', expectedRole: 'action' },
+  { word: 'SLASH', expectedArch: 'blade_slash', expectedRole: 'action' },
   { word: 'SMASH', expectedArch: 'manga_impact', expectedRole: 'hero' },
   { word: 'KING', expectedArch: '3d_block_stack', expectedRole: 'hero' },
   { word: 'GLITCH', expectedArch: 'cyber_glitch', expectedRole: 'novelty' },
@@ -807,57 +807,52 @@ assert.equal(balladProfile.cameraShakeEnabled, false, 'Camera shake must be disa
 assert.equal(balladProfile.maxEntryDisplacementPx, 3, 'Ballad max displacement must be 3px');
 console.log(`✅ Slow Ballad profile verified: ${balladProfile.label}, Default: ${balladProfile.defaultArchetype}, Hold Factor: ${balladProfile.dwellDecayFactor}, Camera Shake: ${balladProfile.cameraShakeEnabled}, Max Offset: ${balladProfile.maxEntryDisplacementPx}px`);
 
-// 3c. Verify "52 Bars" by Karan Aujla (hard Punjabi drill/trap track, lyrics-only, no audio) classifies as hype_aggressive
-const punjabiDrillLyrics = [
-  { text: "Tu vi janda ni assi kaun aan", startMs: 0, endMs: 1800, words: [
-    { word: "Tu", startMs: 0, endMs: 200 },
-    { word: "vi", startMs: 200, endMs: 400 },
-    { word: "janda", startMs: 400, endMs: 700 },
-    { word: "ni", startMs: 700, endMs: 900 },
-    { word: "assi", startMs: 900, endMs: 1200 },
-    { word: "kaun", startMs: 1200, endMs: 1500 },
-    { word: "aan", startMs: 1500, endMs: 1800 }
+// 3c. Verify Rapid Lyric Delivery Pacing (rap flow < 310ms) classifies as hype_aggressive without audio
+const rapidFlowLyrics = [
+  { text: "Look in my eyes you see no fear", startMs: 0, endMs: 1800, words: [
+    { word: "Look", startMs: 0, endMs: 200 },
+    { word: "in", startMs: 200, endMs: 400 },
+    { word: "my", startMs: 400, endMs: 700 },
+    { word: "eyes", startMs: 700, endMs: 900 },
+    { word: "you", startMs: 900, endMs: 1200 },
+    { word: "see", startMs: 1200, endMs: 1500 },
+    { word: "no", startMs: 1500, endMs: 1800 }
   ]},
-  { text: "School'an vich padh ke na sikhe jo asool aan", startMs: 1900, endMs: 3800, words: [
-    { word: "School'an", startMs: 1900, endMs: 2200 },
-    { word: "vich", startMs: 2200, endMs: 2400 },
-    { word: "padh", startMs: 2400, endMs: 2600 },
-    { word: "ke", startMs: 2600, endMs: 2800 },
-    { word: "na", startMs: 2800, endMs: 3000 },
-    { word: "sikhe", startMs: 3000, endMs: 3300 },
-    { word: "jo", startMs: 3300, endMs: 3500 },
-    { word: "asool", startMs: 3500, endMs: 3700 },
-    { word: "aan", startMs: 3700, endMs: 3800 }
+  { text: "Standing ten toes in the cold right here", startMs: 1900, endMs: 3800, words: [
+    { word: "Standing", startMs: 1900, endMs: 2200 },
+    { word: "ten", startMs: 2200, endMs: 2400 },
+    { word: "toes", startMs: 2400, endMs: 2600 },
+    { word: "in", startMs: 2600, endMs: 2800 },
+    { word: "the", startMs: 2800, endMs: 3000 },
+    { word: "cold", startMs: 3000, endMs: 3300 },
+    { word: "right", startMs: 3300, endMs: 3500 },
+    { word: "here", startMs: 3500, endMs: 3700 }
   ]},
-  { text: "Velliyaan de tole toduga", startMs: 3900, endMs: 5200, words: [
-    { word: "Velliyaan", startMs: 3900, endMs: 4300 },
-    { word: "de", startMs: 4300, endMs: 4500 },
-    { word: "tole", startMs: 4500, endMs: 4800 },
-    { word: "toduga", startMs: 4800, endMs: 5200 }
+  { text: "Break the rules never break the code", startMs: 3900, endMs: 5200, words: [
+    { word: "Break", startMs: 3900, endMs: 4300 },
+    { word: "the", startMs: 4300, endMs: 4500 },
+    { word: "rules", startMs: 4500, endMs: 4800 },
+    { word: "never", startMs: 4800, endMs: 5200 }
   ]}
 ];
 
-const aujlaBarsProfile = computeSongMoodProfile(
-  null, // No audio uploaded! Lyrics & metadata only
-  punjabiDrillLyrics as any,
-  "52 Bars",
-  "Karan Aujla"
+const rapidFlowProfile = computeSongMoodProfile(
+  null, // No audio uploaded! Pacing-derived
+  rapidFlowLyrics as any
 );
 
-assert.equal(aujlaBarsProfile.vibe, 'hype_aggressive', '52 Bars by Karan Aujla must classify as hype_aggressive even without audio');
-assert.equal(aujlaBarsProfile.recommendedStylePack, 'trap_drill', '52 Bars must recommend trap_drill style pack');
-assert.equal(aujlaBarsProfile.defaultArchetype, 'manga_impact', 'Hype track must default to manga_impact');
-assert.ok(aujlaBarsProfile.cameraShakeEnabled, 'Camera shake must be enabled for hard tracks');
-assert.ok(aujlaBarsProfile.maxEntryDisplacementPx >= 15, 'Hype tracks must allow high dynamic entry displacement');
-console.log(`✅ "52 Bars" hard track profile verified: ${aujlaBarsProfile.label}, Pack: ${aujlaBarsProfile.recommendedStylePack}, Default: ${aujlaBarsProfile.defaultArchetype}, Camera Shake: ${aujlaBarsProfile.cameraShakeEnabled}`);
+assert.equal(rapidFlowProfile.vibe, 'hype_aggressive', 'Rapid vocal delivery (<310ms/word) must classify as hype_aggressive');
+assert.equal(rapidFlowProfile.recommendedStylePack, 'trap_drill', 'Hype pacing must recommend trap_drill style pack');
+assert.equal(rapidFlowProfile.defaultArchetype, 'manga_impact', 'Hype track must default to manga_impact');
+assert.ok(rapidFlowProfile.cameraShakeEnabled, 'Camera shake must be enabled for hard tracks');
+assert.ok(rapidFlowProfile.maxEntryDisplacementPx >= 15, 'Hype tracks must allow high dynamic entry displacement');
+console.log(`✅ Rapid Flow pacing verified: ${rapidFlowProfile.label}, Pack: ${rapidFlowProfile.recommendedStylePack}, Default: ${rapidFlowProfile.defaultArchetype}`);
 
-// Verify Ollama prompt for 52 Bars receives HIGH-ENERGY / HYPE directive
-const hypePrompt = buildOllamaLyricsPrompt(punjabiDrillLyrics as any, "52 Bars", "Karan Aujla", aujlaBarsProfile);
-assert.ok(hypePrompt.includes('HIGH-ENERGY / HYPE'), 'Prompt for 52 Bars must indicate HIGH-ENERGY / HYPE');
-assert.ok(hypePrompt.includes('aggressive kinetic cuts'), 'Prompt must instruct aggressive typography');
-assert.ok(hypePrompt.includes('manga_impact'), 'Prompt must recommend manga_impact');
-assert.ok(hypePrompt.includes('razor_blade'), 'Prompt must recommend razor_blade motif');
-console.log('✅ Ollama/Groq prompt generation embeds dynamic Hype/Drill Director directives for hard tracks.');
+// 3d. Verify AI Director override vibe applies directly to SongMoodProfile
+const aiDirectorProfile = computeSongMoodProfile(null, [], 'Song Title', 'Artist', 'hype_aggressive');
+assert.equal(aiDirectorProfile.vibe, 'hype_aggressive', 'AI Director override must directly set profile vibe');
+assert.equal(aiDirectorProfile.recommendedStylePack, 'trap_drill');
+console.log('✅ AI Director vibe override verified.');
 
 // 4. Test Semantic Classifier under Chill Pop Profile (No violent jumps or 3D block traps)
 // In a chill song, a word held for 700ms ("shape") should NOT be forced into '3d_block_stack'
@@ -890,13 +885,15 @@ const memoryArch = classifyWordArchetype('memory', 400, 0, 0, shapeOfYouProfile)
 assert.equal(memoryArch, 'dither_dissolve', 'Word "memory" under chill profile should map to dither_dissolve');
 console.log('✅ Semantic classifier adapts correctly under chill pop profile without aggressive traps.');
 
-// 5. Test Ollama Prompt Generation with Chill Pop Directive
-const chillPrompt = buildOllamaLyricsPrompt(popLyrics as any, "Shape of You", "Ed Sheeran", shapeOfYouProfile);
-assert.ok(chillPrompt.includes('CHILL_POP'), 'Prompt must indicate CHILL_POP vibe to LLM');
-assert.ok(chillPrompt.includes('DO NOT assign aggressive, violent, or chaotic archetypes'), 'Prompt must instruct LLM against aggressive cuts');
-assert.ok(chillPrompt.includes('gentle_float'), 'Prompt must list gentle_float');
-assert.ok(chillPrompt.includes('waveform_karaoke'), 'Prompt must list waveform_karaoke');
-console.log('✅ Ollama/Groq prompt generation embeds dynamic Chill Pop Director directives.');
+// 5. Test Ollama Prompt Generation with Unconstrained Multilingual Director Directives
+const directorPrompt = buildOllamaLyricsPrompt(popLyrics as any, "Shape of You", "Ed Sheeran");
+assert.ok(directorPrompt.includes('chill_pop'), 'Prompt must define chill_pop vibe');
+assert.ok(directorPrompt.includes('hype_aggressive'), 'Prompt must define hype_aggressive vibe');
+assert.ok(directorPrompt.includes('gentle_float'), 'Prompt must list gentle_float');
+assert.ok(directorPrompt.includes('waveform_karaoke'), 'Prompt must list waveform_karaoke');
+assert.ok(directorPrompt.includes('manga_impact'), 'Prompt must list manga_impact');
+assert.ok(directorPrompt.includes('blade_slash'), 'Prompt must list blade_slash');
+console.log('✅ Ollama/Groq prompt generation embeds unconstrained multilingual Director directives.');
 
 // 6. Test Headless Canvas Rasterization for the 4 new Archetypes
 let dummyPixelsDrawn = 0;

@@ -1,7 +1,7 @@
-import { MotionArchetype, VisualMotif } from './types';
+import { MotionArchetype, VisualMotif, StylePackId, STYLE_PACKS } from './types';
 import { LyricLine, LyricWord } from '../lyrics/types';
 import { cleanLyricToken } from './semanticClassifier';
-import { SongMoodProfile } from './moodProfileEngine';
+import { SongMoodProfile, SongVibe } from './moodProfileEngine';
 
 export interface OllamaModelInfo {
   name: string;
@@ -29,8 +29,8 @@ export interface GroqModelConfig {
 export const GROQ_MODELS: GroqModelConfig[] = [
   { 
     id: 'openai/gpt-oss-120b', 
-    name: 'GPT OSS 120B (Best for Punjabi, Slang & Reasoning)', 
-    description: '120B parameter reasoning model with native Indic / Punjabi fluency and kinetic mapping.',
+    name: 'GPT OSS 120B (Deep Multilingual Reasoning & Slang)', 
+    description: '120B parameter frontier model with deep multilingual fluency, nuanced cultural comprehension, and kinetic rhythm mapping.',
     isDefault: true 
   },
   { 
@@ -294,7 +294,7 @@ export function extractClassificationsFromResponse(
         const arch = normalizeArchetype(rawArch, validArchetypes);
         const rawMotif = (item.motif || item.visualMotif || item.symbol || item.graphic || '').toString();
         const motif = normalizeMotif(rawMotif, validMotifs);
-        const meaning = (item.meaning || item.punjabiMeaning || item.translation || '').toString().trim() || undefined;
+        const meaning = (item.meaning || item.definition || item.translation || '').toString().trim() || undefined;
         const reason = (item.reason || item.rationale || item.explanation || '').toString().trim() || undefined;
         if (word && arch) {
           results.push({
@@ -391,44 +391,42 @@ export function buildOllamaLyricsPrompt(
   lines: LyricLine[],
   songTitle: string = 'Unknown',
   artist: string = 'Unknown',
-  profile?: SongMoodProfile | null
+  _profile?: SongMoodProfile | null
 ): string {
   const formattedLines = lines.map((l: LyricLine, i: number) => {
     return `Line ${i + 1}: "${l.text}"`;
   }).join('\n');
 
-  const isChill = profile?.vibe === 'ballad_acoustic' || profile?.vibe === 'chill_pop';
-  const isGroove = profile?.vibe === 'groove_dance';
+  return `You are an elite motion typography director for 1-bit OLED kinetic lyrics on a monochrome 128x64 display.
+Track: "${songTitle}" by ${artist}.
 
-  const vibeHeader = isChill
-    ? `SONG VIBE: ${profile?.vibe.toUpperCase()} (${profile?.bpm || 95} BPM - relaxed, melodic acoustic/pop energy).
-DIRECTOR TONE:
-- Deliver elegant, charming, and fluid typography.
-- DO NOT assign aggressive, violent, or chaotic archetypes ("manga_impact", "blade_slash", "cyber_glitch") unless a word explicitly screams violence or digital glitch.
-- Prioritize: "gentle_float" (sine drift), "waveform_karaoke" (fluid singing runner), "typewriter_ribbon" (narrative storytelling), "dither_dissolve" (nostalgic memory/fade), and "smooth_fluid".
-- For motifs, prioritize: "floating_notes", "starlight_glimmer", "heartbeat_pulse", "water_ripples", "minimal_frame", "chrome_star" or "none".`
-    : isGroove
-    ? `SONG VIBE: GROOVE & DANCE (${profile?.bpm || 120} BPM - rhythmic danceable tempo).
-DIRECTOR TONE:
-- Balance rhythm and punch: use "rolling_odometer", "waveform_karaoke", "inverted_badge", "gentle_float".
-- Avoid excessive violence; prioritize musical groove and bouncy accents.`
-    : `SONG VIBE: HIGH-ENERGY / HYPE (${profile?.bpm || 135} BPM - aggressive cuts, heavy punchlines).
-DIRECTOR TONE:
-- Deliver punchy, aggressive kinetic cuts, speedlines, and glitched impacts.`;
-
-  return `You are an elite motion typography director for 1-bit OLED kinetic lyrics.
-Song Context: "${songTitle}" by ${artist}.
-${vibeHeader}
-
-Analyze the emotions, language, cultural slang, metaphors, and rhythm of these lines:
+Lyrics:
 ${formattedLines}
 
-CRITICAL RULES:
-1. Select and direct 2 to 4 key expressive words per line (key nouns, energetic verbs, metaphors, shouting words, tempo shifts, punchlines). Direct the kinetic choreography so every line feels dynamic and alive.
-2. NEVER classify connective filler words, prepositions, conjunctions, or weak pronouns. Specifically DO NOT classify: "te", "de", "da", "di", "naal", "mera", "tera", "ni", "ki", "tainu", "and", "the", "with", "of", "to", "in", "it", "my", "you", "me", "is", "a", "an".
-3. VARY YOUR ARCHETYPES INTENTIONALLY: Do not pick the same archetype for consecutive words. Contrast punchlines with tempo actions, fluid glides, or sustained chants.
-4. ALWAYS assign an evocative background visual motif ("motif") to key punchlines and emotional climaxes matching the cultural slang and imagery. If no motif fits, use "none".
-5. For each selected word, provide its meaning and rationale for the motion choice.
+DIRECTOR MISSION:
+1. Deeply analyze the language, slang, metaphors, mood, rhythm, and emotional intensity of the lyrics.
+2. Determine the overarching song vibe:
+   - "hype_aggressive": hard rap, drill, trap, metal, rock, high-energy battle/flex tracks with aggressive cuts and heavy punchlines.
+   - "chill_pop": acoustic pop, R&B, lo-fi, melodic love songs, gentle storytelling.
+   - "ballad_acoustic": slow emotional ballads, deep heartbreak, quiet acoustic poetry.
+   - "groove_dance": upbeat rhythmic dance, disco, funk, bouncy midtempo beats.
+3. Recommend the best matching typography style pack:
+   - "trap_drill": aggressive display fonts, high contrast, hard cuts.
+   - "pop_acoustic": clean modern sans, friendly rounded geometry, elegant.
+   - "editorial_fashion": high-fashion editorial serif, chic, emotional.
+   - "neo_tokyo": cyberpunk condensed gothic, high velocity.
+   - "retro_pixel": 8-bit / arcade chiptune aesthetic.
+   - "comic_pop": playful cartoon, expressive pop-art.
+   - "gothic_metal": heavy blackletter, intense, dark energy.
+4. Select 2 to 4 key expressive words per line (punchlines, verbs, core metaphors, climax words). Direct the kinetic choreography so every line feels dynamic and alive.
+   - NEVER classify generic connective filler words, prepositions, conjunctions, or weak pronouns (e.g. "and", "the", "with", "of", "to", "in", "it", "my", "you", "me", "is", "a", "an", or their equivalents in any language).
+   - VARY YOUR ARCHETYPES INTENTIONALLY: Do not pick the same archetype for consecutive words.
+   - Tailor the motion archetype and background motif to match the word's genuine intensity:
+     * Hard punchlines, threats, flexes, fast flow: use "manga_impact", "blade_slash", "cyber_glitch", "3d_block_stack", "echo_stack" with motifs like "razor_blade", "tactical_scope", "flame_tongue", "manga_speedlines", "lightning_arc".
+     * Gentle vocal runs, love confessions, dreamy drift: use "gentle_float", "waveform_karaoke", "typewriter_ribbon", "dither_dissolve", "smooth_fluid" with motifs like "floating_notes", "starlight_glimmer", "heartbeat_pulse", "water_ripples", "minimal_frame".
+     * Rhythmic counts, bets, slot tumbling, bouncy lines: use "rolling_odometer", "inverted_badge", "target_focus", "wiggly_boil" with motifs like "chrome_star", "comic_burst", "floating_notes".
+5. ALWAYS assign an evocative background visual motif ("motif") to key punchlines and emotional climaxes matching the imagery. If no motif fits, use "none".
+6. For each selected word, provide its meaning and rationale for the motion choice.
 
 Choose from these 15 visual archetypes:
 - "gentle_float": weightless acoustic drift, floating, romance, calm breeze, dreaming
@@ -457,32 +455,37 @@ Choose from these 16 visual motifs (or "none"):
 - "lofi_dust_motes": cozy floating dust particles for coffee shop / bedroom pop warmth
 - "manga_speedlines": radial tapered focus lines converging around text
 - "anime_rush": horizontal rapid speed barrage streaks
-- "crown_royal": gothic 3-point crown for kings, bosses, wealth, royalty, "hukum", "badshah"
+- "crown_royal": gothic 3-point crown for kings, bosses, wealth, royalty, supreme power
 - "razor_blade": sharp diagonal cut slice with impact glints for sharp cuts, danger
-- "tactical_scope": HUD corner brackets and targeting reticle for guns, aim, "draco", targets
+- "tactical_scope": HUD corner brackets and targeting reticle for guns, aim, targets
 - "flame_tongue": rising fire contours with detached ember sparks for heat, cooked, fire
 - "skull_cross": 12x12 micro-sprite skull mark for lethal, death, danger, grave lyrics
-- "chrome_star": 4-point diamond glint sparkles for ice, diamonds, luxury, shine, "wrist", jewelry
+- "chrome_star": 4-point diamond glint sparkles for ice, diamonds, luxury, shine, jewelry
 - "lightning_arc": high-voltage jagged electric bolt for sudden voltage surges, shocks
 - "comic_burst": 14-point pop-art comic starburst bubble for punchy comic shoutouts
 
 Output JSON strictly matching this format:
 {
+  "songVibe": "hype_aggressive",
+  "recommendedStylePack": "trap_drill",
   "classifications": [
     {
-      "word": "SHASHTAR",
-      "meaning": "weapons / guns (Punjabi)",
-      "archetype": "3d_block_stack",
-      "motif": "razor_blade",
-      "reason": "heavy impactful weapon punchline"
+      "word": "FIRE",
+      "meaning": "energy / flames",
+      "archetype": "manga_impact",
+      "motif": "flame_tongue",
+      "reason": "explosive energetic punchline"
     }
   ]
-}`;
+}
+`;
 }
 
 export interface LLMClassificationOutput {
   archetypes: Record<string, MotionArchetype>;
   motifs: Record<string, VisualMotif>;
+  songVibe?: SongVibe;
+  recommendedStylePack?: StylePackId;
 }
 
 /**
@@ -507,6 +510,8 @@ export async function classifyLyricsWithOllama(
   const model = options.model || (provider === 'groq' ? 'openai/gpt-oss-120b' : 'qwen3.5:2b-q4_K_M');
   const archetypeOverrides: Record<string, MotionArchetype> = {};
   const motifOverrides: Record<string, VisualMotif> = {};
+  let detectedSongVibe: SongVibe | undefined;
+  let detectedStylePack: StylePackId | undefined;
 
   // Batch lines into stanzas of up to 4 lines for optimal context window & throughput
   const BATCH_SIZE = 4;
@@ -600,6 +605,20 @@ export async function classifyLyricsWithOllama(
           }
         }
 
+        try {
+          let jsonStr = textResponse.trim();
+          if (jsonStr.startsWith('```')) {
+            jsonStr = jsonStr.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+          }
+          const parsed = JSON.parse(jsonStr);
+          if (!detectedSongVibe && parsed.songVibe && ['hype_aggressive', 'chill_pop', 'ballad_acoustic', 'groove_dance'].includes(parsed.songVibe)) {
+            detectedSongVibe = parsed.songVibe as SongVibe;
+          }
+          if (!detectedStylePack && parsed.recommendedStylePack && parsed.recommendedStylePack in STYLE_PACKS) {
+            detectedStylePack = parsed.recommendedStylePack as StylePackId;
+          }
+        } catch (_) {}
+
         const extracted = extractClassificationsFromResponse(textResponse, VALID_MOTION_ARCHETYPES, VALID_VISUAL_MOTIFS);
         for (const item of extracted) {
           logEntry.parsedClassifications.push({
@@ -676,6 +695,20 @@ export async function classifyLyricsWithOllama(
           logEntry.tokensPerSecond = Math.round((data.eval_count / (data.eval_duration / 1e9)) * 10) / 10;
         }
 
+        try {
+          let jsonStr = (data.response || '').trim();
+          if (jsonStr.startsWith('```')) {
+            jsonStr = jsonStr.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+          }
+          const parsed = JSON.parse(jsonStr);
+          if (!detectedSongVibe && parsed.songVibe && ['hype_aggressive', 'chill_pop', 'ballad_acoustic', 'groove_dance'].includes(parsed.songVibe)) {
+            detectedSongVibe = parsed.songVibe as SongVibe;
+          }
+          if (!detectedStylePack && parsed.recommendedStylePack && parsed.recommendedStylePack in STYLE_PACKS) {
+            detectedStylePack = parsed.recommendedStylePack as StylePackId;
+          }
+        } catch (_) {}
+
         const extracted = extractClassificationsFromResponse(data.response, VALID_MOTION_ARCHETYPES, VALID_VISUAL_MOTIFS);
 
         for (const item of extracted) {
@@ -733,6 +766,8 @@ export async function classifyLyricsWithOllama(
   return {
     archetypes: archetypeOverrides,
     motifs: motifOverrides,
+    songVibe: detectedSongVibe,
+    recommendedStylePack: detectedStylePack,
   };
 }
 

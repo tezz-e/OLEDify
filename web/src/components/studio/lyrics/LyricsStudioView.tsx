@@ -6,7 +6,7 @@ import { LrclibTrack, ParsedLyrics, LyricLine, LyricWord } from '../../../engine
 import { MotionArchetype, ARCHETYPE_METADATA, STYLE_PACKS, StylePackId, VisualMotif, MotifMode, MOTIF_METADATA, KineticTransitionType, TRANSITION_METADATA } from '../../../engine/kinetic/types';
 import { renderKineticSequence } from '../../../engine/kinetic/kineticEngine';
 import { getWordEffectiveArchetype, getWordEffectiveFont, getWordFontRole, cleanLyricToken } from '../../../engine/kinetic/semanticClassifier';
-import { computeSongMoodProfile, SongMoodProfile } from '../../../engine/kinetic/moodProfileEngine';
+import { computeSongMoodProfile, SongMoodProfile, SongVibe } from '../../../engine/kinetic/moodProfileEngine';
 import { analyzeAudioFile, AudioAnalysisResult } from '../../../engine/kinetic/audioAnalysisEngine';
 import {
   checkOllamaHealth,
@@ -164,15 +164,18 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const [isRendering, setIsRendering] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
 
-  // --- SONG MOOD PROFILE (Derived from Audio Telemetry & Lyrics) ---
+  // --- SONG MOOD PROFILE (Derived from Audio Telemetry, Lyric Pacing & AI Director) ---
+  const [aiDetectedVibe, setAiDetectedVibe] = useState<SongVibe | null>(null);
+
   const songMoodProfile = useMemo(() => {
     return computeSongMoodProfile(
       audioAnalysis,
       parsedLyrics.lines,
       parsedLyrics.title || searchQuery,
-      parsedLyrics.artist
+      parsedLyrics.artist,
+      aiDetectedVibe || undefined
     );
-  }, [audioAnalysis, parsedLyrics, searchQuery]);
+  }, [audioAnalysis, parsedLyrics, searchQuery, aiDetectedVibe]);
 
   // Automatically adapt recommended style pack when song mood profile changes unless manually chosen
   useEffect(() => {
@@ -298,6 +301,15 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           setAiMotifOverrides(prev => ({ ...prev, ...cleanMotifs }));
           appliedCount += Object.keys(cleanMotifs).length;
         }
+      }
+
+      if (results?.songVibe) {
+        setAiDetectedVibe(results.songVibe);
+      }
+      if (results?.recommendedStylePack && results.recommendedStylePack in STYLE_PACKS) {
+        const packId = results.recommendedStylePack as StylePackId;
+        setStylePack(packId);
+        setFontFamily(STYLE_PACKS[packId].fonts.hero);
       }
 
       // Automatically activate AI Cloud Director mode and bust stale render buffer
@@ -516,6 +528,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
       setPlayheadMs(0);
     }
     setHasUserSelectedStylePack(false);
+    setAiDetectedVibe(null);
   };
 
   // Parse pasted LRC / plain lyrics
@@ -531,6 +544,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     setLastAnalysisNotice(null);
     setRenderedMediaBuffer(null);
     setRenderedFingerprint(null);
+    setAiDetectedVibe(null);
+    setHasUserSelectedStylePack(false);
 
     try {
       sessionStorage.setItem('oled_studio_lyrics_text', pastedLrcText);

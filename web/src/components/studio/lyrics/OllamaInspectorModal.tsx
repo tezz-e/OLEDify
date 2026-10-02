@@ -46,9 +46,9 @@ interface OllamaInspectorModalProps {
 
 const PRESET_TEST_LYRICS = [
   {
-    title: 'Ashke - Karan Aujla (Punjabi Slang)',
-    artist: 'Karan Aujla',
-    lyrics: `Bebe kehndi tainu vihauna\nTe mera shashtar de naal thaaka\nSHASHTAR\nDas ki kar laina kaava'n ni mera baaja aala rakha`,
+    title: 'Hard Drill & Street Flow',
+    artist: 'Metro Drill',
+    lyrics: `Look in my eyes you see no fear\nStanding ten toes in the cold right here\nBreak the rules never break the code\nTurning pressure into heavy solid gold`,
   },
   {
     title: 'Lose Yourself - Eminem (Fast Rap Flow)',
@@ -223,7 +223,7 @@ export const OllamaInspectorModal: React.FC<OllamaInspectorModalProps> = ({
                 )}
               </div>
               <p className={`text-xs ${themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'}`}>
-                Compare kinetic motion classification between Groq Cloud (best for Punjabi slang) and local GTX 1650 Ollama.
+                Compare kinetic motion classification between Groq Cloud (deep multilingual reasoning & slang) and local Ollama.
               </p>
             </div>
           </div>

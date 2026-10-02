@@ -37,72 +37,65 @@ export function isFillerWord(word: string): boolean {
   return FILLER_WORDS.has(latinClean);
 }
 
-// Semantic Keyword Dictionaries
+// Semantic Keyword Dictionaries (Universal Roots)
 const BLADE_KEYWORDS = new Set([
-  'blade', 'slash', 'razor', 'cut', 'knife', 'sword', 'shashtar', 'talwar', 'tear', 'split',
-  'edge', 'sharp', 'chop', 'stab', 'dissect', 'rip', 'dagger', 'axe', 'slice', 'kat', 'teer',
-  'chhuri', 'khanjar', 'chaku', 'katar', 'khanda', 'vad', 'chir', 'dhaar', 'steel', 'shred'
+  'blade', 'slash', 'razor', 'cut', 'knife', 'sword', 'tear', 'split',
+  'edge', 'sharp', 'chop', 'stab', 'dissect', 'rip', 'dagger', 'axe', 'slice',
+  'steel', 'shred'
 ]);
 
 const IMPACT_KEYWORDS = new Set([
   'hit', 'beat', 'drop', 'slam', 'smash', 'boom', 'bang', 'punch', 'kick', 'break',
   'crash', 'blast', 'hammer', 'heavy', 'thud', 'strike', 'fall', 'bullet', 'gun',
-  'thaaka', 'rodhe', 'dhamaka', 'thok', 'fuego', 'shot', 'blast', 'fire', 'aag', 'toot',
-  'shatter', 'knockout', 'stomp', 'ground', 'kill', 'destroy', 'goli', 'pistol', 'trigger',
-  'bass', 'loud', 'clash', 'bomb', 'attack', 'clout', 'pow'
+  'shot', 'fire', 'shatter', 'knockout', 'stomp', 'ground', 'kill', 'destroy',
+  'pistol', 'trigger', 'bass', 'loud', 'clash', 'bomb', 'attack', 'clout', 'pow'
 ]);
 
 const ANTHEM_KEYWORDS = new Set([
-  'jatt', 'king', 'queen', 'boss', 'crown', 'gold', 'god', 'lord', 'pride', 'stand',
+  'king', 'queen', 'boss', 'crown', 'gold', 'god', 'lord', 'pride', 'stand',
   'roar', 'champion', 'lead', 'rule', 'empire', 'power', 'giant', 'iron', 'steel',
-  'throne', 'mahal', 'raja', 'badshah', 'hero', 'top', 'number', 'high', 'peak',
-  'legend', 'glory', 'million', 'billion', 'rich', 'shaan', 'hukum', 'money', 'cash',
-  'dollar', 'star', 'munda', 'yaari', 'gabru', 'sher', 'prime', 'supreme', 'legacy',
-  'royal', 'sovereign', 'flex', 'chain', 'ice', 'bentley', 'rolex', 'block', 'solid'
+  'throne', 'hero', 'top', 'number', 'high', 'peak', 'legend', 'glory',
+  'million', 'billion', 'rich', 'money', 'cash', 'dollar', 'star',
+  'prime', 'supreme', 'legacy', 'royal', 'sovereign', 'flex', 'chain', 'ice', 'block', 'solid'
 ]);
 
 const TARGET_KEYWORDS = new Set([
   'look', 'see', 'watch', 'eyes', 'aim', 'target', 'sight', 'locked',
-  'view', 'focus', 'check', 'akhan', 'dekh', 'point', 'spot',
-  'face', 'stare', 'gaze', 'takk', 'nazar', 'dhyan', 'scope', 'reddot',
-  'bullseye', 'hunt', 'prey', 'watchout', 'locate', 'track', 'found'
+  'view', 'focus', 'check', 'point', 'spot', 'face', 'stare', 'gaze',
+  'scope', 'reddot', 'bullseye', 'hunt', 'prey', 'watchout', 'locate', 'track', 'found'
 ]);
 
 const SNAKE_KEYWORDS = new Set([
   'snake', 'venom', 'poison', 'toxic', 'creep', 'crawl', 'bite', 'sting', 'dark',
-  'evil', 'sly', 'hiss', 'zehri', 'naag', 'saap', 'vish', 'spider', 'deadly', 'viper',
-  'cobra', 'dass', 'das', 'sapp', 'dang', 'poisonous', 'serpent', 'venomous', 'shadow',
-  'creep', 'underworld', 'kida'
+  'evil', 'sly', 'hiss', 'spider', 'deadly', 'viper', 'cobra', 'poisonous',
+  'serpent', 'venomous', 'shadow', 'underworld'
 ]);
 
 const GLITCH_KEYWORDS = new Set([
   'speed', 'fast', 'run', 'glitch', 'code', 'neon', 'wire', 'electric', 'volt',
-  'lightning', 'spark', 'static', 'matrix', 'data', 'chip', 'flash', 'bijli',
-  'current', 'taar', 'quick', 'rush', 'sprint', 'zoom', 'laser', 'alien', 'tech',
+  'lightning', 'spark', 'static', 'matrix', 'data', 'chip', 'flash',
+  'current', 'quick', 'rush', 'sprint', 'zoom', 'laser', 'alien', 'tech',
   'cyber', 'hack', 'system', 'signal', 'pulse', 'circuit', 'digital', 'pixel', 'nano', 'hyper'
 ]);
 
 const ECHO_KEYWORDS = new Set([
   'shout', 'scream', 'call', 'cry', 'sing', 'sound', 'voice', 'loud', 'echo',
-  'roar', 'aawaz', 'bol', 'shor', 'chant', 'whoa', 'yeah', 'oh', 'aah', 'boom',
-  'infinite', 'forever', 'always', 'space', 'distance', 'door', 'awaaz', 'goonj',
-  'pukaar', 'gaana', 'sangeet', 'raag', 'alaap', 'holler', 'yell', 'reverb'
+  'roar', 'chant', 'whoa', 'yeah', 'oh', 'aah', 'boom',
+  'infinite', 'forever', 'always', 'space', 'distance', 'holler', 'yell', 'reverb'
 ]);
 
 const BADGE_KEYWORDS = new Set([
   'no', 'never', 'stop', 'wait', 'listen', 'rule', 'badge', 'hold', 'keep',
-  'naam', 'sun', 'ruk', 'sach', 'true', 'false', 'sign', 'stamp', 'seal', 'title',
-  'certified', 'real', 'asli', 'first', 'only', 'final', 'end', 'don\'t', 'cant',
+  'true', 'false', 'sign', 'stamp', 'seal', 'title',
+  'certified', 'real', 'first', 'only', 'final', 'end', 'don\'t', 'cant',
   'halt', 'warning', 'alert', 'verified', 'official', 'tag', 'mark', 'proof', 'valid',
   'guarantee', 'zero', 'done', 'shut', 'freeze'
 ]);
 
 const FLUID_KEYWORDS = new Set([
   'fly', 'sky', 'rain', 'wave', 'ocean', 'sea', 'water', 'river', 'air', 'breeze',
-  'wind', 'float', 'drift', 'cloud', 'hawawan', 'paani', 'nadi', 'udna', 'love',
-  'heart', 'dil', 'pyaar', 'smooth', 'gentle', 'soft', 'breathe', 'flow', 'glide',
-  'hwa', 'meenh', 'lehar', 'beh', 'doob', 'kinara', 'chand', 'moon', 'tare', 'stars',
-  'melt', 'liquid', 'stream', 'peace', 'calm'
+  'wind', 'float', 'drift', 'cloud', 'love', 'heart', 'smooth', 'gentle', 'soft',
+  'breathe', 'flow', 'glide', 'moon', 'stars', 'melt', 'liquid', 'stream', 'peace', 'calm'
 ]);
 
 const WIGGLY_KEYWORDS = new Set([
@@ -120,7 +113,7 @@ const ODOMETER_KEYWORDS = new Set([
 const GENTLE_FLOAT_KEYWORDS = new Set([
   'drift', 'float', 'cloud', 'air', 'breeze', 'wind', 'fly', 'sky', 'breathe', 'feather',
   'weightless', 'soft', 'gentle', 'slow', 'dream', 'sleep', 'rest', 'peace', 'quiet',
-  'silent', 'calm', 'whisper', 'hawa', 'udna', 'neend', 'khwaab'
+  'silent', 'calm', 'whisper'
 ]);
 
 const DITHER_DISSOLVE_KEYWORDS = new Set([
@@ -136,7 +129,7 @@ const TYPEWRITER_KEYWORDS = new Set([
 
 const WAVE_KARAOKE_KEYWORDS = new Set([
   'sing', 'melody', 'harmony', 'tune', 'music', 'chorus', 'sound', 'voice', 'groove',
-  'rhythm', 'acoustic', 'guitar', 'piano', 'notes', 'song', 'gaana', 'sangeet', 'sur', 'taal'
+  'rhythm', 'acoustic', 'guitar', 'piano', 'notes', 'song'
 ]);
 
 /**
