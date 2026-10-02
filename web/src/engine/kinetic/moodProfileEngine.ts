@@ -245,7 +245,7 @@ export function computeSongMoodProfile(
         easingCurvature: 1.5,
         cameraShakeEnabled: true,
         maxEntryDisplacementPx: 18,
-        crossfadeOverlapMs: 0
+        crossfadeOverlapMs: 65
       };
   }
 }

@@ -8,6 +8,7 @@ import { LyricWord } from '../lyrics/types';
 import { isRTL } from './scriptDetector';
 import { ensureFontForText } from './fontLoader';
 import { computeSongMoodProfile, SongMoodProfile } from './moodProfileEngine';
+import { AudioFrameData } from './audioAnalysisEngine';
 
 let cachedTransitionBuffer: Uint8ClampedArray | null = null;
 
@@ -22,8 +23,8 @@ function findLastEndedWord(wordsList: LyricWord[], timeMs: number): { word?: Lyr
 
 /**
  * Intelligently resolves the dynamic transition choreography between consecutive words.
- * Cycles through lateral glides, curtain dither sweeps, elevator drifts, and dissolves
- * to eliminate transition monotony and provide natural lyric reading flow.
+ * Adapts between Banger suites (razor slices, glitch tears, impact flashes) and Smooth suites
+ * (reading glides, starry dither sweeps, elevator drifts) based on song vibe, audio transients & rhythm.
  */
 export function resolveTransitionStyle(
   prevWord: LyricWord,
@@ -32,11 +33,15 @@ export function resolveTransitionStyle(
   prevArchetype: MotionArchetype,
   activeArchetype: MotionArchetype,
   moodProfile?: SongMoodProfile | null,
-  userChoice: KineticTransitionType = 'auto'
+  userChoice: KineticTransitionType = 'auto',
+  audioFrame?: AudioFrameData
 ): KineticTransitionType {
   if (userChoice && userChoice !== 'auto') {
     return userChoice;
   }
+
+  const isBanger = moodProfile?.vibe === 'hype_aggressive' 
+    || (moodProfile?.vibe === 'groove_dance' && (moodProfile.energyScore > 0.55 || (audioFrame && audioFrame.bass > 0.8)));
 
   // 1. Punctuation pauses or sentence endings -> dither_dissolve (dignified calm pause)
   const prevClean = prevWord.word.trim();
@@ -50,18 +55,52 @@ export function resolveTransitionStyle(
     return (wordIndex % 2 === 0) ? 'curtain_drop' : 'dither_dissolve';
   }
 
-  // 3. Ethereal / Float archetypes -> vertical_drift
+  // =========================================================================
+  // A. BANGER SONG TRANSITIONS (Trap / Drill / Hype / Heavy Bass Beats)
+  // =========================================================================
+  if (isBanger) {
+    // Heavy transient kick / beat onset right at transition seam -> impact_flash or razor_slice
+    if (audioFrame?.isBeat || (audioFrame && audioFrame.onsetStrength > 0.65)) {
+      return (wordIndex % 2 === 0) ? 'impact_flash' : 'razor_slice';
+    }
+
+    // Direct combat/glitch archetype matching
+    if (activeArchetype === 'blade_slash' || prevArchetype === 'blade_slash') {
+      return 'razor_slice';
+    }
+    if (activeArchetype === 'cyber_glitch' || prevArchetype === 'cyber_glitch') {
+      return 'glitch_tear';
+    }
+    if (activeArchetype === 'manga_impact' || prevArchetype === 'manga_impact') {
+      return 'impact_flash';
+    }
+
+    // Dynamic rotation among punchy banger styles
+    const bangerCycle: KineticTransitionType[] = [
+      'razor_slice',
+      'glitch_tear',
+      'lateral_glide',
+      'impact_flash',
+      'bayer_sweep'
+    ];
+    return bangerCycle[wordIndex % bangerCycle.length];
+  }
+
+  // =========================================================================
+  // B. SMOOTH / CHILL / ACOUSTIC TRANSITIONS (Ballads, Pop, Lo-Fi, R&B)
+  // =========================================================================
+  // Ethereal / Float archetypes -> vertical_drift
   if (activeArchetype === 'gentle_float' || prevArchetype === 'gentle_float') {
     return 'vertical_drift';
   }
 
-  // 4. Dither dissolve or typewriter reveals -> bayer_sweep
+  // Dither dissolve or typewriter reveals -> bayer_sweep
   if (activeArchetype === 'dither_dissolve' || activeArchetype === 'typewriter_ribbon') {
     return 'bayer_sweep';
   }
 
-  // 5. Sequential lyric reading flow: cycle through dynamic choreographies so consecutive transitions NEVER look identical!
-  const flowCycle: KineticTransitionType[] = [
+  // Sequential lyric reading flow: cycle through dynamic smooth choreographies
+  const smoothCycle: KineticTransitionType[] = [
     'lateral_glide',
     'bayer_sweep',
     'vertical_drift',
@@ -70,7 +109,7 @@ export function resolveTransitionStyle(
     'bayer_sweep'
   ];
 
-  return flowCycle[wordIndex % flowCycle.length];
+  return smoothCycle[wordIndex % smoothCycle.length];
 }
 
 /**
@@ -361,7 +400,8 @@ export async function renderKineticSequence(
             prevEffectiveArch,
             effectiveArchetype,
             moodProfile,
-            options.transitionStyle || 'auto'
+            options.transitionStyle || 'auto',
+            audioFrame
           );
 
           const crossfadeProgress = Math.max(0, Math.min(1, dtFromStart / moodProfile.crossfadeOverlapMs));
@@ -444,8 +484,55 @@ export async function renderKineticSequence(
 
               let showPrev = false;
               const threshold = bayerRow[x % 4] / 16;
+              let finalVal = 0;
 
-              if (transStyle === 'bayer_sweep') {
+              if (transStyle === 'razor_slice') {
+                // Diagonal split razor cut: y = 32 + (x - 64) * 0.35
+                const seamY = 32 + (x - 64) * 0.35;
+                const isTopHalf = y < seamY;
+                const isSlashLine = Math.abs(y - seamY) <= 1.5 && crossfadeProgress >= 0.15 && crossfadeProgress <= 0.85;
+
+                if (isSlashLine) {
+                  finalVal = 255; // Razor slash flash cut line
+                } else {
+                  const splitShift = Math.round((1 - u) * 20);
+                  const shiftX = isTopHalf ? -splitShift : splitShift;
+                  if (u < 0.5) {
+                    const srcPxShift = x - shiftX;
+                    finalVal = (srcPxShift >= 0 && srcPxShift < 128) ? pData[(y * 128 + srcPxShift) * 4] : 0;
+                  } else {
+                    const inShift = Math.round(u * 4);
+                    const srcAxShift = isTopHalf ? x + (4 - inShift) : x - (4 - inShift);
+                    finalVal = (srcAxShift >= 0 && srcAxShift < 128) ? cachedTransitionBuffer[(y * 128 + srcAxShift) * 4] : 0;
+                  }
+                }
+              } else if (transStyle === 'glitch_tear') {
+                // Cyberpunk horizontal scanline row tearing
+                const sliceIdx = Math.floor(y / 8);
+                const pseudoRand = ((sliceIdx * 17 + f * 23) % 19) - 9;
+                const shiftX = Math.round(pseudoRand * (1 - u) * 1.5);
+
+                if (u < 0.5) {
+                  const srcPxShift = x - shiftX;
+                  finalVal = (srcPxShift >= 0 && srcPxShift < 128) ? pData[(y * 128 + srcPxShift) * 4] : 0;
+                } else {
+                  const srcAxShift = x + Math.round(shiftX * 0.4);
+                  finalVal = (srcAxShift >= 0 && srcAxShift < 128) ? cachedTransitionBuffer[(y * 128 + srcAxShift) * 4] : 0;
+                }
+                if (threshold < (1 - u) * 0.35 && (x + y) % 3 === 0) {
+                  finalVal = finalVal > 120 ? 0 : 255;
+                }
+              } else if (transStyle === 'impact_flash') {
+                // High-velocity snap with 1-frame negative inversion punch
+                if (crossfadeProgress >= 0.42 && crossfadeProgress <= 0.58) {
+                  const rawVal = pVal > 120 ? pVal : aVal;
+                  finalVal = rawVal > 120 ? 0 : 255;
+                } else if (u < 0.45) {
+                  finalVal = pVal;
+                } else {
+                  finalVal = aVal;
+                }
+              } else if (transStyle === 'bayer_sweep') {
                 const distFromFront = isRTLText ? (sweepCenterX - x) : (x - sweepCenterX);
                 if (distFromFront > sweepBandX / 2) {
                   showPrev = true;
@@ -455,6 +542,7 @@ export async function renderKineticSequence(
                   const localProg = (distFromFront + sweepBandX / 2) / sweepBandX;
                   showPrev = threshold < localProg;
                 }
+                finalVal = showPrev ? pVal : aVal;
               } else if (transStyle === 'curtain_drop') {
                 const distFromFrontY = y - sweepCenterY;
                 if (distFromFrontY > sweepBandY / 2) {
@@ -465,12 +553,12 @@ export async function renderKineticSequence(
                   const localProgY = (distFromFrontY + sweepBandY / 2) / sweepBandY;
                   showPrev = threshold < localProgY;
                 }
+                finalVal = showPrev ? pVal : aVal;
               } else {
                 // lateral_glide, vertical_drift, dither_dissolve
                 showPrev = threshold >= crossfadeProgress;
+                finalVal = showPrev ? pVal : aVal;
               }
-
-              const finalVal = showPrev ? pVal : aVal;
               aData[idx] = finalVal;
               aData[idx + 1] = finalVal;
               aData[idx + 2] = finalVal;

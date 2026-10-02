@@ -3027,24 +3027,40 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             {/* 4. TRANSITION CHOREOGRAPHY */}
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
-                <label className={`text-[11px] font-sans font-semibold ${
-                  themeMode === 'dark' ? 'text-white/80' : 'text-[#141413]'
-                }`}>
-                  Transition Flow
-                </label>
+                <div className="flex items-center gap-1.5">
+                  <label className={`text-[11px] font-sans font-semibold ${
+                    themeMode === 'dark' ? 'text-white/80' : 'text-[#141413]'
+                  }`}>
+                    Transition Flow
+                  </label>
+                  {songMoodProfile && (
+                    <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded font-semibold ${
+                      songMoodProfile.vibe === 'hype_aggressive'
+                        ? 'bg-rose-500/15 text-rose-500 border border-rose-500/30'
+                        : songMoodProfile.vibe === 'groove_dance'
+                        ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30'
+                        : 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30'
+                    }`}>
+                      {songMoodProfile.vibe === 'hype_aggressive' ? '🔥 BANGER' : songMoodProfile.vibe === 'groove_dance' ? '⚡ GROOVE' : '✨ SMOOTH'}
+                    </span>
+                  )}
+                </div>
                 <span className={`text-[10px] font-mono ${themeMode === 'dark' ? 'text-white/40' : 'text-[#87867F]'}`}>
                   {TRANSITION_METADATA[transitionStyle]?.tag || 'AUTO'}
                 </span>
               </div>
 
-              <div className={`flex p-0.5 rounded-xl border ${
+              <div className={`grid grid-cols-4 gap-1 p-0.5 rounded-xl border ${
                 themeMode === 'dark' ? 'bg-[#141418] border-white/10' : 'bg-[#FAF9F5] border-[#E8E5DE]'
               }`}>
                 {[
-                  { id: 'auto' as KineticTransitionType, label: 'Auto Flow', desc: 'Auto-adapts between glides, dither sweeps, elevator drifts & dissolves.' },
-                  { id: 'lateral_glide' as KineticTransitionType, label: 'Glide', desc: 'Dynamic horizontal reading-axis slide.' },
-                  { id: 'bayer_sweep' as KineticTransitionType, label: 'Sweep', desc: 'Directional 1-bit Bayer dither curtain wipe.' },
+                  { id: 'auto' as KineticTransitionType, label: 'Auto Vibe', desc: 'Auto-adapts between bangers (razor, glitch, flash) and smooth (glide, sweep, float).' },
+                  { id: 'lateral_glide' as KineticTransitionType, label: 'Glide', desc: 'Smooth horizontal reading-axis slide.' },
+                  { id: 'bayer_sweep' as KineticTransitionType, label: 'Sweep', desc: 'Directional 1-bit Bayer dither curtain scan.' },
                   { id: 'vertical_drift' as KineticTransitionType, label: 'Elevator', desc: 'Ethereal vertical float between words.' },
+                  { id: 'razor_slice' as KineticTransitionType, label: 'Razor', desc: 'High-energy diagonal split razor cut with bright flash slash.' },
+                  { id: 'glitch_tear' as KineticTransitionType, label: 'Glitch', desc: 'Cyberpunk horizontal row tearing and byte shift.' },
+                  { id: 'impact_flash' as KineticTransitionType, label: 'Flash', desc: 'Sudden velocity zoom snap with 1-frame negative inversion punch.' },
                   { id: 'dither_dissolve' as KineticTransitionType, label: 'Dissolve', desc: 'Classic stationary 1-bit matrix crossfade.' },
                 ].map(item => {
                   const isSelected = transitionStyle === item.id;
@@ -3057,7 +3073,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                         setRenderedMediaBuffer(null);
                         setRenderedFingerprint(null);
                       }}
-                      className={`flex-1 py-1 text-[11px] font-sans font-medium rounded-lg transition-all cursor-pointer text-center ${
+                      className={`py-1 px-0.5 text-[10px] font-sans font-medium rounded-lg transition-all cursor-pointer text-center truncate ${
                         isSelected
                           ? 'bg-[#D97757] text-white shadow-xs font-semibold'
                           : themeMode === 'dark' ? 'text-white/60 hover:text-white' : 'text-[#5E5D59] hover:text-[#141413]'

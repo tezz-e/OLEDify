@@ -429,7 +429,10 @@ export type KineticTransitionType =
   | 'vertical_drift'
   | 'bayer_sweep'
   | 'curtain_drop'
-  | 'dither_dissolve';
+  | 'dither_dissolve'
+  | 'razor_slice'
+  | 'glitch_tear'
+  | 'impact_flash';
 
 export interface TransitionMeta {
   id: KineticTransitionType;
@@ -443,9 +446,9 @@ export const TRANSITION_METADATA: Record<KineticTransitionType, TransitionMeta> 
   auto: {
     id: 'auto',
     icon: '🔀',
-    name: 'Dynamic Choreography',
+    name: 'Vibe-Adaptive Flow',
     tag: 'AUTO',
-    description: 'Auto-adapts transition flow (glides, dither sweeps, elevator drifts) to song rhythm'
+    description: 'Auto-adapts between bangers (razor slices, glitch tears) and smooth (glides, dither sweeps)'
   },
   lateral_glide: {
     id: 'lateral_glide',
@@ -481,6 +484,27 @@ export const TRANSITION_METADATA: Record<KineticTransitionType, TransitionMeta> 
     name: 'Dither Crossfade',
     tag: 'FADE',
     description: 'Classic in-place 1-bit Bayer matrix crossfade for contemplative pauses'
+  },
+  razor_slice: {
+    id: 'razor_slice',
+    icon: '⚔️',
+    name: 'Razor Blade Slice',
+    tag: 'SLICE',
+    description: 'High-energy diagonal razor cut splitting halves apart with bright slash flash'
+  },
+  glitch_tear: {
+    id: 'glitch_tear',
+    icon: '⚡',
+    name: 'Cyber Glitch Tear',
+    tag: 'TEAR',
+    description: 'Aggressive horizontal scanline row displacement and matrix byte tearing'
+  },
+  impact_flash: {
+    id: 'impact_flash',
+    icon: '💥',
+    name: 'Impact Flash Snap',
+    tag: 'SNAP',
+    description: 'Sudden velocity zoom snap with a 1-frame negative inversion punch on beat drops'
   }
 };
 

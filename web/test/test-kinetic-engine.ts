@@ -912,7 +912,10 @@ const expectedTransitions: KineticTransitionType[] = [
   'vertical_drift',
   'bayer_sweep',
   'curtain_drop',
-  'dither_dissolve'
+  'dither_dissolve',
+  'razor_slice',
+  'glitch_tear',
+  'impact_flash'
 ];
 
 for (const tId of expectedTransitions) {
@@ -923,10 +926,10 @@ for (const tId of expectedTransitions) {
   assert.ok(meta.tag, `Transition "${tId}" must have a tag`);
   assert.ok(meta.description, `Transition "${tId}" must have a description`);
 }
-console.log('✅ All 6 Transition styles properly registered with metadata and tags.');
+console.log('✅ All 9 Transition styles (Bangers + Smooth) properly registered with metadata and tags.');
 
 // 2. Test Dynamic Transition Resolution (resolveTransitionStyle)
-// Test sequential word flow cycle (must NEVER return the same transition for consecutive words!)
+// Test sequential word flow cycle for smooth song (Shape of You)
 const dummyProfile = computeSongMoodProfile(null, [], 'Shape of You', 'Ed Sheeran');
 
 const w0: LyricWord = { word: 'the', startMs: 0, endMs: 200 };
@@ -942,9 +945,7 @@ const t34 = resolveTransitionStyle(w3, w4, 4, 'waveform_karaoke', 'typewriter_ri
 
 assert.equal(t01, 'bayer_sweep', 'Word 1 transition should be bayer_sweep');
 assert.equal(t12, 'vertical_drift', 'Word 2 transition should be vertical_drift');
-// Word 3 enters gentle_float, so it triggers vertical_drift
 assert.equal(t23, 'vertical_drift', 'Entering gentle_float must trigger vertical_drift');
-// Word 4 enters typewriter_ribbon, so it triggers bayer_sweep
 assert.equal(t34, 'bayer_sweep', 'Entering typewriter_ribbon must trigger bayer_sweep');
 
 // Consecutive word pairs in neutral flow must rotate distinct styles
@@ -959,9 +960,34 @@ const seqTrans3 = resolveTransitionStyle(nWordC, nWordD, 3, 'smooth_fluid', 'smo
 
 assert.notEqual(seqTrans1, seqTrans2, 'Consecutive transitions (1 and 2) must not be identical');
 assert.notEqual(seqTrans2, seqTrans3, 'Consecutive transitions (2 and 3) must not be identical');
-console.log(`✅ Transition variety verified: [${seqTrans1}, ${seqTrans2}, ${seqTrans3}] cycle dynamically.`);
+console.log(`✅ Smooth transition variety verified: [${seqTrans1}, ${seqTrans2}, ${seqTrans3}] cycle dynamically.`);
 
-// 3. Test Punctuation and Vocal Pause Heuristics
+// 3. Test BANGER Song Transitions vs SMOOTH Song Transitions
+const hypeProfile = computeSongMoodProfile(
+  { bpm: 145, frames: [{ rms: 0.7, bass: 0.9, flux: 0.8, isBeat: false, onsetStrength: 0 }] } as any,
+  [{ text: 'drop the bass fire gun', startMs: 0, endMs: 2000, words: [] }],
+  'Drill Anthem',
+  'Trap Star'
+);
+
+assert.equal(hypeProfile.vibe, 'hype_aggressive', '145 BPM trap song must classify as hype_aggressive');
+
+// Banger with blade slash -> razor_slice
+const bangerTransSlash = resolveTransitionStyle(w0, w1, 1, 'blade_slash', 'manga_impact', hypeProfile);
+assert.equal(bangerTransSlash, 'razor_slice', 'Banger song with blade_slash must trigger razor_slice');
+
+// Banger with cyber glitch -> glitch_tear
+const bangerTransGlitch = resolveTransitionStyle(w0, w1, 2, 'cyber_glitch', 'smooth_fluid', hypeProfile);
+assert.equal(bangerTransGlitch, 'glitch_tear', 'Banger song with cyber_glitch must trigger glitch_tear');
+
+// Banger with beat onset transient -> impact_flash
+const beatAudioFrame = { rms: 0.85, bass: 0.95, flux: 0.9, isBeat: true, onsetStrength: 0.8 };
+const bangerTransBeat = resolveTransitionStyle(w0, w1, 2, 'smooth_fluid', 'smooth_fluid', hypeProfile, 'auto', beatAudioFrame as any);
+assert.equal(bangerTransBeat, 'impact_flash', 'Banger song on heavy beat onset must trigger impact_flash');
+
+console.log('✅ Banger song transition intelligence verified: triggers razor_slice, glitch_tear, impact_flash on hype/beats.');
+
+// 4. Test Punctuation and Vocal Pause Heuristics
 const puncWord: LyricWord = { word: 'stop.', startMs: 0, endMs: 400 };
 const nextWord: LyricWord = { word: 'listen', startMs: 450, endMs: 900 };
 const puncTrans = resolveTransitionStyle(puncWord, nextWord, 1, 'inverted_badge', 'smooth_fluid', dummyProfile);
