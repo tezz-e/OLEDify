@@ -90,19 +90,19 @@ const mockFrames = Array.from({ length: frameCount }, (_, i) => {
   const isBeat = beatsMs.some(b => Math.abs(b - timeMs) <= 25);
   return {
     timeMs,
-    rms: isBeat ? 0.90 : 0.70,
-    bass: isBeat ? 0.95 : 0.45,
-    flux: isBeat ? 0.85 : 0.25,
+    rms: isBeat ? 0.65 : 0.40,
+    bass: isBeat ? 0.75 : 0.30,
+    flux: isBeat ? 0.60 : 0.20,
     isBeat,
-    onsetStrength: isBeat ? 0.98 : 0.1
+    onsetStrength: isBeat ? 0.85 : 0.1
   };
 });
 
 const audioAnalysis128BPM: AudioAnalysisResult = {
   bpm: 128,
-  averageRms: 0.75,
+  averageRms: 0.46,
   durationMs: DURATION_MS,
-  peakRms: 0.99,
+  peakRms: 0.80,
   sampleRate: 44100,
   beatsMs,
   frames: mockFrames,

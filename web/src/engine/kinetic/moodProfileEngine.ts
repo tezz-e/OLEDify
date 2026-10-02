@@ -81,10 +81,10 @@ export function computeSongMoodProfile(
     // Pure physical sound wave metrics
     if (bpm < 84 || (bpm < 92 && energyScore < 0.28)) {
       vibe = 'ballad_acoustic';
-    } else if ((bpm >= 128 && energyScore >= 0.58) || (bpm >= 80 && bpm <= 108 && energyScore >= 0.50)) {
-      vibe = 'hype_aggressive'; // Uptempo hype OR Halftime Drill/Trap/Boom-Bap with heavy 808s
-    } else if (bpm >= 115 || energyScore >= 0.42) {
-      vibe = 'groove_dance';
+    } else if ((bpm >= 136 && energyScore >= 0.58) || (bpm >= 126 && energyScore >= 0.68) || (bpm >= 80 && bpm <= 108 && energyScore >= 0.50)) {
+      vibe = 'hype_aggressive'; // Hard uptempo/trap/drill OR Halftime Drill with heavy 808s
+    } else if (bpm >= 115 || energyScore >= 0.40) {
+      vibe = 'groove_dance'; // Club, EDM, 4-on-the-floor, dance-pop (120-132 BPM)
     } else {
       vibe = 'chill_pop';
     }

@@ -624,7 +624,7 @@ export async function classifyLyricsWithOllama(
           throw new Error('Groq API Key missing. Please provide a key in the modal or web/.env.local');
         }
 
-        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        let res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -646,6 +646,34 @@ export async function classifyLyricsWithOllama(
             response_format: { type: 'json_object' },
           }),
         });
+
+        // Automatic retry on rate limits (TPM throttle)
+        if (res.status === 429) {
+          console.warn(`Groq rate limit reached (HTTP 429). Waiting 9s before auto-retry...`);
+          await new Promise((r) => setTimeout(r, 9000));
+          res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+              model,
+              messages: [
+                {
+                  role: 'system',
+                  content: 'You are an elite motion typography director for high-energy 1-bit OLED kinetic lyrics. Output strictly valid JSON matching the schema.',
+                },
+                {
+                  role: 'user',
+                  content: prompt,
+                },
+              ],
+              temperature: 0.1,
+              response_format: { type: 'json_object' },
+            }),
+          });
+        }
 
         if (!res.ok) {
           const errText = await res.text().catch(() => res.statusText);
