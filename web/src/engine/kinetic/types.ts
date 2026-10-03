@@ -398,7 +398,16 @@ export type VisualMotif =
   | 'rain_window'
   | 'cassette_spool'
   | 'equalizer_radial'
-  | 'vinyl_grooves';
+  | 'vinyl_grooves'
+  | 'handlebar_moustache'
+  | 'dark_sunglasses'
+  | 'money_stack'
+  | 'street_racer'
+  | 'cracked_heart'
+  | 'crossed_swords'
+  | 'champion_trophy'
+  | 'lucky_dice'
+  | 'rolex_watch';
 
 export type MotifMode = 'off' | 'subtle' | 'dynamic' | 'heavy';
 
@@ -585,6 +594,210 @@ export const MOTIF_METADATA: Record<VisualMotif, MotifMeta> = {
     name: 'Turntable Vinyl Grooves',
     tag: 'VINYL',
     description: 'Concentric turntable record micro-grooves with spinning center spindle hole'
+  },
+  handlebar_moustache: {
+    id: 'handlebar_moustache',
+    icon: '🥸',
+    name: 'Royal Handlebar Moustache',
+    tag: 'SWAG',
+    description: 'Curled royal handlebar moustache emblem with swagger tilt and sharp tips'
+  },
+  dark_sunglasses: {
+    id: 'dark_sunglasses',
+    icon: '🕶️',
+    name: 'Dark Sunglasses',
+    tag: 'SHADES',
+    description: 'Dark wayfarer sunglasses with sweeping white diagonal specular lens gleam'
+  },
+  money_stack: {
+    id: 'money_stack',
+    icon: '💸',
+    name: 'Money & Banknotes',
+    tag: 'CASH',
+    description: 'Floating 1-bit banknotes with currency watermarks and fluttering coin sparks'
+  },
+  street_racer: {
+    id: 'street_racer',
+    icon: '🏎️',
+    name: 'Street Racer Coupe',
+    tag: 'RIDE',
+    description: 'Low-slung sports coupe silhouette cruising with spinning spoke wheels'
+  },
+  cracked_heart: {
+    id: 'cracked_heart',
+    icon: '💔',
+    name: 'Cracked Heart',
+    tag: 'HEART',
+    description: 'Bold heart split into jagged halves with Bayer dither fade for heartbreak or love'
+  },
+  crossed_swords: {
+    id: 'crossed_swords',
+    icon: '⚔️',
+    name: 'Crossed Scimitars',
+    tag: 'BLADE',
+    description: 'Dual curved daggers / kirpan blades meeting with sparkling impact crosshairs'
+  },
+  champion_trophy: {
+    id: 'champion_trophy',
+    icon: '🏆',
+    name: 'Champion Trophy',
+    tag: 'WIN',
+    description: 'Golden chalice winner trophy with celebratory floating diamond star sparks'
+  },
+  lucky_dice: {
+    id: 'lucky_dice',
+    icon: '🎲',
+    name: 'Lucky Dice',
+    tag: 'ROLL',
+    description: 'Tumbling 3D isometric pixel dice with authentic visible pip dots'
+  },
+  rolex_watch: {
+    id: 'rolex_watch',
+    icon: '⌚',
+    name: 'Rolex Luxury Watch',
+    tag: 'TIME',
+    description: 'Fluted watch bezel with ticking second hand, hour pips, and center pivot'
+  }
+};
+
+export type WordBadgeIcon =
+  | 'none'
+  | 'moustache'
+  | 'sunglasses'
+  | 'crown'
+  | 'cash'
+  | 'car'
+  | 'heart'
+  | 'broken_heart'
+  | 'flame'
+  | 'skull'
+  | 'sword'
+  | 'trophy'
+  | 'dice'
+  | 'watch'
+  | 'diamond'
+  | 'star';
+
+export interface WordBadgeMeta {
+  id: WordBadgeIcon;
+  icon: string;
+  name: string;
+  tag: string;
+  description: string;
+}
+
+export const WORD_BADGE_METADATA: Record<WordBadgeIcon, WordBadgeMeta> = {
+  none: {
+    id: 'none',
+    icon: '🚫',
+    name: 'None',
+    tag: 'NONE',
+    description: 'No badge icon attached to word'
+  },
+  moustache: {
+    id: 'moustache',
+    icon: '🥸',
+    name: 'Royal Moustache',
+    tag: 'MUCHH',
+    description: 'Curled handlebar moustache badge above word for pride/masculinity'
+  },
+  sunglasses: {
+    id: 'sunglasses',
+    icon: '🕶️',
+    name: 'Dark Shades',
+    tag: 'SHADES',
+    description: 'Cool black wayfarer shades badge for swag and attitude'
+  },
+  crown: {
+    id: 'crown',
+    icon: '👑',
+    name: 'Royal Crown',
+    tag: 'KING',
+    description: '3-point royal crown badge crowning the word'
+  },
+  cash: {
+    id: 'cash',
+    icon: '💸',
+    name: 'Cash Banknote',
+    tag: 'CASH',
+    description: 'Folded banknote with currency symbol for wealth/money punchlines'
+  },
+  car: {
+    id: 'car',
+    icon: '🏎️',
+    name: 'Sports Car',
+    tag: 'RIDE',
+    description: 'Fast sports coupe badge for cars, rides, and speed lyrics'
+  },
+  heart: {
+    id: 'heart',
+    icon: '❤️',
+    name: 'Solid Heart',
+    tag: 'LOVE',
+    description: 'Classic solid heart badge for love, affection, and emotional cues'
+  },
+  broken_heart: {
+    id: 'broken_heart',
+    icon: '💔',
+    name: 'Broken Heart',
+    tag: 'PAIN',
+    description: 'Fractured heart badge with jagged lightning crack'
+  },
+  flame: {
+    id: 'flame',
+    icon: '🔥',
+    name: 'Fire Flame',
+    tag: 'FIRE',
+    description: 'Sharp rising fire contour for heat, lit, and fiery delivery'
+  },
+  skull: {
+    id: 'skull',
+    icon: '💀',
+    name: 'Skull Stamp',
+    tag: 'DEAD',
+    description: 'Micro pixel skull mark for lethal danger and grave lyrics'
+  },
+  sword: {
+    id: 'sword',
+    icon: '🗡️',
+    name: 'Curved Dagger',
+    tag: 'BLADE',
+    description: 'Crossed blade dagger for violence, war, cuts, and Kirpan'
+  },
+  trophy: {
+    id: 'trophy',
+    icon: '🏆',
+    name: 'Winner Trophy',
+    tag: 'WIN',
+    description: 'Winner trophy cup with handles for number 1 / champion lyrics'
+  },
+  dice: {
+    id: 'dice',
+    icon: '🎲',
+    name: 'Lucky Dice',
+    tag: 'ROLL',
+    description: 'Isometric 3D pixel dice with pips for gambling and destiny'
+  },
+  watch: {
+    id: 'watch',
+    icon: '⌚',
+    name: 'Luxury Watch',
+    tag: 'TIME',
+    description: 'Circular wristwatch bezel with ticking hands for time and Rolex lyrics'
+  },
+  diamond: {
+    id: 'diamond',
+    icon: '💎',
+    name: 'Brilliant Diamond',
+    tag: 'ICE',
+    description: 'Faceted gem with sparkling glints for jewelry, ice, and luxury'
+  },
+  star: {
+    id: 'star',
+    icon: '⭐',
+    name: 'Comic Star',
+    tag: 'STAR',
+    description: '4-point diamond glint star for celebrity, fame, and glow'
   }
 };
 
@@ -687,6 +900,8 @@ export interface KineticRenderOptions {
   wordFontOverrides?: Record<string, string>;
   wordMotifOverrides?: Record<string, VisualMotif>;
   wordDressingOverrides?: Record<string, TextDressing>;
+  wordBadgeOverrides?: Record<string, WordBadgeIcon>;
+  badgeMode?: 'off' | 'auto' | 'always';
   motifMode?: MotifMode;
   stylePack?: StylePackId;
   vibe?: import('./moodProfileEngine').SongVibe;

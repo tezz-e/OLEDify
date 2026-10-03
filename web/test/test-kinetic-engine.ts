@@ -4,7 +4,9 @@ import {
   classifyWordArchetype, 
   getWordFontRole, 
   getWordEffectiveFont,
-  getWordEffectiveDressing 
+  getWordEffectiveDressing,
+  classifyWordBadge,
+  classifyWordMotif
 } from '../src/engine/kinetic/semanticClassifier';
 import { 
   STYLE_PACKS, 
@@ -12,16 +14,21 @@ import {
   MotionArchetype,
   VisualMotif,
   TextDressing,
+  WordBadgeIcon,
   MOTIF_METADATA,
   ARCHETYPE_METADATA,
   TEXT_DRESSING_METADATA,
+  WORD_BADGE_METADATA,
   KineticTransitionType,
   TRANSITION_METADATA
 } from '../src/engine/kinetic/types';
 import { renderMotifBackground } from '../src/engine/kinetic/motifRenderer';
+import { renderWordBadge } from '../src/engine/kinetic/wordBadgeRenderer';
 import { 
   VALID_VISUAL_MOTIFS,
+  VALID_WORD_BADGE_ICONS,
   normalizeMotif,
+  normalizeWordBadge,
   normalizeArchetype,
   normalizeStylePack,
   extractClassificationsFromResponse,
@@ -247,8 +254,8 @@ console.log('✅ Phantom Future Word Pause Bug verified fixed: gaps enter clean 
 // =========================================================================
 console.log('\n--- Suite 5: 1-Bit Visual Motifs & LLM Inference Pipeline ---');
 
-// 1. Verify all 25 motifs exist in metadata
-assert.equal(VALID_VISUAL_MOTIFS.length, 25, 'Expected exactly 25 visual motifs');
+// 1. Verify all 34 motifs exist in metadata
+assert.equal(VALID_VISUAL_MOTIFS.length, 34, 'Expected exactly 34 visual motifs');
 for (const motif of VALID_VISUAL_MOTIFS) {
   const meta = MOTIF_METADATA[motif];
   assert.ok(meta, `Motif "${motif}" must have metadata`);
@@ -256,7 +263,7 @@ for (const motif of VALID_VISUAL_MOTIFS) {
   assert.ok(meta.name, `Motif "${motif}" must have a name`);
   assert.ok(meta.tag, `Motif "${motif}" must have a tag`);
 }
-console.log('✅ All 25 Visual Motifs defined with valid icons, tags, and metadata.');
+console.log('✅ All 34 Visual Motifs defined with valid icons, tags, and metadata.');
 
 // 2. Test motif normalization and fuzzy recovery
 const fuzzyMotifTests: Array<{ raw: string; expected: VisualMotif }> = [
@@ -1341,7 +1348,201 @@ assert.equal(normalizeStylePack('retro_pixel'), 'cyber_industrial', 'retro_pixel
 assert.equal(normalizeStylePack('comic_pop'), 'shonen_comic', 'comic_pop must normalize to shonen_comic');
 console.log('✅ Style pack normalization correctly bridges legacy LLM aliases.');
 
-console.log('\n🎉 ALL 12 KINETIC TYPOGRAPHY, MOTIF, DRESSING & COMBINATORIAL MATRIX TESTS PASSED PERFECTLY!\n');
+// =========================================================================
+// TEST SUITE 13: Concrete Motifs, Royal Moustache & Word Micro-Badges
+// =========================================================================
+console.log('\n--- Suite 13: Concrete Motifs, Royal Moustache & Word Micro-Badges ---');
+
+// 1. Verify 9 New Concrete Visual Motifs in MOTIF_METADATA and Renderers
+const new9Motifs: VisualMotif[] = [
+  'handlebar_moustache',
+  'dark_sunglasses',
+  'money_stack',
+  'street_racer',
+  'cracked_heart',
+  'crossed_swords',
+  'champion_trophy',
+  'lucky_dice',
+  'rolex_watch'
+];
+
+for (const m of new9Motifs) {
+  assert.ok(MOTIF_METADATA[m], `Missing MOTIF_METADATA for "${m}"`);
+  assert.ok(MOTIF_METADATA[m].icon, `Missing icon for motif "${m}"`);
+  assert.ok(MOTIF_METADATA[m].name, `Missing name for motif "${m}"`);
+  assert.ok(MOTIF_METADATA[m].tag, `Missing tag for motif "${m}"`);
+
+  // Test headless rendering of each motif across key lifecycle frames
+  const mockCtx = createFullMockCanvasCtx();
+  assert.doesNotThrow(() => {
+    renderMotifBackground(mockCtx, {
+      motif: m,
+      motifMode: 'dynamic',
+      tau: 0.5,
+      frameIndex: 15,
+      textCenterY: 32,
+      audioFrame: { timeMs: 500, rms: 0.8, bass: 0.9, flux: 0.5, isBeat: true, onsetStrength: 0.8 }
+    });
+  }, `renderMotifBackground threw on motif "${m}"`);
+}
+console.log('✅ All 9 new concrete visual motifs verified in metadata and rendered without errors.');
+
+// 2. Verify 16 Word Badge Icons in WORD_BADGE_METADATA and Micro-Sprite Renderer
+const all16Badges: WordBadgeIcon[] = [
+  'none', 'moustache', 'sunglasses', 'crown', 'cash', 'car', 'heart', 'broken_heart',
+  'flame', 'skull', 'sword', 'trophy', 'dice', 'watch', 'diamond', 'star'
+];
+
+for (const b of all16Badges) {
+  assert.ok(WORD_BADGE_METADATA[b], `Missing WORD_BADGE_METADATA for badge "${b}"`);
+  assert.ok(WORD_BADGE_METADATA[b].icon, `Missing icon for badge "${b}"`);
+  assert.ok(WORD_BADGE_METADATA[b].name, `Missing name for badge "${b}"`);
+
+  // Render badge through wordBadgeRenderer
+  const mockCtx = createFullMockCanvasCtx();
+  assert.doesNotThrow(() => {
+    renderWordBadge(
+      mockCtx,
+      b,
+      { centerX: 64, centerY: 32, top: 20, bottom: 44, left: 10, right: 118, fontSize: 24 },
+      0.4,
+      12,
+      { timeMs: 400, rms: 0.7, bass: 0.8, flux: 0.4, isBeat: true, onsetStrength: 0.7 }
+    );
+  }, `renderWordBadge threw on badge "${b}"`);
+}
+console.log('✅ All 16 word badge micro-sprites verified and rendered without errors.');
+
+// 3. Verify Deterministic Semantic Badge and Motif Classifiers
+assert.equal(classifyWordBadge('muchh'), 'moustache', 'muchh must classify as moustache badge');
+assert.equal(classifyWordBadge('mooch'), 'moustache', 'mooch must classify as moustache badge');
+assert.equal(classifyWordBadge('mustache'), 'moustache', 'mustache must classify as moustache badge');
+assert.equal(classifyWordBadge('mustard'), 'moustache', 'mustard voice-typo must normalize to moustache badge');
+assert.equal(classifyWordMotif('muchh'), 'handlebar_moustache', 'muchh must map to handlebar_moustache motif');
+
+assert.equal(classifyWordBadge('akhan'), 'sunglasses', 'akhan must classify as sunglasses badge');
+assert.equal(classifyWordBadge('shades'), 'sunglasses', 'shades must classify as sunglasses badge');
+assert.equal(classifyWordMotif('shades'), 'dark_sunglasses', 'shades must map to dark_sunglasses motif');
+
+assert.equal(classifyWordBadge('gaddi'), 'car', 'gaddi must classify as car badge');
+assert.equal(classifyWordBadge('porsche'), 'car', 'porsche must classify as car badge');
+assert.equal(classifyWordMotif('gaddi'), 'street_racer', 'gaddi must map to street_racer motif');
+
+assert.equal(classifyWordBadge('paisa'), 'cash', 'paisa must classify as cash badge');
+assert.equal(classifyWordBadge('cash'), 'cash', 'cash must classify as cash badge');
+assert.equal(classifyWordMotif('paisa'), 'money_stack', 'paisa must map to money_stack motif');
+
+assert.equal(classifyWordBadge('dil'), 'heart', 'dil must classify as heart badge');
+assert.equal(classifyWordBadge('todeya'), 'broken_heart', 'todeya must classify as broken_heart badge');
+assert.equal(classifyWordMotif('todeya'), 'cracked_heart', 'todeya must map to cracked_heart motif');
+
+assert.equal(classifyWordBadge('talwar'), 'sword', 'talwar must classify as sword badge');
+assert.equal(classifyWordMotif('talwar'), 'crossed_swords', 'talwar must map to crossed_swords motif');
+
+assert.equal(classifyWordBadge('trophy'), 'trophy', 'trophy must classify as trophy badge');
+assert.equal(classifyWordMotif('trophy'), 'champion_trophy', 'trophy must map to champion_trophy motif');
+
+assert.equal(classifyWordBadge('kismat'), 'dice', 'kismat must classify as dice badge');
+assert.equal(classifyWordMotif('kismat'), 'lucky_dice', 'kismat must map to lucky_dice motif');
+
+assert.equal(classifyWordBadge('waqt'), 'watch', 'waqt must classify as watch badge');
+assert.equal(classifyWordMotif('waqt'), 'rolex_watch', 'waqt must map to rolex_watch motif');
+
+console.log('✅ Deterministic multilingual keyword classification (English, Punjabi, Hindi) for badges and motifs verified.');
+
+// 4. Verify Resilient LLM Normalization for Badges and Motifs
+assert.equal(normalizeWordBadge('mustard'), 'moustache', 'Fuzzy mustard must normalize to moustache');
+assert.equal(normalizeWordBadge('mustache'), 'moustache', 'mustache must normalize to moustache');
+assert.equal(normalizeWordBadge('shades'), 'sunglasses', 'shades must normalize to sunglasses');
+assert.equal(normalizeWordBadge('money'), 'cash', 'money must normalize to cash');
+assert.equal(normalizeWordBadge('gaddi'), 'car', 'gaddi must normalize to car');
+
+assert.equal(normalizeMotif('mustard'), 'handlebar_moustache', 'Fuzzy mustard motif must normalize to handlebar_moustache');
+assert.equal(normalizeMotif('mustache'), 'handlebar_moustache', 'Fuzzy mustache motif must normalize to handlebar_moustache');
+assert.equal(normalizeMotif('shades'), 'dark_sunglasses', 'Fuzzy shades motif must normalize to dark_sunglasses');
+assert.equal(normalizeMotif('racer'), 'street_racer', 'Fuzzy racer motif must normalize to street_racer');
+assert.equal(normalizeMotif('rolex'), 'rolex_watch', 'Fuzzy rolex motif must normalize to rolex_watch');
+console.log('✅ Fuzzy LLM alias normalization for badges and motifs verified.');
+
+// 5. Verify LLM JSON Response Parsing with Inline Badges
+const mockLlmResponse = JSON.stringify({
+  songVibe: 'hype_aggressive',
+  recommendedStylePack: 'trap_drill',
+  classifications: [
+    {
+      word: 'MUCHH',
+      meaning: 'royal moustache',
+      archetype: 'manga_impact',
+      motif: 'handlebar_moustache',
+      badge: 'moustache',
+      reason: 'male pride'
+    },
+    {
+      word: 'SHADES',
+      meaning: 'dark glasses',
+      archetype: 'target_focus',
+      motif: 'dark_sunglasses',
+      badge: 'sunglasses',
+      reason: 'swagger'
+    }
+  ]
+});
+
+const extractedWithBadges = extractClassificationsFromResponse(mockLlmResponse);
+assert.equal(extractedWithBadges.length, 2, 'Must extract 2 classifications');
+assert.equal(extractedWithBadges[0].badge, 'moustache', 'First classification badge must be moustache');
+assert.equal(extractedWithBadges[0].motif, 'handlebar_moustache', 'First classification motif must be handlebar_moustache');
+assert.equal(extractedWithBadges[1].badge, 'sunglasses', 'Second classification badge must be sunglasses');
+assert.equal(extractedWithBadges[1].motif, 'dark_sunglasses', 'Second classification motif must be dark_sunglasses');
+console.log('✅ LLM JSON parser accurately extracts inline word badges and concrete motifs.');
+
+// 6. Verify Full Sequence Headless Rendering with Word Badges (100% 1-Bit Monochrome)
+const badgeTestLyrics = [
+  {
+    text: 'Kundian muchhan te kaale shades',
+    startMs: 0,
+    endMs: 2000,
+    words: [
+      { word: 'Kundian', startMs: 0, endMs: 400 },
+      { word: 'muchhan', startMs: 400, endMs: 900 },
+      { word: 'te', startMs: 900, endMs: 1100 },
+      { word: 'kaale', startMs: 1100, endMs: 1500 },
+      { word: 'shades', startMs: 1500, endMs: 2000 }
+    ]
+  }
+];
+
+const badgeRenderSeq = await renderKineticSequence({
+  lyrics: badgeTestLyrics,
+  startMs: 0,
+  endMs: 2000,
+  targetFps: 30,
+  archetype: 'auto_semantic',
+  wordBadgeOverrides: {
+    muchhan: 'moustache',
+    shades: 'sunglasses'
+  },
+  wordMotifOverrides: {
+    muchhan: 'handlebar_moustache',
+    shades: 'dark_sunglasses'
+  }
+});
+
+assert.ok(badgeRenderSeq.frames.length >= 60, `Expected at least 60 frames, got ${badgeRenderSeq.frames.length}`);
+let non1BitPixels = 0;
+for (const frame of badgeRenderSeq.frames) {
+  const d = frame.imageData.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const val = d[i];
+    if (val !== 0 && val !== 255) {
+      non1BitPixels++;
+    }
+  }
+}
+assert.equal(non1BitPixels, 0, `All pixels with badges must be pure 1-bit monochrome (0 or 255), found ${non1BitPixels} non-binary pixels`);
+console.log(`✅ Full kinetic sequence with moustache and sunglasses badges rendered (${badgeRenderSeq.frames.length} frames). Verified 100% pure 1-bit monochrome.`);
+
+console.log('\n🎉 ALL 13 KINETIC TYPOGRAPHY, MOTIF, BADGE & COMBINATORIAL MATRIX TESTS PASSED PERFECTLY!\n');
 
 
 

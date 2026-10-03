@@ -3,7 +3,7 @@ import { Search, Music, FileText, Upload, Play, Pause, ArrowLeft, ArrowRight, Pl
 import { searchLrclib, getLrclibExact, searchLyricsOvhFallback } from '../../../engine/lyrics/lrclibClient';
 import { parseLrc, parsePlainTextLyrics } from '../../../engine/lyrics/lrcParser';
 import { LrclibTrack, ParsedLyrics, LyricLine, LyricWord } from '../../../engine/lyrics/types';
-import { MotionArchetype, ARCHETYPE_METADATA, STYLE_PACKS, StylePackId, VisualMotif, MotifMode, MOTIF_METADATA, KineticTransitionType, TRANSITION_METADATA } from '../../../engine/kinetic/types';
+import { MotionArchetype, ARCHETYPE_METADATA, STYLE_PACKS, StylePackId, VisualMotif, MotifMode, MOTIF_METADATA, KineticTransitionType, TRANSITION_METADATA, WordBadgeIcon, WORD_BADGE_METADATA } from '../../../engine/kinetic/types';
 import { renderKineticSequence } from '../../../engine/kinetic/kineticEngine';
 import { getWordEffectiveArchetype, getWordEffectiveFont, getWordFontRole, cleanLyricToken } from '../../../engine/kinetic/semanticClassifier';
 import { computeSongMoodProfile, SongMoodProfile, SongVibe } from '../../../engine/kinetic/moodProfileEngine';
@@ -212,6 +212,11 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     return { ...aiMotifOverrides, ...manualMotifOverrides };
   }, [directorModeTab, inferenceMode, manualMotifOverrides, aiMotifOverrides]);
 
+  const [aiBadgeOverrides, setAiBadgeOverrides] = useState<Record<string, WordBadgeIcon>>({});
+  const wordBadgeOverrides = useMemo<Record<string, WordBadgeIcon>>(() => {
+    return aiBadgeOverrides;
+  }, [aiBadgeOverrides]);
+
   // --- RENDER BUFFER & DIRTY TRACKING ---
   const [renderedMediaBuffer, setRenderedMediaBuffer] = useState<DecodedMedia | null>(null);
   const [renderedFingerprint, setRenderedFingerprint] = useState<string | null>(null);
@@ -338,6 +343,18 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         if (Object.keys(cleanMotifs).length > 0) {
           setAiMotifOverrides(prev => ({ ...prev, ...cleanMotifs }));
           appliedCount += Object.keys(cleanMotifs).length;
+        }
+      }
+      if (results && results.badges && typeof results.badges === 'object') {
+        const cleanBadges: Record<string, WordBadgeIcon> = {};
+        for (const [key, val] of Object.entries(results.badges)) {
+          if (key !== 'archetypes' && key !== 'motifs' && key !== 'badges' && typeof val === 'string' && val !== 'none') {
+            cleanBadges[key] = val as WordBadgeIcon;
+          }
+        }
+        if (Object.keys(cleanBadges).length > 0) {
+          setAiBadgeOverrides(prev => ({ ...prev, ...cleanBadges }));
+          appliedCount += Object.keys(cleanBadges).length;
         }
       }
 
@@ -1085,8 +1102,10 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           wordOverrides,
           wordFontOverrides,
           wordMotifOverrides,
+          wordBadgeOverrides,
           motifMode,
           transitionStyle,
+          vibe: songMoodProfile.vibe,
           audioAnalysis: audioAnalysis || undefined
         });
         if (active) {
@@ -1486,6 +1505,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           wordOverrides,
           wordFontOverrides,
           wordMotifOverrides,
+          wordBadgeOverrides,
           motifMode,
           transitionStyle,
           vibe: songMoodProfile.vibe,
@@ -1537,6 +1557,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             wordOverrides,
             wordFontOverrides,
             wordMotifOverrides,
+            wordBadgeOverrides,
             motifMode,
             transitionStyle,
             vibe: songMoodProfile.vibe,

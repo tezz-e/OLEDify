@@ -1,4 +1,4 @@
-import { MotionArchetype, VisualMotif, StylePackId, STYLE_PACKS } from './types';
+import { MotionArchetype, VisualMotif, StylePackId, STYLE_PACKS, WordBadgeIcon } from './types';
 import { LyricLine, LyricWord } from '../lyrics/types';
 import { cleanLyricToken } from './semanticClassifier';
 import { SongMoodProfile, SongVibe } from './moodProfileEngine';
@@ -143,6 +143,7 @@ export interface OllamaInspectionLog {
     startMs: number;
     archetype: MotionArchetype;
     motif?: VisualMotif;
+    badge?: WordBadgeIcon;
     meaning?: string;
     reason?: string;
   }>;
@@ -202,7 +203,65 @@ export const VALID_VISUAL_MOTIFS: VisualMotif[] = [
   'cassette_spool',
   'equalizer_radial',
   'vinyl_grooves',
+  'handlebar_moustache',
+  'dark_sunglasses',
+  'money_stack',
+  'street_racer',
+  'cracked_heart',
+  'crossed_swords',
+  'champion_trophy',
+  'lucky_dice',
+  'rolex_watch',
 ];
+
+export const VALID_WORD_BADGE_ICONS: WordBadgeIcon[] = [
+  'none',
+  'moustache',
+  'sunglasses',
+  'crown',
+  'cash',
+  'car',
+  'heart',
+  'broken_heart',
+  'flame',
+  'skull',
+  'sword',
+  'trophy',
+  'dice',
+  'watch',
+  'diamond',
+  'star',
+];
+
+/**
+ * Normalizes fuzzy badge icon strings from LLM output.
+ */
+export function normalizeWordBadge(
+  raw?: string,
+  valid: WordBadgeIcon[] = VALID_WORD_BADGE_ICONS
+): WordBadgeIcon {
+  if (!raw || typeof raw !== 'string') return 'none';
+  const clean = raw.toLowerCase().replace(/[-\s]/g, '_').trim();
+  if (valid.includes(clean as WordBadgeIcon)) return clean as WordBadgeIcon;
+
+  if (clean.includes('mustard') || clean.includes('mustache') || clean.includes('moustache') || clean.includes('mooch') || clean.includes('muchh') || clean.includes('beard')) return 'moustache';
+  if (clean.includes('shades') || clean.includes('sunglass') || clean.includes('glass') || clean.includes('akhan') || clean.includes('eyewear')) return 'sunglasses';
+  if (clean.includes('crown') || clean.includes('king') || clean.includes('queen') || clean.includes('badshah') || clean.includes('royal')) return 'crown';
+  if (clean.includes('cash') || clean.includes('money') || clean.includes('banknote') || clean.includes('dollar') || clean.includes('paisa') || clean.includes('bands')) return 'cash';
+  if (clean.includes('car') || clean.includes('ride') || clean.includes('drive') || clean.includes('gaddi') || clean.includes('porsche') || clean.includes('auto')) return 'car';
+  if (clean.includes('broken') || clean.includes('crack') || clean.includes('heartbreak') || clean.includes('todeya')) return 'broken_heart';
+  if (clean.includes('heart') || clean.includes('love') || clean.includes('dil') || clean.includes('pyaar')) return 'heart';
+  if (clean.includes('flame') || clean.includes('fire') || clean.includes('aag') || clean.includes('burn') || clean.includes('hot')) return 'flame';
+  if (clean.includes('skull') || clean.includes('dead') || clean.includes('death') || clean.includes('grave') || clean.includes('khatra')) return 'skull';
+  if (clean.includes('sword') || clean.includes('dagger') || clean.includes('blade') || clean.includes('kirpan') || clean.includes('talwar')) return 'sword';
+  if (clean.includes('trophy') || clean.includes('cup') || clean.includes('winner') || clean.includes('champion') || clean.includes('gold')) return 'trophy';
+  if (clean.includes('dice') || clean.includes('die') || clean.includes('gamble') || clean.includes('roll') || clean.includes('kismat')) return 'dice';
+  if (clean.includes('watch') || clean.includes('rolex') || clean.includes('clock') || clean.includes('time') || clean.includes('waqt') || clean.includes('ghadi')) return 'watch';
+  if (clean.includes('diamond') || clean.includes('ice') || clean.includes('bling') || clean.includes('gem') || clean.includes('heere')) return 'diamond';
+  if (clean.includes('star') || clean.includes('sparkle') || clean.includes('fame') || clean.includes('shine')) return 'star';
+
+  return 'none';
+}
 
 /**
  * Normalizes loose or fuzzy motif strings returned by LLMs.
@@ -216,6 +275,15 @@ export function normalizeMotif(
   if (valid.includes(clean as VisualMotif)) return clean as VisualMotif;
 
   // Specific multi-word and compound motif matching first
+  if (clean.includes('mustard') || clean.includes('mustache') || clean.includes('moustache') || clean.includes('mooch') || clean.includes('muchh')) return 'handlebar_moustache';
+  if (clean.includes('sunglass') || clean.includes('shades') || clean.includes('eyewear') || clean.includes('glasses')) return 'dark_sunglasses';
+  if (clean.includes('money') || clean.includes('banknote') || clean.includes('cash') || clean.includes('dollar') || clean.includes('paisa') || clean.includes('bills')) return 'money_stack';
+  if (clean.includes('racer') || clean.includes('car') || clean.includes('gaddi') || clean.includes('vehicle') || clean.includes('auto') || clean.includes('coupe')) return 'street_racer';
+  if (clean.includes('cracked') || clean.includes('heartbreak') || clean.includes('broken_heart') || clean.includes('todeya')) return 'cracked_heart';
+  if (clean.includes('sword') || clean.includes('dagger') || clean.includes('scimitar') || clean.includes('kirpan') || clean.includes('talwar')) return 'crossed_swords';
+  if (clean.includes('trophy') || clean.includes('champion') || clean.includes('cup') || clean.includes('winner')) return 'champion_trophy';
+  if (clean.includes('dice') || clean.includes('die') || clean.includes('gamble') || clean.includes('roll') || clean.includes('kismat')) return 'lucky_dice';
+  if (clean.includes('rolex') || clean.includes('watch') || clean.includes('clock') || clean.includes('waqt') || clean.includes('ghadi')) return 'rolex_watch';
   if (clean.includes('blast') || clean.includes('shockwave') || clean.includes('ring')) return 'sound_blast_rings';
   if (clean.includes('barbed') || clean.includes('wire') || clean.includes('fence')) return 'barbed_wire';
   if (clean.includes('shatter') || clean.includes('shard') || clean.includes('glass')) return 'shattered_glass';
@@ -309,9 +377,10 @@ export function normalizeStylePack(raw?: string): StylePackId | undefined {
 export function extractClassificationsFromResponse(
   rawResponse: string,
   validArchetypes: MotionArchetype[] = VALID_MOTION_ARCHETYPES,
-  validMotifs: VisualMotif[] = VALID_VISUAL_MOTIFS
-): Array<{ word: string; startMs?: number; archetype: MotionArchetype; motif?: VisualMotif; meaning?: string; reason?: string }> {
-  const results: Array<{ word: string; startMs?: number; archetype: MotionArchetype; motif?: VisualMotif; meaning?: string; reason?: string }> = [];
+  validMotifs: VisualMotif[] = VALID_VISUAL_MOTIFS,
+  validBadges: WordBadgeIcon[] = VALID_WORD_BADGE_ICONS
+): Array<{ word: string; startMs?: number; archetype: MotionArchetype; motif?: VisualMotif; badge?: WordBadgeIcon; meaning?: string; reason?: string }> {
+  const results: Array<{ word: string; startMs?: number; archetype: MotionArchetype; motif?: VisualMotif; badge?: WordBadgeIcon; meaning?: string; reason?: string }> = [];
   if (!rawResponse || typeof rawResponse !== 'string') return results;
 
   let cleaned = rawResponse.trim();
@@ -340,6 +409,8 @@ export function extractClassificationsFromResponse(
         const arch = normalizeArchetype(rawArch, validArchetypes);
         const rawMotif = (item.motif || item.visualMotif || item.symbol || item.graphic || '').toString();
         const motif = normalizeMotif(rawMotif, validMotifs);
+        const rawBadge = (item.badge || item.icon || item.emoji || '').toString();
+        const badge = rawBadge ? normalizeWordBadge(rawBadge, validBadges) : undefined;
         const meaning = (item.meaning || item.definition || item.translation || '').toString().trim() || undefined;
         const reason = (item.reason || item.rationale || item.explanation || '').toString().trim() || undefined;
         if (word && arch) {
@@ -348,13 +419,14 @@ export function extractClassificationsFromResponse(
             startMs: typeof item.startMs === 'number' ? item.startMs : undefined,
             archetype: arch,
             motif,
+            badge: badge && badge !== 'none' ? badge : undefined,
             meaning,
             reason,
           });
         }
       }
     } else if (typeof parsed === 'object' && parsed !== null) {
-      // Key-value map: { "word": "archetype" } or { "word": { archetype, motif, meaning, reason } }
+      // Key-value map: { "word": "archetype" } or { "word": { archetype, motif, badge, meaning, reason } }
       for (const [key, val] of Object.entries(parsed)) {
         if (['classifications', 'words', 'analysis', 'notes'].includes(key.toLowerCase())) continue;
         if (typeof val === 'string') {
@@ -364,9 +436,11 @@ export function extractClassificationsFromResponse(
           const arch = normalizeArchetype((val as any).archetype, validArchetypes);
           const rawMotif = (val as any).motif || (val as any).visualMotif || '';
           const motif = normalizeMotif(rawMotif, validMotifs);
+          const rawBadge = (val as any).badge || (val as any).icon || '';
+          const badge = rawBadge ? normalizeWordBadge(rawBadge, validBadges) : undefined;
           const meaning = (val as any).meaning || (val as any).translation || undefined;
           const reason = (val as any).reason || (val as any).rationale || undefined;
-          if (arch) results.push({ word: key.trim(), archetype: arch, motif, meaning, reason });
+          if (arch) results.push({ word: key.trim(), archetype: arch, motif, badge: badge && badge !== 'none' ? badge : undefined, meaning, reason });
         }
       }
     }
@@ -376,7 +450,7 @@ export function extractClassificationsFromResponse(
     // Truncated or malformed JSON — proceed to regex extraction
   }
 
-  // Strategy 2: Robust Regex Extraction for individual JSON object blocks with motif/meaning/reason
+  // Strategy 2: Robust Regex Extraction for individual JSON object blocks with motif/meaning/reason/badge
   const blockRegex = /\{[^{}]*"word"\s*:\s*"([^"]+)"[^{}]*\}/gi;
   let blockMatch: RegExpExecArray | null;
   while ((blockMatch = blockRegex.exec(cleaned)) !== null) {
@@ -384,16 +458,19 @@ export function extractClassificationsFromResponse(
     const wordMatch = /"word"\s*:\s*"([^"]+)"/i.exec(block);
     const archMatch = /"archetype"\s*:\s*"([^"]+)"/i.exec(block);
     const motifMatch = /"motif"\s*:\s*"([^"]+)"/i.exec(block);
+    const badgeMatch = /"badge"\s*:\s*"([^"]+)"/i.exec(block) || /"icon"\s*:\s*"([^"]+)"/i.exec(block);
     const meaningMatch = /"meaning"\s*:\s*"([^"]+)"/i.exec(block);
     const reasonMatch = /"reason"\s*:\s*"([^"]+)"/i.exec(block);
     if (wordMatch && archMatch) {
       const arch = normalizeArchetype(archMatch[1], validArchetypes);
       const motif = motifMatch ? normalizeMotif(motifMatch[1], validMotifs) : 'none';
+      const badge = badgeMatch ? normalizeWordBadge(badgeMatch[1], validBadges) : undefined;
       if (arch) {
         results.push({
           word: wordMatch[1].trim(),
           archetype: arch,
           motif,
+          badge: badge && badge !== 'none' ? badge : undefined,
           meaning: meaningMatch ? meaningMatch[1].trim() : undefined,
           reason: reasonMatch ? reasonMatch[1].trim() : undefined,
         });
@@ -502,8 +579,17 @@ Choose from these 20 visual archetypes:
 - "prism_shimmer": light beam sweeping across glyphs, diamond shine, luxury, glow, star glints
 - "squash_bounce": elastic Disney squash and stretch rebound, playful hops, dance grooves, bouncy funk
 
-Choose from these 24 visual motifs (or "none"):
+Choose from these 33 visual motifs (or "none"):
 - "none": clean typography only with zero background visual distractions
+- "handlebar_moustache": royal twirled moustache with curved tips for male pride, muchh, mooch, swagger
+- "dark_sunglasses": dark wayfarer sunglasses with sweeping white diagonal glare for shades, cool, attitude
+- "money_stack": floating 1-bit banknotes with currency marks and coin sparks for cash, paisa, wealth
+- "street_racer": low-slung sports coupe with spinning wheels for cars, gaddi, ride, speed, racing
+- "cracked_heart": bold heart splitting into jagged halves for heartbreak, broken, betrayal, sad, pain
+- "crossed_swords": dual curved daggers/kirpan blades with impact crosshairs for sword, fight, talwar, war
+- "champion_trophy": golden chalice winner trophy with star sparks for victory, top, number 1, champion
+- "lucky_dice": tumbling 3D isometric pixel dice for gambling, roll, luck, risk, kismat
+- "rolex_watch": circular watch bezel with ticking second hand for time, rolex, clock, hours, waqt
 - "floating_notes": drifting music notes (♪ ♫) for melodies, singing, instruments, romance
 - "starlight_glimmer": breathing twinkling stars for dreams, night, magic, sparkling emotions
 - "heartbeat_pulse": romantic heart pulse with concentric ripples for love, feelings, heartbeat
@@ -529,17 +615,36 @@ Choose from these 24 visual motifs (or "none"):
 - "lightning_arc": high-voltage jagged electric bolt for sudden voltage surges, shocks
 - "comic_burst": 14-point pop-art comic starburst bubble for punchy comic shoutouts
 
+Optionally specify an inline "badge" icon for concrete physical symbols, cultural metaphors, or punchlines (or "none"):
+- "moustache": moustache, muchh, mooch, beard, male pride
+- "sunglasses": shades, dark glasses, sunglasses, akhan, cool
+- "crown": king, raja, boss, queen, royalty, rule, badshah
+- "cash": money, paisa, bands, racks, dollar, rich, cash
+- "car": gaddi, car, ride, speed, wheels, porsche, lambo
+- "heart": love, romantic, feelings, sweet, heartbeat, dil, pyaar
+- "broken_heart": heartbreak, betrayed, pain, tears, sad, todeya
+- "flame": fire, heat, lit, burn, cooked, aag
+- "skull": death, danger, grave, fatal, poison, toxic, khatra
+- "sword": sword, dagger, blade, cut, fight, talwar, kirpan
+- "trophy": winner, champion, top, victory, cup, first
+- "dice": gamble, luck, risk, roll, bet, kismat
+- "watch": time, rolex, watch, clock, hours, waqt
+- "diamond": ice, diamond, shine, jewelry, bling, heere
+- "star": fame, superstar, celebrity, shining, bright
+- "none": no inline badge
+
 Output JSON strictly matching this format:
 {
   "songVibe": "hype_aggressive",
   "recommendedStylePack": "trap_drill",
   "classifications": [
     {
-      "word": "FIRE",
-      "meaning": "energy / flames",
+      "word": "MUCHH",
+      "meaning": "royal moustache / male pride",
       "archetype": "manga_impact",
-      "motif": "flame_tongue",
-      "reason": "explosive energetic punchline"
+      "motif": "handlebar_moustache",
+      "badge": "moustache",
+      "reason": "iconic symbol of Punjabi masculinity and pride"
     }
   ]
 }
@@ -549,6 +654,7 @@ Output JSON strictly matching this format:
 export interface LLMClassificationOutput {
   archetypes: Record<string, MotionArchetype>;
   motifs: Record<string, VisualMotif>;
+  badges?: Record<string, WordBadgeIcon>;
   songVibe?: SongVibe;
   recommendedStylePack?: StylePackId;
 }
@@ -575,6 +681,7 @@ export async function classifyLyricsWithOllama(
   const model = options.model || (provider === 'groq' ? 'openai/gpt-oss-120b' : 'qwen3.5:2b-q4_K_M');
   const archetypeOverrides: Record<string, MotionArchetype> = {};
   const motifOverrides: Record<string, VisualMotif> = {};
+  const badgeOverrides: Record<string, WordBadgeIcon> = {};
   let detectedSongVibe: SongVibe | undefined;
   let detectedStylePack: StylePackId | undefined;
 
@@ -719,6 +826,7 @@ export async function classifyLyricsWithOllama(
             startMs: item.startMs ?? 0,
             archetype: item.archetype,
             motif: item.motif,
+            badge: item.badge,
             meaning: item.meaning,
             reason: item.reason,
           });
@@ -746,6 +854,11 @@ export async function classifyLyricsWithOllama(
                   motifOverrides[specificKey] = item.motif;
                   if (cleanWord) motifOverrides[cleanWord] = item.motif;
                   motifOverrides[rawWordLower] = item.motif;
+                }
+                if (item.badge && item.badge !== 'none') {
+                  badgeOverrides[specificKey] = item.badge;
+                  if (cleanWord) badgeOverrides[cleanWord] = item.badge;
+                  badgeOverrides[rawWordLower] = item.badge;
                 }
               }
             }
@@ -810,6 +923,7 @@ export async function classifyLyricsWithOllama(
             startMs: item.startMs ?? 0,
             archetype: item.archetype,
             motif: item.motif,
+            badge: item.badge,
             meaning: item.meaning,
             reason: item.reason,
           });
@@ -838,6 +952,11 @@ export async function classifyLyricsWithOllama(
                   if (cleanWord) motifOverrides[cleanWord] = item.motif;
                   motifOverrides[rawWordLower] = item.motif;
                 }
+                if (item.badge && item.badge !== 'none') {
+                  badgeOverrides[specificKey] = item.badge;
+                  if (cleanWord) badgeOverrides[cleanWord] = item.badge;
+                  badgeOverrides[rawWordLower] = item.badge;
+                }
               }
             }
           }
@@ -859,6 +978,7 @@ export async function classifyLyricsWithOllama(
   return {
     archetypes: archetypeOverrides,
     motifs: motifOverrides,
+    badges: badgeOverrides,
     songVibe: detectedSongVibe,
     recommendedStylePack: detectedStylePack,
   };

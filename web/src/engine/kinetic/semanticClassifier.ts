@@ -1,4 +1,4 @@
-import { MotionArchetype, StylePackConfig, WordFontRole, TextDressing, STYLE_PACKS, MULTILINGUAL_FALLBACK_FONTS } from './types';
+import { MotionArchetype, StylePackConfig, WordFontRole, TextDressing, STYLE_PACKS, MULTILINGUAL_FALLBACK_FONTS, VisualMotif, WordBadgeIcon } from './types';
 import { LyricWord } from '../lyrics/types';
 import { detectScript } from './scriptDetector';
 import { getScriptFontStack } from './fontLoader';
@@ -522,8 +522,112 @@ export function getWordEffectiveFont(
   ) {
     baseFont = `'Lemon Milk', ${MULTILINGUAL_FALLBACK_FONTS}, sans-serif`;
   }
-
   return baseFont;
+}
+
+// Concrete Symbol Dictionaries for Lyric Iconography & Word Badges
+const MOUSTACHE_WORDS = new Set([
+  'muchh', 'mooch', 'moustache', 'mustache', 'mustard', 'gabru', 'kundi', 'kundian', 'mucch', 'muchan', 'moochan'
+]);
+const SUNGLASSES_WORDS = new Set([
+  'akhan', 'shades', 'sunglasses', 'glasses', 'chashma', 'goggles', 'vision', 'spectacles', 'shady', 'eyewear'
+]);
+const CASH_WORDS = new Set([
+  'paisa', 'cash', 'bands', 'money', 'dollar', 'dollars', 'lakh', 'crore', 'rupee', 'rupees', 'bucks', 'rich', 'wealth', 'funds', 'moolah', 'racks'
+]);
+const CAR_WORDS = new Set([
+  'gaddi', 'car', 'ride', 'drive', 'wheel', 'wheels', 'porsche', 'ferrari', 'lambo', 'benz', 'drift', 'motor', 'speeding', 'whip', 'coupe'
+]);
+const HEART_WORDS = new Set([
+  'dil', 'heart', 'love', 'pyaar', 'ishq', 'mohabbat', 'jaan', 'sweetheart', 'darling', 'romance'
+]);
+const BROKEN_HEART_WORDS = new Set([
+  'todeya', 'broken', 'heartbreak', 'dhokha', 'dard', 'tears', 'bewafa', 'break', 'crying', 'shattered'
+]);
+const CROWN_WORDS = new Set([
+  'badshah', 'raja', 'king', 'queen', 'crown', 'sultan', 'royalty', 'maharaja', 'ruler', 'prince', 'throne'
+]);
+const FLAME_WORDS = new Set([
+  'aag', 'fire', 'flame', 'flames', 'heat', 'cooked', 'lit', 'burn', 'burning', 'hot', 'blaze'
+]);
+const SKULL_WORDS = new Set([
+  'khatra', 'death', 'danger', 'skull', 'grave', 'fatal', 'poison', 'dead', 'kill', 'murder', 'deadly'
+]);
+const SWORD_WORDS = new Set([
+  'talwar', 'kirpan', 'sword', 'swords', 'dagger', 'blade', 'vair', 'war', 'scimitar', 'knife'
+]);
+const TROPHY_WORDS = new Set([
+  'trophy', 'winner', 'champion', 'gold', 'cup', 'medal', 'first', 'jeet', 'victory', 'champions'
+]);
+const DICE_WORDS = new Set([
+  'kismat', 'dice', 'gamble', 'roll', 'luck', 'naseeb', 'bet', 'craps', 'casino'
+]);
+const WATCH_WORDS = new Set([
+  'waqt', 'time', 'watch', 'rolex', 'ghadi', 'clock', 'hours', 'tick', 'ticking', 'second'
+]);
+const DIAMOND_WORDS = new Set([
+  'heere', 'heera', 'diamond', 'diamonds', 'ice', 'bling', 'jewelry', 'gems', 'gem', 'jewel'
+]);
+const STAR_WORDS = new Set([
+  'star', 'superstar', 'fame', 'celebrity', 'bright', 'shine', 'glow', 'stellar'
+]);
+
+/**
+ * Deterministically classifies whether a word triggers an inline 1-bit micro-sprite badge.
+ * Understands English, Punjabi, Hindi, and common slang synonyms.
+ */
+export function classifyWordBadge(
+  word: string,
+  songProfile?: SongMoodProfile | null
+): WordBadgeIcon {
+  const clean = word.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+  if (!clean) return 'none';
+
+  if (MOUSTACHE_WORDS.has(clean)) return 'moustache';
+  if (SUNGLASSES_WORDS.has(clean)) return 'sunglasses';
+  if (CASH_WORDS.has(clean)) return 'cash';
+  if (CAR_WORDS.has(clean)) return 'car';
+  if (BROKEN_HEART_WORDS.has(clean)) return 'broken_heart';
+  if (HEART_WORDS.has(clean)) return 'heart';
+  if (CROWN_WORDS.has(clean)) return 'crown';
+  if (FLAME_WORDS.has(clean)) return 'flame';
+  if (SKULL_WORDS.has(clean)) return 'skull';
+  if (SWORD_WORDS.has(clean)) return 'sword';
+  if (TROPHY_WORDS.has(clean)) return 'trophy';
+  if (DICE_WORDS.has(clean)) return 'dice';
+  if (WATCH_WORDS.has(clean)) return 'watch';
+  if (DIAMOND_WORDS.has(clean)) return 'diamond';
+  if (STAR_WORDS.has(clean)) return 'star';
+
+  return 'none';
+}
+
+/**
+ * Maps a concrete lyric word to its optimal visual motif background if appropriate.
+ */
+export function classifyWordMotif(
+  word: string,
+  songProfile?: SongMoodProfile | null
+): VisualMotif | null {
+  const badge = classifyWordBadge(word, songProfile);
+  switch (badge) {
+    case 'moustache': return 'handlebar_moustache';
+    case 'sunglasses': return 'dark_sunglasses';
+    case 'cash': return 'money_stack';
+    case 'car': return 'street_racer';
+    case 'broken_heart': return 'cracked_heart';
+    case 'heart': return 'heartbeat_pulse';
+    case 'crown': return 'crown_royal';
+    case 'sword': return 'crossed_swords';
+    case 'trophy': return 'champion_trophy';
+    case 'dice': return 'lucky_dice';
+    case 'watch': return 'rolex_watch';
+    case 'flame': return 'flame_tongue';
+    case 'skull': return 'skull_cross';
+    case 'diamond':
+    case 'star': return 'chrome_star';
+    default: return null;
+  }
 }
 
 

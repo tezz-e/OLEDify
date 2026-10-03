@@ -630,6 +630,42 @@ export function renderMotifBackground(
     case 'vinyl_grooves':
       drawVinylGrooves(ctx, frameIndex);
       break;
+
+    case 'handlebar_moustache':
+      drawHandlebarMoustache(ctx, 64, 16, 44, tau, frameIndex);
+      break;
+
+    case 'dark_sunglasses':
+      drawDarkSunglasses(ctx, 64, 16, 42, tau, frameIndex);
+      break;
+
+    case 'money_stack':
+      drawMoneyStack(ctx, tau, frameIndex, audioFrame);
+      break;
+
+    case 'street_racer':
+      drawStreetRacer(ctx, tau, frameIndex, audioFrame);
+      break;
+
+    case 'cracked_heart':
+      drawCrackedHeart(ctx, 64, 18, 16, tau, frameIndex);
+      break;
+
+    case 'crossed_swords':
+      drawCrossedSwords(ctx, 64, 18, 22, tau, frameIndex);
+      break;
+
+    case 'champion_trophy':
+      drawChampionTrophy(ctx, 64, 18, 18, tau, frameIndex);
+      break;
+
+    case 'lucky_dice':
+      drawLuckyDice(ctx, 64, 18, 14, tau, frameIndex);
+      break;
+
+    case 'rolex_watch':
+      drawRolexWatch(ctx, 64, 18, 13, tau, frameIndex);
+      break;
   }
 }
 
@@ -1147,6 +1183,585 @@ function drawVinylGrooves(
   ctx.moveTo(64 - Math.cos(angle) * 12, 32 - Math.sin(angle) * 6);
   ctx.lineTo(64 - Math.cos(angle) * (12 + glintLen), 32 - Math.sin(angle) * (6 + glintLen * 0.5));
   ctx.stroke();
+
+  ctx.restore();
+}
+
+/**
+ * 🥸 Royal Handlebar Moustache (Twirled tips & swagger tilt)
+ */
+export function drawHandlebarMoustache(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 16,
+  width: number = 44,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  const tilt = Math.sin(tau * Math.PI * 2) * 0.08;
+  const floatY = cy + Math.sin(tau * Math.PI * 2) * 1.5;
+  ctx.translate(cx, floatY);
+  ctx.rotate(tilt);
+
+  // Black knockout barrier
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 3;
+  ctx.fillStyle = '#FFFFFF';
+
+  // Draw symmetric twirled moustache
+  const hw = width / 2;
+  ctx.beginPath();
+  // Center philtrum
+  ctx.moveTo(0, 1);
+  // Left half upper curve
+  ctx.bezierCurveTo(-hw * 0.3, -2, -hw * 0.7, -4, -hw, -6);
+  // Left curl outward and back in
+  ctx.bezierCurveTo(-hw * 1.08, -8, -hw * 1.05, -1, -hw * 0.85, 2);
+  // Left lower belly curve to center
+  ctx.bezierCurveTo(-hw * 0.5, 6, -hw * 0.2, 5, 0, 3);
+  // Right lower belly curve
+  ctx.bezierCurveTo(hw * 0.2, 5, hw * 0.5, 6, hw * 0.85, 2);
+  // Right curl outward and back in
+  ctx.bezierCurveTo(hw * 1.05, -1, hw * 1.08, -8, hw, -6);
+  // Right half upper curve to center philtrum
+  ctx.bezierCurveTo(hw * 0.7, -4, hw * 0.3, -2, 0, 1);
+  ctx.closePath();
+
+  ctx.stroke();
+  ctx.fill();
+
+  // Fine 1-bit center divider cleft
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-0.5, 0, 1, 3);
+
+  ctx.restore();
+}
+
+/**
+ * 🕶️ Dark Sunglasses with Sweeping Specular Glare
+ */
+export function drawDarkSunglasses(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 16,
+  width: number = 42,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  const floatY = cy + Math.sin(tau * Math.PI * 2) * 1.5;
+  ctx.translate(cx, floatY);
+
+  const lensW = Math.round(width * 0.42);
+  const lensH = 11;
+  const gap = 4;
+  const halfGap = gap / 2;
+
+  // Solid black knockout barrier behind sunglasses
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-width / 2 - 2, -lensH / 2 - 2, width + 4, lensH + 4);
+
+  // White frames
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(-halfGap - lensW - 1, -lensH / 2 - 1, lensW + 2, lensH + 2);
+  ctx.fillRect(halfGap - 1, -lensH / 2 - 1, lensW + 2, lensH + 2);
+  // Top brow line & bridge
+  ctx.fillRect(-halfGap - lensW - 1, -lensH / 2 - 2, width + 2, 2);
+  ctx.fillRect(-halfGap, -1, gap, 2);
+
+  // Black lenses inside
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-halfGap - lensW, -lensH / 2, lensW, lensH);
+  ctx.fillRect(halfGap, -lensH / 2, lensW, lensH);
+
+  // Sweeping diagonal specular glare slash
+  ctx.fillStyle = '#FFFFFF';
+  const glarePos = Math.round(((tau * 2.5 + frameIndex * 0.05) % 1.5) * (lensW + 10) - 5);
+  // Left lens glare
+  if (glarePos >= 0 && glarePos < lensW) {
+    ctx.fillRect(-halfGap - lensW + glarePos, -lensH / 2 + 1, 2, lensH - 2);
+  }
+  // Right lens glare
+  if (glarePos >= 0 && glarePos < lensW) {
+    ctx.fillRect(halfGap + glarePos, -lensH / 2 + 1, 2, lensH - 2);
+  }
+
+  ctx.restore();
+}
+
+/**
+ * 💸 Floating Banknotes & Coin Sparks
+ */
+export function drawMoneyStack(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  tau: number = 1.0,
+  frameIndex: number = 0,
+  audioFrame?: AudioFrameData | null
+): void {
+  ctx.save();
+  const bills = [
+    { x0: 20, y0: 10, w: 26, h: 13, speed: 0.6, rot: -0.15 },
+    { x0: 95, y0: 8, w: 24, h: 12, speed: 0.8, rot: 0.18 },
+    { x0: 60, y0: 48, w: 22, h: 11, speed: 0.7, rot: -0.08 },
+    { x0: 12, y0: 46, w: 20, h: 10, speed: 0.5, rot: 0.12 }
+  ];
+
+  for (let i = 0; i < bills.length; i++) {
+    const b = bills[i];
+    const y = Math.round((b.y0 + frameIndex * b.speed) % 70) - 6;
+    if (y < -10 || y > 64) continue;
+    const swayX = Math.round(Math.sin(frameIndex * 0.08 + i) * 3);
+    const x = b.x0 + swayX;
+
+    ctx.save();
+    ctx.translate(x + b.w / 2, y + b.h / 2);
+    ctx.rotate(b.rot + Math.sin(frameIndex * 0.05 + i) * 0.06);
+
+    // Black knockout
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(-b.w / 2 - 1, -b.h / 2 - 1, b.w + 2, b.h + 2);
+
+    // Banknote body
+    ctx.fillStyle = '#FFFFFF';
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(-b.w / 2, -b.h / 2, b.w, b.h);
+
+    // Inner frame
+    ctx.strokeRect(-b.w / 2 + 2, -b.h / 2 + 2, b.w - 4, b.h - 4);
+
+    // Center currency circle
+    ctx.beginPath();
+    ctx.arc(0, 0, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  // Floating coin spark glints on heavy beats
+  if (audioFrame?.isBeat) {
+    drawChromeStar(ctx, 32, 18, 4);
+    drawChromeStar(ctx, 102, 22, 4);
+  }
+  ctx.restore();
+}
+
+/**
+ * 🏎️ Low-slung Sports Car Coupe with Spinning Spoke Wheels
+ */
+export function drawStreetRacer(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  tau: number = 1.0,
+  frameIndex: number = 0,
+  audioFrame?: AudioFrameData | null
+): void {
+  ctx.save();
+  const carW = 54;
+  const carH = 14;
+  // Car drives along baseline
+  const carX = Math.round(((frameIndex * 1.5) % 180) - 40);
+  const carY = 48;
+
+  ctx.translate(carX, carY);
+
+  // Black knockout
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-2, -carH - 2, carW + 4, carH + 6);
+
+  // White car body outline & fill
+  ctx.fillStyle = '#FFFFFF';
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  ctx.beginPath();
+  ctx.moveTo(0, 0); // Front bumper bottom
+  ctx.lineTo(6, -4); // Front hood nose
+  ctx.lineTo(18, -5); // Hood
+  ctx.lineTo(26, -carH); // Windshield slope
+  ctx.lineTo(38, -carH); // Roof
+  ctx.lineTo(46, -4); // Rear fastback slope
+  ctx.lineTo(52, -4); // Rear spoiler
+  ctx.lineTo(54, -7); // Spoiler wing
+  ctx.lineTo(52, 0); // Rear bumper bottom
+  ctx.closePath();
+  ctx.fill();
+
+  // Cabin window cutout in black
+  ctx.fillStyle = '#000000';
+  ctx.beginPath();
+  ctx.moveTo(25, -carH + 2);
+  ctx.lineTo(37, -carH + 2);
+  ctx.lineTo(43, -4);
+  ctx.lineTo(21, -4);
+  ctx.closePath();
+  ctx.fill();
+
+  // Spinning spoke wheels (front at 12, rear at 42)
+  const wheelR = 4;
+  const wheelY = 0;
+  const wheelXs = [12, 42];
+  const rotAngle = (frameIndex * 0.4) % (Math.PI * 2);
+
+  for (const wx of wheelXs) {
+    // Wheel cutout in body
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.arc(wx, wheelY, wheelR + 1, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Wheel rim
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.arc(wx, wheelY, wheelR, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Spinning spokes
+    ctx.beginPath();
+    ctx.moveTo(wx + Math.cos(rotAngle) * wheelR, wheelY + Math.sin(rotAngle) * wheelR);
+    ctx.lineTo(wx - Math.cos(rotAngle) * wheelR, wheelY - Math.sin(rotAngle) * wheelR);
+    ctx.moveTo(wx + Math.cos(rotAngle + Math.PI / 2) * wheelR, wheelY + Math.sin(rotAngle + Math.PI / 2) * wheelR);
+    ctx.lineTo(wx - Math.cos(rotAngle + Math.PI / 2) * wheelR, wheelY - Math.sin(rotAngle + Math.PI / 2) * wheelR);
+    ctx.stroke();
+  }
+
+  // Exhaust speed dust puffs behind car
+  if (frameIndex % 2 === 0) {
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(-6 - (frameIndex % 6), -2, 2, 2);
+    ctx.fillRect(-10 - (frameIndex % 8), -4, 1, 1);
+  }
+
+  ctx.restore();
+}
+
+/**
+ * 💔 Cracked Heart (Jagged fissure splitting apart)
+ */
+export function drawCrackedHeart(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 18,
+  size: number = 16,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  const splitOffset = tau > 0.25 ? Math.min(4, Math.round((tau - 0.25) * 6)) : 0;
+  const floatY = cy + Math.sin(tau * Math.PI * 2) * 1.5;
+  ctx.translate(cx, floatY);
+
+  // Black knockout
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-size - splitOffset - 2, -size - 2, (size + splitOffset) * 2 + 4, size * 2 + 4);
+
+  // Left Half Heart
+  ctx.save();
+  ctx.translate(-splitOffset, 0);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.moveTo(0, size); // Bottom tip
+  ctx.bezierCurveTo(-size * 0.8, size * 0.4, -size * 1.1, -size * 0.2, -size * 0.6, -size * 0.7);
+  ctx.bezierCurveTo(-size * 0.3, -size * 0.9, 0, -size * 0.4, 0, -size * 0.2); // Top cleft
+  // Jagged crack back to bottom
+  ctx.lineTo(-2, -size * 0.05);
+  ctx.lineTo(1, size * 0.2);
+  ctx.lineTo(-2, size * 0.5);
+  ctx.lineTo(0, size);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // Right Half Heart
+  ctx.save();
+  ctx.translate(splitOffset, 0);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.moveTo(0, size); // Bottom tip
+  ctx.bezierCurveTo(size * 0.8, size * 0.4, size * 1.1, -size * 0.2, size * 0.6, -size * 0.7);
+  ctx.bezierCurveTo(size * 0.3, -size * 0.9, 0, -size * 0.4, 0, -size * 0.2); // Top cleft
+  // Matching jagged edge
+  ctx.lineTo(-2, -size * 0.05);
+  ctx.lineTo(1, size * 0.2);
+  ctx.lineTo(-2, size * 0.5);
+  ctx.lineTo(0, size);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // Falling dust flakes from fissure
+  if (splitOffset > 0) {
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(Math.round(Math.sin(frameIndex) * 2), size + 2 + ((frameIndex * 2) % 8), 1, 1);
+  }
+
+  ctx.restore();
+}
+
+/**
+ * ⚔️ Crossed Curved Scimitars / Daggers with Razor Impact
+ */
+export function drawCrossedSwords(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 18,
+  size: number = 22,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  const floatY = cy + Math.sin(tau * Math.PI * 2) * 1.5;
+  ctx.translate(cx, floatY);
+
+  // Black knockout
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-size - 2, -size - 2, size * 2 + 4, size * 2 + 4);
+
+  const drawSword = (angle: number) => {
+    ctx.save();
+    ctx.rotate(angle);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 1;
+
+    // Curved Blade
+    ctx.beginPath();
+    ctx.moveTo(-1, 0);
+    ctx.lineTo(-1, -size);
+    ctx.quadraticCurveTo(3, -size * 0.6, 2, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // Crossguard
+    ctx.fillRect(-5, 0, 10, 2);
+
+    // Grip
+    ctx.fillRect(-1, 2, 2, 5);
+
+    // Pommel knob
+    ctx.beginPath();
+    ctx.arc(0, 8, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  };
+
+  drawSword(Math.PI / 4);
+  drawSword(-Math.PI / 4);
+
+  // Impact star at intersection on beat
+  if (tau < 0.4 || (frameIndex % 6 === 0)) {
+    drawChromeStar(ctx, 0, 0, 4);
+  }
+
+  ctx.restore();
+}
+
+/**
+ * 🏆 Champion Trophy with Floating Star Glints
+ */
+export function drawChampionTrophy(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 18,
+  size: number = 18,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  const floatY = cy + Math.sin(tau * Math.PI * 2) * 1.5;
+  ctx.translate(cx, floatY);
+
+  const hw = size * 0.55;
+  const cupH = size * 0.65;
+
+  // Black knockout
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-hw - 6, -cupH - 2, (hw + 6) * 2, size + 6);
+
+  // Trophy Cup Body
+  ctx.fillStyle = '#FFFFFF';
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  ctx.beginPath();
+  ctx.moveTo(-hw, -cupH);
+  ctx.lineTo(hw, -cupH);
+  ctx.bezierCurveTo(hw, 0, hw * 0.4, cupH * 0.6, 0, cupH * 0.7);
+  ctx.bezierCurveTo(-hw * 0.4, cupH * 0.6, -hw, 0, -hw, -cupH);
+  ctx.closePath();
+  ctx.fill();
+
+  // Cup Rim
+  ctx.fillRect(-hw - 1, -cupH - 1, (hw + 1) * 2, 2);
+
+  // Stem & Base Pedestal
+  ctx.fillRect(-1, cupH * 0.7, 2, 4);
+  ctx.fillRect(-hw * 0.6, cupH * 0.7 + 4, hw * 1.2, 3);
+
+  // Side Handles
+  ctx.beginPath();
+  ctx.arc(-hw - 1, -cupH * 0.4, 4, Math.PI * 0.5, Math.PI * 1.5);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(hw + 1, -cupH * 0.4, 4, -Math.PI * 0.5, Math.PI * 0.5);
+  ctx.stroke();
+
+  // Star glints
+  drawChromeStar(ctx, -hw - 4, -cupH + 2, 3);
+  drawChromeStar(ctx, hw + 4, -cupH + 2, 3);
+
+  ctx.restore();
+}
+
+/**
+ * 🎲 3D Isometric Lucky Dice with Pips
+ */
+export function drawLuckyDice(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 18,
+  size: number = 14,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  const floatY = cy + Math.sin(tau * Math.PI * 2) * 1.5;
+  ctx.translate(cx, floatY);
+
+  const s = size;
+  const hs = s * 0.5;
+
+  // Black knockout
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-s - 2, -s - 2, s * 2 + 4, s * 2 + 4);
+
+  // Top Face (Rhombus)
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.moveTo(0, -s);
+  ctx.lineTo(s * 0.8, -hs);
+  ctx.lineTo(0, 0);
+  ctx.lineTo(-s * 0.8, -hs);
+  ctx.closePath();
+  ctx.fill();
+
+  // Top Face Pips (5 dots) in black
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-1, -hs - 1, 2, 2); // Center
+  ctx.fillRect(-s * 0.35, -s * 0.75, 2, 2);
+  ctx.fillRect(s * 0.35 - 2, -s * 0.75, 2, 2);
+  ctx.fillRect(-s * 0.35, -hs + 1, 2, 2);
+  ctx.fillRect(s * 0.35 - 2, -hs + 1, 2, 2);
+
+  // Left Face (Parallelogram)
+  ctx.fillStyle = '#FFFFFF';
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.8, -hs);
+  ctx.lineTo(0, 0);
+  ctx.lineTo(0, s * 0.7);
+  ctx.lineTo(-s * 0.8, s * 0.2);
+  ctx.closePath();
+  ctx.stroke();
+
+  // Left Face Pips (3 dots diagonal)
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(-s * 0.5, -hs * 0.4, 2, 2);
+  ctx.fillRect(-s * 0.4, 0, 2, 2);
+  ctx.fillRect(-s * 0.3, hs * 0.4, 2, 2);
+
+  // Right Face (Parallelogram)
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(s * 0.8, -hs);
+  ctx.lineTo(s * 0.8, s * 0.2);
+  ctx.lineTo(0, s * 0.7);
+  ctx.closePath();
+  ctx.stroke();
+
+  // Right Face Pip (1 big center dot)
+  ctx.fillRect(s * 0.4 - 1, -hs * 0.1, 3, 3);
+
+  ctx.restore();
+}
+
+/**
+ * ⌚ Rolex Luxury Watch Bezel with Ticking Hands
+ */
+export function drawRolexWatch(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 18,
+  radius: number = 13,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  const floatY = cy + Math.sin(tau * Math.PI * 2) * 1.5;
+  ctx.translate(cx, floatY);
+
+  // Black knockout
+  ctx.fillStyle = '#000000';
+  ctx.beginPath();
+  ctx.arc(0, 0, radius + 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Outer fluted bezel ticks
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+  for (let a = 0; a < Math.PI * 2; a += Math.PI / 6) {
+    const r1 = radius + 1;
+    const r2 = radius + 2;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a) * r1, Math.sin(a) * r1);
+    ctx.lineTo(Math.cos(a) * r2, Math.sin(a) * r2);
+    ctx.stroke();
+  }
+
+  // Dial Case
+  ctx.beginPath();
+  ctx.arc(0, 0, radius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // 12, 3, 6, 9 hour pips
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(-1, -radius + 2, 2, 2); // 12
+  ctx.fillRect(radius - 4, -1, 2, 2);  // 3
+  ctx.fillRect(-1, radius - 4, 2, 2);  // 6
+  ctx.fillRect(-radius + 2, -1, 2, 2); // 9
+
+  // Center pivot
+  ctx.beginPath();
+  ctx.arc(0, 0, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Hour Hand (10 o'clock)
+  const hourAngle = -Math.PI / 3;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(Math.cos(hourAngle) * (radius * 0.5), Math.sin(hourAngle) * (radius * 0.5));
+  ctx.stroke();
+
+  // Minute Hand (2 o'clock)
+  ctx.lineWidth = 1;
+  const minAngle = Math.PI / 6;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(Math.cos(minAngle) * (radius * 0.75), Math.sin(minAngle) * (radius * 0.75));
+  ctx.stroke();
+
+  // Ticking Second Hand
+  const secAngle = (frameIndex * 0.1) % (Math.PI * 2);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(Math.cos(secAngle) * (radius * 0.85), Math.sin(secAngle) * (radius * 0.85));
+  ctx.stroke();
+
+  // Crown Knob on Right side
+  ctx.fillRect(radius + 1, -2, 2, 4);
 
   ctx.restore();
 }

@@ -1,9 +1,10 @@
 import { ExtractedFrame, DecodedMedia } from '../../types/media';
-import { KineticRenderOptions, MotionArchetype, STYLE_PACKS, KineticTransitionType, TextDressing } from './types';
+import { KineticRenderOptions, MotionArchetype, STYLE_PACKS, KineticTransitionType, TextDressing, WordBadgeIcon } from './types';
 import { computeSafeTextLayout } from './kineticLayout';
 import { renderArchetypeFrame, getScratchCanvas, BAYER_4X4 } from './kineticArchetypes';
 import { renderMotifBackground } from './motifRenderer';
-import { getWordEffectiveArchetype, getWordEffectiveFont, getWordEffectiveDressing, cleanLyricToken } from './semanticClassifier';
+import { renderWordBadge } from './wordBadgeRenderer';
+import { getWordEffectiveArchetype, getWordEffectiveFont, getWordEffectiveDressing, cleanLyricToken, classifyWordBadge, classifyWordMotif } from './semanticClassifier';
 import { LyricWord } from '../lyrics/types';
 import { isRTL } from './scriptDetector';
 import { ensureFontForText } from './fontLoader';
@@ -365,6 +366,32 @@ export async function renderKineticSequence(
             default: break;
           }
         }
+
+        // If no background motif is active yet, check if word has a concrete semantic motif (e.g. moustache, sunglasses, car, cash, etc.)
+        if (wordMotif === 'none') {
+          const semanticMotif = classifyWordMotif(activeWord.word, moodProfile);
+          if (semanticMotif && moodProfile.allowedMotifs.includes(semanticMotif)) {
+            wordMotif = semanticMotif;
+          }
+        }
+      }
+
+      // Resolve Word Micro-Badge Icon
+      let effectiveBadge: WordBadgeIcon = 'none';
+      if (options.badgeMode !== 'off') {
+        const cleanKey = cleanLyricToken(activeWord.word);
+        const rawKey = activeWord.word.trim().toLowerCase();
+        const specificKey = `${activeWord.word}_${activeWord.startMs}`;
+
+        if (options.wordBadgeOverrides?.[specificKey]) {
+          effectiveBadge = options.wordBadgeOverrides[specificKey];
+        } else if (cleanKey && options.wordBadgeOverrides?.[cleanKey]) {
+          effectiveBadge = options.wordBadgeOverrides[cleanKey];
+        } else if (options.wordBadgeOverrides?.[rawKey]) {
+          effectiveBadge = options.wordBadgeOverrides[rawKey];
+        } else {
+          effectiveBadge = classifyWordBadge(activeWord.word, moodProfile);
+        }
       }
 
       // Resolve orthogonal text dressing
@@ -403,6 +430,21 @@ export async function renderKineticSequence(
 
       // Render Archetype Frame with effective font, moodProfile, and text dressing
       renderArchetypeFrame(ctx, effectiveArchetype, activeWord.word, tau, layout, f, effectiveFont, audioFrame, moodProfile, wordDressing);
+
+      // Render Word Micro-Sprite Badge (if active)
+      if (effectiveBadge && effectiveBadge !== 'none') {
+        const badgeBounds = {
+          centerX: 64,
+          centerY: layout.yOffsets[0] ?? 32,
+          top: (layout.yOffsets[0] ?? 32) - layout.totalHeight / 2,
+          bottom: (layout.yOffsets[layout.yOffsets.length - 1] ?? 32) + layout.totalHeight / 2,
+          left: 0,
+          right: 128,
+          fontSize: layout.fontSize
+        };
+        renderWordBadge(ctx, effectiveBadge, badgeBounds, tau, f, audioFrame);
+      }
+
       ctx.restore();
 
       // Dynamic 1-Bit Transition Choreography between consecutive words (legato phrasing)

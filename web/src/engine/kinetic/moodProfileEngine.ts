@@ -127,7 +127,8 @@ export function computeSongMoodProfile(
           'floating_notes',
           'heartbeat_pulse',
           'minimal_frame',
-          'water_ripples'
+          'water_ripples',
+          'cracked_heart'
         ],
         dwellDecayFactor: 1.6,
         easingCurvature: 0.6,
@@ -162,7 +163,9 @@ export function computeSongMoodProfile(
           'starlight_glimmer',
           'minimal_frame',
           'chrome_star',
-          'lofi_dust_motes'
+          'lofi_dust_motes',
+          'cracked_heart',
+          'rolex_watch'
         ],
         dwellDecayFactor: 1.3,
         easingCurvature: 0.8,
@@ -194,7 +197,13 @@ export function computeSongMoodProfile(
           'floating_notes',
           'chrome_star',
           'comic_burst',
-          'heartbeat_pulse'
+          'heartbeat_pulse',
+          'dark_sunglasses',
+          'money_stack',
+          'street_racer',
+          'champion_trophy',
+          'lucky_dice',
+          'rolex_watch'
         ],
         dwellDecayFactor: 1.0,
         easingCurvature: 1.0,
@@ -235,7 +244,16 @@ export function computeSongMoodProfile(
           'flame_tongue',
           'skull_cross',
           'lightning_arc',
-          'comic_burst'
+          'comic_burst',
+          'handlebar_moustache',
+          'dark_sunglasses',
+          'money_stack',
+          'street_racer',
+          'cracked_heart',
+          'crossed_swords',
+          'champion_trophy',
+          'lucky_dice',
+          'rolex_watch'
         ],
         dwellDecayFactor: 1.0,
         easingCurvature: 1.5,
