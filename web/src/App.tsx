@@ -405,6 +405,9 @@ function MainApp() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // If Lyrics Studio is currently active, yield all keyboard shortcuts to the studio view
+      if (activeView === 'lyrics-studio') return;
+
       // Ignore if typing in an input or textarea
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
       
@@ -512,6 +515,7 @@ function MainApp() {
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
+      if (activeView === 'lyrics-studio') return;
       if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
         if (document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
           e.preventDefault();
@@ -526,7 +530,7 @@ function MainApp() {
       window.removeEventListener('keydown', handleKeyDown, { capture: true });
       window.removeEventListener('keyup', handleKeyUp, { capture: true });
     };
-  }, [handleSplitClip, handleUndo, handleRedo, media, timelineMedia, selectedClipIds, clips, setClipsWithHistory]);
+  }, [activeView, handleSplitClip, handleUndo, handleRedo, media, timelineMedia, selectedClipIds, clips, setClipsWithHistory]);
 
   useEffect(() => {
     const activeMedia = timelineMedia || media;

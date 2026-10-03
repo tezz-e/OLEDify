@@ -1286,6 +1286,46 @@ export const TRANSITION_METADATA: Record<KineticTransitionType, TransitionMeta> 
   }
 };
 
+/**
+ * Maps each word badge to visual motifs of the same semantic concept.
+ * Used by the kinetic rendering engine to prevent duplicate visual rendering
+ * (e.g. rendering both a crown micro-badge and a giant wireframe crown_royal motif).
+ */
+export const BADGE_TO_MOTIF_DUPLICATES: Record<WordBadgeIcon, VisualMotif[]> = {
+  crown: ['crown_royal'],
+  moustache: ['handlebar_moustache'],
+  sunglasses: ['dark_sunglasses'],
+  cash: ['money_stack'],
+  car: ['street_racer'],
+  broken_heart: ['cracked_heart'],
+  heart: ['heartbeat_pulse', 'neon_heart_tunnel'],
+  sword: ['crossed_swords', 'razor_blade'],
+  trophy: ['champion_trophy'],
+  dice: ['lucky_dice'],
+  watch: ['rolex_watch'],
+  flame: ['flame_tongue', 'candle_flame_flicker'],
+  skull: ['skull_cross'],
+  diamond: ['chrome_star'],
+  star: ['chrome_star', 'starlight_glimmer'],
+  gun: ['bullet_chamber_cylinder'],
+  bomb: ['sound_blast_rings'],
+  chain: ['cuban_chain_links'],
+  microphone: ['studio_microphone'],
+  lightning: ['lightning_arc'],
+  rose: ['blooming_rose'],
+  cloud_rain: ['rain_window'],
+  moon: ['lunar_crescent'],
+  lips: ['neon_lips'],
+  wine_glass: ['champagne_toast'],
+  guitar: ['electric_guitar'],
+  key: ['antique_key_lock'],
+  mask: ['drill_ski_mask'],
+  eye: ['all_seeing_eye'],
+  butterfly: ['fluttering_butterflies'],
+  shield: ['knight_shield'],
+  none: []
+};
+
 import { AudioAnalysisResult } from './audioAnalysisEngine';
 
 export interface KineticRenderOptions {
@@ -1309,5 +1349,6 @@ export interface KineticRenderOptions {
   audioAnalysis?: AudioAnalysisResult;
   transitionStyle?: KineticTransitionType;
 }
+
 
 

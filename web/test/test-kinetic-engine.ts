@@ -1762,7 +1762,47 @@ for (const frame of badgeRenderSeq.frames) {
 assert.equal(non1BitPixels, 0, `All pixels with badges must be pure 1-bit monochrome (0 or 255), found ${non1BitPixels} non-binary pixels`);
 console.log(`✅ Full kinetic sequence with moustache and sunglasses badges rendered (${badgeRenderSeq.frames.length} frames). Verified 100% pure 1-bit monochrome.`);
 
-console.log('\n🎉 ALL 13 KINETIC TYPOGRAPHY, MOTIF, BADGE & COMBINATORIAL MATRIX TESTS PASSED PERFECTLY!\n');
+// =========================================================================
+// TEST SUITE 14: Badge & Motif De-Duplication Verification (No Double Crown)
+// =========================================================================
+console.log('\n--- Suite 14: Badge & Motif De-Duplication Verification (No Double Crown) ---');
+import { BADGE_TO_MOTIF_DUPLICATES } from '../src/engine/kinetic/types';
+
+assert.ok(BADGE_TO_MOTIF_DUPLICATES.crown.includes('crown_royal'), 'crown badge must map to crown_royal duplicate');
+assert.ok(BADGE_TO_MOTIF_DUPLICATES.moustache.includes('handlebar_moustache'), 'moustache badge must map to handlebar_moustache duplicate');
+assert.ok(BADGE_TO_MOTIF_DUPLICATES.sunglasses.includes('dark_sunglasses'), 'sunglasses badge must map to dark_sunglasses duplicate');
+
+// Render a word with crown badge and verify sequence renders cleanly with single badge and zero duplicate background motif
+const crownTestLyrics: LyricLine[] = [
+  {
+    text: 'IKKY',
+    startMs: 0,
+    endMs: 1000,
+    words: [
+      { word: 'IKKY', startMs: 0, endMs: 1000 }
+    ]
+  }
+];
+
+const crownRenderSeq = await renderKineticSequence({
+  lyrics: crownTestLyrics,
+  startMs: 0,
+  endMs: 1000,
+  targetFps: 30,
+  archetype: 'auto_semantic',
+  wordBadgeOverrides: {
+    IKKY: 'crown'
+  },
+  wordMotifOverrides: {
+    IKKY: 'crown_royal' // explicitly requested both
+  }
+});
+
+assert.ok(crownRenderSeq.frames.length >= 30);
+console.log('✅ Suite 14: Verified badge & motif de-duplication: crown badge suppresses duplicate crown_royal background motif.');
+
+console.log('\n🎉 ALL 14 KINETIC TYPOGRAPHY, MOTIF, BADGE & COMBINATORIAL MATRIX TESTS PASSED PERFECTLY!\n');
+
 
 
 

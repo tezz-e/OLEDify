@@ -1,5 +1,5 @@
 import { ExtractedFrame, DecodedMedia } from '../../types/media';
-import { KineticRenderOptions, MotionArchetype, STYLE_PACKS, KineticTransitionType, TextDressing, WordBadgeIcon } from './types';
+import { KineticRenderOptions, MotionArchetype, STYLE_PACKS, KineticTransitionType, TextDressing, WordBadgeIcon, VisualMotif, BADGE_TO_MOTIF_DUPLICATES } from './types';
 import { computeSafeTextLayout } from './kineticLayout';
 import { renderArchetypeFrame, getScratchCanvas, BAYER_4X4 } from './kineticArchetypes';
 import { renderMotifBackground } from './motifRenderer';
@@ -339,6 +339,24 @@ export async function renderKineticSequence(
         || options.wordMotifOverrides?.[activeWord.word] 
         || 'none';
 
+      // 1. Resolve Word Micro-Badge Icon FIRST (inline word adornment takes visual priority)
+      let effectiveBadge: WordBadgeIcon = 'none';
+      if (options.badgeMode !== 'off') {
+        const cleanKey = cleanLyricToken(activeWord.word);
+        const rawKey = activeWord.word.trim().toLowerCase();
+        const specificKey = `${activeWord.word}_${activeWord.startMs}`;
+
+        if (options.wordBadgeOverrides?.[specificKey]) {
+          effectiveBadge = options.wordBadgeOverrides[specificKey];
+        } else if (cleanKey && options.wordBadgeOverrides?.[cleanKey]) {
+          effectiveBadge = options.wordBadgeOverrides[cleanKey];
+        } else if (options.wordBadgeOverrides?.[rawKey]) {
+          effectiveBadge = options.wordBadgeOverrides[rawKey];
+        } else {
+          effectiveBadge = classifyWordBadge(activeWord.word, moodProfile);
+        }
+      }
+
       const effectiveMotifMode = options.motifMode || 'dynamic';
 
       // Auto-synthesize complementary motif for hero/accent words when motif is unassigned
@@ -371,26 +389,20 @@ export async function renderKineticSequence(
         if (wordMotif === 'none') {
           const semanticMotif = classifyWordMotif(activeWord.word, moodProfile);
           if (semanticMotif && moodProfile.allowedMotifs.includes(semanticMotif)) {
-            wordMotif = semanticMotif;
+            // Guard: do NOT assign semantic motif if it duplicates the active word micro-badge
+            const duplicateMotifs = BADGE_TO_MOTIF_DUPLICATES[effectiveBadge];
+            if (!duplicateMotifs || !duplicateMotifs.includes(semanticMotif)) {
+              wordMotif = semanticMotif;
+            }
           }
         }
       }
 
-      // Resolve Word Micro-Badge Icon
-      let effectiveBadge: WordBadgeIcon = 'none';
-      if (options.badgeMode !== 'off') {
-        const cleanKey = cleanLyricToken(activeWord.word);
-        const rawKey = activeWord.word.trim().toLowerCase();
-        const specificKey = `${activeWord.word}_${activeWord.startMs}`;
-
-        if (options.wordBadgeOverrides?.[specificKey]) {
-          effectiveBadge = options.wordBadgeOverrides[specificKey];
-        } else if (cleanKey && options.wordBadgeOverrides?.[cleanKey]) {
-          effectiveBadge = options.wordBadgeOverrides[cleanKey];
-        } else if (options.wordBadgeOverrides?.[rawKey]) {
-          effectiveBadge = options.wordBadgeOverrides[rawKey];
-        } else {
-          effectiveBadge = classifyWordBadge(activeWord.word, moodProfile);
+      // Hard suppression: If active badge matches active motif, suppress the duplicate background motif
+      if (effectiveBadge !== 'none' && wordMotif !== 'none') {
+        const duplicateMotifs = BADGE_TO_MOTIF_DUPLICATES[effectiveBadge];
+        if (duplicateMotifs && duplicateMotifs.includes(wordMotif)) {
+          wordMotif = 'none';
         }
       }
 

@@ -996,16 +996,28 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         if (prev.includes(idx)) {
           // If only 1 line selected, don't allow empty selection
           if (prev.length <= 1) return prev;
-          return prev.filter(i => i !== idx);
+          const nextIndices = prev.filter(i => i !== idx);
+          // Pick the nearest remaining selected line instead of staying in the deselected pause!
+          const targetIdx = nextIndices.find(i => i > idx) ?? nextIndices[nextIndices.length - 1];
+          const targetLine = parsedLyrics.lines[targetIdx];
+          if (targetLine) {
+            setAnchorIndex(targetIdx);
+            setPlayheadMs(targetLine.startMs);
+            if (audioRef.current) {
+              audioRef.current.currentTime = targetLine.startMs / 1000;
+            }
+          }
+          return nextIndices;
         } else {
-          return [...prev, idx].sort((a, b) => a - b);
+          const nextIndices = [...prev, idx].sort((a, b) => a - b);
+          setAnchorIndex(idx);
+          setPlayheadMs(parsedLyrics.lines[idx].startMs);
+          if (audioRef.current) {
+            audioRef.current.currentTime = parsedLyrics.lines[idx].startMs / 1000;
+          }
+          return nextIndices;
         }
       });
-      setAnchorIndex(idx);
-      setPlayheadMs(parsedLyrics.lines[idx].startMs);
-      if (audioRef.current) {
-        audioRef.current.currentTime = parsedLyrics.lines[idx].startMs / 1000;
-      }
     } else if (e.shiftKey) {
       // Shift + Click: Range expand from anchor to clicked index
       const anchor = anchorIndex ?? 0;
@@ -1274,9 +1286,13 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         const barHeight = Math.max(3, amplitude * (height - 8));
         const barY = (height - barHeight) / 2;
 
+        const isTimeInSelected = scrubScope === 'full' || selectedLines.some(l => barTimeMs >= (l.startMs - 50) && barTimeMs <= (l.endMs + 100));
         const isPlayed = barX <= playheadX;
 
-        if (isPlayed) {
+        if (!isTimeInSelected) {
+          // Deselected gap / pause - dimmed muted styling indicating it will be skipped
+          ctx.fillStyle = themeMode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.05)';
+        } else if (isPlayed) {
           ctx.fillStyle = '#D97757';
         } else {
           ctx.fillStyle = themeMode === 'dark' ? 'rgba(255, 255, 255, 0.22)' : 'rgba(0, 0, 0, 0.16)';
@@ -1288,6 +1304,35 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           ctx.fill();
         } else {
           ctx.fillRect(barX, barY, barWidth, barHeight);
+        }
+      }
+
+      // Highlight unselected / deselected gaps in timeline
+      if (scrubScope === 'selection' && selectedLines.length > 1) {
+        for (let i = 0; i < selectedLines.length - 1; i++) {
+          const gapStart = selectedLines[i].endMs;
+          const gapEnd = selectedLines[i + 1].startMs;
+          if (gapEnd > gapStart + 200) {
+            const gx1 = Math.max(0, Math.min(width, ((gapStart - activeMinMs) / activeDuration) * width));
+            const gx2 = Math.max(0, Math.min(width, ((gapEnd - activeMinMs) / activeDuration) * width));
+            const gw = gx2 - gx1;
+            if (gw > 4) {
+              ctx.fillStyle = themeMode === 'dark' ? 'rgba(217, 119, 87, 0.08)' : 'rgba(217, 119, 87, 0.06)';
+              ctx.fillRect(gx1, 1, gw, height - 2);
+              ctx.strokeStyle = themeMode === 'dark' ? 'rgba(217, 119, 87, 0.35)' : 'rgba(217, 119, 87, 0.3)';
+              ctx.lineWidth = 1;
+              ctx.setLineDash([2, 3]);
+              ctx.strokeRect(gx1, 1, gw, height - 2);
+              ctx.setLineDash([]);
+
+              if (gw > 38) {
+                ctx.fillStyle = themeMode === 'dark' ? 'rgba(217, 119, 87, 0.8)' : 'rgba(217, 119, 87, 0.85)';
+                ctx.font = 'bold 7px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('SKIPPED', gx1 + gw / 2, height / 2 + 2.5);
+              }
+            }
+          }
         }
       }
 
@@ -1411,7 +1456,18 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
       const stepMs = e.shiftKey ? 33 : Math.max(33, Math.round(spanMs * 0.015));
 
       setPlayheadMs(curr => {
-        const targetMs = Math.max(activeMin, Math.min(activeMax, curr + direction * stepMs));
+        let targetMs = Math.max(activeMin, Math.min(activeMax, curr + direction * stepMs));
+        if (scrubScope === 'selection' && selectedLines.length > 0) {
+          const inSelected = selectedLines.some(l => targetMs >= (l.startMs - 50) && targetMs <= (l.endMs + 50));
+          if (!inSelected) {
+            const nextLine = direction > 0
+              ? selectedLines.find(l => l.startMs > targetMs)
+              : [...selectedLines].reverse().find(l => l.endMs < targetMs);
+            if (nextLine) {
+              targetMs = direction > 0 ? nextLine.startMs : nextLine.endMs;
+            }
+          }
+        }
         if (audioRef.current) {
           audioRef.current.currentTime = targetMs / 1000;
         }
@@ -1432,6 +1488,15 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
       if (startFromMs >= maxMs - 50) {
         startFromMs = minMs;
         setPlayheadMs(minMs);
+      }
+      // If in selection mode and sitting in a deselected gap/pause, snap to next selected line
+      if (scrubScope === 'selection' && selectedLines.length > 0) {
+        const inSelected = selectedLines.some(l => startFromMs >= (l.startMs - 50) && startFromMs <= (l.endMs + 120));
+        if (!inSelected) {
+          const nextLine = selectedLines.find(l => l.startMs > startFromMs) || selectedLines[0];
+          startFromMs = nextLine.startMs;
+          setPlayheadMs(startFromMs);
+        }
       }
       if (audioRef.current) {
         audioRef.current.currentTime = startFromMs / 1000;
@@ -1462,15 +1527,16 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         return;
       }
 
-      if (e.code === 'Space') {
+      if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
         e.preventDefault();
+        e.stopPropagation();
         togglePlay();
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isPlaying, playheadMs, scrubScope, rangeStartMs, rangeEndMs, songTotalDurationMs]);
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+    return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
+  }, [isOpen, isPlaying, playheadMs, scrubScope, rangeStartMs, rangeEndMs, songTotalDurationMs, selectedLines]);
 
   // Audio playback loop
   useEffect(() => {
@@ -1488,6 +1554,42 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         }
         const minMs = scrubScope === 'full' ? 0 : rangeStartMs;
         const maxMs = scrubScope === 'full' ? songTotalDurationMs : rangeEndMs;
+
+        // Skip deselected pauses/gaps instantly when playing in selection mode
+        if (scrubScope === 'selection' && selectedLines.length > 0) {
+          // Check if `next` is currently inside any of our selected lines (with 120ms tail grace hold)
+          const inSelectedLine = selectedLines.some(
+            l => next >= (l.startMs - 50) && next <= (l.endMs + 120)
+          );
+
+          if (!inSelectedLine) {
+            // We have fallen outside active selected lines into a deselected pause or gap!
+            if (next < rangeStartMs) {
+              next = rangeStartMs;
+              if (audioRef.current) audioRef.current.currentTime = next / 1000;
+              return next;
+            }
+
+            // Find the next selected line after current position
+            const nextLine = selectedLines.find(l => l.startMs > next);
+            if (nextLine) {
+              // Immediately jump over the deselected pause to the start of the next line!
+              next = nextLine.startMs;
+              if (audioRef.current) {
+                audioRef.current.currentTime = next / 1000;
+              }
+              return next;
+            } else {
+              // Reached the end of all selected lines -> loop cleanly to rangeStartMs
+              if (audioRef.current) {
+                audioRef.current.currentTime = minMs / 1000;
+                audioRef.current.play().catch(() => {});
+              }
+              return minMs;
+            }
+          }
+        }
+
         if (next >= maxMs) {
           if (audioRef.current) {
             audioRef.current.currentTime = minMs / 1000;
@@ -1502,7 +1604,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
     rafId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(rafId);
-  }, [isPlaying, rangeStartMs, rangeEndMs, scrubScope, songTotalDurationMs]);
+  }, [isPlaying, rangeStartMs, rangeEndMs, scrubScope, songTotalDurationMs, selectedLines]);
 
   // 1. Render in Studio (Calculates 30 FPS sequence, buffers locally, does NOT close studio)
   const handleRenderInStudio = async () => {
@@ -2472,7 +2574,18 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                       step={33}
                       value={playheadMs}
                       onChange={(e) => {
-                        const val = parseFloat(e.target.value);
+                        let val = parseFloat(e.target.value);
+                        if (scrubScope === 'selection' && selectedLines.length > 0) {
+                          const inSelected = selectedLines.some(l => val >= (l.startMs - 50) && val <= (l.endMs + 50));
+                          if (!inSelected) {
+                            const nextLine = selectedLines.find(l => l.startMs > val);
+                            if (nextLine) {
+                              val = nextLine.startMs;
+                            } else {
+                              val = selectedLines[selectedLines.length - 1].endMs;
+                            }
+                          }
+                        }
                         setPlayheadMs(val);
                         if (audioRef.current) {
                           audioRef.current.currentTime = val / 1000;
