@@ -1513,13 +1513,23 @@ export function drawCrossedSwords(
   const floatY = cy + Math.sin(tau * Math.PI * 2) * 1.5;
   ctx.translate(cx, floatY);
 
-  // Black knockout
-  ctx.fillStyle = '#000000';
-  ctx.fillRect(-size - 2, -size - 2, size * 2 + 4, size * 2 + 4);
-
   const drawSword = (angle: number) => {
     ctx.save();
     ctx.rotate(angle);
+
+    // 1. Black silhouette knockout (3px halo buffer)
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-1, 0);
+    ctx.lineTo(-1, -size);
+    ctx.quadraticCurveTo(3, -size * 0.6, 2, 0);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.strokeRect(-6, -1, 12, 4); // crossguard halo
+    ctx.strokeRect(-2, 1, 4, 7);  // grip halo
+
+    // 2. White blade & hilt
     ctx.fillStyle = '#FFFFFF';
     ctx.strokeStyle = '#FFFFFF';
     ctx.lineWidth = 1;
@@ -1575,9 +1585,16 @@ export function drawChampionTrophy(
   const hw = size * 0.55;
   const cupH = size * 0.65;
 
-  // Black knockout
-  ctx.fillStyle = '#000000';
-  ctx.fillRect(-hw - 6, -cupH - 2, (hw + 6) * 2, size + 6);
+  // Black contour knockout
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(-hw, -cupH);
+  ctx.lineTo(hw, -cupH);
+  ctx.bezierCurveTo(hw, 0, hw * 0.4, cupH * 0.6, 0, cupH * 0.7);
+  ctx.bezierCurveTo(-hw * 0.4, cupH * 0.6, -hw, 0, -hw, -cupH);
+  ctx.closePath();
+  ctx.stroke();
 
   // Trophy Cup Body
   ctx.fillStyle = '#FFFFFF';
@@ -1632,9 +1649,18 @@ export function drawLuckyDice(
   const s = size;
   const hs = s * 0.5;
 
-  // Black knockout
-  ctx.fillStyle = '#000000';
-  ctx.fillRect(-s - 2, -s - 2, s * 2 + 4, s * 2 + 4);
+  // Black contour knockout
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(0, -s);
+  ctx.lineTo(s * 0.8, -hs);
+  ctx.lineTo(s * 0.8, s * 0.2);
+  ctx.lineTo(0, s * 0.7);
+  ctx.lineTo(-s * 0.8, s * 0.2);
+  ctx.lineTo(-s * 0.8, -hs);
+  ctx.closePath();
+  ctx.stroke();
 
   // Top Face (Rhombus)
   ctx.fillStyle = '#FFFFFF';

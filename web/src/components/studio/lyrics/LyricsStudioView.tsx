@@ -5,7 +5,7 @@ import { parseLrc, parsePlainTextLyrics } from '../../../engine/lyrics/lrcParser
 import { LrclibTrack, ParsedLyrics, LyricLine, LyricWord } from '../../../engine/lyrics/types';
 import { MotionArchetype, ARCHETYPE_METADATA, STYLE_PACKS, StylePackId, VisualMotif, MotifMode, MOTIF_METADATA, KineticTransitionType, TRANSITION_METADATA, WordBadgeIcon, WORD_BADGE_METADATA } from '../../../engine/kinetic/types';
 import { renderKineticSequence } from '../../../engine/kinetic/kineticEngine';
-import { getWordEffectiveArchetype, getWordEffectiveFont, getWordFontRole, cleanLyricToken } from '../../../engine/kinetic/semanticClassifier';
+import { getWordEffectiveArchetype, getWordEffectiveFont, getWordFontRole, cleanLyricToken, classifyWordBadge } from '../../../engine/kinetic/semanticClassifier';
 import { computeSongMoodProfile, SongMoodProfile, SongVibe } from '../../../engine/kinetic/moodProfileEngine';
 import { analyzeAudioFile, AudioAnalysisResult } from '../../../engine/kinetic/audioAnalysisEngine';
 import {
@@ -66,6 +66,7 @@ interface EditingWordTarget {
   currentArchetype: MotionArchetype;
   currentFont: string;
   currentMotif: VisualMotif;
+  currentBadge?: WordBadgeIcon;
 }
 
 
@@ -151,13 +152,14 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const [archetype, setArchetype] = useState<MotionArchetype>('auto_semantic');
   const [directorModeTab, setDirectorModeTab] = useState<'auto' | 'manual'>('auto');
   const [showTokenBadges, setShowTokenBadges] = useState<boolean>(false);
-  const [wordCustomizerTab, setWordCustomizerTab] = useState<'archetype' | 'font' | 'motif'>('archetype');
+  const [wordCustomizerTab, setWordCustomizerTab] = useState<'archetype' | 'font' | 'motif' | 'badge'>('archetype');
   const [stylePack, setStylePack] = useState<StylePackId>('trap_drill');
   const [hasUserSelectedStylePack, setHasUserSelectedStylePack] = useState(false);
   const [showFontHierarchy, setShowFontHierarchy] = useState<boolean>(false);
   const [manualWordOverrides, setManualWordOverrides] = useState<Record<string, MotionArchetype>>({});
   const [manualFontOverrides, setManualFontOverrides] = useState<Record<string, string>>({});
   const [manualMotifOverrides, setManualMotifOverrides] = useState<Record<string, VisualMotif>>({});
+  const [manualBadgeOverrides, setManualBadgeOverrides] = useState<Record<string, WordBadgeIcon>>({});
   const [aiWordOverrides, setAiWordOverrides] = useState<Record<string, MotionArchetype>>({});
   const [aiMotifOverrides, setAiMotifOverrides] = useState<Record<string, VisualMotif>>({});
   const [motifMode, setMotifMode] = useState<MotifMode>('dynamic');
@@ -214,8 +216,10 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
   const [aiBadgeOverrides, setAiBadgeOverrides] = useState<Record<string, WordBadgeIcon>>({});
   const wordBadgeOverrides = useMemo<Record<string, WordBadgeIcon>>(() => {
-    return aiBadgeOverrides;
-  }, [aiBadgeOverrides]);
+    if (directorModeTab === 'manual') return manualBadgeOverrides;
+    if (inferenceMode === 'heuristic') return manualBadgeOverrides;
+    return { ...aiBadgeOverrides, ...manualBadgeOverrides };
+  }, [directorModeTab, inferenceMode, manualBadgeOverrides, aiBadgeOverrides]);
 
   // --- RENDER BUFFER & DIRTY TRACKING ---
   const [renderedMediaBuffer, setRenderedMediaBuffer] = useState<DecodedMedia | null>(null);
@@ -437,6 +441,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     arch?: MotionArchetype;
     font?: string;
     motif?: VisualMotif;
+    badge?: WordBadgeIcon;
   } | null>(null);
 
   const handleOpenWordEditor = (
@@ -445,7 +450,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     wIdx: number,
     wordArch: MotionArchetype,
     wordFont: string,
-    wordMotif: VisualMotif
+    wordMotif: VisualMotif,
+    wordBadge?: WordBadgeIcon
   ) => {
     const specificKey = `${w.word}_${w.startMs}`;
     const cleanKey = cleanLyricToken(w.word);
@@ -453,6 +459,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
       arch: manualWordOverrides[specificKey] || (cleanKey ? manualWordOverrides[cleanKey] : undefined),
       font: manualFontOverrides[specificKey] || (cleanKey ? manualFontOverrides[cleanKey] : undefined),
       motif: manualMotifOverrides[specificKey] || (cleanKey ? manualMotifOverrides[cleanKey] : undefined),
+      badge: manualBadgeOverrides[specificKey] || (cleanKey ? manualBadgeOverrides[cleanKey] : undefined),
     };
     setEditingWordTarget({
       word: w,
@@ -460,7 +467,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
       wordIdx: wIdx,
       currentArchetype: wordArch,
       currentFont: wordFont,
-      currentMotif: wordMotif
+      currentMotif: wordMotif,
+      currentBadge: wordBadge
     });
   };
 
@@ -471,7 +479,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     }
     const specificKey = `${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`;
     const cleanKey = cleanLyricToken(editingWordTarget.word.word);
-    const { arch, font, motif } = initialWordStateRef.current;
+    const { arch, font, motif, badge } = initialWordStateRef.current;
 
     setManualWordOverrides(prev => {
       const next = { ...prev };
@@ -490,6 +498,13 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     setManualMotifOverrides(prev => {
       const next = { ...prev };
       if (motif && motif !== 'none') next[specificKey] = motif;
+      else { delete next[specificKey]; if (cleanKey) delete next[cleanKey]; }
+      return next;
+    });
+
+    setManualBadgeOverrides(prev => {
+      const next = { ...prev };
+      if (badge && badge !== 'none') next[specificKey] = badge;
       else { delete next[specificKey]; if (cleanKey) delete next[cleanKey]; }
       return next;
     });
@@ -570,8 +585,10 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     setManualWordOverrides({});
     setManualFontOverrides({});
     setManualMotifOverrides({});
+    setManualBadgeOverrides({});
     setAiWordOverrides({});
     setAiMotifOverrides({});
+    setAiBadgeOverrides({});
     setOllamaInspectionLogs([]);
     setLastAnalysisNotice(null);
     setRenderedMediaBuffer(null);
@@ -610,8 +627,10 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
     setManualWordOverrides({});
     setManualFontOverrides({});
     setManualMotifOverrides({});
+    setManualBadgeOverrides({});
     setAiWordOverrides({});
     setAiMotifOverrides({});
+    setAiBadgeOverrides({});
     setOllamaInspectionLogs([]);
     setLastAnalysisNotice(null);
     setRenderedMediaBuffer(null);
@@ -2128,12 +2147,17 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                             const cleanKey = cleanLyricToken(w.word);
                             const lowerRaw = w.word.toLowerCase();
                             const wordMotif = wordMotifOverrides[specificKey] || (cleanKey ? wordMotifOverrides[cleanKey] : undefined) || wordMotifOverrides[lowerRaw] || 'none';
+                            const wordBadge = wordBadgeOverrides[specificKey] || (cleanKey ? wordBadgeOverrides[cleanKey] : undefined) || wordBadgeOverrides[lowerRaw] || classifyWordBadge(w.word, songMoodProfile);
+                            const badgeMeta = wordBadge && wordBadge !== 'none' ? WORD_BADGE_METADATA[wordBadge] : null;
                             const isOverridden = !!(
                               wordOverrides[specificKey] || (cleanKey && wordOverrides[cleanKey]) || wordOverrides[lowerRaw] ||
                               wordFontOverrides[specificKey] || (cleanKey && wordFontOverrides[cleanKey]) || wordFontOverrides[lowerRaw] ||
                               (wordMotifOverrides[specificKey] && wordMotifOverrides[specificKey] !== 'none') ||
                               (cleanKey && wordMotifOverrides[cleanKey] && wordMotifOverrides[cleanKey] !== 'none') ||
-                              (wordMotifOverrides[lowerRaw] && wordMotifOverrides[lowerRaw] !== 'none')
+                              (wordMotifOverrides[lowerRaw] && wordMotifOverrides[lowerRaw] !== 'none') ||
+                              (wordBadgeOverrides[specificKey] && wordBadgeOverrides[specificKey] !== 'none') ||
+                              (cleanKey && wordBadgeOverrides[cleanKey] && wordBadgeOverrides[cleanKey] !== 'none') ||
+                              (wordBadgeOverrides[lowerRaw] && wordBadgeOverrides[lowerRaw] !== 'none')
                             );
 
                             return (
@@ -2142,7 +2166,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleOpenWordEditor(w, idx, wIdx, wordArch, wordFont, wordMotif);
+                                  handleOpenWordEditor(w, idx, wIdx, wordArch, wordFont, wordMotif, wordBadge);
                                 }}
                                 className={`text-xl md:text-2xl font-bold tracking-tight transition-all duration-150 inline-flex flex-col items-center cursor-pointer rounded px-1.5 py-0.5 -mx-1 group/word ${
                                   isOverridden ? 'bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs' : ''
@@ -2159,8 +2183,13 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                                     ? 'text-[#1A1A1A] font-bold hover:text-[#D97757]'
                                     : 'text-[#888] hover:text-[#1A1A1A]'
                                 }`}
-                                title={isOverridden ? `Active Override: ${ARCHETYPE_METADATA[wordArch]?.name || wordArch} • Click to edit` : `Click to customize style for "${w.word}"`}
+                                title={isOverridden ? `Active Override: ${ARCHETYPE_METADATA[wordArch]?.name || wordArch}${badgeMeta ? ` • Badge: ${badgeMeta.name}` : ''} • Click to edit` : `Click to customize style for "${w.word}"`}
                               >
+                                {badgeMeta && (
+                                  <span className="text-[12px] leading-none mb-0.5 filter drop-shadow-xs" title={`Badge: ${badgeMeta.name}`}>
+                                    {badgeMeta.icon}
+                                  </span>
+                                )}
                                 <span>{w.word}</span>
                                 {isOverridden && (
                                   <span className="w-1.5 h-1.5 rounded-full bg-[#D97757] -mt-0.5" title="Custom override active" />
@@ -2198,12 +2227,17 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                             const lowerRaw = w.word.toLowerCase();
                             const wordMotif = wordMotifOverrides[specificKey] || (cleanKey ? wordMotifOverrides[cleanKey] : undefined) || wordMotifOverrides[lowerRaw] || 'none';
                             const motifMeta = MOTIF_METADATA[wordMotif];
+                            const wordBadge = wordBadgeOverrides[specificKey] || (cleanKey ? wordBadgeOverrides[cleanKey] : undefined) || wordBadgeOverrides[lowerRaw] || classifyWordBadge(w.word, songMoodProfile);
+                            const badgeMeta = wordBadge && wordBadge !== 'none' ? WORD_BADGE_METADATA[wordBadge] : null;
                             const isOverridden = !!(
                               wordOverrides[specificKey] || (cleanKey && wordOverrides[cleanKey]) || wordOverrides[lowerRaw] ||
                               wordFontOverrides[specificKey] || (cleanKey && wordFontOverrides[cleanKey]) || wordFontOverrides[lowerRaw] ||
                               (wordMotifOverrides[specificKey] && wordMotifOverrides[specificKey] !== 'none') ||
                               (cleanKey && wordMotifOverrides[cleanKey] && wordMotifOverrides[cleanKey] !== 'none') ||
-                              (wordMotifOverrides[lowerRaw] && wordMotifOverrides[lowerRaw] !== 'none')
+                              (wordMotifOverrides[lowerRaw] && wordMotifOverrides[lowerRaw] !== 'none') ||
+                              (wordBadgeOverrides[specificKey] && wordBadgeOverrides[specificKey] !== 'none') ||
+                              (cleanKey && wordBadgeOverrides[cleanKey] && wordBadgeOverrides[cleanKey] !== 'none') ||
+                              (wordBadgeOverrides[lowerRaw] && wordBadgeOverrides[lowerRaw] !== 'none')
                             );
 
                             return (
@@ -2212,7 +2246,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleOpenWordEditor(w, idx, wIdx, wordArch, wordFont, wordMotif);
+                                  handleOpenWordEditor(w, idx, wIdx, wordArch, wordFont, wordMotif, wordBadge);
                                 }}
                                 className={`px-2 py-0.5 text-[10px] font-sans rounded-md flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
                                   isOverridden
@@ -2223,6 +2257,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                                 }`}
                                 title={`Customize style for "${w.word}"`}
                               >
+                                {badgeMeta && <span>{badgeMeta.icon}</span>}
                                 <span className="font-medium">{w.word}</span>
                                 <span className="opacity-40 font-mono text-[9px]">•</span>
                                 <span className="opacity-70 text-[9px] font-mono">{meta.name}</span>
@@ -3509,7 +3544,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               {[
                 { id: 'archetype' as const, label: 'Motion Style' },
                 { id: 'font' as const, label: 'Typography Font' },
-                { id: 'motif' as const, label: 'Visual Motif' }
+                { id: 'motif' as const, label: 'Visual Motif' },
+                { id: 'badge' as const, label: 'Word Badge' }
               ].map(tab => {
                 const isActive = wordCustomizerTab === tab.id;
                 return (
@@ -3698,6 +3734,66 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
               </div>
             )}
 
+            {/* Tab 4: Word Micro-Sprite Badge */}
+            {wordCustomizerTab === 'badge' && (
+              <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-1">
+                {Object.values(WORD_BADGE_METADATA).map(b => {
+                  const specificKey = `${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`;
+                  const cleanKey = cleanLyricToken(editingWordTarget.word.word);
+                  const lowerRaw = editingWordTarget.word.word.toLowerCase();
+                  const currentSelected = (
+                    wordBadgeOverrides[specificKey] ||
+                    (cleanKey ? wordBadgeOverrides[cleanKey] : undefined) ||
+                    wordBadgeOverrides[lowerRaw] ||
+                    editingWordTarget.currentBadge ||
+                    classifyWordBadge(editingWordTarget.word.word, songMoodProfile)
+                  );
+                  const isSelected = currentSelected === b.id;
+                  return (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => {
+                        setManualBadgeOverrides(prev => ({
+                          ...prev,
+                          [specificKey]: b.id
+                        }));
+                        setRenderedMediaBuffer(null);
+                        setRenderedFingerprint(null);
+                        setEditingWordTarget(prev => prev ? { ...prev, currentBadge: b.id } : null);
+                      }}
+                      style={{
+                        backgroundColor: isSelected
+                          ? (themeMode === 'dark' ? 'rgba(217, 119, 87, 0.2)' : '#FAF0EB')
+                          : (themeMode === 'dark' ? '#232228' : '#FAF9F5')
+                      }}
+                      className={`p-2.5 border rounded-xl text-left transition-all cursor-pointer flex items-center gap-3 ${
+                        isSelected
+                          ? themeMode === 'dark'
+                            ? 'border-[#D97757] ring-1 ring-[#D97757]/40 shadow-xs'
+                            : 'border-[#D97757] ring-1 ring-[#D97757]/30 shadow-xs'
+                          : themeMode === 'dark'
+                          ? 'border-white/10 hover:border-white/20'
+                          : 'border-[#E8E5DE] hover:border-[#D5D0C5] shadow-xs'
+                      }`}
+                    >
+                      <span className="text-xl flex-shrink-0">{b.icon}</span>
+                      <div className="flex flex-col min-w-0">
+                        <span className={`text-xs font-sans font-medium truncate ${themeMode === 'dark' ? 'text-white' : 'text-[#141413]'}`}>
+                          {b.name}
+                        </span>
+                        <span className={`text-[9px] font-mono px-1 py-0.2 rounded self-start mt-0.5 ${
+                          themeMode === 'dark' ? 'bg-white/10 text-white/70' : 'bg-white text-[#5E5D59] border border-[#E8E5DE]'
+                        }`}>
+                          {b.tag}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Footer Actions */}
             <div className={`flex gap-2.5 pt-3 border-t ${
               themeMode === 'dark' ? 'border-white/10' : 'border-[#E8E5DE]'
@@ -3741,6 +3837,13 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     delete next[lowerRaw];
                     return next;
                   });
+                  setManualBadgeOverrides(prev => {
+                    const next = { ...prev };
+                    delete next[specificKey];
+                    if (cleanKey) delete next[cleanKey];
+                    delete next[lowerRaw];
+                    return next;
+                  });
                   setAiWordOverrides(prev => {
                     const next = { ...prev };
                     delete next[specificKey];
@@ -3749,6 +3852,13 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                     return next;
                   });
                   setAiMotifOverrides(prev => {
+                    const next = { ...prev };
+                    delete next[specificKey];
+                    if (cleanKey) delete next[cleanKey];
+                    delete next[lowerRaw];
+                    return next;
+                  });
+                  setAiBadgeOverrides(prev => {
                     const next = { ...prev };
                     delete next[specificKey];
                     if (cleanKey) delete next[cleanKey];
