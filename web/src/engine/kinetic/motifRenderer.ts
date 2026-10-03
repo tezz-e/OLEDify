@@ -666,6 +666,142 @@ export function renderMotifBackground(
     case 'rolex_watch':
       drawRolexWatch(ctx, 64, 18, 13, tau, frameIndex);
       break;
+
+    case 'bullet_chamber_cylinder':
+      drawBulletChamberCylinder(ctx, 64, 18, 14, tau, frameIndex);
+      break;
+
+    case 'police_siren_sweep':
+      drawPoliceSirenSweep(ctx, tau, frameIndex, isBeat);
+      break;
+
+    case 'thar_jeep_grille':
+      drawTharJeepGrille(ctx, 64, 48, tau, frameIndex);
+      break;
+
+    case 'punjabi_khanda':
+      drawPunjabiKhanda(ctx, 64, 18, 16, tau, frameIndex);
+      break;
+
+    case 'cuban_chain_links':
+      drawCubanChainLinks(ctx, tau, frameIndex);
+      break;
+
+    case 'drill_ski_mask':
+      drawDrillSkiMask(ctx, 64, 18, 15, tau, frameIndex);
+      break;
+
+    case 'studio_microphone':
+      drawStudioMicrophone(ctx, 64, 18, 16, tau, frameIndex);
+      break;
+
+    case 'boombox_blaster':
+      drawBoomboxBlaster(ctx, 64, 48, tau, frameIndex, isBeat);
+      break;
+
+    case 'speaker_subwoofer_pulse':
+      drawSpeakerSubwooferPulse(ctx, tau, frameIndex, isBeat, bass);
+      break;
+
+    case 'electric_guitar':
+      drawElectricGuitar(ctx, 64, 18, tau, frameIndex);
+      break;
+
+    case 'metronome_ticker':
+      drawMetronomeTicker(ctx, 64, 18, tau, frameIndex);
+      break;
+
+    case 'disco_mirror_ball':
+      drawDiscoMirrorBall(ctx, 64, 12, 11, tau, frameIndex);
+      break;
+
+    case 'city_skyline_silhouette':
+      drawCitySkylineSilhouette(ctx, frameIndex);
+      break;
+
+    case 'smoke_ring_drift':
+      drawSmokeRingDrift(ctx, tau, frameIndex);
+      break;
+
+    case 'graffiti_drips':
+      drawGraffitiDrips(ctx, frameIndex);
+      break;
+
+    case 'champagne_toast':
+      drawChampagneToast(ctx, 64, 18, tau, frameIndex);
+      break;
+
+    case 'neon_lips':
+      drawNeonLips(ctx, 64, 18, 18, tau, frameIndex);
+      break;
+
+    case 'vault_safe_dial':
+      drawVaultSafeDial(ctx, 64, 18, 14, tau, frameIndex);
+      break;
+
+    case 'blooming_rose':
+      drawBloomingRose(ctx, 64, 18, 15, tau, frameIndex);
+      break;
+
+    case 'lunar_crescent':
+      drawLunarCrescent(ctx, 64, 18, 14, tau, frameIndex);
+      break;
+
+    case 'candle_flame_flicker':
+      drawCandleFlameFlicker(ctx, 64, 18, tau, frameIndex);
+      break;
+
+    case 'fluttering_butterflies':
+      drawFlutteringButterflies(ctx, tau, frameIndex);
+      break;
+
+    case 'falling_autumn_leaves':
+      drawFallingAutumnLeaves(ctx, tau, frameIndex);
+      break;
+
+    case 'feather_drift':
+      drawFeatherDrift(ctx, tau, frameIndex);
+      break;
+
+    case 'laser_grid_horizon':
+      drawLaserGridHorizon(ctx, frameIndex);
+      break;
+
+    case 'matrix_rain_code':
+      drawMatrixRainCode(ctx, frameIndex);
+      break;
+
+    case 'neon_heart_tunnel':
+      drawNeonHeartTunnel(ctx, 64, 32, tau, frameIndex);
+      break;
+
+    case 'radar_sweep_sonar':
+      drawRadarSweepSonar(ctx, 64, 32, tau, frameIndex);
+      break;
+
+    case 'hazard_stripes_caution':
+      drawHazardStripesCaution(ctx, frameIndex);
+      break;
+
+    case 'antique_key_lock':
+      drawAntiqueKeyLock(ctx, 64, 18, tau, frameIndex);
+      break;
+
+    case 'shonen_ki_aura':
+      drawShonenKiAura(ctx, frameIndex, isBeat);
+      break;
+
+    case 'portal_vortex':
+      drawPortalVortex(ctx, 64, 32, tau, frameIndex);
+      break;
+
+    case 'all_seeing_eye':
+      drawAllSeeingEye(ctx, 64, 18, 16, tau, frameIndex);
+      break;
+
+    case 'knight_shield':
+      drawKnightShield(ctx, 64, 18, 15, tau, frameIndex);
+      break;
   }
 }
 
@@ -1791,3 +1927,1666 @@ export function drawRolexWatch(
 
   ctx.restore();
 }
+
+// =========================================================================
+// 6. NEW 34 PROCEDURAL VISUAL MOTIF IMPLEMENTATIONS
+// =========================================================================
+
+// --- CATEGORY A: PUNJABI DRILL & TACTICAL STREET ---
+
+/**
+ * 🎯 Revolver 6-Shot Cylinder
+ */
+export function drawBulletChamberCylinder(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 18,
+  radius: number = 14,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  const floatY = cy + Math.sin(tau * Math.PI * 2) * 1.5;
+  ctx.translate(cx, floatY);
+
+  // Black knockout
+  ctx.fillStyle = '#000000';
+  ctx.beginPath();
+  ctx.arc(0, 0, radius + 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Outer cylinder ring with scallops
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(0, 0, radius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Rotation
+  const rot = (frameIndex * 0.05) % (Math.PI * 2);
+
+  // 6 Bullet Chamber Holes
+  for (let i = 0; i < 6; i++) {
+    const angle = rot + (i * Math.PI) / 3;
+    const chX = Math.cos(angle) * (radius * 0.58);
+    const chY = Math.sin(angle) * (radius * 0.58);
+
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.arc(chX, chY, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.arc(chX, chY, 2.5, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Center primer dimple
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(chX - 0.5, chY - 0.5, 1, 1);
+  }
+
+  // Center pin
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.arc(0, 0, 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/**
+ * 🚨 Police Siren Sweep (High-speed alternating beam strobe)
+ */
+export function drawPoliceSirenSweep(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  tau: number = 1.0,
+  frameIndex: number = 0,
+  isBeat: boolean = false
+): void {
+  ctx.save();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  const strobeLeft = (frameIndex % 6) < 3;
+  const sweepAngle = Math.sin(frameIndex * 0.3) * 0.6;
+
+  // Top Lightbars
+  if (strobeLeft || isBeat) {
+    // Left blue/red strobe representation (1-bit stipple bars)
+    for (let x = 6; x < 30; x += 2) {
+      ctx.fillRect(x, 2, 1, 3);
+    }
+  }
+  if (!strobeLeft || isBeat) {
+    // Right strobe representation
+    for (let x = 98; x < 122; x += 2) {
+      ctx.fillRect(x, 2, 1, 3);
+    }
+  }
+
+  // Radiating angular searchlight beams across edges (keeping center 64,32 clear)
+  const beamOriginLeftX = 18;
+  const beamOriginRightX = 110;
+
+  ctx.beginPath();
+  if (strobeLeft) {
+    ctx.moveTo(beamOriginLeftX, 4);
+    ctx.lineTo(beamOriginLeftX + Math.cos(sweepAngle + 0.8) * 55, Math.sin(sweepAngle + 0.8) * 55);
+    ctx.moveTo(beamOriginLeftX, 4);
+    ctx.lineTo(beamOriginLeftX + Math.cos(sweepAngle + 1.2) * 50, Math.sin(sweepAngle + 1.2) * 50);
+  } else {
+    ctx.moveTo(beamOriginRightX, 4);
+    ctx.lineTo(beamOriginRightX - Math.cos(sweepAngle + 0.8) * 55, Math.sin(sweepAngle + 0.8) * 55);
+    ctx.moveTo(beamOriginRightX, 4);
+    ctx.lineTo(beamOriginRightX - Math.cos(sweepAngle + 1.2) * 50, Math.sin(sweepAngle + 1.2) * 50);
+  }
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+/**
+ * 🚙 Thar 4x4 Off-Road Jeep Grille (Iconic 7 vertical slots & dual headlamps)
+ */
+export function drawTharJeepGrille(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 48,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  // Black knockout backing
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-44, -12, 88, 22);
+
+  // Main grille outer housing
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(-38, -9, 76, 17);
+
+  // 7 Vertical Slotted Vents
+  ctx.fillStyle = '#FFFFFF';
+  for (let i = -3; i <= 3; i++) {
+    const slotX = i * 7.5 - 1.5;
+    ctx.fillRect(slotX, -6, 3, 11);
+  }
+
+  // Dual Circular Headlamps
+  for (const hX of [-30, 30]) {
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.arc(hX, -0.5, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.arc(hX, -0.5, 5.5, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Bulb filament cross
+    ctx.fillRect(hX - 2, -1, 4, 1);
+    ctx.fillRect(hX - 0.5, -2.5, 1, 4);
+  }
+
+  // Heavy Lower Bumper Bar
+  ctx.fillRect(-42, 9, 84, 2);
+
+  ctx.restore();
+}
+
+/**
+ * ⚔️ Sacred Punjabi Khanda (Double-edged blade, Chakkar & dual Kirpans)
+ */
+export function drawPunjabiKhanda(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 18,
+  radius: number = 16,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  const floatY = cy + Math.sin(tau * Math.PI * 2) * 1.5;
+  ctx.translate(cx, floatY);
+
+  // Black knockout
+  ctx.fillStyle = '#000000';
+  ctx.beginPath();
+  ctx.arc(0, 0, radius + 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  // 1. Central Chakkar (Sacred Quoit circle)
+  ctx.beginPath();
+  ctx.arc(0, 0, radius * 0.55, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // 2. Central Khanda (Double-edged sword)
+  // Blade
+  ctx.beginPath();
+  ctx.moveTo(0, -radius);
+  ctx.lineTo(2, -radius * 0.7);
+  ctx.lineTo(1.5, radius * 0.7);
+  ctx.lineTo(-1.5, radius * 0.7);
+  ctx.lineTo(-2, -radius * 0.7);
+  ctx.closePath();
+  ctx.fill();
+  // Khanda Hilt & Pommel
+  ctx.fillRect(-4, radius * 0.6, 8, 1.5);
+  ctx.fillRect(-1, radius * 0.6, 2, 4);
+
+  // 3. Dual Curved Kirpans (Flanking blades curving outward and upward)
+  // Left Kirpan
+  ctx.beginPath();
+  ctx.moveTo(-1, radius * 0.7);
+  ctx.quadraticCurveTo(-radius * 0.9, radius * 0.4, -radius * 0.8, -radius * 0.3);
+  ctx.quadraticCurveTo(-radius * 0.5, radius * 0.2, -1, radius * 0.5);
+  ctx.closePath();
+  ctx.stroke();
+
+  // Right Kirpan
+  ctx.beginPath();
+  ctx.moveTo(1, radius * 0.7);
+  ctx.quadraticCurveTo(radius * 0.9, radius * 0.4, radius * 0.8, -radius * 0.3);
+  ctx.quadraticCurveTo(radius * 0.5, radius * 0.2, 1, radius * 0.5);
+  ctx.closePath();
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+/**
+ * ⛓️ Cuban Chain Links (Interlocking curb links framing screen)
+ */
+export function drawCubanChainLinks(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  const linkW = 9;
+  const linkH = 5;
+  const shift = (frameIndex * 0.4) % linkW;
+
+  // Top curb chain border
+  for (let x = -linkW + shift; x < 128 + linkW; x += linkW) {
+    ctx.strokeRect(x, 4, linkW - 1, linkH);
+    ctx.fillRect(x + 2, 5, 2, 1);
+  }
+
+  // Bottom curb chain border
+  for (let x = -linkW - shift; x < 128 + linkW; x += linkW) {
+    ctx.strokeRect(x, 55, linkW - 1, linkH);
+    ctx.fillRect(x + 2, 57, 2, 1);
+  }
+
+  // Diamond sparkles on chain
+  const sparkX = Math.round((frameIndex * 1.5) % 120) + 4;
+  ctx.fillRect(sparkX, 2, 1, 3);
+  ctx.fillRect(sparkX - 1, 3, 3, 1);
+
+  ctx.restore();
+}
+
+/**
+ * 🥷 Drill Ski Mask (Tactical balaclava with cutouts)
+ */
+export function drawDrillSkiMask(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 18,
+  radius: number = 15,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  const floatY = cy + Math.sin(tau * Math.PI * 2) * 1.5;
+  ctx.translate(cx, floatY);
+
+  // Black knockout
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-14, -16, 28, 32);
+
+  // Balaclava mask outline
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.moveTo(-10, -12);
+  ctx.lineTo(10, -12);
+  ctx.lineTo(11, 2);
+  ctx.lineTo(9, 13);
+  ctx.lineTo(-9, 13);
+  ctx.lineTo(-11, 2);
+  ctx.closePath();
+  ctx.fill();
+
+  // Ribbed crown texture lines in black
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-8, -10, 16, 1);
+  ctx.fillRect(-9, -8, 18, 1);
+
+  // Aggressive Slanted Eye Cutouts
+  ctx.fillRect(-8, -3, 6, 4);
+  ctx.fillRect(2, -3, 6, 4);
+
+  // Mouth cutout
+  ctx.fillRect(-5, 6, 10, 3);
+
+  // Neck ribbing
+  ctx.fillRect(-8, 11, 16, 1);
+
+  ctx.restore();
+}
+
+// --- CATEGORY B: MUSIC, AUDIO GEAR & HI-FI STAGE ---
+
+/**
+ * 🎙️ Studio Condenser Microphone (Shock-mount spider frame & capsule)
+ */
+export function drawStudioMicrophone(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 18,
+  radius: number = 16,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  const floatY = cy + Math.sin(tau * Math.PI * 2) * 1.5;
+  ctx.translate(cx, floatY);
+
+  // Black knockout
+  ctx.fillStyle = '#000000';
+  ctx.beginPath();
+  ctx.arc(0, 0, radius + 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  // Outer Shock-mount circular hoop
+  ctx.beginPath();
+  ctx.arc(0, 0, radius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Elastic shock cords
+  ctx.beginPath();
+  ctx.moveTo(-radius, 0); ctx.lineTo(-6, -4);
+  ctx.moveTo(radius, 0);  ctx.lineTo(6, -4);
+  ctx.moveTo(-radius, 0); ctx.lineTo(-6, 4);
+  ctx.moveTo(radius, 0);  ctx.lineTo(6, 4);
+  ctx.stroke();
+
+  // Mic Body
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-6, -11, 12, 22);
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.strokeRect(-6, -11, 12, 22);
+
+  // Upper Capsule Wire-Mesh Grille
+  ctx.fillStyle = '#FFFFFF';
+  for (let py = -10; py <= -2; py += 2) {
+    for (let px = -5; px <= 4; px += 2) {
+      ctx.fillRect(px + (py % 4 === 0 ? 1 : 0), py, 1, 1);
+    }
+  }
+
+  // Center ring band
+  ctx.fillRect(-6, -1, 12, 2);
+
+  // Lower Body Brand Plate
+  ctx.strokeRect(-4, 3, 8, 5);
+
+  ctx.restore();
+}
+
+/**
+ * 📻 Boombox Blaster (Dual pulsing woofers, tape deck & antennas)
+ */
+export function drawBoomboxBlaster(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 48,
+  tau: number = 1.0,
+  frameIndex: number = 0,
+  isBeat: boolean = false
+): void {
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  // Black knockout
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-44, -13, 88, 26);
+
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  // Main Boombox Cabinet
+  ctx.strokeRect(-40, -9, 80, 19);
+
+  // Top Handle
+  ctx.strokeRect(-24, -14, 48, 5);
+
+  // Dual Telescoping Antennas
+  ctx.beginPath();
+  ctx.moveTo(-36, -9); ctx.lineTo(-44, -18);
+  ctx.moveTo(36, -9);  ctx.lineTo(44, -18);
+  ctx.stroke();
+
+  // Left & Right Woofers
+  const wooferR = isBeat ? 7.5 : 6.5;
+  for (const wX of [-24, 24]) {
+    ctx.beginPath();
+    ctx.arc(wX, 0.5, wooferR, 0, Math.PI * 2);
+    ctx.stroke();
+    // Inner dust cap
+    ctx.beginPath();
+    ctx.arc(wX, 0.5, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Center Cassette Deck Door
+  ctx.strokeRect(-10, -5, 20, 11);
+  ctx.fillRect(-6, -1, 3, 3);
+  ctx.fillRect(3, -1, 3, 3);
+
+  // Tape transport buttons on top
+  for (let b = -8; b <= 6; b += 3) {
+    ctx.fillRect(b, -8, 2, 1);
+  }
+
+  ctx.restore();
+}
+
+/**
+ * 🔊 Subwoofer Bass Pulse (Flanking subwoofers with dynamic cone vibration)
+ */
+export function drawSpeakerSubwooferPulse(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  tau: number = 1.0,
+  frameIndex: number = 0,
+  isBeat: boolean = false,
+  bass: number = 0
+): void {
+  ctx.save();
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  const pulseR = (isBeat ? 4 : 2) + Math.round(bass * 3);
+
+  // Left Subwoofer at x=14, y=32
+  // Right Subwoofer at x=114, y=32
+  for (const sX of [14, 114]) {
+    // Cabinet
+    ctx.strokeRect(sX - 10, 16, 20, 32);
+
+    // Tweeter
+    ctx.beginPath();
+    ctx.arc(sX, 23, 3, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Bass Woofer
+    ctx.beginPath();
+    ctx.arc(sX, 38, 7, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Pulsing Dust Cap
+    ctx.beginPath();
+    ctx.arc(sX, 38, Math.min(5, 2 + pulseR * 0.4), 0, Math.PI * 2);
+    ctx.fill();
+
+    // Soundwave arcs emitting inward
+    const dir = sX === 14 ? 1 : -1;
+    ctx.beginPath();
+    ctx.arc(sX, 38, 12 + pulseR, dir === 1 ? -Math.PI / 4 : (3 * Math.PI) / 4, dir === 1 ? Math.PI / 4 : (5 * Math.PI) / 4);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+/**
+ * 🎸 Electric Guitar Silhouette (Angled body, frets & headstock)
+ */
+export function drawElectricGuitar(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 18,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  const floatY = cy + Math.sin(tau * Math.PI * 2) * 1.5;
+  ctx.translate(cx, floatY);
+  ctx.rotate(-Math.PI / 6);
+
+  // Black knockout
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-18, -14, 36, 28);
+
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  // Double cutaway body
+  ctx.beginPath();
+  ctx.ellipse(8, 0, 9, 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Long fretboard neck extending left
+  ctx.fillRect(-16, -1.5, 18, 3);
+
+  // Headstock
+  ctx.fillRect(-21, -2, 5, 4);
+
+  // Tuning pegs
+  for (let p = -20; p <= -17; p += 1.5) {
+    ctx.fillRect(p, -4, 1, 2);
+  }
+
+  // Pickguard & Pickups in black cutout
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(4, -3, 2, 6);
+  ctx.fillRect(8, -3, 2, 6);
+  ctx.fillRect(12, -2, 1, 4); // Bridge
+
+  ctx.restore();
+}
+
+/**
+ * ⏱️ Metronome Ticker (Pyramid casing & swinging mechanical pendulum)
+ */
+export function drawMetronomeTicker(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 18,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  const floatY = cy + Math.sin(tau * Math.PI * 2) * 1.5;
+  ctx.translate(cx, floatY);
+
+  // Black knockout
+  ctx.fillStyle = '#000000';
+  ctx.beginPath();
+  ctx.moveTo(0, -16);
+  ctx.lineTo(14, 14);
+  ctx.lineTo(-14, 14);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  // Wooden pyramid body
+  ctx.beginPath();
+  ctx.moveTo(0, -14);
+  ctx.lineTo(11, 12);
+  ctx.lineTo(-11, 12);
+  ctx.closePath();
+  ctx.stroke();
+
+  // Internal face plate
+  ctx.strokeRect(-5, -6, 10, 16);
+
+  // Swinging Pendulum Arm
+  const swing = Math.sin(tau * Math.PI * 4) * 0.45;
+  ctx.save();
+  ctx.translate(0, 10);
+  ctx.rotate(swing);
+
+  // Pendulum rod
+  ctx.fillRect(-0.75, -22, 1.5, 22);
+
+  // Sliding weight
+  ctx.fillRect(-3, -15, 6, 4);
+  ctx.restore();
+
+  ctx.restore();
+}
+
+/**
+ * 🪩 Disco Mirror Ball (Suspended faceted globe with rotating reflections)
+ */
+export function drawDiscoMirrorBall(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 12,
+  radius: number = 11,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  // Suspension chain from ceiling
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, -12); ctx.lineTo(0, -radius);
+  ctx.stroke();
+
+  // Black knockout
+  ctx.fillStyle = '#000000';
+  ctx.beginPath();
+  ctx.arc(0, 0, radius + 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Outer rim
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.arc(0, 0, radius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // 1-Bit Faceted Mirror Tiles (Shifting with frameIndex)
+  ctx.fillStyle = '#FFFFFF';
+  const shift = frameIndex % 4;
+  for (let y = -radius + 2; y <= radius - 2; y += 3) {
+    const rowWidth = Math.sqrt(radius * radius - y * y) * 0.85;
+    for (let x = -rowWidth; x <= rowWidth; x += 3) {
+      if ((Math.round(x + y + shift) % 2) === 0) {
+        ctx.fillRect(Math.round(x), Math.round(y), 2, 2);
+      }
+    }
+  }
+
+  // Rotating light pin-spots radiating across corners
+  for (let r = 0; r < 4; r++) {
+    const angle = (frameIndex * 0.06) + (r * Math.PI * 0.5);
+    const glintDist = radius + 6 + (r % 2) * 5;
+    const gX = Math.cos(angle) * glintDist;
+    const gY = Math.sin(angle) * glintDist;
+    ctx.fillRect(Math.round(gX), Math.round(gY), 2, 2);
+  }
+
+  ctx.restore();
+}
+
+// --- CATEGORY C: URBAN, NIGHTLIFE & STREET ATMOSPHERE ---
+
+/**
+ * 🏙️ City Skyline Silhouette (Skyscraper baseline with lit window matrix)
+ */
+export function drawCitySkylineSilhouette(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  ctx.fillStyle = '#000000';
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  // Buildings definitions along bottom (x, w, h)
+  const buildings = [
+    { x: 0, w: 14, h: 18 },
+    { x: 15, w: 12, h: 26 },
+    { x: 28, w: 16, h: 14 },
+    { x: 45, w: 10, h: 22 },
+    { x: 56, w: 16, h: 12 },
+    { x: 73, w: 14, h: 24 },
+    { x: 88, w: 15, h: 16 },
+    { x: 104, w: 12, h: 28 },
+    { x: 117, w: 11, h: 15 }
+  ];
+
+  for (const b of buildings) {
+    const topY = 64 - b.h;
+    // Fill building silhouette
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(b.x, topY, b.w, b.h);
+    ctx.strokeRect(b.x, topY, b.w, b.h);
+
+    // Lit windows in white pixels
+    ctx.fillStyle = '#FFFFFF';
+    for (let wy = topY + 3; wy < 62; wy += 4) {
+      for (let wx = b.x + 2; wx < b.x + b.w - 2; wx += 3) {
+        if (((wx * 7 + wy * 13 + frameIndex) % 5) < 3) {
+          ctx.fillRect(wx, wy, 1, 2);
+        }
+      }
+    }
+  }
+
+  // Radio antenna on tallest building at x=104
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(110, 64 - 28 - 6, 1, 6);
+  if ((frameIndex % 8) < 4) {
+    ctx.fillRect(109, 64 - 28 - 7, 3, 1);
+  }
+
+  ctx.restore();
+}
+
+/**
+ * 💨 Drifting Smoke Rings (Concentric organic expanding rings)
+ */
+export function drawSmokeRingDrift(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  for (let i = 0; i < 3; i++) {
+    const prog = ((frameIndex * 0.02) + i * 0.33) % 1.0;
+    const rX = 8 + prog * 16;
+    const rY = 4 + prog * 8;
+    const y = Math.round(52 - prog * 44);
+    const x = Math.round(30 + i * 34 + Math.sin(prog * Math.PI * 2) * 6);
+
+    ctx.beginPath();
+    ctx.ellipse(x, y, rX, rY, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+/**
+ * 🎨 Street Graffiti Drips (Hanging spray paint runs from header)
+ */
+export function drawGraffitiDrips(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  ctx.fillStyle = '#FFFFFF';
+
+  const dripXs = [8, 22, 38, 54, 72, 88, 104, 118];
+  const lengths = [14, 22, 10, 18, 12, 24, 15, 20];
+
+  for (let i = 0; i < dripXs.length; i++) {
+    const x = dripXs[i];
+    const len = lengths[i];
+    // Drip column
+    ctx.fillRect(x, 0, 2, len);
+    // Rounded droplet bead at bottom
+    ctx.fillRect(x - 1, len, 4, 3);
+    // Detached falling spray dot
+    if ((i + frameIndex) % 3 === 0) {
+      ctx.fillRect(x, len + 5, 2, 2);
+    }
+  }
+
+  ctx.restore();
+}
+
+/**
+ * 🥂 Champagne Toast Flutes (Pair of clinking flutes & bubble effervescence)
+ */
+export function drawChampagneToast(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 18,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  const floatY = cy + Math.sin(tau * Math.PI * 2) * 1.5;
+  ctx.translate(cx, floatY);
+
+  // Black knockout
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-18, -14, 36, 28);
+
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  // Left Flute (Tilted right +15 deg)
+  ctx.save();
+  ctx.translate(-5, 0);
+  ctx.rotate(0.25);
+  ctx.strokeRect(-3, -10, 6, 12);
+  ctx.fillRect(-0.5, 2, 1, 7);
+  ctx.fillRect(-3, 9, 6, 1);
+  ctx.restore();
+
+  // Right Flute (Tilted left -15 deg)
+  ctx.save();
+  ctx.translate(5, 0);
+  ctx.rotate(-0.25);
+  ctx.strokeRect(-3, -10, 6, 12);
+  ctx.fillRect(-0.5, 2, 1, 7);
+  ctx.fillRect(-3, 9, 6, 1);
+  ctx.restore();
+
+  // Clinking impact star spark
+  ctx.fillRect(0, -6, 1, 5);
+  ctx.fillRect(-2, -4, 5, 1);
+
+  // Rising bubbles
+  for (let b = 0; b < 4; b++) {
+    const bY = -8 - ((frameIndex * 2 + b * 6) % 18);
+    const bX = (b % 2 === 0 ? -4 : 4) + Math.sin(bY * 0.3) * 2;
+    ctx.fillRect(Math.round(bX), bY, 1, 1);
+  }
+
+  ctx.restore();
+}
+
+/**
+ * 💋 Neon Kiss Lips (High-contrast electric neon outline)
+ */
+export function drawNeonLips(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 18,
+  radius: number = 18,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  const floatY = cy + Math.sin(tau * Math.PI * 2) * 1.5;
+  ctx.translate(cx, floatY);
+
+  // Black knockout
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-radius - 2, -12, (radius + 2) * 2, 24);
+
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1.5;
+
+  // Outer Neon Lips Contour
+  ctx.beginPath();
+  ctx.moveTo(-radius, 0);
+  ctx.quadraticCurveTo(-radius * 0.5, -9, 0, -4);
+  ctx.quadraticCurveTo(radius * 0.5, -9, radius, 0);
+  ctx.quadraticCurveTo(radius * 0.5, 9, 0, 9);
+  ctx.quadraticCurveTo(-radius * 0.5, 9, -radius, 0);
+  ctx.closePath();
+  ctx.stroke();
+
+  // Inner mouth parting line
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(-radius * 0.7, 0);
+  ctx.quadraticCurveTo(-radius * 0.3, 1, 0, 0);
+  ctx.quadraticCurveTo(radius * 0.3, 1, radius * 0.7, 0);
+  ctx.stroke();
+
+  // Specular shine dots
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(-4, 4, 3, 1);
+  ctx.fillRect(2, 4, 2, 1);
+
+  ctx.restore();
+}
+
+/**
+ * 🔒 Bank Vault Safe Dial (Calibrated ticks & 3-spoke turning wheel)
+ */
+export function drawVaultSafeDial(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 18,
+  radius: number = 14,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  const floatY = cy + Math.sin(tau * Math.PI * 2) * 1.5;
+  ctx.translate(cx, floatY);
+
+  // Black knockout
+  ctx.fillStyle = '#000000';
+  ctx.beginPath();
+  ctx.arc(0, 0, radius + 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  // Dial Outer Rim
+  ctx.beginPath();
+  ctx.arc(0, 0, radius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Calibration ticks
+  for (let a = 0; a < Math.PI * 2; a += Math.PI / 8) {
+    const x1 = Math.cos(a) * (radius - 2);
+    const y1 = Math.sin(a) * (radius - 2);
+    const x2 = Math.cos(a) * radius;
+    const y2 = Math.sin(a) * radius;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+
+  // Top Indicator Arrow
+  ctx.beginPath();
+  ctx.moveTo(0, -radius - 3);
+  ctx.lineTo(-2, -radius);
+  ctx.lineTo(2, -radius);
+  ctx.closePath();
+  ctx.fill();
+
+  // Center Turning Hub
+  const dialAngle = tau * Math.PI * 2;
+  ctx.beginPath();
+  ctx.arc(0, 0, 5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 3 Turning Spokes
+  for (let s = 0; s < 3; s++) {
+    const sAngle = dialAngle + (s * Math.PI * 2) / 3;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(Math.cos(sAngle) * (radius - 4), Math.sin(sAngle) * (radius - 4));
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+// --- CATEGORY D: EMOTIONAL, ROMANCE & MELANCHOLY ---
+
+/**
+ * 🌹 Detailed Blooming Rose (Botanical blossom with layered petals & leaves)
+ */
+export function drawBloomingRose(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 18,
+  radius: number = 15,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  const floatY = cy + Math.sin(tau * Math.PI * 2) * 1.5;
+  ctx.translate(cx, floatY);
+
+  // Black knockout
+  ctx.fillStyle = '#000000';
+  ctx.beginPath();
+  ctx.arc(0, 0, radius + 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  // Rose Blossom Solid Core
+  ctx.beginPath();
+  ctx.arc(0, -3, 8, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Carved Black Petal Swirls
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(0, -3, 5, 0.2, Math.PI * 1.2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(0, -3, 2.5, Math.PI * 0.8, Math.PI * 2.2);
+  ctx.stroke();
+
+  // Stem curving down
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(0, 5);
+  ctx.quadraticCurveTo(-3, 10, 0, 14);
+  ctx.stroke();
+
+  // Botanical Leaves flanking
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.ellipse(-5, 9, 4, 2, -0.4, 0, Math.PI * 2);
+  ctx.ellipse(5, 10, 4, 2, 0.4, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/**
+ * 🌙 Detailed Lunar Crescent (Craters & surrounding twinkling stars)
+ */
+export function drawLunarCrescent(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 18,
+  radius: number = 14,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  const floatY = cy + Math.sin(tau * Math.PI * 2) * 1.5;
+  ctx.translate(cx, floatY);
+
+  // Black knockout
+  ctx.fillStyle = '#000000';
+  ctx.beginPath();
+  ctx.arc(0, 0, radius + 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#FFFFFF';
+
+  // Crescent body
+  ctx.beginPath();
+  ctx.arc(0, 0, radius, -Math.PI * 0.5, Math.PI * 0.5, false);
+  ctx.arc(radius * 0.45, 0, radius * 0.85, Math.PI * 0.5, -Math.PI * 0.5, true);
+  ctx.closePath();
+  ctx.fill();
+
+  // Lunar crater cutouts in black
+  ctx.fillStyle = '#000000';
+  ctx.beginPath(); ctx.arc(-radius * 0.5, -3, 1.5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(-radius * 0.4, 3, 2, 0, Math.PI * 2); ctx.fill();
+
+  // Attendant stars
+  ctx.fillStyle = '#FFFFFF';
+  const twinkle = (frameIndex % 6) < 3;
+  if (twinkle) {
+    ctx.fillRect(8, -8, 2, 2);
+    ctx.fillRect(11, 4, 1, 1);
+  } else {
+    ctx.fillRect(8, -8, 1, 1);
+    ctx.fillRect(11, 4, 2, 2);
+  }
+
+  ctx.restore();
+}
+
+/**
+ * 🕯️ Candle Flame Flicker (Melting pillar & organic flickering teardrop)
+ */
+export function drawCandleFlameFlicker(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 18,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  // Black knockout
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-10, -16, 20, 32);
+
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  // Candle wax pillar
+  ctx.strokeRect(-5, 0, 10, 14);
+
+  // Wax drip bead
+  ctx.fillRect(-6, 2, 2, 4);
+
+  // Wick
+  ctx.fillRect(-0.5, -3, 1, 3);
+
+  // Flickering organic teardrop flame
+  const sway = Math.sin(frameIndex * 0.35) * 1.5;
+  ctx.beginPath();
+  ctx.moveTo(0, -3);
+  ctx.quadraticCurveTo(4 + sway, -8, sway, -14);
+  ctx.quadraticCurveTo(-4 + sway, -8, 0, -3);
+  ctx.closePath();
+  ctx.fill();
+
+  // Flame inner hollow core
+  ctx.fillStyle = '#000000';
+  ctx.beginPath();
+  ctx.arc(sway * 0.5, -7, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/**
+ * 🦋 Fluttering Butterflies (Sine-wave flight trajectories in margins)
+ */
+export function drawFlutteringButterflies(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  ctx.fillStyle = '#FFFFFF';
+
+  const bPositions = [
+    { x0: 20, y0: 16, freq: 0.05, speed: 0.5 },
+    { x0: 108, y0: 14, freq: 0.06, speed: -0.4 },
+    { x0: 16, y0: 48, freq: 0.04, speed: 0.6 }
+  ];
+
+  for (let i = 0; i < bPositions.length; i++) {
+    const bp = bPositions[i];
+    const x = Math.round(bp.x0 + Math.sin(frameIndex * bp.freq + i) * 8);
+    const y = Math.round(bp.y0 + Math.cos(frameIndex * bp.freq + i) * 4);
+    const flap = Math.abs(Math.sin((frameIndex + i * 2) * 0.4)) * 2;
+
+    // Wing pairs
+    ctx.beginPath();
+    ctx.ellipse(x - 3, y - 2, 4 - flap * 0.5, 3, -0.3, 0, Math.PI * 2);
+    ctx.ellipse(x + 3, y - 2, 4 - flap * 0.5, 3, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Body
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(x - 0.5, y - 4, 1, 6);
+    ctx.fillStyle = '#FFFFFF';
+  }
+
+  ctx.restore();
+}
+
+/**
+ * 🍂 Falling Autumn Leaves (Foliage gently tumbling down)
+ */
+export function drawFallingAutumnLeaves(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  for (let i = 0; i < 5; i++) {
+    const y = (frameIndex * (0.4 + i * 0.1) + i * 16) % 68 - 4;
+    const x = 12 + i * 26 + Math.sin(y * 0.15 + i) * 6;
+    const rot = Math.sin(frameIndex * 0.08 + i) * 0.8;
+
+    ctx.save();
+    ctx.translate(Math.round(x), Math.round(y));
+    ctx.rotate(rot);
+
+    // Serrated leaf shape
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 5, 2.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Leaf stem
+    ctx.fillRect(-6, -0.5, 3, 1);
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+/**
+ * 🪶 Weightless Feather Drift (Swaying quill feather)
+ */
+export function drawFeatherDrift(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  const y = (frameIndex * 0.3) % 64;
+  const x = 64 + Math.sin(frameIndex * 0.05) * 44;
+  const tilt = Math.cos(frameIndex * 0.06) * 0.5;
+
+  ctx.translate(Math.round(x), Math.round(y));
+  ctx.rotate(tilt);
+
+  // Central quill stem
+  ctx.beginPath();
+  ctx.moveTo(0, -12);
+  ctx.quadraticCurveTo(2, 0, 0, 12);
+  ctx.stroke();
+
+  // Feathery barbs
+  for (let fy = -8; fy <= 8; fy += 2) {
+    const barbW = 6 - Math.abs(fy) * 0.4;
+    ctx.beginPath();
+    ctx.moveTo(0, fy); ctx.lineTo(-barbW, fy + 2);
+    ctx.moveTo(0, fy); ctx.lineTo(barbW, fy + 2);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+// --- CATEGORY E: CYBERPUNK, RETRO 80S & GAMING ---
+
+/**
+ * 📐 Synthwave Laser Grid (Retro 80s 3D perspective floor grid)
+ */
+export function drawLaserGridHorizon(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  const horizonY = 44;
+  // Horizon Line
+  ctx.beginPath();
+  ctx.moveTo(0, horizonY);
+  ctx.lineTo(128, horizonY);
+  ctx.stroke();
+
+  // Perspective Vanishing Point at (64, 44)
+  // Perspective lines radiating outward
+  const vpX = 64;
+  for (let x = -32; x <= 160; x += 18) {
+    ctx.beginPath();
+    ctx.moveTo(vpX, horizonY);
+    ctx.lineTo(x, 64);
+    ctx.stroke();
+  }
+
+  // Horizontal receding grid lines scrolling forward
+  const scroll = (frameIndex * 0.5) % 1.0;
+  for (let i = 1; i <= 5; i++) {
+    const t = (i + scroll) / 6;
+    const y = Math.round(horizonY + (t * t) * (64 - horizonY));
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(128, y);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+/**
+ * 👾 Matrix Digital Rain (Falling code columns in margins)
+ */
+export function drawMatrixRainCode(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  ctx.fillStyle = '#FFFFFF';
+
+  // Digital streams kept in screen flanks (x < 24 and x > 104)
+  const columns = [4, 12, 20, 108, 116, 124];
+
+  for (let i = 0; i < columns.length; i++) {
+    const colX = columns[i];
+    const speed = 1.0 + (i % 3) * 0.5;
+    const headY = Math.round((frameIndex * speed + i * 22) % 80) - 10;
+
+    // Bright leading head character
+    if (headY >= 0 && headY < 64) {
+      ctx.fillRect(colX, headY, 3, 3);
+    }
+
+    // Trailing glyph dots
+    for (let t = 1; t <= 5; t++) {
+      const trailY = headY - t * 4;
+      if (trailY >= 0 && trailY < 64) {
+        if ((t + frameIndex) % 2 === 0) {
+          ctx.fillRect(colX + (t % 2), trailY, 2, 2);
+        }
+      }
+    }
+  }
+
+  ctx.restore();
+}
+
+/**
+ * 💖 Neon Heart Tunnel (Concentric perspective heart frames)
+ */
+export function drawNeonHeartTunnel(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 32,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  for (let h = 0; h < 3; h++) {
+    const scale = (((frameIndex * 0.02) + h * 0.33) % 1.0) * 32 + 10;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    ctx.beginPath();
+    ctx.moveTo(0, scale * 0.5);
+    ctx.bezierCurveTo(-scale, -scale * 0.1, -scale * 0.6, -scale * 0.8, 0, -scale * 0.4);
+    ctx.bezierCurveTo(scale * 0.6, -scale * 0.8, scale, -scale * 0.1, 0, scale * 0.5);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+/**
+ * 📡 Tactical Radar Sonar (360-degree rotating sweep ray & target pings)
+ */
+export function drawRadarSweepSonar(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 32,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  // Concentric range circles
+  ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, 28, 0, Math.PI * 2); ctx.stroke();
+
+  // Crosshairs
+  ctx.beginPath();
+  ctx.moveTo(-30, 0); ctx.lineTo(30, 0);
+  ctx.moveTo(0, -30); ctx.lineTo(0, 30);
+  ctx.stroke();
+
+  // Sweep ray
+  const sweepAngle = (frameIndex * 0.08) % (Math.PI * 2);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(Math.cos(sweepAngle) * 30, Math.sin(sweepAngle) * 30);
+  ctx.stroke();
+
+  // Target Blips
+  const blipAngle1 = 0.8;
+  const isNearSweep1 = Math.abs(sweepAngle - blipAngle1) < 0.4;
+  if (isNearSweep1) {
+    ctx.fillRect(Math.cos(blipAngle1) * 20 - 1, Math.sin(blipAngle1) * 20 - 1, 3, 3);
+  }
+
+  ctx.restore();
+}
+
+/**
+ * ⚠️ Hazard Caution Stripes (45-degree angled safety barriers)
+ */
+export function drawHazardStripesCaution(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  ctx.fillStyle = '#FFFFFF';
+
+  const shift = frameIndex % 8;
+
+  // Top Hazard Bar (y: 0-6)
+  for (let x = -8; x < 128 + 8; x += 8) {
+    ctx.beginPath();
+    ctx.moveTo(x + shift, 0);
+    ctx.lineTo(x + shift + 4, 0);
+    ctx.lineTo(x + shift - 2, 6);
+    ctx.lineTo(x + shift - 6, 6);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.fillRect(0, 6, 128, 1);
+
+  // Bottom Hazard Bar (y: 57-63)
+  for (let x = -8; x < 128 + 8; x += 8) {
+    ctx.beginPath();
+    ctx.moveTo(x - shift, 57);
+    ctx.lineTo(x - shift + 4, 57);
+    ctx.lineTo(x - shift - 2, 63);
+    ctx.lineTo(x - shift - 6, 63);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.fillRect(0, 57, 128, 1);
+
+  ctx.restore();
+}
+
+/**
+ * 🗝️ Antique Key & Keyhole (Victorian escutcheon plate & skeleton key)
+ */
+export function drawAntiqueKeyLock(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 18,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  const floatY = cy + Math.sin(tau * Math.PI * 2) * 1.5;
+  ctx.translate(cx, floatY);
+
+  // Black knockout
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-22, -14, 44, 28);
+
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  // Keyhole Escutcheon Plate at left
+  ctx.strokeRect(-16, -9, 12, 18);
+  // Keyhole slot in black/white
+  ctx.beginPath();
+  ctx.arc(-10, -3, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillRect(-11, -3, 2, 6);
+
+  // Antique Skeleton Key hovering at right
+  const keyX = 6;
+  // Key bow ring
+  ctx.beginPath();
+  ctx.arc(keyX - 6, 0, 4, 0, Math.PI * 2);
+  ctx.stroke();
+  // Key shaft
+  ctx.fillRect(keyX - 2, -1, 14, 2);
+  // Key bit teeth
+  ctx.fillRect(keyX + 8, 1, 2, 4);
+  ctx.fillRect(keyX + 4, 1, 2, 3);
+
+  ctx.restore();
+}
+
+// --- CATEGORY F: MYSTICAL, ANIME & COSMIC POWER ---
+
+/**
+ * 🔥 Shonen Ki Energy Aura (Jagged surging upward flames & lightning)
+ */
+export function drawShonenKiAura(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  frameIndex: number = 0,
+  isBeat: boolean = false
+): void {
+  ctx.save();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  // Jagged ki flame spikes surging from bottom
+  const numSpikes = 16;
+  const step = 128 / numSpikes;
+
+  ctx.beginPath();
+  ctx.moveTo(0, 64);
+  for (let i = 0; i <= numSpikes; i++) {
+    const x = i * step;
+    const spikeSeed = Math.sin(i * 99 + frameIndex * 0.5);
+    const spikeH = (isBeat ? 26 : 16) + Math.abs(spikeSeed) * 12;
+    const peakX = x - step * 0.5 + Math.sin(frameIndex * 0.3 + i) * 3;
+    ctx.lineTo(peakX, 64 - spikeH);
+    ctx.lineTo(x, 64);
+  }
+  ctx.closePath();
+  ctx.fill();
+
+  // Black internal core separation so baseline text stays clear
+  ctx.fillStyle = '#000000';
+  ctx.beginPath();
+  ctx.moveTo(0, 64);
+  for (let i = 0; i <= numSpikes; i++) {
+    const x = i * step;
+    const spikeSeed = Math.sin(i * 99 + frameIndex * 0.5);
+    const spikeH = (isBeat ? 20 : 10) + Math.abs(spikeSeed) * 8;
+    ctx.lineTo(x - step * 0.5, 64 - spikeH);
+    ctx.lineTo(x, 64);
+  }
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/**
+ * 🌀 Dimensional Portal Vortex (Logarithmic spiraling cosmic arms)
+ */
+export function drawPortalVortex(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 32,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  // 4 Spiral arms
+  const rot = frameIndex * 0.06;
+  for (let arm = 0; arm < 4; arm++) {
+    const armOffset = arm * (Math.PI / 2);
+    ctx.beginPath();
+    for (let theta = 0.5; theta < 3.8; theta += 0.25) {
+      const r = theta * 9;
+      const angle = theta + armOffset + rot;
+      const x = Math.cos(angle) * r;
+      const y = Math.sin(angle) * (r * 0.65); // Elliptical 128x64 compression
+      if (theta === 0.5) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+    ctx.stroke();
+  }
+
+  // Star dust specks orbiting
+  for (let p = 0; p < 6; p++) {
+    const pAngle = rot * 1.5 + p;
+    const pDist = 18 + (p * 5);
+    ctx.fillRect(
+      Math.round(Math.cos(pAngle) * pDist),
+      Math.round(Math.sin(pAngle) * (pDist * 0.6)),
+      1,
+      1
+    );
+  }
+
+  ctx.restore();
+}
+
+/**
+ * 👁️ All-Seeing Mystic Eye (Sacred pyramid triangle & centered pupil)
+ */
+export function drawAllSeeingEye(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 18,
+  radius: number = 16,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  const floatY = cy + Math.sin(tau * Math.PI * 2) * 1.5;
+  ctx.translate(cx, floatY);
+
+  // Black knockout
+  ctx.fillStyle = '#000000';
+  ctx.beginPath();
+  ctx.moveTo(0, -radius - 3);
+  ctx.lineTo(radius + 5, radius + 3);
+  ctx.lineTo(-radius - 5, radius + 3);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  // Radiant burst rays from apex
+  for (let a = -0.8; a <= 0.8; a += 0.4) {
+    ctx.beginPath();
+    ctx.moveTo(0, -radius);
+    ctx.lineTo(Math.sin(a) * (radius + 8), -radius - Math.cos(a) * 6);
+    ctx.stroke();
+  }
+
+  // Sacred Equilateral Pyramid
+  ctx.beginPath();
+  ctx.moveTo(0, -radius);
+  ctx.lineTo(radius + 2, radius);
+  ctx.lineTo(-radius - 2, radius);
+  ctx.closePath();
+  ctx.stroke();
+
+  // Centered Almond Eye
+  ctx.beginPath();
+  ctx.moveTo(-8, 2);
+  ctx.quadraticCurveTo(0, -4, 8, 2);
+  ctx.quadraticCurveTo(0, 8, -8, 2);
+  ctx.closePath();
+  ctx.fill();
+
+  // Eye Iris & Pupil cutout
+  ctx.fillStyle = '#000000';
+  ctx.beginPath();
+  ctx.arc(0, 2, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Light glint
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(-0.5, 1, 1, 1);
+
+  ctx.restore();
+}
+
+/**
+ * 🛡️ Knight Heraldic Shield (Medieval heater shield with cross charge)
+ */
+export function drawKnightShield(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cx: number = 64,
+  cy: number = 18,
+  radius: number = 15,
+  tau: number = 1.0,
+  frameIndex: number = 0
+): void {
+  ctx.save();
+  const floatY = cy + Math.sin(tau * Math.PI * 2) * 1.5;
+  ctx.translate(cx, floatY);
+
+  // Black knockout
+  ctx.fillStyle = '#000000';
+  ctx.beginPath();
+  ctx.moveTo(-radius - 2, -radius - 2);
+  ctx.lineTo(radius + 2, -radius - 2);
+  ctx.lineTo(radius + 2, 2);
+  ctx.quadraticCurveTo(radius * 0.8, radius + 2, 0, radius + 4);
+  ctx.quadraticCurveTo(-radius * 0.8, radius + 2, -radius - 2, 2);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+
+  // Heater Shield Outer Edge
+  ctx.beginPath();
+  ctx.moveTo(-radius, -radius);
+  ctx.lineTo(radius, -radius);
+  ctx.lineTo(radius, 0);
+  ctx.quadraticCurveTo(radius * 0.8, radius, 0, radius + 2);
+  ctx.quadraticCurveTo(-radius * 0.8, radius, -radius, 0);
+  ctx.closePath();
+  ctx.stroke();
+
+  // Inner inset border
+  const innerR = radius - 3;
+  ctx.beginPath();
+  ctx.moveTo(-innerR, -innerR);
+  ctx.lineTo(innerR, -innerR);
+  ctx.lineTo(innerR, 0);
+  ctx.quadraticCurveTo(innerR * 0.8, innerR, 0, innerR + 1);
+  ctx.quadraticCurveTo(-innerR * 0.8, innerR, -innerR, 0);
+  ctx.closePath();
+  ctx.stroke();
+
+  // Embossed Heraldic Cross Charge
+  ctx.fillRect(-1.5, -innerR + 1, 3, innerR * 1.6);
+  ctx.fillRect(-innerR + 2, -3, (innerR - 2) * 2, 3);
+
+  ctx.restore();
+}
+

@@ -407,7 +407,41 @@ export type VisualMotif =
   | 'crossed_swords'
   | 'champion_trophy'
   | 'lucky_dice'
-  | 'rolex_watch';
+  | 'rolex_watch'
+  | 'bullet_chamber_cylinder'
+  | 'police_siren_sweep'
+  | 'thar_jeep_grille'
+  | 'punjabi_khanda'
+  | 'cuban_chain_links'
+  | 'drill_ski_mask'
+  | 'studio_microphone'
+  | 'boombox_blaster'
+  | 'speaker_subwoofer_pulse'
+  | 'electric_guitar'
+  | 'metronome_ticker'
+  | 'disco_mirror_ball'
+  | 'city_skyline_silhouette'
+  | 'smoke_ring_drift'
+  | 'graffiti_drips'
+  | 'champagne_toast'
+  | 'neon_lips'
+  | 'vault_safe_dial'
+  | 'blooming_rose'
+  | 'lunar_crescent'
+  | 'candle_flame_flicker'
+  | 'fluttering_butterflies'
+  | 'falling_autumn_leaves'
+  | 'feather_drift'
+  | 'laser_grid_horizon'
+  | 'matrix_rain_code'
+  | 'neon_heart_tunnel'
+  | 'radar_sweep_sonar'
+  | 'hazard_stripes_caution'
+  | 'antique_key_lock'
+  | 'shonen_ki_aura'
+  | 'portal_vortex'
+  | 'all_seeing_eye'
+  | 'knight_shield';
 
 export type MotifMode = 'off' | 'subtle' | 'dynamic' | 'heavy';
 
@@ -657,6 +691,244 @@ export const MOTIF_METADATA: Record<VisualMotif, MotifMeta> = {
     name: 'Rolex Luxury Watch',
     tag: 'TIME',
     description: 'Fluted watch bezel with ticking second hand, hour pips, and center pivot'
+  },
+  bullet_chamber_cylinder: {
+    id: 'bullet_chamber_cylinder',
+    icon: '🎯',
+    name: 'Revolver Bullet Chamber',
+    tag: 'DRILL',
+    description: 'Rotating 6-shot revolver cylinder with fluted edges and hollow chambers'
+  },
+  police_siren_sweep: {
+    id: 'police_siren_sweep',
+    icon: '🚨',
+    name: 'Police Siren Sweep',
+    tag: 'SIREN',
+    description: 'High-speed emergency strobe sweeping twin light cones across display'
+  },
+  thar_jeep_grille: {
+    id: 'thar_jeep_grille',
+    icon: '🚙',
+    name: 'Thar 4x4 Jeep Grille',
+    tag: 'THAR',
+    description: 'Rugged 7-slot off-road jeep grille with bold circular twin headlamps'
+  },
+  punjabi_khanda: {
+    id: 'punjabi_khanda',
+    icon: '⚔️',
+    name: 'Sacred Punjabi Khanda',
+    tag: 'KHANDA',
+    description: 'Sacred Sikh Khanda emblem with double-edged central blade, chakkar and dual kirpans'
+  },
+  cuban_chain_links: {
+    id: 'cuban_chain_links',
+    icon: '⛓️',
+    name: 'Cuban Chain Links',
+    tag: 'CHAIN',
+    description: 'Heavy interlocking curb chain draped across canvas with beveled 1-bit links'
+  },
+  drill_ski_mask: {
+    id: 'drill_ski_mask',
+    icon: '🥷',
+    name: 'Drill Ski Mask',
+    tag: 'MASK',
+    description: 'Tactical balaclava ski mask with cutouts and knitted ribbing for street drill'
+  },
+  studio_microphone: {
+    id: 'studio_microphone',
+    icon: '🎙️',
+    name: 'Studio Condenser Mic',
+    tag: 'MIC',
+    description: 'Broadcast capsule studio microphone with shock-mount frame and wire mesh'
+  },
+  boombox_blaster: {
+    id: 'boombox_blaster',
+    icon: '📻',
+    name: 'Street Boombox Blaster',
+    tag: 'BOX',
+    description: 'Vintage 80s ghetto blaster boombox with twin pulsing speaker drivers and tape deck'
+  },
+  speaker_subwoofer_pulse: {
+    id: 'speaker_subwoofer_pulse',
+    icon: '🔊',
+    name: 'Subwoofer Bass Pulse',
+    tag: 'BASS',
+    description: 'Flanking dual subwoofers with concentric cones vibrating to audio sub-bass'
+  },
+  electric_guitar: {
+    id: 'electric_guitar',
+    icon: '🎸',
+    name: 'Electric Guitar',
+    tag: 'AXE',
+    description: 'Solid-body rock guitar silhouette angled dynamically with frets and pickups'
+  },
+  metronome_ticker: {
+    id: 'metronome_ticker',
+    icon: '⏱️',
+    name: 'Metronome Ticker',
+    tag: 'TEMPO',
+    description: 'Acoustic pyramid metronome with mechanical pendulum arm rocking in tempo'
+  },
+  disco_mirror_ball: {
+    id: 'disco_mirror_ball',
+    icon: '🪩',
+    name: 'Disco Mirror Ball',
+    tag: 'DISCO',
+    description: 'Suspended faceted mirror disco ball casting rotating radial light reflections'
+  },
+  city_skyline_silhouette: {
+    id: 'city_skyline_silhouette',
+    icon: '🏙️',
+    name: 'City Skyline Silhouette',
+    tag: 'CITY',
+    description: 'Metropolis skyscraper skyline with lit window pixel matrix and transmission towers'
+  },
+  smoke_ring_drift: {
+    id: 'smoke_ring_drift',
+    icon: '💨',
+    name: 'Drifting Smoke Rings',
+    tag: 'SMOKE',
+    description: 'Concentric organic smoke rings expanding and curling upward in chill air'
+  },
+  graffiti_drips: {
+    id: 'graffiti_drips',
+    icon: '🎨',
+    name: 'Graffiti Spray Drips',
+    tag: 'DRIP',
+    description: 'Street spray-paint drips and hanging teardrop beads running down from header'
+  },
+  champagne_toast: {
+    id: 'champagne_toast',
+    icon: '🥂',
+    name: 'Champagne Toast Flutes',
+    tag: 'TOAST',
+    description: 'Pair of clinking stemmed champagne flutes with rising effervescent bubbles and sparks'
+  },
+  neon_lips: {
+    id: 'neon_lips',
+    icon: '💋',
+    name: 'Neon Kiss Lips',
+    tag: 'LIPS',
+    description: 'Luminous 1-bit neon outline lips with high-contrast electric glow contour'
+  },
+  vault_safe_dial: {
+    id: 'vault_safe_dial',
+    icon: '🔒',
+    name: 'Bank Vault Safe Dial',
+    tag: 'VAULT',
+    description: 'Heavy steel vault combination dial with calibrated perimeter ticks and turning handle'
+  },
+  blooming_rose: {
+    id: 'blooming_rose',
+    icon: '🌹',
+    name: 'Blooming Petal Rose',
+    tag: 'ROSE',
+    description: 'Detailed blooming botanical rose blossom with swirling petals and stem thorns'
+  },
+  lunar_crescent: {
+    id: 'lunar_crescent',
+    icon: '🌙',
+    name: 'Lunar Crescent Moon',
+    tag: 'MOON',
+    description: 'Detailed crescent moon with crater surface stipples and attendant constellation stars'
+  },
+  candle_flame_flicker: {
+    id: 'candle_flame_flicker',
+    icon: '🕯️',
+    name: 'Candle Flame Flicker',
+    tag: 'CANDLE',
+    description: 'Wax candle pillar with organic melting drips and a soft flickering teardrop flame'
+  },
+  fluttering_butterflies: {
+    id: 'fluttering_butterflies',
+    icon: '🦋',
+    name: 'Fluttering Butterflies',
+    tag: 'WINGS',
+    description: 'Graceful 1-bit butterflies fluttering in gentle sine trajectories across screen'
+  },
+  falling_autumn_leaves: {
+    id: 'falling_autumn_leaves',
+    icon: '🍂',
+    name: 'Falling Autumn Leaves',
+    tag: 'LEAVES',
+    description: 'Serrated maple and oak foliage gently tumbling and swirling on the autumn breeze'
+  },
+  feather_drift: {
+    id: 'feather_drift',
+    icon: '🪶',
+    name: 'Weightless Feather Drift',
+    tag: 'FEATHER',
+    description: 'Delicate bird quill feather swaying softly through the air with fine barbs'
+  },
+  laser_grid_horizon: {
+    id: 'laser_grid_horizon',
+    icon: '📐',
+    name: 'Synthwave Laser Grid',
+    tag: 'GRID',
+    description: 'Retro 80s 3D perspective floor grid receding into distance horizon line'
+  },
+  matrix_rain_code: {
+    id: 'matrix_rain_code',
+    icon: '👾',
+    name: 'Matrix Digital Rain',
+    tag: 'MATRIX',
+    description: 'Vertical digital code glyph columns cascading down screen with leading bright heads'
+  },
+  neon_heart_tunnel: {
+    id: 'neon_heart_tunnel',
+    icon: '💖',
+    name: 'Neon Heart Tunnel',
+    tag: 'TUNNEL',
+    description: 'Concentric perspective heart wireframes receding infinitely into dynamic depth'
+  },
+  radar_sweep_sonar: {
+    id: 'radar_sweep_sonar',
+    icon: '📡',
+    name: 'Tactical Radar Sonar',
+    tag: 'RADAR',
+    description: 'Military radar circle with 360-degree rotating sweep ray and blip target pings'
+  },
+  hazard_stripes_caution: {
+    id: 'hazard_stripes_caution',
+    icon: '⚠️',
+    name: 'Hazard Caution Stripes',
+    tag: 'HAZARD',
+    description: '45-degree high-contrast industrial hazard warning stripes framing canvas edges'
+  },
+  antique_key_lock: {
+    id: 'antique_key_lock',
+    icon: '🗝️',
+    name: 'Antique Key & Keyhole',
+    tag: 'KEYLOCK',
+    description: 'Ornate Gothic skeleton key hovering over an antique keyhole escutcheon plate'
+  },
+  shonen_ki_aura: {
+    id: 'shonen_ki_aura',
+    icon: '🔥',
+    name: 'Shonen Ki Energy Aura',
+    tag: 'AURA',
+    description: 'Surging upward jagged ki energy flames and electric lightning crackles'
+  },
+  portal_vortex: {
+    id: 'portal_vortex',
+    icon: '🌀',
+    name: 'Dimensional Portal Vortex',
+    tag: 'VORTEX',
+    description: 'Hypnotic spiraling vortex arms drawing inward with cosmic matter particle dust'
+  },
+  all_seeing_eye: {
+    id: 'all_seeing_eye',
+    icon: '👁️',
+    name: 'All-Seeing Mystic Eye',
+    tag: 'EYE',
+    description: 'Sacred geometric pyramid triangle enclosing a centered observant mystical eye'
+  },
+  knight_shield: {
+    id: 'knight_shield',
+    icon: '🛡️',
+    name: 'Knight Heraldic Shield',
+    tag: 'SHIELD',
+    description: 'Medieval defensive heraldic shield with embossed cross charge and iron studs'
   }
 };
 
@@ -676,7 +948,23 @@ export type WordBadgeIcon =
   | 'dice'
   | 'watch'
   | 'diamond'
-  | 'star';
+  | 'star'
+  | 'gun'
+  | 'bomb'
+  | 'chain'
+  | 'microphone'
+  | 'lightning'
+  | 'rose'
+  | 'cloud_rain'
+  | 'moon'
+  | 'lips'
+  | 'wine_glass'
+  | 'guitar'
+  | 'key'
+  | 'mask'
+  | 'eye'
+  | 'butterfly'
+  | 'shield';
 
 export interface WordBadgeMeta {
   id: WordBadgeIcon;
@@ -798,6 +1086,118 @@ export const WORD_BADGE_METADATA: Record<WordBadgeIcon, WordBadgeMeta> = {
     name: 'Comic Star',
     tag: 'STAR',
     description: '4-point diamond glint star for celebrity, fame, and glow'
+  },
+  gun: {
+    id: 'gun',
+    icon: '🔫',
+    name: 'Handgun Pistol',
+    tag: 'GUN',
+    description: 'Semi-auto pistol silhouette for drill, street heat, and firepower'
+  },
+  bomb: {
+    id: 'bomb',
+    icon: '💣',
+    name: 'Time Bomb',
+    tag: 'BOMB',
+    description: 'Spherical round bomb with burning fuse for explosive drops and heat'
+  },
+  chain: {
+    id: 'chain',
+    icon: '⛓️',
+    name: 'Cuban Chain',
+    tag: 'CHAIN',
+    description: 'Heavy interlinked cuban curb chain for drip, ice, and flex'
+  },
+  microphone: {
+    id: 'microphone',
+    icon: '🎤',
+    name: 'Studio Microphone',
+    tag: 'MIC',
+    description: 'Vintage vocal capsule microphone for rap bars, spitting, and vocals'
+  },
+  lightning: {
+    id: 'lightning',
+    icon: '⚡',
+    name: 'Lightning Bolt',
+    tag: 'VOLT',
+    description: 'Jagged high-voltage thunder bolt for energy, shocks, and electricity'
+  },
+  rose: {
+    id: 'rose',
+    icon: '🌹',
+    name: 'Blooming Rose',
+    tag: 'ROSE',
+    description: 'Ornate blooming petal rose with stem for romance, beauty, and love'
+  },
+  cloud_rain: {
+    id: 'cloud_rain',
+    icon: '🌧️',
+    name: 'Rain Cloud',
+    tag: 'RAIN',
+    description: 'Storm cloud dropping rain streaks for sadness, tears, and storms'
+  },
+  moon: {
+    id: 'moon',
+    icon: '🌙',
+    name: 'Crescent Moon',
+    tag: 'MOON',
+    description: 'Glowing crescent moon for midnight, night drives, and dreaming'
+  },
+  lips: {
+    id: 'lips',
+    icon: '💋',
+    name: 'Kiss Lips',
+    tag: 'LIPS',
+    description: 'Sultry kiss lips contour for kisses, passion, romance, and lust'
+  },
+  wine_glass: {
+    id: 'wine_glass',
+    icon: '🍷',
+    name: 'Wine Glass',
+    tag: 'DRINK',
+    description: 'Stemmed chalice goblet with liquid for toasts, party, and drinks'
+  },
+  guitar: {
+    id: 'guitar',
+    icon: '🎸',
+    name: 'Electric Guitar',
+    tag: 'GUITAR',
+    description: 'Solid-body rock guitar for riffs, acoustic strums, and rockstars'
+  },
+  key: {
+    id: 'key',
+    icon: '🔑',
+    name: 'Antique Key',
+    tag: 'KEY',
+    description: 'Ornate skeleton key for secrets, locks, success, and car keys'
+  },
+  mask: {
+    id: 'mask',
+    icon: '🎭',
+    name: 'Ski Mask / Balaclava',
+    tag: 'MASK',
+    description: 'Tactical ski mask balaclava cutout for drill, stealth, and mystery'
+  },
+  eye: {
+    id: 'eye',
+    icon: '👁️',
+    name: 'All-Seeing Eye',
+    tag: 'EYE',
+    description: 'Mystic almond eye with centered pupil for vision, gazing, and truth'
+  },
+  butterfly: {
+    id: 'butterfly',
+    icon: '🦋',
+    name: 'Fluttering Butterfly',
+    tag: 'FLY',
+    description: 'Symmetrical winged butterfly for transformation, beauty, and flutter'
+  },
+  shield: {
+    id: 'shield',
+    icon: '🛡️',
+    name: 'Knight Shield',
+    tag: 'GUARD',
+    description: 'Defensive heraldic shield emblem for protection, armor, and defense'
   }
 };
 

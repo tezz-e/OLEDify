@@ -254,8 +254,8 @@ console.log('✅ Phantom Future Word Pause Bug verified fixed: gaps enter clean 
 // =========================================================================
 console.log('\n--- Suite 5: 1-Bit Visual Motifs & LLM Inference Pipeline ---');
 
-// 1. Verify all 34 motifs exist in metadata
-assert.equal(VALID_VISUAL_MOTIFS.length, 34, 'Expected exactly 34 visual motifs');
+// 1. Verify all 68 motifs exist in metadata
+assert.equal(VALID_VISUAL_MOTIFS.length, 68, 'Expected exactly 68 visual motifs');
 for (const motif of VALID_VISUAL_MOTIFS) {
   const meta = MOTIF_METADATA[motif];
   assert.ok(meta, `Motif "${motif}" must have metadata`);
@@ -263,7 +263,7 @@ for (const motif of VALID_VISUAL_MOTIFS) {
   assert.ok(meta.name, `Motif "${motif}" must have a name`);
   assert.ok(meta.tag, `Motif "${motif}" must have a tag`);
 }
-console.log('✅ All 34 Visual Motifs defined with valid icons, tags, and metadata.');
+console.log('✅ All 68 Visual Motifs defined with valid icons, tags, and metadata.');
 
 // 2. Test motif normalization and fuzzy recovery
 const fuzzyMotifTests: Array<{ raw: string; expected: VisualMotif }> = [
@@ -322,6 +322,41 @@ const fuzzyMotifTests: Array<{ raw: string; expected: VisualMotif }> = [
   { raw: 'radial', expected: 'equalizer_radial' },
   { raw: 'vinyl_grooves', expected: 'vinyl_grooves' },
   { raw: 'turntable', expected: 'vinyl_grooves' },
+  // New Motifs fuzzy tests
+  { raw: 'cylinder', expected: 'bullet_chamber_cylinder' },
+  { raw: 'siren', expected: 'police_siren_sweep' },
+  { raw: 'thar', expected: 'thar_jeep_grille' },
+  { raw: 'khanda', expected: 'punjabi_khanda' },
+  { raw: 'cuban', expected: 'cuban_chain_links' },
+  { raw: 'balaclava', expected: 'drill_ski_mask' },
+  { raw: 'condenser', expected: 'studio_microphone' },
+  { raw: 'boombox', expected: 'boombox_blaster' },
+  { raw: 'subwoofer', expected: 'speaker_subwoofer_pulse' },
+  { raw: 'stratocaster', expected: 'electric_guitar' },
+  { raw: 'metronome', expected: 'metronome_ticker' },
+  { raw: 'disco', expected: 'disco_mirror_ball' },
+  { raw: 'skyline', expected: 'city_skyline_silhouette' },
+  { raw: 'smoke_ring', expected: 'smoke_ring_drift' },
+  { raw: 'graffiti', expected: 'graffiti_drips' },
+  { raw: 'champagne', expected: 'champagne_toast' },
+  { raw: 'neon_lips', expected: 'neon_lips' },
+  { raw: 'safe_dial', expected: 'vault_safe_dial' },
+  { raw: 'blooming_rose', expected: 'blooming_rose' },
+  { raw: 'lunar', expected: 'lunar_crescent' },
+  { raw: 'candle_flame', expected: 'candle_flame_flicker' },
+  { raw: 'butterflies', expected: 'fluttering_butterflies' },
+  { raw: 'falling_leaves', expected: 'falling_autumn_leaves' },
+  { raw: 'feather', expected: 'feather_drift' },
+  { raw: 'laser_grid', expected: 'laser_grid_horizon' },
+  { raw: 'digital_rain', expected: 'matrix_rain_code' },
+  { raw: 'heart_tunnel', expected: 'neon_heart_tunnel' },
+  { raw: 'radar', expected: 'radar_sweep_sonar' },
+  { raw: 'hazard', expected: 'hazard_stripes_caution' },
+  { raw: 'key_lock', expected: 'antique_key_lock' },
+  { raw: 'ki_aura', expected: 'shonen_ki_aura' },
+  { raw: 'portal', expected: 'portal_vortex' },
+  { raw: 'all_seeing', expected: 'all_seeing_eye' },
+  { raw: 'knight', expected: 'knight_shield' },
   { raw: 'none', expected: 'none' },
   { raw: 'xyz_random', expected: 'none' }
 ];
@@ -1353,7 +1388,7 @@ console.log('✅ Style pack normalization correctly bridges legacy LLM aliases.'
 // =========================================================================
 console.log('\n--- Suite 13: Concrete Motifs, Royal Moustache & Word Micro-Badges ---');
 
-// 1. Verify 9 New Concrete Visual Motifs in MOTIF_METADATA and Renderers
+// 1. Verify All 43 Concrete & Expanded Visual Motifs in MOTIF_METADATA and Renderers
 const new9Motifs: VisualMotif[] = [
   'handlebar_moustache',
   'dark_sunglasses',
@@ -1366,11 +1401,22 @@ const new9Motifs: VisualMotif[] = [
   'rolex_watch'
 ];
 
-for (const m of new9Motifs) {
-  assert.ok(MOTIF_METADATA[m], `Missing MOTIF_METADATA for "${m}"`);
-  assert.ok(MOTIF_METADATA[m].icon, `Missing icon for motif "${m}"`);
-  assert.ok(MOTIF_METADATA[m].name, `Missing name for motif "${m}"`);
-  assert.ok(MOTIF_METADATA[m].tag, `Missing tag for motif "${m}"`);
+const new34Motifs: VisualMotif[] = [
+  'bullet_chamber_cylinder', 'police_siren_sweep', 'thar_jeep_grille', 'punjabi_khanda', 'cuban_chain_links',
+  'drill_ski_mask', 'studio_microphone', 'boombox_blaster', 'speaker_subwoofer_pulse', 'electric_guitar',
+  'metronome_ticker', 'disco_mirror_ball', 'city_skyline_silhouette', 'smoke_ring_drift', 'graffiti_drips',
+  'champagne_toast', 'neon_lips', 'vault_safe_dial', 'blooming_rose', 'lunar_crescent',
+  'candle_flame_flicker', 'fluttering_butterflies', 'falling_autumn_leaves', 'feather_drift', 'laser_grid_horizon',
+  'matrix_rain_code', 'neon_heart_tunnel', 'radar_sweep_sonar', 'hazard_stripes_caution', 'antique_key_lock',
+  'shonen_ki_aura', 'portal_vortex', 'all_seeing_eye', 'knight_shield'
+];
+
+for (const m of VALID_VISUAL_MOTIFS) {
+  const meta = MOTIF_METADATA[m];
+  assert.ok(meta, `Missing MOTIF_METADATA for "${m}"`);
+  assert.ok(meta.icon, `Missing icon for motif "${m}"`);
+  assert.ok(meta.name, `Missing name for motif "${m}"`);
+  assert.ok(meta.tag, `Missing tag for motif "${m}"`);
 
   // Test headless rendering of each motif across key lifecycle frames
   const mockCtx = createFullMockCanvasCtx();
@@ -1385,15 +1431,18 @@ for (const m of new9Motifs) {
     });
   }, `renderMotifBackground threw on motif "${m}"`);
 }
-console.log('✅ All 9 new concrete visual motifs verified in metadata and rendered without errors.');
+console.log('✅ All 68 visual motifs verified in metadata and rendered without errors.');
 
-// 2. Verify 16 Word Badge Icons in WORD_BADGE_METADATA and Micro-Sprite Renderer
-const all16Badges: WordBadgeIcon[] = [
+// 2. Verify 32 Word Badge Icons in WORD_BADGE_METADATA and Micro-Sprite Renderer
+const all32Badges: WordBadgeIcon[] = [
   'none', 'moustache', 'sunglasses', 'crown', 'cash', 'car', 'heart', 'broken_heart',
-  'flame', 'skull', 'sword', 'trophy', 'dice', 'watch', 'diamond', 'star'
+  'flame', 'skull', 'sword', 'trophy', 'dice', 'watch', 'diamond', 'star',
+  'gun', 'bomb', 'chain', 'microphone', 'lightning', 'rose', 'cloud_rain', 'moon',
+  'lips', 'wine_glass', 'guitar', 'key', 'mask', 'eye', 'butterfly', 'shield'
 ];
 
-for (const b of all16Badges) {
+assert.equal(all32Badges.length, 32, 'Expected exactly 32 word badge icons');
+for (const b of all32Badges) {
   assert.ok(WORD_BADGE_METADATA[b], `Missing WORD_BADGE_METADATA for badge "${b}"`);
   assert.ok(WORD_BADGE_METADATA[b].icon, `Missing icon for badge "${b}"`);
   assert.ok(WORD_BADGE_METADATA[b].name, `Missing name for badge "${b}"`);
@@ -1411,7 +1460,7 @@ for (const b of all16Badges) {
     );
   }, `renderWordBadge threw on badge "${b}"`);
 }
-console.log('✅ All 16 word badge micro-sprites verified and rendered without errors.');
+console.log('✅ All 32 word badge micro-sprites verified and rendered without errors.');
 
 // 3. Verify Deterministic Semantic Badge and Motif Classifiers
 assert.equal(classifyWordBadge('muchh'), 'moustache', 'muchh must classify as moustache badge');
@@ -1448,7 +1497,122 @@ assert.equal(classifyWordMotif('kismat'), 'lucky_dice', 'kismat must map to luck
 assert.equal(classifyWordBadge('waqt'), 'watch', 'waqt must classify as watch badge');
 assert.equal(classifyWordMotif('waqt'), 'rolex_watch', 'waqt must map to rolex_watch motif');
 
-console.log('✅ Deterministic multilingual keyword classification (English, Punjabi, Hindi) for badges and motifs verified.');
+// Assertions for 16 New Badges (Multilingual: English, Punjabi, Hindi, Spanish)
+assert.equal(classifyWordBadge('bandook'), 'gun');
+assert.equal(classifyWordBadge('pistol'), 'gun');
+assert.equal(classifyWordMotif('bandook'), 'bullet_chamber_cylinder');
+
+assert.equal(classifyWordBadge('bomba'), 'bomb');
+assert.equal(classifyWordBadge('dhamaka'), 'bomb');
+assert.equal(classifyWordMotif('bomba'), 'sound_blast_rings');
+
+assert.equal(classifyWordBadge('zanjeer'), 'chain');
+assert.equal(classifyWordBadge('cadena'), 'chain');
+assert.equal(classifyWordMotif('zanjeer'), 'cuban_chain_links');
+
+assert.equal(classifyWordBadge('mic'), 'microphone');
+assert.equal(classifyWordBadge('microfono'), 'microphone');
+assert.equal(classifyWordMotif('mic'), 'studio_microphone');
+
+assert.equal(classifyWordBadge('bijli'), 'lightning');
+assert.equal(classifyWordBadge('rayo'), 'lightning');
+assert.equal(classifyWordMotif('bijli'), 'lightning_arc');
+
+assert.equal(classifyWordBadge('gulab'), 'rose');
+assert.equal(classifyWordBadge('rosa'), 'rose');
+assert.equal(classifyWordMotif('gulab'), 'blooming_rose');
+
+assert.equal(classifyWordBadge('barish'), 'cloud_rain');
+assert.equal(classifyWordBadge('lluvia'), 'cloud_rain');
+assert.equal(classifyWordMotif('barish'), 'rain_window');
+
+assert.equal(classifyWordBadge('chann'), 'moon');
+assert.equal(classifyWordBadge('luna'), 'moon');
+assert.equal(classifyWordMotif('chann'), 'lunar_crescent');
+
+assert.equal(classifyWordBadge('buliyan'), 'lips');
+assert.equal(classifyWordBadge('labios'), 'lips');
+assert.equal(classifyWordMotif('buliyan'), 'neon_lips');
+
+assert.equal(classifyWordBadge('daru'), 'wine_glass');
+assert.equal(classifyWordBadge('vino'), 'wine_glass');
+assert.equal(classifyWordMotif('daru'), 'champagne_toast');
+
+assert.equal(classifyWordBadge('guitarra'), 'guitar');
+assert.equal(classifyWordBadge('saaz'), 'guitar');
+assert.equal(classifyWordMotif('guitarra'), 'electric_guitar');
+
+assert.equal(classifyWordBadge('chaabi'), 'key');
+assert.equal(classifyWordBadge('llave'), 'key');
+assert.equal(classifyWordMotif('chaabi'), 'antique_key_lock');
+
+assert.equal(classifyWordBadge('balaclava'), 'mask');
+assert.equal(classifyWordBadge('nakab'), 'mask');
+assert.equal(classifyWordMotif('balaclava'), 'drill_ski_mask');
+
+assert.equal(classifyWordBadge('nazar'), 'eye');
+assert.equal(classifyWordBadge('ojos'), 'eye');
+assert.equal(classifyWordMotif('nazar'), 'all_seeing_eye');
+
+assert.equal(classifyWordBadge('titli'), 'butterfly');
+assert.equal(classifyWordBadge('mariposa'), 'butterfly');
+assert.equal(classifyWordMotif('titli'), 'fluttering_butterflies');
+
+assert.equal(classifyWordBadge('dhaal'), 'shield');
+assert.equal(classifyWordBadge('escudo'), 'shield');
+assert.equal(classifyWordMotif('dhaal'), 'knight_shield');
+
+// Vision keyword must classify as eye badge
+assert.equal(classifyWordBadge('vision'), 'eye', 'vision must classify as eye badge');
+assert.equal(classifyWordBadge('visión'), 'eye', 'visión with Spanish accent must classify as eye badge');
+
+// Native Gurmukhi Script Badges & Motifs
+assert.equal(classifyWordBadge('ਗੁਲਾਬ'), 'rose', 'Gurmukhi gulab must classify as rose badge');
+assert.equal(classifyWordBadge('ਬੰਦੂਕ'), 'gun', 'Gurmukhi bandook must classify as gun badge');
+assert.equal(classifyWordBadge('ਚੰਨ'), 'moon', 'Gurmukhi chann must classify as moon badge');
+assert.equal(classifyWordBadge('ਮੁੱਛ'), 'moustache', 'Gurmukhi muchh must classify as moustache badge');
+assert.equal(classifyWordBadge('ਦਿਲ'), 'heart', 'Gurmukhi dil must classify as heart badge');
+assert.equal(classifyWordMotif('ਖੰਡਾ'), 'punjabi_khanda', 'Gurmukhi khanda must map to punjabi_khanda motif');
+assert.equal(classifyWordMotif('ਗੁਲਾਬ'), 'blooming_rose', 'Gurmukhi gulab must map to blooming_rose motif');
+
+// Native Devanagari Script Badges & Motifs
+assert.equal(classifyWordBadge('गुलाब'), 'rose', 'Devanagari gulab must classify as rose badge');
+assert.equal(classifyWordBadge('बंदूक'), 'gun', 'Devanagari bandook must classify as gun badge');
+assert.equal(classifyWordBadge('चाँद'), 'moon', 'Devanagari chand must classify as moon badge');
+assert.equal(classifyWordBadge('दिल'), 'heart', 'Devanagari dil must classify as heart badge');
+assert.equal(classifyWordMotif('खंडा'), 'punjabi_khanda', 'Devanagari khanda must map to punjabi_khanda motif');
+assert.equal(classifyWordMotif('गुलाब'), 'blooming_rose', 'Devanagari gulab must map to blooming_rose motif');
+
+// Accented Spanish Badges & Motifs
+assert.equal(classifyWordBadge('micrófono'), 'microphone', 'Spanish micrófono must classify as microphone badge');
+assert.equal(classifyWordBadge('corazón'), 'heart', 'Spanish corazón must classify as heart badge');
+assert.equal(classifyWordMotif('micrófono'), 'studio_microphone', 'Spanish micrófono must map to studio_microphone motif');
+assert.equal(classifyWordMotif('corazón'), 'heartbeat_pulse', 'Spanish corazón must map to heartbeat_pulse motif');
+
+// Direct Motif keyword classification checks
+assert.equal(classifyWordMotif('khanda'), 'punjabi_khanda');
+assert.equal(classifyWordMotif('siren'), 'police_siren_sweep');
+assert.equal(classifyWordMotif('thar'), 'thar_jeep_grille');
+assert.equal(classifyWordMotif('boombox'), 'boombox_blaster');
+assert.equal(classifyWordMotif('subwoofer'), 'speaker_subwoofer_pulse');
+assert.equal(classifyWordMotif('metronome'), 'metronome_ticker');
+assert.equal(classifyWordMotif('disco'), 'disco_mirror_ball');
+assert.equal(classifyWordMotif('skyline'), 'city_skyline_silhouette');
+assert.equal(classifyWordMotif('smoke'), 'smoke_ring_drift');
+assert.equal(classifyWordMotif('graffiti'), 'graffiti_drips');
+assert.equal(classifyWordMotif('vault'), 'vault_safe_dial');
+assert.equal(classifyWordMotif('candle'), 'candle_flame_flicker');
+assert.equal(classifyWordMotif('autumn'), 'falling_autumn_leaves');
+assert.equal(classifyWordMotif('feather'), 'feather_drift');
+assert.equal(classifyWordMotif('grid'), 'laser_grid_horizon');
+assert.equal(classifyWordMotif('matrix'), 'matrix_rain_code');
+assert.equal(classifyWordMotif('tunnel'), 'neon_heart_tunnel');
+assert.equal(classifyWordMotif('radar'), 'radar_sweep_sonar');
+assert.equal(classifyWordMotif('hazard'), 'hazard_stripes_caution');
+assert.equal(classifyWordMotif('aura'), 'shonen_ki_aura');
+assert.equal(classifyWordMotif('portal'), 'portal_vortex');
+
+console.log('✅ Deterministic multilingual keyword classification (English, Punjabi, Hindi, Spanish) for badges and motifs verified.');
 
 // 4. Verify Resilient LLM Normalization for Badges and Motifs
 assert.equal(normalizeWordBadge('mustard'), 'moustache', 'Fuzzy mustard must normalize to moustache');
@@ -1457,11 +1621,67 @@ assert.equal(normalizeWordBadge('shades'), 'sunglasses', 'shades must normalize 
 assert.equal(normalizeWordBadge('money'), 'cash', 'money must normalize to cash');
 assert.equal(normalizeWordBadge('gaddi'), 'car', 'gaddi must normalize to car');
 
+assert.equal(normalizeWordBadge('pistol'), 'gun');
+assert.equal(normalizeWordBadge('dinamita'), 'bomb');
+assert.equal(normalizeWordBadge('necklace'), 'chain');
+assert.equal(normalizeWordBadge('condenser'), 'microphone');
+assert.equal(normalizeWordBadge('micrófono'), 'microphone');
+assert.equal(normalizeWordBadge('thunder'), 'lightning');
+assert.equal(normalizeWordBadge('blossom'), 'rose');
+assert.equal(normalizeWordBadge('storm'), 'cloud_rain');
+assert.equal(normalizeWordBadge('crescent'), 'moon');
+assert.equal(normalizeWordBadge('lipstick'), 'lips');
+assert.equal(normalizeWordBadge('champagne'), 'wine_glass');
+assert.equal(normalizeWordBadge('riff'), 'guitar');
+assert.equal(normalizeWordBadge('keyhole'), 'key');
+assert.equal(normalizeWordBadge('stealth'), 'mask');
+assert.equal(normalizeWordBadge('vision'), 'eye');
+assert.equal(normalizeWordBadge('visión'), 'eye');
+assert.equal(normalizeWordBadge('flutter'), 'butterfly');
+assert.equal(normalizeWordBadge('armor'), 'shield');
+
 assert.equal(normalizeMotif('mustard'), 'handlebar_moustache', 'Fuzzy mustard motif must normalize to handlebar_moustache');
 assert.equal(normalizeMotif('mustache'), 'handlebar_moustache', 'Fuzzy mustache motif must normalize to handlebar_moustache');
 assert.equal(normalizeMotif('shades'), 'dark_sunglasses', 'Fuzzy shades motif must normalize to dark_sunglasses');
 assert.equal(normalizeMotif('racer'), 'street_racer', 'Fuzzy racer motif must normalize to street_racer');
 assert.equal(normalizeMotif('rolex'), 'rolex_watch', 'Fuzzy rolex motif must normalize to rolex_watch');
+assert.equal(normalizeMotif('cylinder'), 'bullet_chamber_cylinder');
+assert.equal(normalizeMotif('siren'), 'police_siren_sweep');
+assert.equal(normalizeMotif('grille'), 'thar_jeep_grille');
+assert.equal(normalizeMotif('khanda'), 'punjabi_khanda');
+assert.equal(normalizeMotif('curb'), 'cuban_chain_links');
+assert.equal(normalizeMotif('ski_mask'), 'drill_ski_mask');
+assert.equal(normalizeMotif('studio_mic'), 'studio_microphone');
+assert.equal(normalizeMotif('boombox'), 'boombox_blaster');
+assert.equal(normalizeMotif('subwoofer'), 'speaker_subwoofer_pulse');
+assert.equal(normalizeMotif('electric_guitar'), 'electric_guitar');
+assert.equal(normalizeMotif('metronome'), 'metronome_ticker');
+assert.equal(normalizeMotif('discoball'), 'disco_mirror_ball');
+assert.equal(normalizeMotif('skyline'), 'city_skyline_silhouette');
+assert.equal(normalizeMotif('smoke_ring'), 'smoke_ring_drift');
+assert.equal(normalizeMotif('graffiti'), 'graffiti_drips');
+assert.equal(normalizeMotif('champagne'), 'champagne_toast');
+assert.equal(normalizeMotif('neon_lips'), 'neon_lips');
+assert.equal(normalizeMotif('safe_dial'), 'vault_safe_dial');
+assert.equal(normalizeMotif('blooming_rose'), 'blooming_rose');
+assert.equal(normalizeMotif('lunar'), 'lunar_crescent');
+assert.equal(normalizeMotif('candle_flame'), 'candle_flame_flicker');
+assert.equal(normalizeMotif('butterfl'), 'fluttering_butterflies');
+assert.equal(normalizeMotif('mariposa'), 'fluttering_butterflies');
+assert.equal(normalizeMotif('corazón'), 'heartbeat_pulse');
+assert.equal(normalizeMotif('escudo'), 'knight_shield');
+assert.equal(normalizeMotif('falling_leaves'), 'falling_autumn_leaves');
+assert.equal(normalizeMotif('quill'), 'feather_drift');
+assert.equal(normalizeMotif('laser_grid'), 'laser_grid_horizon');
+assert.equal(normalizeMotif('digital_rain'), 'matrix_rain_code');
+assert.equal(normalizeMotif('heart_tunnel'), 'neon_heart_tunnel');
+assert.equal(normalizeMotif('sonar'), 'radar_sweep_sonar');
+assert.equal(normalizeMotif('hazard'), 'hazard_stripes_caution');
+assert.equal(normalizeMotif('key_lock'), 'antique_key_lock');
+assert.equal(normalizeMotif('ki_aura'), 'shonen_ki_aura');
+assert.equal(normalizeMotif('wormhole'), 'portal_vortex');
+assert.equal(normalizeMotif('illuminati'), 'all_seeing_eye');
+assert.equal(normalizeMotif('heraldic'), 'knight_shield');
 console.log('✅ Fuzzy LLM alias normalization for badges and motifs verified.');
 
 // 5. Verify LLM JSON Response Parsing with Inline Badges

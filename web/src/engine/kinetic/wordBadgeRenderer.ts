@@ -120,6 +120,70 @@ export function renderWordBadge(
       drawMicroStar(ctx, frameIndex);
       break;
 
+    case 'gun':
+      drawMicroGun(ctx);
+      break;
+
+    case 'bomb':
+      drawMicroBomb(ctx, frameIndex);
+      break;
+
+    case 'chain':
+      drawMicroChain(ctx);
+      break;
+
+    case 'microphone':
+      drawMicroMicrophone(ctx);
+      break;
+
+    case 'lightning':
+      drawMicroLightning(ctx, frameIndex);
+      break;
+
+    case 'rose':
+      drawMicroRose(ctx);
+      break;
+
+    case 'cloud_rain':
+      drawMicroCloudRain(ctx, frameIndex);
+      break;
+
+    case 'moon':
+      drawMicroMoon(ctx);
+      break;
+
+    case 'lips':
+      drawMicroLips(ctx);
+      break;
+
+    case 'wine_glass':
+      drawMicroWineGlass(ctx);
+      break;
+
+    case 'guitar':
+      drawMicroGuitar(ctx);
+      break;
+
+    case 'key':
+      drawMicroKey(ctx);
+      break;
+
+    case 'mask':
+      drawMicroMask(ctx);
+      break;
+
+    case 'eye':
+      drawMicroEye(ctx);
+      break;
+
+    case 'butterfly':
+      drawMicroButterfly(ctx, frameIndex);
+      break;
+
+    case 'shield':
+      drawMicroShield(ctx);
+      break;
+
     default:
       break;
   }
@@ -535,3 +599,435 @@ function drawMicroStar(
   ctx.closePath();
   ctx.fill();
 }
+
+/**
+ * 🔫 14x9 Micro Handgun Pistol
+ */
+export function drawMicroGun(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D) {
+  // 2.5px solid black knockout halo
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-8, -6, 16, 12);
+
+  ctx.fillStyle = '#FFFFFF';
+  // Barrel and Slide
+  ctx.fillRect(-6, -4, 12, 3);
+  // Rear Hammer/Sight notch
+  ctx.fillRect(-6, -5, 2, 2);
+  // Grip handle
+  ctx.beginPath();
+  ctx.moveTo(-5, -1);
+  ctx.lineTo(-2, -1);
+  ctx.lineTo(-4, 4);
+  ctx.lineTo(-7, 4);
+  ctx.closePath();
+  ctx.fill();
+
+  // Trigger guard & barrel tip
+  ctx.fillRect(-1, -1, 1, 2);
+  ctx.fillRect(5, -5, 1, 2);
+}
+
+/**
+ * 💣 12x14 Micro Time Bomb with Spark
+ */
+export function drawMicroBomb(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  frameIndex: number = 0
+) {
+  // Black knockout halo
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-7, -8, 14, 16);
+
+  // Spherical bomb body
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.arc(0, 1, 5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Highlight notch inside sphere
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-2, -1, 2, 2);
+
+  // Fuse collar
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(-2, -5, 4, 2);
+
+  // Fuse wire
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, -5);
+  ctx.quadraticCurveTo(2, -7, 4, -8);
+  ctx.stroke();
+
+  // Animated spark star
+  const spark = (frameIndex % 4) < 2;
+  if (spark) {
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(3, -10, 3, 3);
+  }
+}
+
+/**
+ * ⛓️ 16x8 Micro Cuban Chain Links
+ */
+export function drawMicroChain(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D) {
+  // Black knockout halo
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-9, -5, 18, 10);
+
+  // 3 interlinking chain links
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(-7, -2.5, 5, 5);
+  ctx.strokeRect(-2.5, -2.5, 5, 5);
+  ctx.strokeRect(2, -2.5, 5, 5);
+
+  // Overlap link highlights
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(-4, -1, 1, 2);
+  ctx.fillRect(1, -1, 1, 2);
+}
+
+/**
+ * 🎤 10x15 Micro Studio Capsule Microphone
+ */
+export function drawMicroMicrophone(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D) {
+  // Black knockout halo
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-6, -8, 12, 16);
+
+  // Capsule head
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.arc(0, -3, 3, Math.PI, 0, false);
+  ctx.lineTo(3, 0);
+  ctx.lineTo(-3, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  // Acoustic mesh division
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-2, -2, 4, 1);
+
+  // Handle shaft
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(-1.5, 1, 3, 5);
+
+  // Base connector
+  ctx.fillRect(-2.5, 6, 5, 1.5);
+}
+
+/**
+ * ⚡ 10x13 Micro Lightning Bolt
+ */
+export function drawMicroLightning(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  frameIndex: number = 0
+) {
+  // Black knockout halo
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-6, -7, 12, 14);
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.moveTo(2, -6);
+  ctx.lineTo(-4, -0.5);
+  ctx.lineTo(0, -0.5);
+  ctx.lineTo(-2, 6);
+  ctx.lineTo(4, 0);
+  ctx.lineTo(0.5, 0);
+  ctx.closePath();
+  ctx.fill();
+}
+
+/**
+ * 🌹 12x13 Micro Blooming Rose
+ */
+export function drawMicroRose(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D) {
+  // Black knockout halo
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-7, -7, 14, 14);
+
+  // Rose blossom
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.arc(0, -2, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Petal swirl contours in black
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(-0.5, -2, 2, 0, Math.PI);
+  ctx.stroke();
+
+  // Stem & leaf
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(0, 2);
+  ctx.quadraticCurveTo(-1, 4, 0, 6);
+  ctx.stroke();
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(1, 3, 2, 1.5);
+}
+
+/**
+ * 🌧️ 14x12 Micro Cloud Rain
+ */
+export function drawMicroCloudRain(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  frameIndex: number = 0
+) {
+  // Black knockout halo
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-8, -7, 16, 14);
+
+  // Cloud puffs
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.arc(-3, -2, 3, 0, Math.PI * 2);
+  ctx.arc(1, -3, 3.5, 0, Math.PI * 2);
+  ctx.arc(4, -1.5, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillRect(-5, -1, 10, 2);
+
+  // Slanted rain streaks
+  const phase = (frameIndex * 2) % 6;
+  ctx.fillRect(-4, 2 + (phase % 3), 1, 2);
+  ctx.fillRect(0, 2 + ((phase + 1) % 3), 1, 2);
+  ctx.fillRect(4, 2 + ((phase + 2) % 3), 1, 2);
+}
+
+/**
+ * 🌙 10x12 Micro Crescent Moon
+ */
+export function drawMicroMoon(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D) {
+  // Black knockout halo
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-6, -7, 12, 14);
+
+  // Crescent path
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.arc(0, 0, 5, -Math.PI * 0.5, Math.PI * 0.5, false);
+  ctx.arc(1.8, 0, 4.2, Math.PI * 0.5, -Math.PI * 0.5, true);
+  ctx.closePath();
+  ctx.fill();
+}
+
+/**
+ * 💋 14x8 Micro Kiss Lips
+ */
+export function drawMicroLips(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D) {
+  // Black knockout halo
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-8, -5, 16, 10);
+
+  // Lips silhouette
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.moveTo(-6, 0);
+  ctx.quadraticCurveTo(-3, -3.5, 0, -1.5);
+  ctx.quadraticCurveTo(3, -3.5, 6, 0);
+  ctx.quadraticCurveTo(3, 3.5, 0, 3.5);
+  ctx.quadraticCurveTo(-3, 3.5, -6, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  // Center slit divider
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-4, -0.5, 8, 1);
+}
+
+/**
+ * 🍷 10x14 Micro Stemmed Wine Glass
+ */
+export function drawMicroWineGlass(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D) {
+  // Black knockout halo
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-6, -8, 12, 16);
+
+  // Glass bowl
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.moveTo(-4, -5);
+  ctx.lineTo(4, -5);
+  ctx.lineTo(3, -1);
+  ctx.bezierCurveTo(2, 1, -2, 1, -3, -1);
+  ctx.closePath();
+  ctx.fill();
+
+  // Wine interior
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-2.5, -4, 5, 2);
+
+  // Stem & Base foot
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(-0.75, 1, 1.5, 4);
+  ctx.fillRect(-3, 5, 6, 1);
+}
+
+/**
+ * 🎸 12x14 Micro Electric Guitar
+ */
+export function drawMicroGuitar(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D) {
+  // Black knockout halo
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-7, -8, 14, 16);
+
+  ctx.save();
+  ctx.rotate(-Math.PI / 4);
+
+  // Guitar body
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.ellipse(0, 3, 3.5, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Soundhole / Pickup
+  ctx.fillStyle = '#000000';
+  ctx.beginPath();
+  ctx.arc(0, 2, 1.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Neck and headstock
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(-1, -7, 2, 8);
+  ctx.fillRect(-1.5, -8, 3, 2);
+
+  ctx.restore();
+}
+
+/**
+ * 🔑 14x8 Micro Antique Key
+ */
+export function drawMicroKey(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D) {
+  // Black knockout halo
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-8, -5, 16, 10);
+
+  // Ring bow
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(-4, 0, 2.5, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Shaft
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(-2, -0.75, 7, 1.5);
+
+  // Key teeth
+  ctx.fillRect(2, 0.75, 1.2, 2.5);
+  ctx.fillRect(4, 0.75, 1.2, 2);
+}
+
+/**
+ * 🎭 10x12 Micro Ski Mask
+ */
+export function drawMicroMask(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D) {
+  // Black knockout halo
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-6, -7, 12, 14);
+
+  // Balaclava contour
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.moveTo(-4, -5);
+  ctx.lineTo(4, -5);
+  ctx.lineTo(4, 4);
+  ctx.lineTo(-4, 4);
+  ctx.closePath();
+  ctx.fill();
+
+  // Eye slits & mouth slit
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-3, -2, 2, 1.5);
+  ctx.fillRect(1, -2, 2, 1.5);
+  ctx.fillRect(-2, 1.5, 4, 1.5);
+}
+
+/**
+ * 👁️ 14x8 Micro All-Seeing Eye
+ */
+export function drawMicroEye(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D) {
+  // Black knockout halo
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-8, -5, 16, 10);
+
+  // Eye Sclera
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.moveTo(-6, 0);
+  ctx.quadraticCurveTo(0, -4, 6, 0);
+  ctx.quadraticCurveTo(0, 4, -6, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  // Iris & Pupil
+  ctx.fillStyle = '#000000';
+  ctx.beginPath();
+  ctx.arc(0, 0, 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Glint
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(-0.5, -0.8, 1, 1);
+}
+
+/**
+ * 🦋 14x10 Micro Butterfly
+ */
+export function drawMicroButterfly(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  frameIndex: number = 0
+) {
+  // Black knockout halo
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-8, -6, 16, 12);
+
+  const flap = Math.abs(Math.sin(frameIndex * 0.35)) * 1.5;
+  ctx.fillStyle = '#FFFFFF';
+
+  // Upper wings
+  ctx.beginPath();
+  ctx.ellipse(-3 - flap * 0.2, -2, 3.5 - flap * 0.3, 2.5, -0.4, 0, Math.PI * 2);
+  ctx.ellipse(3 + flap * 0.2, -2, 3.5 - flap * 0.3, 2.5, 0.4, 0, Math.PI * 2);
+  // Lower wings
+  ctx.ellipse(-2.5 - flap * 0.15, 2, 2.5 - flap * 0.2, 2, 0.3, 0, Math.PI * 2);
+  ctx.ellipse(2.5 + flap * 0.15, 2, 2.5 - flap * 0.2, 2, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Center needle body
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-0.5, -4, 1, 8);
+}
+
+/**
+ * 🛡️ 12x12 Micro Knight Shield
+ */
+export function drawMicroShield(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D) {
+  // Black knockout halo
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-7, -7, 14, 14);
+
+  // Heater shield outline
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.moveTo(-5, -5);
+  ctx.lineTo(5, -5);
+  ctx.lineTo(5, 0);
+  ctx.quadraticCurveTo(4, 5, 0, 6);
+  ctx.quadraticCurveTo(-4, 5, -5, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  // Inner heraldic cross
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-0.75, -4, 1.5, 8);
+  ctx.fillRect(-3.5, -2, 7, 1.5);
+}
+

@@ -527,60 +527,187 @@ export function getWordEffectiveFont(
 
 // Concrete Symbol Dictionaries for Lyric Iconography & Word Badges
 const MOUSTACHE_WORDS = new Set([
-  'muchh', 'mooch', 'moustache', 'mustache', 'mustard', 'gabru', 'kundi', 'kundian', 'mucch', 'muchan', 'moochan'
+  'muchh', 'mooch', 'moustache', 'mustache', 'mustard', 'gabru', 'kundi', 'kundian', 'mucch', 'muchan', 'moochan',
+  // Gurmukhi & Devanagari
+  'ਮੁੱਛ', 'ਮੁੱਛਾਂ', 'ਗੱਭਰੂ', 'मूंछ', 'मूँछ', 'गबरू'
 ]);
 const SUNGLASSES_WORDS = new Set([
-  'akhan', 'shades', 'sunglasses', 'glasses', 'chashma', 'goggles', 'vision', 'spectacles', 'shady', 'eyewear'
+  'akhan', 'shades', 'sunglasses', 'glasses', 'chashma', 'goggles', 'spectacles', 'shady', 'eyewear',
+  // Gurmukhi & Devanagari
+  'ਚਸ਼ਮਾ', 'ਐਨਕਾਂ', 'ਐਨਕ', 'चश्मा'
 ]);
 const CASH_WORDS = new Set([
-  'paisa', 'cash', 'bands', 'money', 'dollar', 'dollars', 'lakh', 'crore', 'rupee', 'rupees', 'bucks', 'rich', 'wealth', 'funds', 'moolah', 'racks'
+  'paisa', 'cash', 'bands', 'money', 'dollar', 'dollars', 'lakh', 'crore', 'rupee', 'rupees', 'bucks', 'rich', 'wealth', 'funds', 'moolah', 'racks',
+  // Gurmukhi & Devanagari & Spanish
+  'ਪੈਸਾ', 'ਰੁਪਏ', 'ਦੌਲਤ', 'ਧਨ', 'पैसा', 'रुपये', 'दौलत', 'धन', 'dinero', 'plata'
 ]);
 const CAR_WORDS = new Set([
-  'gaddi', 'car', 'ride', 'drive', 'wheel', 'wheels', 'porsche', 'ferrari', 'lambo', 'benz', 'drift', 'motor', 'speeding', 'whip', 'coupe'
+  'gaddi', 'car', 'ride', 'drive', 'wheel', 'wheels', 'porsche', 'ferrari', 'lambo', 'benz', 'drift', 'motor', 'speeding', 'whip', 'coupe',
+  // Gurmukhi & Devanagari & Spanish
+  'ਗੱਡੀ', 'ਕਾਰ', 'गाड़ी', 'कार', 'coche', 'auto', 'carro'
 ]);
 const HEART_WORDS = new Set([
-  'dil', 'heart', 'love', 'pyaar', 'ishq', 'mohabbat', 'jaan', 'sweetheart', 'darling', 'romance'
+  'dil', 'heart', 'love', 'pyaar', 'ishq', 'mohabbat', 'jaan', 'sweetheart', 'darling', 'romance',
+  // Gurmukhi & Devanagari & Spanish
+  'ਦਿਲ', 'ਪਿਆਰ', 'ਇਸ਼ਕ', 'ਜਾਨ', 'ਮੁਹੱਬਤ', 'दिल', 'प्यार', 'इश्क', 'जान', 'मोहब्बत', 'corazon', 'amor'
 ]);
 const BROKEN_HEART_WORDS = new Set([
-  'todeya', 'broken', 'heartbreak', 'dhokha', 'dard', 'tears', 'bewafa', 'break', 'crying', 'shattered'
+  'todeya', 'broken', 'heartbreak', 'dhokha', 'dard', 'tears', 'bewafa', 'break', 'crying', 'shattered',
+  // Gurmukhi & Devanagari & Spanish
+  'ਟੁੱਟਿਆ', 'ਦਰਦ', 'ਧੋਖਾ', 'ਬੇਵਫ਼ਾ', 'ਹੰਝੂ', 'टूटा', 'दर्द', 'धोखा', 'बेवफा', 'आंसू', 'lagrimas', 'roto'
 ]);
 const CROWN_WORDS = new Set([
-  'badshah', 'raja', 'king', 'queen', 'crown', 'sultan', 'royalty', 'maharaja', 'ruler', 'prince', 'throne'
+  'badshah', 'raja', 'king', 'queen', 'crown', 'sultan', 'royalty', 'maharaja', 'ruler', 'prince', 'throne',
+  // Gurmukhi & Devanagari & Spanish
+  'ਬਾਦਸ਼ਾਹ', 'ਰਾਜਾ', 'ਤਾਜ', 'ਸੁਲਤਾਨ', 'ਮਹਾਰਾਜਾ', 'बादशाह', 'राजा', 'ताज', 'सुल्तान', 'महाराजा', 'corona', 'rey', 'reina'
 ]);
 const FLAME_WORDS = new Set([
-  'aag', 'fire', 'flame', 'flames', 'heat', 'cooked', 'lit', 'burn', 'burning', 'hot', 'blaze'
+  'aag', 'fire', 'flame', 'flames', 'heat', 'cooked', 'lit', 'burn', 'burning', 'hot', 'blaze',
+  // Gurmukhi & Devanagari & Spanish
+  'ਅੱਗ', 'ਭਾਂਬੜ', 'आग', 'ज्वाला', 'fuego', 'llama', 'ardiente'
 ]);
 const SKULL_WORDS = new Set([
-  'khatra', 'death', 'danger', 'skull', 'grave', 'fatal', 'poison', 'dead', 'kill', 'murder', 'deadly'
+  'khatra', 'death', 'danger', 'skull', 'grave', 'fatal', 'poison', 'dead', 'kill', 'murder', 'deadly',
+  // Gurmukhi & Devanagari & Spanish
+  'ਮੌਤ', 'ਜ਼ਹਿਰ', 'ਕਬਰ', 'मौत', 'जहर', 'कब्र', 'muerte', 'calavera', 'peligro'
 ]);
 const SWORD_WORDS = new Set([
-  'talwar', 'kirpan', 'sword', 'swords', 'dagger', 'blade', 'vair', 'war', 'scimitar', 'knife'
+  'talwar', 'kirpan', 'sword', 'swords', 'dagger', 'blade', 'vair', 'war', 'scimitar', 'knife',
+  // Gurmukhi & Devanagari & Spanish
+  'ਤਲਵਾਰ', 'ਕਿਰਪਾਨ', 'ਸ਼ਸਤਰ', 'ਖੰਡਾ', 'तलवार', 'कृपाण', 'शस्त्र', 'espada', 'daga'
 ]);
 const TROPHY_WORDS = new Set([
-  'trophy', 'winner', 'champion', 'gold', 'cup', 'medal', 'first', 'jeet', 'victory', 'champions'
+  'trophy', 'winner', 'champion', 'gold', 'cup', 'medal', 'first', 'jeet', 'victory', 'champions',
+  // Gurmukhi & Devanagari & Spanish
+  'ਜਿੱਤ', 'ਸੋਨਾ', 'ਇਨਾਮ', 'जीत', 'सोना', 'इनाम', 'campeon', 'trofeo', 'victoria'
 ]);
 const DICE_WORDS = new Set([
-  'kismat', 'dice', 'gamble', 'roll', 'luck', 'naseeb', 'bet', 'craps', 'casino'
+  'kismat', 'dice', 'gamble', 'roll', 'luck', 'naseeb', 'bet', 'craps', 'casino',
+  // Gurmukhi & Devanagari & Spanish
+  'ਕਿਸਮਤ', 'ਨਸੀਬ', 'ਜੂਆ', 'किस्मत', 'नसीब', 'जुआ', 'dados', 'suerte'
 ]);
 const WATCH_WORDS = new Set([
-  'waqt', 'time', 'watch', 'rolex', 'ghadi', 'clock', 'hours', 'tick', 'ticking', 'second'
+  'waqt', 'time', 'watch', 'rolex', 'ghadi', 'clock', 'hours', 'tick', 'ticking', 'second',
+  // Gurmukhi & Devanagari & Spanish
+  'ਵਕਤ', 'ਘੜੀ', 'ਸਮਾਂ', 'वक्त', 'घड़ी', 'समय', 'reloj', 'tiempo', 'hora'
 ]);
 const DIAMOND_WORDS = new Set([
-  'heere', 'heera', 'diamond', 'diamonds', 'ice', 'bling', 'jewelry', 'gems', 'gem', 'jewel'
+  'heere', 'heera', 'diamond', 'diamonds', 'ice', 'bling', 'jewelry', 'gems', 'gem', 'jewel',
+  // Gurmukhi & Devanagari & Spanish
+  'ਹੀਰੇ', 'ਹੀਰਾ', 'ਗਹਿਣੇ', 'हीरे', 'हीरा', 'गहने', 'diamante', 'joya', 'brillante'
 ]);
 const STAR_WORDS = new Set([
-  'star', 'superstar', 'fame', 'celebrity', 'bright', 'shine', 'glow', 'stellar'
+  'star', 'superstar', 'fame', 'celebrity', 'bright', 'shine', 'glow', 'stellar',
+  // Gurmukhi & Devanagari & Spanish
+  'ਤਾਰਾ', 'ਸਿਤਾਰਾ', 'तारा', 'सितारा', 'estrella', 'brillo'
+]);
+
+// 16 New Word Badge Keyword Dictionaries (Multilingual: English, Punjabi, Hindi, Spanish)
+const GUN_WORDS = new Set([
+  'gun', 'guns', 'pistol', 'rifle', 'glock', 'revolver', 'bandook', 'goli', 'revorbar', 'asla', 'tamancha', 'katta', 'pistola', 'arma', 'balas', 'shotgun', 'weapon',
+  // Gurmukhi & Devanagari
+  'ਬੰਦੂਕ', 'ਗੋਲੀ', 'ਪਿਸਤੌਲ', 'ਅਸਲਾ', 'ਰਿਵਾਲਵਰ', 'बंदूक', 'गोली', 'पिस्तौल', 'तमंचा', 'कट्टा', 'हथियार'
+]);
+const BOMB_WORDS = new Set([
+  'bomb', 'bombs', 'blast', 'explode', 'explosion', 'pataka', 'bam', 'dhamaka', 'bomba', 'dynamite', 'dinamita', 'grenade', 'barood',
+  // Gurmukhi & Devanagari
+  'ਬੰਬ', 'ਧਮਾਕਾ', 'ਪਟਾਕਾ', 'ਬਾਰੂਦ', 'बम', 'धमाका', 'पटाखा', 'बारूद'
+]);
+const CHAIN_WORDS = new Set([
+  'chain', 'chains', 'cuban', 'chaina', 'soney', 'zanjeer', 'cadena', 'necklace', 'collar', 'pendant', 'goldchain',
+  // Gurmukhi & Devanagari
+  'ਜ਼ੰਜੀਰ', 'ਸੋਨਾ', 'ਚੈਨ', 'ਚੈਨਾ', 'जंजीर', 'सोना', 'चैन', 'हार'
+]);
+const MICROPHONE_WORDS = new Set([
+  'mic', 'microphone', 'studio', 'rap', 'spit', 'spittin', 'rhyme', 'vocals', 'vocal', 'microfono', 'booth', 'awaaz',
+  // Gurmukhi & Devanagari
+  'ਮਾਈਕ', 'ਅਵਾਜ਼', 'माइक', 'आवाज', 'स्वर'
+]);
+const LIGHTNING_WORDS = new Set([
+  'lightning', 'thunder', 'shock', 'volt', 'current', 'bijli', 'bijlee', 'rayo', 'trueno', 'electric', 'electricity',
+  // Gurmukhi & Devanagari
+  'ਬਿਜਲੀ', 'ਤੜਕ', 'बिजली', 'करंट', 'विद्युत'
+]);
+const ROSE_WORDS = new Set([
+  'rose', 'roses', 'gulab', 'flower', 'petal', 'phool', 'rosa', 'blossom', 'bouquet', 'kali',
+  // Gurmukhi & Devanagari
+  'ਗੁਲਾਬ', 'ਫੁੱਲ', 'ਕਲੀ', 'गुलाब', 'फूल', 'कली'
+]);
+const CLOUD_RAIN_WORDS = new Set([
+  'rain', 'raining', 'barish', 'barsaat', 'barkha', 'cloud', 'clouds', 'badal', 'lluvia', 'llueve', 'storm', 'stormy', 'pour', 'drizzle',
+  // Gurmukhi & Devanagari
+  'ਮੀਂਹ', 'ਬਾਰਿਸ਼', 'ਬੱਦਲ', 'ਬਰਸਾਤ', 'बारिश', 'बरसात', 'बादल', 'वर्षा'
+]);
+const MOON_WORDS = new Set([
+  'moon', 'chann', 'chand', 'chanda', 'chaand', 'lunar', 'luna', 'moonlight', 'crescent', 'midnight',
+  // Gurmukhi & Devanagari
+  'ਚੰਨ', 'ਚੰਦ', 'ਚੰਨਣ', 'चाँद', 'चांद', 'चंदा', 'चंद्रमा'
+]);
+const LIPS_WORDS = new Set([
+  'lips', 'lip', 'hont', 'honth', 'buliyan', 'kiss', 'kisses', 'chumma', 'labio', 'labios', 'lipstick', 'pout', 'muah',
+  // Gurmukhi & Devanagari
+  'ਬੁੱਲ', 'ਬੁਲੀਆਂ', 'ਚੁੰਮਾ', 'होंठ', 'होठ', 'चुम्मा', 'लब'
+]);
+const WINE_GLASS_WORDS = new Set([
+  'wine', 'daru', 'daaru', 'sharab', 'drink', 'drinks', 'peg', 'cheers', 'glass', 'copa', 'vino', 'toast', 'cocktail', 'champagne', 'jaam',
+  // Gurmukhi & Devanagari
+  'ਦਾਰੂ', 'ਸ਼ਰਾਬ', 'ਪੈੱਗ', 'ਜਾਮ', 'दारू', 'शराब', 'जाम', 'पैग', 'मदिरा'
+]);
+const GUITAR_WORDS = new Set([
+  'guitar', 'saaz', 'riff', 'strum', 'chords', 'guitarra', 'rockstar', 'acoustic', 'strings',
+  // Gurmukhi & Devanagari
+  'ਗਿਟਾਰ', 'ਸਾਜ਼', 'गिटार', 'साज़', 'तार'
+]);
+const KEY_WORDS = new Set([
+  'key', 'keys', 'chaabi', 'chabi', 'kunci', 'lock', 'unlock', 'llave', 'secret', 'tala',
+  // Gurmukhi & Devanagari
+  'ਚਾਬੀ', 'ਜਿੰਦਰਾ', 'ਕੁੰਜੀ', 'चाबी', 'कुंजी', 'ताला'
+]);
+const MASK_WORDS = new Set([
+  'mask', 'masked', 'balaclava', 'ski', 'nakab', 'naqab', 'parda', 'mascara', 'disguise', 'stealth', 'hood',
+  // Gurmukhi & Devanagari
+  'ਨਕਾਬ', 'ਮਾਸਕ', 'ਪਰਦਾ', 'नकाब', 'मुखौटा', 'पर्दा'
+]);
+const EYE_WORDS = new Set([
+  'eye', 'eyes', 'ankhiyan', 'naina', 'nazar', 'deeda', 'ojo', 'ojos', 'vision', 'stare', 'gaze', 'sight',
+  // Gurmukhi & Devanagari
+  'ਅੱਖਾਂ', 'ਨਜ਼ਰ', 'ਦੀਦਾਰ', 'ਨੈਣ', 'नज़र', 'नजर', 'आँखें', 'आंखें', 'दीदार', 'नैना', 'दृष्टि'
+]);
+const BUTTERFLY_WORDS = new Set([
+  'butterfly', 'butterflies', 'titli', 'titliyan', 'mariposa', 'mariposas', 'flutter', 'wings',
+  // Gurmukhi & Devanagari
+  'ਤਿਤਲੀ', 'ਤਿਤਲੀਆਂ', 'ਤਿਤਲੀਆ', 'तितली', 'तितलियाँ', 'तितलीयां'
+]);
+const SHIELD_WORDS = new Set([
+  'shield', 'dhaal', 'guard', 'defend', 'defense', 'protect', 'escudo', 'armor', 'protection', 'knight',
+  // Gurmukhi & Devanagari
+  'ਢਾਲ', 'ਬਚਾਅ', 'ਰੱਖਿਆ', 'ढाल', 'रक्षा', 'बचाव'
 ]);
 
 /**
+ * Normalizes a word token for multilingual keyword dictionary lookup across
+ * Latin (with accents stripped e.g. micrófono -> microfono), Devanagari, Gurmukhi, etc.
+ */
+export function normalizeBadgeMotifToken(raw: string): string {
+  if (!raw || typeof raw !== 'string') return '';
+  return raw
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .normalize('NFC')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\p{M}]/gu, '')
+    .trim();
+}
+
+/**
  * Deterministically classifies whether a word triggers an inline 1-bit micro-sprite badge.
- * Understands English, Punjabi, Hindi, and common slang synonyms.
+ * Understands English, Punjabi (Latin + Gurmukhi), Hindi (Latin + Devanagari), Spanish, and common slang synonyms.
  */
 export function classifyWordBadge(
   word: string,
   songProfile?: SongMoodProfile | null
 ): WordBadgeIcon {
-  const clean = word.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+  const clean = normalizeBadgeMotifToken(word);
   if (!clean) return 'none';
 
   if (MOUSTACHE_WORDS.has(clean)) return 'moustache';
@@ -599,6 +726,24 @@ export function classifyWordBadge(
   if (DIAMOND_WORDS.has(clean)) return 'diamond';
   if (STAR_WORDS.has(clean)) return 'star';
 
+  // 16 New Badges
+  if (GUN_WORDS.has(clean)) return 'gun';
+  if (BOMB_WORDS.has(clean)) return 'bomb';
+  if (CHAIN_WORDS.has(clean)) return 'chain';
+  if (MICROPHONE_WORDS.has(clean)) return 'microphone';
+  if (LIGHTNING_WORDS.has(clean)) return 'lightning';
+  if (ROSE_WORDS.has(clean)) return 'rose';
+  if (CLOUD_RAIN_WORDS.has(clean)) return 'cloud_rain';
+  if (MOON_WORDS.has(clean)) return 'moon';
+  if (LIPS_WORDS.has(clean)) return 'lips';
+  if (WINE_GLASS_WORDS.has(clean)) return 'wine_glass';
+  if (GUITAR_WORDS.has(clean)) return 'guitar';
+  if (KEY_WORDS.has(clean)) return 'key';
+  if (MASK_WORDS.has(clean)) return 'mask';
+  if (EYE_WORDS.has(clean)) return 'eye';
+  if (BUTTERFLY_WORDS.has(clean)) return 'butterfly';
+  if (SHIELD_WORDS.has(clean)) return 'shield';
+
   return 'none';
 }
 
@@ -609,6 +754,32 @@ export function classifyWordMotif(
   word: string,
   songProfile?: SongMoodProfile | null
 ): VisualMotif | null {
+  const clean = normalizeBadgeMotifToken(word);
+  if (!clean) return null;
+
+  // Direct keyword matching for specific visual motifs (multilingual)
+  if (clean === 'khanda' || clean === 'chakkar' || clean === 'ਖੰਡਾ' || clean === 'खंडा') return 'punjabi_khanda';
+  if (clean === 'siren' || clean === 'police' || clean === 'cop' || clean === 'cops' || clean === 'ਸਾਇਰਨ' || clean === 'साइरन') return 'police_siren_sweep';
+  if (clean === 'thar' || clean === 'jeep' || clean === '4x4' || clean === 'ਥਾਰ' || clean === 'थार') return 'thar_jeep_grille';
+  if (clean === 'boombox' || clean === 'blaster') return 'boombox_blaster';
+  if (clean === 'subwoofer' || clean === 'bass') return 'speaker_subwoofer_pulse';
+  if (clean === 'metronome' || clean === 'tempo') return 'metronome_ticker';
+  if (clean === 'disco') return 'disco_mirror_ball';
+  if (clean === 'skyline' || clean === 'city' || clean === 'skyscrapers' || clean === 'cityscape' || clean === 'ਸ਼ਹਿਰ' || clean === 'शहर') return 'city_skyline_silhouette';
+  if (clean === 'smoke' || clean === 'smokering' || clean === 'haze' || clean === 'ਧੂੰਆਂ' || clean === 'धुआं' || clean === 'धुआँ') return 'smoke_ring_drift';
+  if (clean === 'graffiti' || clean === 'drip' || clean === 'drips') return 'graffiti_drips';
+  if (clean === 'vault' || clean === 'safe' || clean === 'ਤਿਜੋਰੀ' || clean === 'तिजोरी') return 'vault_safe_dial';
+  if (clean === 'candle' || clean === 'ਮੋਮਬੱਤੀ' || clean === 'मोमबत्ती') return 'candle_flame_flicker';
+  if (clean === 'autumn' || clean === 'leaves' || clean === 'leaf' || clean === 'ਪੱਤੇ' || clean === 'पत्ते') return 'falling_autumn_leaves';
+  if (clean === 'feather' || clean === 'quill' || clean === 'ਖੰਭ' || clean === 'पंखा') return 'feather_drift';
+  if (clean === 'grid' || clean === 'synthwave' || clean === 'laser') return 'laser_grid_horizon';
+  if (clean === 'matrix') return 'matrix_rain_code';
+  if (clean === 'tunnel') return 'neon_heart_tunnel';
+  if (clean === 'radar' || clean === 'sonar') return 'radar_sweep_sonar';
+  if (clean === 'hazard' || clean === 'caution' || clean === 'warning' || clean === 'ਖ਼ਤਰਾ' || clean === 'खतरा') return 'hazard_stripes_caution';
+  if (clean === 'aura' || clean === 'ki') return 'shonen_ki_aura';
+  if (clean === 'portal' || clean === 'vortex') return 'portal_vortex';
+
   const badge = classifyWordBadge(word, songProfile);
   switch (badge) {
     case 'moustache': return 'handlebar_moustache';
@@ -626,9 +797,26 @@ export function classifyWordMotif(
     case 'skull': return 'skull_cross';
     case 'diamond':
     case 'star': return 'chrome_star';
+    case 'gun': return 'bullet_chamber_cylinder';
+    case 'bomb': return 'sound_blast_rings';
+    case 'chain': return 'cuban_chain_links';
+    case 'microphone': return 'studio_microphone';
+    case 'lightning': return 'lightning_arc';
+    case 'rose': return 'blooming_rose';
+    case 'cloud_rain': return 'rain_window';
+    case 'moon': return 'lunar_crescent';
+    case 'lips': return 'neon_lips';
+    case 'wine_glass': return 'champagne_toast';
+    case 'guitar': return 'electric_guitar';
+    case 'key': return 'antique_key_lock';
+    case 'mask': return 'drill_ski_mask';
+    case 'eye': return 'all_seeing_eye';
+    case 'butterfly': return 'fluttering_butterflies';
+    case 'shield': return 'knight_shield';
     default: return null;
   }
 }
+
 
 
 

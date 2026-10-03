@@ -212,6 +212,40 @@ export const VALID_VISUAL_MOTIFS: VisualMotif[] = [
   'champion_trophy',
   'lucky_dice',
   'rolex_watch',
+  'bullet_chamber_cylinder',
+  'police_siren_sweep',
+  'thar_jeep_grille',
+  'punjabi_khanda',
+  'cuban_chain_links',
+  'drill_ski_mask',
+  'studio_microphone',
+  'boombox_blaster',
+  'speaker_subwoofer_pulse',
+  'electric_guitar',
+  'metronome_ticker',
+  'disco_mirror_ball',
+  'city_skyline_silhouette',
+  'smoke_ring_drift',
+  'graffiti_drips',
+  'champagne_toast',
+  'neon_lips',
+  'vault_safe_dial',
+  'blooming_rose',
+  'lunar_crescent',
+  'candle_flame_flicker',
+  'fluttering_butterflies',
+  'falling_autumn_leaves',
+  'feather_drift',
+  'laser_grid_horizon',
+  'matrix_rain_code',
+  'neon_heart_tunnel',
+  'radar_sweep_sonar',
+  'hazard_stripes_caution',
+  'antique_key_lock',
+  'shonen_ki_aura',
+  'portal_vortex',
+  'all_seeing_eye',
+  'knight_shield',
 ];
 
 export const VALID_WORD_BADGE_ICONS: WordBadgeIcon[] = [
@@ -231,6 +265,22 @@ export const VALID_WORD_BADGE_ICONS: WordBadgeIcon[] = [
   'watch',
   'diamond',
   'star',
+  'gun',
+  'bomb',
+  'chain',
+  'microphone',
+  'lightning',
+  'rose',
+  'cloud_rain',
+  'moon',
+  'lips',
+  'wine_glass',
+  'guitar',
+  'key',
+  'mask',
+  'eye',
+  'butterfly',
+  'shield',
 ];
 
 /**
@@ -241,7 +291,13 @@ export function normalizeWordBadge(
   valid: WordBadgeIcon[] = VALID_WORD_BADGE_ICONS
 ): WordBadgeIcon {
   if (!raw || typeof raw !== 'string') return 'none';
-  const clean = raw.toLowerCase().replace(/[-\s]/g, '_').trim();
+  const clean = raw
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .normalize('NFC')
+    .toLowerCase()
+    .replace(/[-\s]/g, '_')
+    .trim();
   if (valid.includes(clean as WordBadgeIcon)) return clean as WordBadgeIcon;
 
   if (clean.includes('mustard') || clean.includes('mustache') || clean.includes('moustache') || clean.includes('mooch') || clean.includes('muchh') || clean.includes('beard')) return 'moustache';
@@ -250,15 +306,33 @@ export function normalizeWordBadge(
   if (clean.includes('cash') || clean.includes('money') || clean.includes('banknote') || clean.includes('dollar') || clean.includes('paisa') || clean.includes('bands')) return 'cash';
   if (clean.includes('car') || clean.includes('ride') || clean.includes('drive') || clean.includes('gaddi') || clean.includes('porsche') || clean.includes('auto')) return 'car';
   if (clean.includes('broken') || clean.includes('crack') || clean.includes('heartbreak') || clean.includes('todeya')) return 'broken_heart';
-  if (clean.includes('heart') || clean.includes('love') || clean.includes('dil') || clean.includes('pyaar')) return 'heart';
-  if (clean.includes('flame') || clean.includes('fire') || clean.includes('aag') || clean.includes('burn') || clean.includes('hot')) return 'flame';
-  if (clean.includes('skull') || clean.includes('dead') || clean.includes('death') || clean.includes('grave') || clean.includes('khatra')) return 'skull';
-  if (clean.includes('sword') || clean.includes('dagger') || clean.includes('blade') || clean.includes('kirpan') || clean.includes('talwar')) return 'sword';
-  if (clean.includes('trophy') || clean.includes('cup') || clean.includes('winner') || clean.includes('champion') || clean.includes('gold')) return 'trophy';
-  if (clean.includes('dice') || clean.includes('die') || clean.includes('gamble') || clean.includes('roll') || clean.includes('kismat')) return 'dice';
-  if (clean.includes('watch') || clean.includes('rolex') || clean.includes('clock') || clean.includes('time') || clean.includes('waqt') || clean.includes('ghadi')) return 'watch';
-  if (clean.includes('diamond') || clean.includes('ice') || clean.includes('bling') || clean.includes('gem') || clean.includes('heere')) return 'diamond';
-  if (clean.includes('star') || clean.includes('sparkle') || clean.includes('fame') || clean.includes('shine')) return 'star';
+  if (clean.includes('heart') || clean.includes('love') || clean.includes('dil') || clean.includes('pyaar') || clean.includes('corazon')) return 'heart';
+  if (clean.includes('flame') || clean.includes('fire') || clean.includes('aag') || clean.includes('burn') || clean.includes('hot') || clean.includes('fuego')) return 'flame';
+  if (clean.includes('skull') || clean.includes('dead') || clean.includes('death') || clean.includes('grave') || clean.includes('khatra') || clean.includes('muerte')) return 'skull';
+  if (clean.includes('sword') || clean.includes('dagger') || clean.includes('blade') || clean.includes('kirpan') || clean.includes('talwar') || clean.includes('espada')) return 'sword';
+  if (clean.includes('trophy') || clean.includes('cup') || clean.includes('winner') || clean.includes('champion') || clean.includes('gold') || clean.includes('trofeo')) return 'trophy';
+  if (clean.includes('dice') || clean.includes('die') || clean.includes('gamble') || clean.includes('roll') || clean.includes('kismat') || clean.includes('dados')) return 'dice';
+  if (clean.includes('watch') || clean.includes('rolex') || clean.includes('clock') || clean.includes('time') || clean.includes('waqt') || clean.includes('ghadi') || clean.includes('reloj')) return 'watch';
+  if (clean.includes('diamond') || clean.includes('ice') || clean.includes('bling') || clean.includes('gem') || clean.includes('heere') || clean.includes('diamante')) return 'diamond';
+  if (clean.includes('star') || clean.includes('sparkle') || clean.includes('fame') || clean.includes('shine') || clean.includes('estrella')) return 'star';
+
+  // 16 New Badges Fuzzy Aliases
+  if (clean.includes('gun') || clean.includes('pistol') || clean.includes('glock') || clean.includes('revolver') || clean.includes('bandook') || clean.includes('rifle') || clean.includes('weapon') || clean.includes('pistola')) return 'gun';
+  if (clean.includes('bomb') || clean.includes('blast') || clean.includes('explode') || clean.includes('pataka') || clean.includes('dynamite') || clean.includes('dinamit') || clean.includes('grenade') || clean.includes('bomba')) return 'bomb';
+  if (clean.includes('chain') || clean.includes('cuban') || clean.includes('necklace') || clean.includes('zanjeer') || clean.includes('curb') || clean.includes('cadena')) return 'chain';
+  if (clean.includes('mic') || clean.includes('studio') || clean.includes('rap') || clean.includes('spit') || clean.includes('booth') || clean.includes('vocal') || clean.includes('condenser') || clean.includes('microfono')) return 'microphone';
+  if (clean.includes('lightning') || clean.includes('thunder') || clean.includes('shock') || clean.includes('volt') || clean.includes('electric') || clean.includes('bijli') || clean.includes('rayo') || clean.includes('trueno')) return 'lightning';
+  if (clean.includes('rose') || clean.includes('gulab') || clean.includes('flower') || clean.includes('petal') || clean.includes('blossom') || clean.includes('rosa')) return 'rose';
+  if (clean.includes('rain') || clean.includes('cloud') || clean.includes('barish') || clean.includes('storm') || clean.includes('pour') || clean.includes('lluvia')) return 'cloud_rain';
+  if (clean.includes('moon') || clean.includes('lunar') || clean.includes('chann') || clean.includes('chand') || clean.includes('crescent') || clean.includes('luna')) return 'moon';
+  if (clean.includes('lip') || clean.includes('kiss') || clean.includes('hont') || clean.includes('chumma') || clean.includes('lipstick') || clean.includes('labio')) return 'lips';
+  if (clean.includes('wine') || clean.includes('daru') || clean.includes('sharab') || clean.includes('drink') || clean.includes('champagne') || clean.includes('cocktail') || clean.includes('vino') || clean.includes('copa')) return 'wine_glass';
+  if (clean.includes('guitar') || clean.includes('riff') || clean.includes('strum') || clean.includes('acoustic') || clean.includes('saaz') || clean.includes('guitarra')) return 'guitar';
+  if (clean.includes('key') || clean.includes('chaabi') || clean.includes('lock') || clean.includes('unlock') || clean.includes('secret') || clean.includes('llave')) return 'key';
+  if (clean.includes('mask') || clean.includes('balaclava') || clean.includes('ski') || clean.includes('nakab') || clean.includes('stealth') || clean.includes('mascara')) return 'mask';
+  if (clean.includes('eye') || clean.includes('naina') || clean.includes('nazar') || clean.includes('vision') || clean.includes('gaze') || clean.includes('ojo')) return 'eye';
+  if (clean.includes('butterfl') || clean.includes('titli') || clean.includes('flutter') || clean.includes('wings') || clean.includes('mariposa')) return 'butterfly';
+  if (clean.includes('shield') || clean.includes('dhaal') || clean.includes('guard') || clean.includes('defend') || clean.includes('armor') || clean.includes('protect') || clean.includes('escudo')) return 'shield';
 
   return 'none';
 }
@@ -271,19 +345,61 @@ export function normalizeMotif(
   valid: VisualMotif[] = VALID_VISUAL_MOTIFS
 ): VisualMotif {
   if (!raw || typeof raw !== 'string') return 'none';
-  const clean = raw.toLowerCase().replace(/[-\s]/g, '_').trim();
+  const clean = raw
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .normalize('NFC')
+    .toLowerCase()
+    .replace(/[-\s]/g, '_')
+    .trim();
   if (valid.includes(clean as VisualMotif)) return clean as VisualMotif;
 
   // Specific multi-word and compound motif matching first
   if (clean.includes('mustard') || clean.includes('mustache') || clean.includes('moustache') || clean.includes('mooch') || clean.includes('muchh')) return 'handlebar_moustache';
   if (clean.includes('sunglass') || clean.includes('shades') || clean.includes('eyewear') || clean.includes('glasses')) return 'dark_sunglasses';
   if (clean.includes('money') || clean.includes('banknote') || clean.includes('cash') || clean.includes('dollar') || clean.includes('paisa') || clean.includes('bills')) return 'money_stack';
-  if (clean.includes('racer') || clean.includes('car') || clean.includes('gaddi') || clean.includes('vehicle') || clean.includes('auto') || clean.includes('coupe')) return 'street_racer';
-  if (clean.includes('cracked') || clean.includes('heartbreak') || clean.includes('broken_heart') || clean.includes('todeya')) return 'cracked_heart';
-  if (clean.includes('sword') || clean.includes('dagger') || clean.includes('scimitar') || clean.includes('kirpan') || clean.includes('talwar')) return 'crossed_swords';
-  if (clean.includes('trophy') || clean.includes('champion') || clean.includes('cup') || clean.includes('winner')) return 'champion_trophy';
-  if (clean.includes('dice') || clean.includes('die') || clean.includes('gamble') || clean.includes('roll') || clean.includes('kismat')) return 'lucky_dice';
-  if (clean.includes('rolex') || clean.includes('watch') || clean.includes('clock') || clean.includes('waqt') || clean.includes('ghadi')) return 'rolex_watch';
+  if (clean.includes('racer') || clean.includes('car') || clean.includes('gaddi') || clean.includes('vehicle') || clean.includes('auto') || clean.includes('coupe') || clean.includes('coche')) return 'street_racer';
+  if (clean.includes('cracked') || clean.includes('heartbreak') || clean.includes('broken_heart') || clean.includes('todeya') || clean.includes('corazon_roto')) return 'cracked_heart';
+  if (clean.includes('sword') || clean.includes('dagger') || clean.includes('scimitar') || clean.includes('kirpan') || clean.includes('talwar') || clean.includes('espada')) return 'crossed_swords';
+  if (clean.includes('trophy') || clean.includes('champion') || clean.includes('cup') || clean.includes('winner') || clean.includes('trofeo')) return 'champion_trophy';
+  if (clean.includes('dice') || clean.includes('die') || clean.includes('gamble') || clean.includes('roll') || clean.includes('kismat') || clean.includes('dados')) return 'lucky_dice';
+  if (clean.includes('rolex') || clean.includes('watch') || clean.includes('clock') || clean.includes('waqt') || clean.includes('ghadi') || clean.includes('reloj')) return 'rolex_watch';
+  // Compound and specific new motifs first before single-word generic fallbacks
+  if (clean.includes('smoke_ring') || clean.includes('smokering') || clean.includes('smoke')) return 'smoke_ring_drift';
+  if (clean.includes('matrix') || clean.includes('digital_rain') || clean.includes('rain_code')) return 'matrix_rain_code';
+  if (clean.includes('cylinder') || clean.includes('bullet') || clean.includes('chamber') || clean.includes('revolver')) return 'bullet_chamber_cylinder';
+  if (clean.includes('siren') || clean.includes('police') || clean.includes('strobe') || clean.includes('cop')) return 'police_siren_sweep';
+  if (clean.includes('thar') || clean.includes('jeep') || clean.includes('grille') || clean.includes('4x4')) return 'thar_jeep_grille';
+  if (clean.includes('khanda') || clean.includes('chakkar')) return 'punjabi_khanda';
+  if (clean.includes('cuban') || clean.includes('chain_links') || clean.includes('curb') || clean.includes('cadena')) return 'cuban_chain_links';
+  if (clean.includes('ski_mask') || clean.includes('balaclava') || clean.includes('drill_mask') || clean.includes('mascara')) return 'drill_ski_mask';
+  if (clean.includes('studio_mic') || clean.includes('condenser') || clean.includes('microphone') || clean.includes('microfono')) return 'studio_microphone';
+  if (clean.includes('boombox') || clean.includes('blaster') || clean.includes('ghetto')) return 'boombox_blaster';
+  if (clean.includes('subwoofer') || clean.includes('bass_pulse') || clean.includes('sub_pulse')) return 'speaker_subwoofer_pulse';
+  if (clean.includes('electric_guitar') || clean.includes('stratocaster') || clean.includes('guitar') || clean.includes('guitarra')) return 'electric_guitar';
+  if (clean.includes('metronome') || clean.includes('ticker') || clean.includes('tempo')) return 'metronome_ticker';
+  if (clean.includes('disco') || clean.includes('mirror_ball') || clean.includes('discoball')) return 'disco_mirror_ball';
+  if (clean.includes('skyline') || clean.includes('city') || clean.includes('skyscraper') || clean.includes('cityscape')) return 'city_skyline_silhouette';
+  if (clean.includes('graffiti') || clean.includes('drip') || clean.includes('paint_drip')) return 'graffiti_drips';
+  if (clean.includes('champagne') || clean.includes('toast') || clean.includes('flute')) return 'champagne_toast';
+  if (clean.includes('neon_lips') || clean.includes('lips') || clean.includes('kiss_lips') || clean.includes('labios')) return 'neon_lips';
+  if (clean.includes('vault') || clean.includes('safe_dial') || clean.includes('combination')) return 'vault_safe_dial';
+  if (clean.includes('blooming_rose') || clean.includes('rose') || clean.includes('blossom') || clean.includes('rosa')) return 'blooming_rose';
+  if (clean.includes('lunar') || clean.includes('crescent') || clean.includes('moon') || clean.includes('luna')) return 'lunar_crescent';
+  if (clean.includes('candle') || clean.includes('candle_flame') || clean.includes('flicker') || clean.includes('vela')) return 'candle_flame_flicker';
+  if (clean.includes('butterfl') || clean.includes('flutter') || clean.includes('mariposa')) return 'fluttering_butterflies';
+  if (clean.includes('autumn') || clean.includes('falling_leaves') || clean.includes('foliage') || clean.includes('leaf') || clean.includes('hojas')) return 'falling_autumn_leaves';
+  if (clean.includes('feather') || clean.includes('quill') || clean.includes('pluma')) return 'feather_drift';
+  if (clean.includes('laser_grid') || clean.includes('synthwave') || clean.includes('grid_horizon')) return 'laser_grid_horizon';
+  if (clean.includes('heart_tunnel') || clean.includes('neon_heart') || clean.includes('tunnel')) return 'neon_heart_tunnel';
+  if (clean.includes('radar') || clean.includes('sonar')) return 'radar_sweep_sonar';
+  if (clean.includes('hazard') || clean.includes('caution') || clean.includes('warning_stripes')) return 'hazard_stripes_caution';
+  if (clean.includes('key_lock') || clean.includes('antique_key') || clean.includes('keyhole') || clean.includes('llave')) return 'antique_key_lock';
+  if (clean.includes('ki_aura') || clean.includes('shonen') || clean.includes('aura') || clean.includes('saiyan')) return 'shonen_ki_aura';
+  if (clean.includes('portal') || clean.includes('vortex') || clean.includes('wormhole')) return 'portal_vortex';
+  if (clean.includes('all_seeing') || clean.includes('illuminati') || clean.includes('eye') || clean.includes('ojo')) return 'all_seeing_eye';
+  if (clean.includes('knight') || clean.includes('shield') || clean.includes('heraldic') || clean.includes('escudo')) return 'knight_shield';
+
   if (clean.includes('blast') || clean.includes('shockwave') || clean.includes('ring')) return 'sound_blast_rings';
   if (clean.includes('barbed') || clean.includes('wire') || clean.includes('fence')) return 'barbed_wire';
   if (clean.includes('shatter') || clean.includes('shard') || clean.includes('glass')) return 'shattered_glass';
@@ -296,7 +412,7 @@ export function normalizeMotif(
   // Standard visual motif matching
   if (clean.includes('note') || clean.includes('music') || clean.includes('melody') || clean.includes('clef')) return 'floating_notes';
   if (clean.includes('starlight') || clean.includes('twinkle') || clean.includes('constellation')) return 'starlight_glimmer';
-  if (clean.includes('heart') || clean.includes('pulse') || clean.includes('cardiac') || clean.includes('love')) return 'heartbeat_pulse';
+  if (clean.includes('heart') || clean.includes('pulse') || clean.includes('cardiac') || clean.includes('love') || clean.includes('corazon') || clean.includes('dil')) return 'heartbeat_pulse';
   if (clean.includes('ripple') || clean.includes('water') || clean.includes('wave') || clean.includes('ocean')) return 'water_ripples';
   if (clean.includes('frame') || clean.includes('border') || clean.includes('box') || clean.includes('letterbox')) return 'minimal_frame';
   if (clean.includes('dust') || clean.includes('mote') || clean.includes('particle') || clean.includes('lofi')) return 'lofi_dust_motes';
@@ -579,7 +695,7 @@ Choose from these 20 visual archetypes:
 - "prism_shimmer": light beam sweeping across glyphs, diamond shine, luxury, glow, star glints
 - "squash_bounce": elastic Disney squash and stretch rebound, playful hops, dance grooves, bouncy funk
 
-Choose from these 33 visual motifs (or "none"):
+Choose from these 67 visual motifs (or "none"):
 - "none": clean typography only with zero background visual distractions
 - "handlebar_moustache": royal twirled moustache with curved tips for male pride, muchh, mooch, swagger
 - "dark_sunglasses": dark wayfarer sunglasses with sweeping white diagonal glare for shades, cool, attitude
@@ -590,6 +706,40 @@ Choose from these 33 visual motifs (or "none"):
 - "champion_trophy": golden chalice winner trophy with star sparks for victory, top, number 1, champion
 - "lucky_dice": tumbling 3D isometric pixel dice for gambling, roll, luck, risk, kismat
 - "rolex_watch": circular watch bezel with ticking second hand for time, rolex, clock, hours, waqt
+- "bullet_chamber_cylinder": 6-shot revolver cylinder for drill, street heat, shootout, firepower
+- "police_siren_sweep": emergency police strobe sweeping light cones for sirens, cops, chase, danger
+- "thar_jeep_grille": rugged 7-slot 4x4 jeep grille with round headlamps for off-road, thar, jeep, cruising
+- "punjabi_khanda": sacred Sikh Khanda emblem with double-edged blade and dual kirpans for heritage, faith
+- "cuban_chain_links": heavy interlinked curb chain framing display for drip, cuban, jewelry, flex
+- "drill_ski_mask": tactical balaclava ski mask with cutouts for drill, stealth, street, masked
+- "studio_microphone": capsule microphone with shock-mount frame for studio, rap, spitting bars, vocals
+- "boombox_blaster": vintage 80s ghetto blaster boombox with twin woofers for hip-hop, street, beats
+- "speaker_subwoofer_pulse": dual flanking subwoofers with vibrating bass cones for 808s, sub-bass, drop
+- "electric_guitar": angled rock guitar silhouette with frets and pickups for riffs, solos, rockstar
+- "metronome_ticker": pyramid metronome with swinging pendulum arm for acoustic tempo, rhythm, timing
+- "disco_mirror_ball": suspended faceted mirror disco ball with rotating reflections for dance, party, club
+- "city_skyline_silhouette": skyscraper metropolis skyline along baseline for city life, night, downtown
+- "smoke_ring_drift": expanding concentric smoke rings curling upward for smoke, haze, chill, relaxation
+- "graffiti_drips": spray paint drips running down from top edge for street art, urban, graffiti, raw
+- "champagne_toast": clinking stemmed champagne flutes with rising bubbles for toast, celebration, party
+- "neon_lips": electric neon kiss lips with high-contrast aura for kissing, romance, passion, lips
+- "vault_safe_dial": heavy bank vault combination dial with calibrated ticks for safe, riches, locked
+- "blooming_rose": blooming botanical rose blossom with petals and stem for romance, beauty, love
+- "lunar_crescent": detailed crescent moon with craters and attendant stars for night, midnight, dreaming
+- "candle_flame_flicker": wax candle pillar with flickering organic flame for intimacy, prayer, melancholy
+- "fluttering_butterflies": delicate butterflies fluttering across margins for transformation, freedom, flutter
+- "falling_autumn_leaves": serrated autumn foliage tumbling gently for autumn, falling, passing time
+- "feather_drift": weightless quill feather swaying gently for lightness, soft, floating, tender
+- "laser_grid_horizon": retro 80s synthwave perspective floor grid for synthwave, cyber, retro, speed
+- "matrix_rain_code": cascading digital code columns in flanks for matrix, cyber, hacking, digital
+- "neon_heart_tunnel": concentric perspective hearts receding into infinite depth for love tunnel, romance
+- "radar_sweep_sonar": military circular radar with 360-degree sweep ray for scanning, target, search
+- "hazard_stripes_caution": 45-degree angle industrial warning barrier stripes for caution, danger, hazard
+- "antique_key_lock": Victorian skeleton key hovering over keyhole plate for secrets, mystery, unlocks
+- "shonen_ki_aura": jagged surging upward anime energy flames and sparks for power-up, rage, ki, super
+- "portal_vortex": logarithmic spiraling cosmic vortex arms for dimensions, portals, hypnosis, cosmic
+- "all_seeing_eye": sacred pyramid triangle enclosing centered eye for wisdom, truth, all-seeing, vision
+- "knight_shield": medieval heater shield with embossed heraldic cross for defense, honor, protection
 - "floating_notes": drifting music notes (♪ ♫) for melodies, singing, instruments, romance
 - "starlight_glimmer": breathing twinkling stars for dreams, night, magic, sparkling emotions
 - "heartbeat_pulse": romantic heart pulse with concentric ripples for love, feelings, heartbeat
@@ -631,6 +781,22 @@ Optionally specify an inline "badge" icon for concrete physical symbols, cultura
 - "watch": time, rolex, watch, clock, hours, waqt
 - "diamond": ice, diamond, shine, jewelry, bling, heere
 - "star": fame, superstar, celebrity, shining, bright
+- "gun": gun, pistol, rifle, glock, bandook, weapon, shooter
+- "bomb": bomb, blast, explode, pataka, explosion, dynamite
+- "chain": chain, cuban, chaina, zanjeer, necklace, curb
+- "microphone": mic, microphone, studio, rap, spit, booth, vocal
+- "lightning": lightning, thunder, shock, volt, electric, current, bijli
+- "rose": rose, gulab, flower, petal, bloom, blossom
+- "cloud_rain": rain, cloud, storm, barish, pour, badal
+- "moon": moon, lunar, chann, chand, crescent, midnight
+- "lips": lips, kiss, lipstick, mouth, pout, hont, buliyan
+- "wine_glass": wine, glass, drink, daru, daaru, sharab, peg, toast
+- "guitar": guitar, saaz, riff, strum, guitar, acoustic
+- "key": key, lock, chaabi, chabi, unlock, secret
+- "mask": mask, balaclava, ski, nakab, naqab, hood
+- "eye": eye, ankhiyan, naina, nazar, vision, stare, gaze
+- "butterfly": butterfly, titli, mariposa, flutter, wings
+- "shield": shield, dhaal, guard, defend, protect, armor, knight
 - "none": no inline badge
 
 Output JSON strictly matching this format:
