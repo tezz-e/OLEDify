@@ -35,6 +35,10 @@ export function computeSafeTextLayout(
     };
   }
 
+  // Base vertical center calculation:
+  // When headroom is reserved for a micro-badge (maxH < 55), shift center downwards to balance badge
+  const baselineCenterY = maxH < 55 ? Math.round(64 - maxH / 2) : 32;
+
   // Tier 0: Filler / Connective word ("THE", "IN", "A", "TO", "AND", "TE", "DE")
   // Subordinated to clean, conversational scale (14px to 18px) so hero words have punch
   if (isFillerWord(clean) && !clean.includes(' ')) {
@@ -47,7 +51,7 @@ export function computeSafeTextLayout(
       lineHeight: size,
       letterSpacing: 1.5,
       totalHeight: size,
-      yOffsets: [Math.floor((64 - size) / 2 + size * 0.85)]
+      yOffsets: [baselineCenterY]
     };
   }
 
@@ -67,7 +71,7 @@ export function computeSafeTextLayout(
           lineHeight: size,
           letterSpacing: spacing,
           totalHeight: size,
-          yOffsets: [Math.floor((64 - size) / 2 + size * 0.85)]
+          yOffsets: [baselineCenterY]
         };
       }
       size -= 2;
@@ -91,7 +95,7 @@ export function computeSafeTextLayout(
           lineHeight: size,
           letterSpacing: spacing,
           totalHeight: size,
-          yOffsets: [Math.floor((64 - size) / 2 + size * 0.85)]
+          yOffsets: [baselineCenterY]
         };
       }
       size -= 1;
@@ -153,9 +157,9 @@ export function computeSafeTextLayout(
 
   const lineHeight = bestSize + 2;
   const totalH = lineHeight * splitLines.length;
-  const startY = Math.floor((64 - totalH) / 2) + bestSize;
+  const startLineCenter = Math.round(baselineCenterY - totalH / 2 + lineHeight / 2);
 
-  const yOffsets = splitLines.map((_, i) => startY + i * lineHeight);
+  const yOffsets = splitLines.map((_, i) => startLineCenter + i * lineHeight);
 
   return {
     lines: splitLines,

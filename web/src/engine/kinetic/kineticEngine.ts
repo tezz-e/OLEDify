@@ -449,9 +449,9 @@ export async function renderKineticSequence(
 
       // Render Word Micro-Sprite Badge (if active)
       if (hasActiveBadge) {
-        const fontAscent = Math.round(layout.fontSize * 0.82);
-        const textTop = Math.max(0, (layout.yOffsets[0] ?? 32) - fontAscent);
-        const textBottom = (layout.yOffsets[layout.yOffsets.length - 1] ?? 32) + Math.round(layout.fontSize * 0.18);
+        const fontHalfH = Math.round(layout.fontSize * 0.55);
+        const textTop = Math.max(0, (layout.yOffsets[0] ?? 32) - fontHalfH);
+        const textBottom = (layout.yOffsets[layout.yOffsets.length - 1] ?? 32) + fontHalfH;
         const badgeBounds = {
           centerX: 64,
           centerY: layout.yOffsets[0] ?? 32,

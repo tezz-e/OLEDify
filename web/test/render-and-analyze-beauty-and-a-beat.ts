@@ -5,7 +5,7 @@ import { computeSongMoodProfile } from '../src/engine/kinetic/moodProfileEngine'
 import { AudioAnalysisResult } from '../src/engine/kinetic/audioAnalysisEngine';
 import { renderKineticSequence } from '../src/engine/kinetic/kineticEngine';
 
-const GROQ_API_KEY = 'GROQ_API_KEY_PLACEHOLDER';
+const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
 
 // "Beauty and a Beat" - Justin Bieber ft. Nicki Minaj (Prod. Max Martin & Zedd)
 // Tempo: 128 BPM (1 beat = ~468.75ms, 4-on-the-floor kick)

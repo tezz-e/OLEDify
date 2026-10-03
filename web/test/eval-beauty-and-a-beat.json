@@ -1,0 +1,470 @@
+{
+  "song": "Beauty and a Beat - Justin Bieber ft. Nicki Minaj",
+  "bpm": 128,
+  "vibe": "groove_dance",
+  "stylePack": "cyber_industrial",
+  "moodProfile": {
+    "vibe": "hype_aggressive",
+    "bpm": 128,
+    "averageRms": 0.4275297619047646,
+    "energyScore": 0.7543437500000018,
+    "label": "High Energy / Hype (128 BPM)",
+    "recommendedStylePack": "trap_drill",
+    "defaultArchetype": "manga_impact",
+    "allowedArchetypes": [
+      "manga_impact",
+      "blade_slash",
+      "cyber_glitch",
+      "3d_block_stack",
+      "echo_stack",
+      "inverted_badge",
+      "rolling_odometer",
+      "target_focus",
+      "wiggly_boil",
+      "snake_slither"
+    ],
+    "allowedMotifs": [
+      "none",
+      "manga_speedlines",
+      "anime_rush",
+      "crown_royal",
+      "razor_blade",
+      "tactical_scope",
+      "flame_tongue",
+      "skull_cross",
+      "lightning_arc",
+      "comic_burst"
+    ],
+    "dwellDecayFactor": 1,
+    "easingCurvature": 1.5,
+    "cameraShakeEnabled": true,
+    "maxEntryDisplacementPx": 18,
+    "crossfadeOverlapMs": 65
+  },
+  "totalFrames": 336,
+  "wordSummary": [
+    {
+      "word": "'Cause",
+      "line": 1,
+      "startMs": 0,
+      "endMs": 250,
+      "durationMs": 250,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "all",
+      "line": 1,
+      "startMs": 250,
+      "endMs": 500,
+      "durationMs": 250,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "I",
+      "line": 1,
+      "startMs": 500,
+      "endMs": 700,
+      "durationMs": 200,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "need",
+      "line": 1,
+      "startMs": 700,
+      "endMs": 1100,
+      "durationMs": 400,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "is",
+      "line": 1,
+      "startMs": 1100,
+      "endMs": 1300,
+      "durationMs": 200,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "a",
+      "line": 1,
+      "startMs": 1300,
+      "endMs": 1450,
+      "durationMs": 150,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "beauty",
+      "line": 1,
+      "startMs": 1450,
+      "endMs": 2000,
+      "durationMs": 550,
+      "archetype": "waveform_karaoke",
+      "motif": "floating_notes",
+      "meaning": "visual appeal and attractive charm",
+      "reason": "melodic emphasis on the attractive vibe of the lyric"
+    },
+    {
+      "word": "and",
+      "line": 1,
+      "startMs": 2000,
+      "endMs": 2200,
+      "durationMs": 200,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "a",
+      "line": 1,
+      "startMs": 2200,
+      "endMs": 2350,
+      "durationMs": 150,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "beat",
+      "line": 1,
+      "startMs": 2350,
+      "endMs": 2800,
+      "durationMs": 450,
+      "archetype": "wiggly_boil",
+      "motif": "sound_bars_vintage",
+      "meaning": "the rhythmic pulse driving the track",
+      "reason": "bouncy kinetic cue that mirrors the drum pattern and dance energy"
+    },
+    {
+      "word": "Who",
+      "line": 2,
+      "startMs": 2900,
+      "endMs": 3200,
+      "durationMs": 300,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "can",
+      "line": 2,
+      "startMs": 3200,
+      "endMs": 3450,
+      "durationMs": 250,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "make",
+      "line": 2,
+      "startMs": 3450,
+      "endMs": 3800,
+      "durationMs": 350,
+      "archetype": "target_focus",
+      "motif": "tactical_scope",
+      "meaning": "to create or cause something to happen",
+      "reason": "focuses the viewer on the action of making the moment happen"
+    },
+    {
+      "word": "my",
+      "line": 2,
+      "startMs": 3800,
+      "endMs": 4050,
+      "durationMs": 250,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "life",
+      "line": 2,
+      "startMs": 4050,
+      "endMs": 4600,
+      "durationMs": 550,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "complete",
+      "line": 2,
+      "startMs": 4600,
+      "endMs": 5400,
+      "durationMs": 800,
+      "archetype": "echo_stack",
+      "motif": "sound_blast_rings",
+      "meaning": "to finish or fulfill fully",
+      "reason": "reverberating visual echo that highlights the climax of completeness"
+    },
+    {
+      "word": "It's",
+      "line": 3,
+      "startMs": 5600,
+      "endMs": 5850,
+      "durationMs": 250,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "all",
+      "line": 3,
+      "startMs": 5850,
+      "endMs": 6100,
+      "durationMs": 250,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "'bout",
+      "line": 3,
+      "startMs": 6100,
+      "endMs": 6400,
+      "durationMs": 300,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "you",
+      "line": 3,
+      "startMs": 6400,
+      "endMs": 6800,
+      "durationMs": 400,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "when",
+      "line": 3,
+      "startMs": 6800,
+      "endMs": 7050,
+      "durationMs": 250,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "the",
+      "line": 3,
+      "startMs": 7050,
+      "endMs": 7200,
+      "durationMs": 150,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "music",
+      "line": 3,
+      "startMs": 7200,
+      "endMs": 7650,
+      "durationMs": 450,
+      "archetype": "cyber_glitch",
+      "motif": "anime_rush",
+      "meaning": "the song’s soundscape and production",
+      "reason": "digital‑glitch motion reflects modern electronic production and flow"
+    },
+    {
+      "word": "makes",
+      "line": 3,
+      "startMs": 7650,
+      "endMs": 7950,
+      "durationMs": 300,
+      "archetype": "target_focus",
+      "motif": "tactical_scope"
+    },
+    {
+      "word": "you",
+      "line": 3,
+      "startMs": 7950,
+      "endMs": 8150,
+      "durationMs": 200,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "move",
+      "line": 3,
+      "startMs": 8150,
+      "endMs": 8400,
+      "durationMs": 250,
+      "archetype": "rolling_odometer",
+      "motif": "vinyl_grooves",
+      "meaning": "to dance or shift bodily to the rhythm",
+      "reason": "mechanical spin visual evokes a rotating record and dance‑floor motion"
+    },
+    {
+      "word": "Body",
+      "line": 4,
+      "startMs": 8550,
+      "endMs": 8900,
+      "durationMs": 350,
+      "archetype": "smooth_fluid",
+      "motif": "heartbeat_pulse",
+      "meaning": "the physical form, sensual presence",
+      "reason": "gentle fluid motion paired with a pulse visual underscores sensuality"
+    },
+    {
+      "word": "rock",
+      "line": 4,
+      "startMs": 8900,
+      "endMs": 9350,
+      "durationMs": 450,
+      "archetype": "squash_bounce",
+      "motif": "none",
+      "meaning": "energetic dance move or to sway strongly",
+      "reason": "bouncy comic‑style animation captures the explosive rock vibe"
+    },
+    {
+      "word": "girl",
+      "line": 4,
+      "startMs": 9350,
+      "endMs": 9650,
+      "durationMs": 300,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "I",
+      "line": 4,
+      "startMs": 9650,
+      "endMs": 9800,
+      "durationMs": 150,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "wanna",
+      "line": 4,
+      "startMs": 9800,
+      "endMs": 10050,
+      "durationMs": 250,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "see",
+      "line": 4,
+      "startMs": 10050,
+      "endMs": 10300,
+      "durationMs": 250,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "your",
+      "line": 4,
+      "startMs": 10300,
+      "endMs": 10500,
+      "durationMs": 200,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "body",
+      "line": 4,
+      "startMs": 10500,
+      "endMs": 10800,
+      "durationMs": 300,
+      "archetype": "smooth_fluid",
+      "motif": "heartbeat_pulse",
+      "meaning": "the physical form, sensual presence",
+      "reason": "gentle fluid motion paired with a pulse visual underscores sensuality"
+    },
+    {
+      "word": "rock",
+      "line": 4,
+      "startMs": 10800,
+      "endMs": 11200,
+      "durationMs": 400,
+      "archetype": "squash_bounce",
+      "motif": "none",
+      "meaning": "energetic dance move or to sway strongly",
+      "reason": "bouncy comic‑style animation captures the explosive rock vibe"
+    }
+  ],
+  "rawLog": {
+    "id": "log-1790973990157-0",
+    "timestamp": 1790973990157,
+    "provider": "groq",
+    "batchIndex": 1,
+    "totalBatches": 1,
+    "model": "openai/gpt-oss-120b",
+    "songTitle": "Beauty and a Beat",
+    "artist": "Justin Bieber ft. Nicki Minaj",
+    "linesAnalyzed": [
+      "'Cause all I need is a beauty and a beat",
+      "Who can make my life complete",
+      "It's all 'bout you when the music makes you move",
+      "Body rock girl I wanna see your body rock"
+    ],
+    "prompt": "You are an elite motion typography director for 1-bit OLED kinetic lyrics on a monochrome 128x64 display.\nTrack: \"Beauty and a Beat\" by Justin Bieber ft. Nicki Minaj.\n\nLyrics:\nLine 1: \"'Cause all I need is a beauty and a beat\"\nLine 2: \"Who can make my life complete\"\nLine 3: \"It's all 'bout you when the music makes you move\"\nLine 4: \"Body rock girl I wanna see your body rock\"\n\nDIRECTOR MISSION:\n1. Deeply analyze the language, slang, metaphors, mood, rhythm, and emotional intensity of the lyrics.\n2. Determine the overarching song vibe:\n   - \"hype_aggressive\": hard rap, drill, trap, metal, rock, high-energy battle/flex tracks with aggressive cuts and heavy punchlines.\n   - \"chill_pop\": acoustic pop, R&B, lo-fi, melodic love songs, gentle storytelling.\n   - \"ballad_acoustic\": slow emotional ballads, deep heartbreak, quiet acoustic poetry.\n   - \"groove_dance\": upbeat rhythmic dance, disco, funk, bouncy midtempo beats.\n3. Recommend the best matching typography style pack:\n   - \"trap_drill\": aggressive display fonts, high contrast, hard 808 cuts, heavy punches.\n   - \"pop_acoustic\": clean modern sans, friendly rounded geometry, warm acoustic melody.\n   - \"editorial_lofi\": elegant high-contrast fashion serif & cursive, emotional poetry, deep ballads, lo-fi warmth.\n   - \"cyber_industrial\": cyberpunk brutalist gothic, futuristic synths, EDM club dance, tech velocity.\n   - \"shonen_comic\": high-octane manga action, explosive comic block lettering, superhero energy.\n   - \"cartoon_bounce\": rubber-hose animation, playful bouncy funk, Y2K bubblegum rhythm.\n4. Select 2 to 4 key expressive words per line (punchlines, verbs, core metaphors, climax words). Direct the kinetic choreography so every line feels dynamic and alive.\n   - NEVER classify generic connective filler words, prepositions, conjunctions, or weak pronouns (e.g. \"and\", \"the\", \"with\", \"of\", \"to\", \"in\", \"it\", \"my\", \"you\", \"me\", \"is\", \"a\", \"an\", or their equivalents in any language).\n   - ANTI-MONOTONY & MAXIMUM VISUAL VARIETY MANDATE:\n     * Over long sequences, repeating the same archetype or motif feels robotic. Distribute choices broadly across the entire palette!\n     * NEVER assign the same archetype twice to consecutive words or adjacent lines.\n     * Balance high-impact punches (\"manga_impact\", \"blade_slash\", \"cyber_glitch\", \"3d_block_stack\") with structural and mechanical maneuvers (\"rolling_odometer\", \"inverted_badge\", \"target_focus\", \"snake_slither\", \"wiggly_boil\", \"echo_stack\", \"gentle_float\", \"typewriter_ribbon\").\n   - Tailor the motion archetype and background motif to match the word's genuine intensity:\n     * Hard punchlines, threats, flexes, fast flow: use \"manga_impact\", \"blade_slash\", \"cyber_glitch\", \"3d_block_stack\", \"echo_stack\" with motifs like \"razor_blade\", \"tactical_scope\", \"flame_tongue\", \"manga_speedlines\", \"lightning_arc\".\n     * Gentle vocal runs, love confessions, dreamy drift: use \"gentle_float\", \"waveform_karaoke\", \"typewriter_ribbon\", \"dither_dissolve\", \"smooth_fluid\" with motifs like \"floating_notes\", \"starlight_glimmer\", \"heartbeat_pulse\", \"water_ripples\", \"minimal_frame\".\n     * Rhythmic counts, bets, slot tumbling, bouncy lines: use \"rolling_odometer\", \"inverted_badge\", \"target_focus\", \"wiggly_boil\" with motifs like \"chrome_star\", \"comic_burst\", \"floating_notes\".\n5. VIBE SEMANTIC GUARDRAILS (CRITICAL FOR AESTHETIC RELEVANCE):\n   - In \"hype_aggressive\" (rap, drill, trap, metal, flex tracks): NEVER assign soft/dreamy motifs like \"starlight_glimmer\", \"water_ripples\", or \"floating_notes\". Treat colloquial street slang (police/FIR cases, rivalries, brawls, weapons, respect) as hard-hitting punchlines. Pair with \"anvil_stomp\", \"fracture_shatter\", \"manga_impact\", \"blade_slash\" and motifs like \"sound_blast_rings\", \"barbed_wire\", \"shattered_glass\", \"crown_royal\".\n   - In \"groove_dance\" (pop, dance, disco, EDM, club): NEVER assign lethal combat/gore motifs like \"razor_blade\" or \"barbed_wire\" to dancefloor commands (e.g. \"body rock\", \"move\", \"complete\", \"party\"). Treat \"rock\" and \"move\" as kinetic groove cues, using \"rolling_odometer\", \"wiggly_boil\", \"squash_bounce\", \"prism_shimmer\" with motifs like \"sound_bars_vintage\", \"equalizer_radial\", \"vinyl_grooves\", \"comic_burst\".\n   - In \"chill_pop\" & \"ballad_acoustic\": Avoid violent combat cuts (\"blade_slash\", \"anvil_stomp\"). Favor \"gentle_float\", \"waveform_karaoke\", \"pendulum_sway\", \"dither_dissolve\" with motifs like \"heartbeat_pulse\", \"rain_window\", \"starlight_glimmer\", \"minimal_frame\".\n6. ALWAYS assign an evocative background visual motif (\"motif\") to key punchlines and emotional climaxes matching the imagery. If no motif fits, use \"none\". Rotate motifs dynamically across lines to maintain visual freshness.\n7. For each selected word, provide its meaning and rationale for the motion choice.\n\nChoose from these 20 visual archetypes:\n- \"gentle_float\": weightless acoustic drift, floating, romance, calm breeze, dreaming\n- \"waveform_karaoke\": sing-along melody, catchy choruses, vocal rhythm, musical hooks\n- \"typewriter_ribbon\": storytelling reveal, confessions, letters, narrative, diary lines\n- \"dither_dissolve\": nostalgic memory, vintage Game Boy/Mac dither fade, fading away, shadows\n- \"manga_impact\": explosive hits, punches, loud shouts, beat drops\n- \"cyber_glitch\": high-tech speed, rapid flows, digital panic, lightning\n- \"3d_block_stack\": royalty, power, anthems, pride, heavy boss energy, solid blocks\n- \"target_focus\": eye contact, pointing, questions (\"who\", \"you\", \"why\"), aiming\n- \"blade_slash\": sharp slicing, weapons, danger, razor blades, conflict\n- \"snake_slither\": sinister, poison, dark crawl, toxic, venom, eerie mystery\n- \"echo_stack\": prolonged vocal notes, chants, reverberating shouting\n- \"inverted_badge\": declarations, \"NO\", stops, rules, verification stamps, warnings\n- \"smooth_fluid\": floating, love, breeze, calm sky/water, romantic drift, gentle\n- \"wiggly_boil\": wild dancing, boiling jitter, chaos, fun, quirky shaking\n- \"rolling_odometer\": slot machine tumbler, rolling digits, reels, mechanical spin, count, numbers, casino\n- \"anvil_stomp\": massive vertical slam onto baseline, heavy hits, bass drops, crushing power, ground slam\n- \"fracture_shatter\": angular diagonal crack splitting text, heartbreak, pain, cracking glass, tearing apart\n- \"pendulum_sway\": harmonic rocking acoustic tilt, guitar strums, ticking clock, steady rhythm, acoustic ballads\n- \"prism_shimmer\": light beam sweeping across glyphs, diamond shine, luxury, glow, star glints\n- \"squash_bounce\": elastic Disney squash and stretch rebound, playful hops, dance grooves, bouncy funk\n\nChoose from these 24 visual motifs (or \"none\"):\n- \"none\": clean typography only with zero background visual distractions\n- \"floating_notes\": drifting music notes (♪ ♫) for melodies, singing, instruments, romance\n- \"starlight_glimmer\": breathing twinkling stars for dreams, night, magic, sparkling emotions\n- \"heartbeat_pulse\": romantic heart pulse with concentric ripples for love, feelings, heartbeat\n- \"water_ripples\": calming ocean waves and liquid ripples along screen floor\n- \"minimal_frame\": cinematic minimalist border frame with corner cuts for elegant ballads\n- \"lofi_dust_motes\": cozy floating dust particles for coffee shop / bedroom pop warmth\n- \"barbed_wire\": razor barbed wire fence across corners for trap, danger, street, struggle\n- \"sound_blast_rings\": concentric shockwave blast rings expanding from center on heavy 808s\n- \"shattered_glass\": sharp flying glass shards exploding outward from center\n- \"sound_bars_vintage\": classic hi-fi graphic equalizer spectrum bars dancing along bottom\n- \"rain_window\": slanted falling rain streaks with splashes on bottom for melancholy and rain\n- \"cassette_spool\": retro dual spinning cassette tape hubs for analog nostalgia and lo-fi tapes\n- \"equalizer_radial\": circular 360-degree audio spectrum ring orbiting around text\n- \"vinyl_grooves\": concentric turntable record grooves with rotating center label for DJ/groove\n- \"manga_speedlines\": radial tapered focus lines converging around text\n- \"anime_rush\": horizontal rapid speed barrage streaks\n- \"crown_royal\": gothic 3-point crown for kings, bosses, wealth, royalty, supreme power\n- \"razor_blade\": sharp diagonal cut slice with impact glints for sharp cuts, danger\n- \"tactical_scope\": HUD corner brackets and targeting reticle for guns, aim, targets\n- \"flame_tongue\": rising fire contours with detached ember sparks for heat, cooked, fire\n- \"skull_cross\": 12x12 micro-sprite skull mark for lethal, death, danger, grave lyrics\n- \"chrome_star\": 4-point diamond glint sparkles for ice, diamonds, luxury, shine, jewelry\n- \"lightning_arc\": high-voltage jagged electric bolt for sudden voltage surges, shocks\n- \"comic_burst\": 14-point pop-art comic starburst bubble for punchy comic shoutouts\n\nOutput JSON strictly matching this format:\n{\n  \"songVibe\": \"hype_aggressive\",\n  \"recommendedStylePack\": \"trap_drill\",\n  \"classifications\": [\n    {\n      \"word\": \"FIRE\",\n      \"meaning\": \"energy / flames\",\n      \"archetype\": \"manga_impact\",\n      \"motif\": \"flame_tongue\",\n      \"reason\": \"explosive energetic punchline\"\n    }\n  ]\n}\n",
+    "rawResponse": "{\"songVibe\":\"groove_dance\",\"recommendedStylePack\":\"cyber_industrial\",\"classifications\":[{\"word\":\"beauty\",\"meaning\":\"visual appeal and attractive charm\",\"archetype\":\"waveform_karaoke\",\"motif\":\"floating_notes\",\"reason\":\"melodic emphasis on the attractive vibe of the lyric\"},{\"word\":\"beat\",\"meaning\":\"the rhythmic pulse driving the track\",\"archetype\":\"wiggly_boil\",\"motif\":\"sound_bars_vintage\",\"reason\":\"bouncy kinetic cue that mirrors the drum pattern and dance energy\"},{\"word\":\"make\",\"meaning\":\"to create or cause something to happen\",\"archetype\":\"target_focus\",\"motif\":\"tactical_scope\",\"reason\":\"focuses the viewer on the action of making the moment happen\"},{\"word\":\"complete\",\"meaning\":\"to finish or fulfill fully\",\"archetype\":\"echo_stack\",\"motif\":\"sound_blast_rings\",\"reason\":\"reverberating visual echo that highlights the climax of completeness\"},{\"word\":\"music\",\"meaning\":\"the song’s soundscape and production\",\"archetype\":\"cyber_glitch\",\"motif\":\"anime_rush\",\"reason\":\"digital‑glitch motion reflects modern electronic production and flow\"},{\"word\":\"move\",\"meaning\":\"to dance or shift bodily to the rhythm\",\"archetype\":\"rolling_odometer\",\"motif\":\"vinyl_grooves\",\"reason\":\"mechanical spin visual evokes a rotating record and dance‑floor motion\"},{\"word\":\"rock\",\"meaning\":\"energetic dance move or to sway strongly\",\"archetype\":\"squash_bounce\",\"motif\":\"prism_shimmer\",\"reason\":\"bouncy comic‑style animation captures the explosive rock vibe\"},{\"word\":\"body\",\"meaning\":\"the physical form, sensual presence\",\"archetype\":\"smooth_fluid\",\"motif\":\"heartbeat_pulse\",\"reason\":\"gentle fluid motion paired with a pulse visual underscores sensuality\"}]}",
+    "parsedClassifications": [
+      {
+        "word": "beauty",
+        "startMs": 0,
+        "archetype": "waveform_karaoke",
+        "motif": "floating_notes",
+        "meaning": "visual appeal and attractive charm",
+        "reason": "melodic emphasis on the attractive vibe of the lyric"
+      },
+      {
+        "word": "beat",
+        "startMs": 0,
+        "archetype": "wiggly_boil",
+        "motif": "sound_bars_vintage",
+        "meaning": "the rhythmic pulse driving the track",
+        "reason": "bouncy kinetic cue that mirrors the drum pattern and dance energy"
+      },
+      {
+        "word": "make",
+        "startMs": 0,
+        "archetype": "target_focus",
+        "motif": "tactical_scope",
+        "meaning": "to create or cause something to happen",
+        "reason": "focuses the viewer on the action of making the moment happen"
+      },
+      {
+        "word": "complete",
+        "startMs": 0,
+        "archetype": "echo_stack",
+        "motif": "sound_blast_rings",
+        "meaning": "to finish or fulfill fully",
+        "reason": "reverberating visual echo that highlights the climax of completeness"
+      },
+      {
+        "word": "music",
+        "startMs": 0,
+        "archetype": "cyber_glitch",
+        "motif": "anime_rush",
+        "meaning": "the song’s soundscape and production",
+        "reason": "digital‑glitch motion reflects modern electronic production and flow"
+      },
+      {
+        "word": "move",
+        "startMs": 0,
+        "archetype": "rolling_odometer",
+        "motif": "vinyl_grooves",
+        "meaning": "to dance or shift bodily to the rhythm",
+        "reason": "mechanical spin visual evokes a rotating record and dance‑floor motion"
+      },
+      {
+        "word": "rock",
+        "startMs": 0,
+        "archetype": "squash_bounce",
+        "motif": "none",
+        "meaning": "energetic dance move or to sway strongly",
+        "reason": "bouncy comic‑style animation captures the explosive rock vibe"
+      },
+      {
+        "word": "body",
+        "startMs": 0,
+        "archetype": "smooth_fluid",
+        "motif": "heartbeat_pulse",
+        "meaning": "the physical form, sensual presence",
+        "reason": "gentle fluid motion paired with a pulse visual underscores sensuality"
+      }
+    ],
+    "totalDurationMs": 4834,
+    "evalCount": 1891,
+    "promptEvalCount": 2474,
+    "tokensPerSecond": 482.1
+  }
+}

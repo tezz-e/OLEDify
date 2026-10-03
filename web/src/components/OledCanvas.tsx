@@ -10,6 +10,7 @@ interface OledCanvasProps {
 
 export const OledCanvas: React.FC<OledCanvasProps> = ({ frameData, theme, scale = 4 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const bufferRef = useRef<ImageData | null>(null);
   const canvasWidth = 128 * scale;
   const canvasHeight = 64 * scale;
 
@@ -39,7 +40,10 @@ export const OledCanvas: React.FC<OledCanvasProps> = ({ frameData, theme, scale 
       return;
     }
 
-    const buffer = new ImageData(canvasWidth, canvasHeight);
+    if (!bufferRef.current || bufferRef.current.width !== canvasWidth || bufferRef.current.height !== canvasHeight) {
+      bufferRef.current = new ImageData(canvasWidth, canvasHeight);
+    }
+    const buffer = bufferRef.current;
     const bufData = buffer.data;
     const bgR = 8, bgG = 12, bgB = 18;
 

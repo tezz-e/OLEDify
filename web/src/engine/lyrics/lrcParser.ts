@@ -161,7 +161,11 @@ export function estimateWordTimestamps(
 /**
  * Parses standard and enhanced LRC strings into a normalized ParsedLyrics structure.
  */
-export function parseLrc(rawLrc: string, fallbackTotalDurationMs?: number): ParsedLyrics {
+export function parseLrc(
+  rawLrc: string, 
+  fallbackTotalDurationMs?: number,
+  fallbackMetadata?: { title?: string; artist?: string; pacingMode?: 'ballad' | 'pop' | 'rap' | 'custom'; durationPerLineMs?: number }
+): ParsedLyrics {
   const lines = rawLrc.split(/\r?\n/);
   const result: ParsedLyrics = { offsetMs: 0, lines: [] };
   const rawParsedLines: Array<{ startMs: number; rawText: string }> = [];
@@ -211,7 +215,13 @@ export function parseLrc(rawLrc: string, fallbackTotalDurationMs?: number): Pars
 
   // If no time tags found, treat as plain text lyrics
   if (rawParsedLines.length === 0) {
-    return parsePlainTextLyrics(rawLrc, fallbackTotalDurationMs);
+    return parsePlainTextLyrics(rawLrc, {
+      totalDurationMs: fallbackTotalDurationMs,
+      durationPerLineMs: fallbackMetadata?.durationPerLineMs,
+      pacingMode: fallbackMetadata?.pacingMode,
+      title: result.title || fallbackMetadata?.title,
+      artist: result.artist || fallbackMetadata?.artist,
+    });
   }
 
   rawParsedLines.sort((a, b) => a.startMs - b.startMs);
@@ -260,20 +270,62 @@ export function parseLrc(rawLrc: string, fallbackTotalDurationMs?: number): Pars
     });
   }
 
+  if (fallbackMetadata?.title && !result.title) result.title = fallbackMetadata.title;
+  if (fallbackMetadata?.artist && !result.artist) result.artist = fallbackMetadata.artist;
+
   result.durationMs = result.lines.length > 0 ? result.lines[result.lines.length - 1].endMs : 0;
   return result;
 }
 
+export interface PlainTextLyricsOptions {
+  totalDurationMs?: number;
+  durationPerLineMs?: number;
+  title?: string;
+  artist?: string;
+  pacingMode?: 'ballad' | 'pop' | 'rap' | 'custom';
+}
+
 /**
- * Plain-text fallback parser that evenly distributes lines across duration.
+ * Plain-text fallback parser that distributes lines across duration with intelligent pacing presets.
  */
-export function parsePlainTextLyrics(text: string, totalDurationMs: number = 60000): ParsedLyrics {
+export function parsePlainTextLyrics(
+  text: string, 
+  durationOrOptions?: number | PlainTextLyricsOptions
+): ParsedLyrics {
+  const options: PlainTextLyricsOptions = 
+    typeof durationOrOptions === 'number' 
+      ? { totalDurationMs: durationOrOptions } 
+      : (durationOrOptions || {});
+
   const rawLines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  if (rawLines.length === 0) return { offsetMs: 0, lines: [] };
+  if (rawLines.length === 0) {
+    return { 
+      offsetMs: 0, 
+      lines: [], 
+      title: options.title, 
+      artist: options.artist 
+    };
+  }
 
-  const durationPerLine = Math.max(1500, Math.floor(totalDurationMs / rawLines.length));
+  // Determine line duration
+  let durationPerLine: number;
+  if (options.durationPerLineMs && options.durationPerLineMs > 0) {
+    durationPerLine = options.durationPerLineMs;
+  } else if (options.totalDurationMs && options.totalDurationMs > 0) {
+    durationPerLine = Math.max(1200, Math.floor(options.totalDurationMs / rawLines.length));
+  } else {
+    // Intelligent auto-pacing based on pacingMode
+    if (options.pacingMode === 'ballad') {
+      durationPerLine = 4500;
+    } else if (options.pacingMode === 'rap') {
+      durationPerLine = 2200;
+    } else {
+      // Default pop/midtempo pacing: ~3400ms per line
+      durationPerLine = 3400;
+    }
+  }
+
   const lines: LyricLine[] = [];
-
   for (let i = 0; i < rawLines.length; i++) {
     const startMs = i * durationPerLine;
     const endMs = startMs + durationPerLine;
@@ -289,9 +341,13 @@ export function parsePlainTextLyrics(text: string, totalDurationMs: number = 600
     });
   }
 
+  const totalCalculatedDuration = lines.length > 0 ? lines[lines.length - 1].endMs : 0;
+
   return {
     offsetMs: 0,
-    durationMs: totalDurationMs,
+    durationMs: options.totalDurationMs || totalCalculatedDuration,
+    title: options.title,
+    artist: options.artist,
     lines
   };
 }

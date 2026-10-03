@@ -10,8 +10,13 @@ export class WebSerialStreamer {
   private isConnected: boolean = false;
   private isWriting: boolean = false;
   private pendingFrame: Uint8Array | null = null;
+  private baudRate: number = 921600;
+  private packetBuffer: Uint8Array = new Uint8Array(1026);
 
   constructor() {
+    this.packetBuffer[0] = 0xAA;
+    this.packetBuffer[1] = 0xBB;
+
     if ('serial' in navigator) {
       (navigator as any).serial.addEventListener('disconnect', (e: any) => {
         if (e.target === this.port) {
@@ -27,11 +32,15 @@ export class WebSerialStreamer {
     return this.isConnected;
   }
 
+  public getBaudRate(): number {
+    return this.baudRate;
+  }
+
   public setOnDisconnect(callback: () => void) {
     this.onDisconnectCallback = callback;
   }
 
-  public async connect(): Promise<boolean> {
+  public async connect(baudRate: number = 921600): Promise<boolean> {
     if (!('serial' in navigator)) {
       alert('WebSerial API is not supported in this browser. Please use Google Chrome or MS Edge.');
       return false;
@@ -39,13 +48,17 @@ export class WebSerialStreamer {
 
     try {
       this.port = await (navigator as any).serial.requestPort();
-      await this.port.open({ baudRate: 115200 });
+      this.baudRate = baudRate;
+      await this.port.open({
+        baudRate: this.baudRate,
+        bufferSize: 16384
+      });
 
       this.writer = this.port.writable.getWriter();
       this.isConnected = true;
       this.isWriting = false;
       this.pendingFrame = null;
-      console.log('WebSerial: Connected to ESP32-S3 successfully!');
+      console.log(`WebSerial: Connected to ESP32 at ${this.baudRate} baud successfully!`);
       return true;
     } catch (err) {
       console.error('WebSerial Connection Error:', err);
@@ -55,6 +68,7 @@ export class WebSerialStreamer {
   }
 
   public async disconnect(): Promise<void> {
+    const wasConnected = this.isConnected;
     this.isConnected = false;
     this.pendingFrame = null;
 
@@ -74,6 +88,10 @@ export class WebSerialStreamer {
         // Ignore close errors
       }
       this.port = null;
+    }
+
+    if (wasConnected && this.onDisconnectCallback) {
+      this.onDisconnectCallback();
     }
   }
 
@@ -102,12 +120,8 @@ export class WebSerialStreamer {
         const frameToSend = this.pendingFrame;
         this.pendingFrame = null; // Clear pending before await
 
-        const packet = new Uint8Array(1026);
-        packet[0] = 0xAA;
-        packet[1] = 0xBB;
-        packet.set(frameToSend, 2);
-
-        await this.writer.write(packet);
+        this.packetBuffer.set(frameToSend, 2);
+        await this.writer.write(this.packetBuffer);
       }
     } catch (err) {
       console.error('WebSerial Write Error:', err);

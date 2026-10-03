@@ -87,6 +87,7 @@ export function drawTrackedText(
   letterSpacing: number = 0,
   isStroke: boolean = false
 ) {
+  ctx.textBaseline = 'middle';
   const effectiveStroke = isStroke || activeDressingMode === 'hollow_wireframe';
   if (activeDressingMode === 'hollow_wireframe' && !isStroke) {
     ctx.strokeStyle = '#FFFFFF';

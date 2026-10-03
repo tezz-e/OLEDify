@@ -86,7 +86,14 @@ function MainApp() {
   const [historyIndex, setHistoryIndex] = useState(0);
 
   // UI State
-  const [activeView, setActiveView] = useState<'editor' | 'lyrics-studio'>('editor');
+  const [activeView, setActiveView] = useState<'editor' | 'lyrics-studio'>(() => {
+    try {
+      if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('view') === 'lyrics-studio') {
+        return 'lyrics-studio';
+      }
+    } catch (_) {}
+    return 'editor';
+  });
   const [themeMode, setThemeMode] = useState<'light' | 'dark'>(() => {
     try {
       const saved = localStorage.getItem('oled_studio_theme');
@@ -105,6 +112,20 @@ function MainApp() {
   const [mediaPoolTab, setMediaPoolTab] = useState<'import' | 'samples' | 'recent' | 'create'>('import');
   const [studioOpen, setStudioOpen] = useState(false);
   const [serialConnected, setSerialConnected] = useState(false);
+  const [baudRate, setBaudRate] = useState<number>(() => {
+    const saved = localStorage.getItem('oled_serial_baud');
+    if (!saved || saved === '115200') {
+      localStorage.setItem('oled_serial_baud', '921600');
+      return 921600;
+    }
+    return Number(saved);
+  });
+
+  const handleBaudRateToggle = () => {
+    const nextRate = baudRate === 921600 ? 115200 : 921600;
+    setBaudRate(nextRate);
+    localStorage.setItem('oled_serial_baud', String(nextRate));
+  };
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -116,6 +137,8 @@ function MainApp() {
   const [exportXbmpFrames, setExportXbmpFrames] = useState<Uint8Array[]>([]);
 
   const fullPreviewCanvasRef = useRef<HTMLCanvasElement>(null);
+  const scratchSourceCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const scratchCroppedCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const exportInProgressRef = useRef(false);
   const lastStreamTime = useRef(0);
 
@@ -291,6 +314,18 @@ function MainApp() {
     setClipsWithHistory([{ id: clipId, assetId, inFrame: 0, outFrame: asset.media.frames.length - 1 }]);
     setActiveFrameIndex(0);
     setIsPlaying(false);
+    const w = asset.media.sourceInfo.sourceWidth;
+    const h = asset.media.sourceInfo.sourceHeight;
+    const cover = computeCoverCrop(w, h);
+    setCropSettings(prev => ({
+      ...prev,
+      sourceWidth: w,
+      sourceHeight: h,
+      x: cover.x,
+      y: cover.y,
+      width: cover.width,
+      height: cover.height
+    }));
   }, [assets, setClipsWithHistory, handleLoadSample]);
 
   // Sample Thumbnails cache for NLE Grid Bin (computed lazily ONLY when user visits 'samples' tab)
@@ -567,12 +602,13 @@ function MainApp() {
     if (previewOverride && assets[previewOverride.assetId]) {
       sourceFrame = assets[previewOverride.assetId].media.frames[previewOverride.frameIndex]?.imageData;
     } else {
-      if (!media || !media.frames[activeFrameIndex]) {
+      const activeMedia = timelineMedia || media;
+      if (!activeMedia || !activeMedia.frames[activeFrameIndex]) {
         setProcessedFrame(null);
         setRawSourceFrame(null);
         return;
       }
-      sourceFrame = media.frames[activeFrameIndex].imageData;
+      sourceFrame = activeMedia.frames[activeFrameIndex].imageData;
     }
 
     setRawSourceFrame(sourceFrame);
@@ -582,18 +618,30 @@ function MainApp() {
       return;
     }
     
-    const sourceCanvas = imageDataToCanvas(sourceFrame);
-    const cropped128x64 = renderCropTo128x64(sourceCanvas, cropSettings);
+    // Efficiently reuse persistent scratch canvases to avoid 30fps DOM allocation pauses
+    if (!scratchSourceCanvasRef.current) {
+      scratchSourceCanvasRef.current = document.createElement('canvas');
+    }
+    const sourceCanvas = scratchSourceCanvasRef.current;
+    if (sourceCanvas.width !== sourceFrame.width || sourceCanvas.height !== sourceFrame.height) {
+      sourceCanvas.width = sourceFrame.width;
+      sourceCanvas.height = sourceFrame.height;
+    }
+    const srcCtx = sourceCanvas.getContext('2d');
+    if (srcCtx) srcCtx.putImageData(sourceFrame, 0, 0);
+
+    if (!scratchCroppedCanvasRef.current) {
+      scratchCroppedCanvasRef.current = document.createElement('canvas');
+    }
+    const cropped128x64 = renderCropTo128x64(sourceCanvas, cropSettings, scratchCroppedCanvasRef.current);
     
     const { ditheredImageData, xbmpBytes } = applyDithering(cropped128x64, ditherConfig);
     setProcessedFrame(ditheredImageData);
 
-    const now = performance.now();
-    if (serialStreamer.getConnected() && (now - lastStreamTime.current > 1000 / targetFps)) {
-      lastStreamTime.current = now;
+    if (serialStreamer.getConnected() && xbmpBytes) {
       serialStreamer.sendFrame(xbmpBytes);
     }
-  }, [media, activeFrameIndex, ditherConfig, cropSettings, serialConnected, targetFps, previewOverride, assets]);
+  }, [media, timelineMedia, activeFrameIndex, ditherConfig, cropSettings, serialConnected, targetFps, previewOverride, assets]);
 
   // Fast direct canvas rendering for Full Preview (no base64 allocation per frame)
   useEffect(() => {
@@ -613,7 +661,7 @@ function MainApp() {
       await serialStreamer.disconnect();
       setSerialConnected(false);
     } else {
-      const success = await serialStreamer.connect();
+      const success = await serialStreamer.connect(baudRate);
       if (success) {
         setSerialConnected(true);
       }
@@ -683,6 +731,8 @@ function MainApp() {
     <div className={`h-screen flex flex-col overflow-hidden relative transition-colors ${isDark ? 'bg-[#0E0B1A] text-[#F1EEF8]' : 'bg-[#F5F0EB] text-[#1A1A1A]'}`}>
       <Header 
         serialConnected={serialConnected}
+        baudRate={baudRate}
+        onBaudRateToggle={handleBaudRateToggle}
         onSerialToggle={handleSerialToggle}
         onExportClick={handleExport}
         onSettingsOpen={() => setSettingsOpen(true)}
@@ -1410,6 +1460,16 @@ function MainApp() {
                 ...prev,
                 { id: clipId, assetId, inFrame: 0, outFrame: kineticMedia.frames.length - 1 }
               ]);
+              setCropSettings({
+                mode: 'cover',
+                sourceWidth: 128,
+                sourceHeight: 64,
+                x: 0,
+                y: 0,
+                width: 128,
+                height: 64,
+                smoothing: true
+              });
               if (shouldClose) {
                 setActiveView('editor');
               }

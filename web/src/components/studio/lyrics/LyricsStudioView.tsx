@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Search, Music, FileText, Upload, Play, Pause, ArrowLeft, ArrowRight, Plus, Sparkles, Check, RefreshCw, X, RotateCcw, ChevronUp, ChevronDown, CheckCheck, Bot, Cpu, Activity, Zap, Volume2, Terminal, Sliders, Layers, Type } from 'lucide-react';
+import { Search, Music, FileText, Upload, Play, Pause, ArrowLeft, ArrowRight, Plus, Sparkles, Check, RefreshCw, X, RotateCcw, ChevronUp, ChevronDown, CheckCheck, Bot, Cpu, Activity, Zap, Volume2, Terminal, Sliders, Layers, Type, Video, Clock } from 'lucide-react';
+import { exportFramesToWebM, downloadBlob } from '../../../engine/kinetic/webmExporter';
 import { searchLrclib, getLrclibExact, searchLyricsOvhFallback } from '../../../engine/lyrics/lrclibClient';
 import { parseLrc, parsePlainTextLyrics } from '../../../engine/lyrics/lrcParser';
 import { LrclibTrack, ParsedLyrics, LyricLine, LyricWord } from '../../../engine/lyrics/types';
@@ -40,6 +41,11 @@ const SAMPLE_FALLBACK_LRC = `[ti:OLED Kinetic Intro]
 [00:02.50] PURE KINETIC TYPOGRAPHY
 [00:05.00] 1-BIT SYNCHRONIZED REELS
 [00:07.50] HARDWARE READY FOR ESP32`;
+
+const SAMPLE_PLAIN_FALLBACK_LYRICS = `Wise men say
+Only fools rush in
+But I can't help
+Falling in love with you`;
 
 const MANUAL_ARCHETYPES: MotionArchetype[] = [
   'gentle_float',
@@ -129,6 +135,25 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
       return SAMPLE_FALLBACK_LRC;
     }
   });
+  const [plainLyricsTitle, setPlainLyricsTitle] = useState(() => {
+    try {
+      return sessionStorage.getItem('oled_studio_plain_title') || '';
+    } catch (_) {
+      return '';
+    }
+  });
+  const [plainLyricsArtist, setPlainLyricsArtist] = useState(() => {
+    try {
+      return sessionStorage.getItem('oled_studio_plain_artist') || '';
+    } catch (_) {
+      return '';
+    }
+  });
+  const [plainLyricsPacing, setPlainLyricsPacing] = useState<'ballad' | 'pop' | 'rap'>('pop');
+
+  const isLrcContent = useMemo(() => {
+    return /\[\d{2}:\d{2}(?:\.\d{2,3})?\]/.test(pastedLrcText);
+  }, [pastedLrcText]);
 
   // --- PARSED LYRICS & SELECTION ---
   const [parsedLyrics, setParsedLyrics] = useState<ParsedLyrics>(() => parseLrc(SAMPLE_FALLBACK_LRC));
@@ -516,6 +541,70 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
   const [previewFrame, setPreviewFrame] = useState<ImageData | null>(null);
   const previewFramesRef = useRef<ExtractedFrame[]>([]);
 
+  // --- WEBM EXPORT STATE ---
+  const [isRecordingWebm, setIsRecordingWebm] = useState(false);
+  const [recordProgress, setRecordProgress] = useState(0);
+
+  const handleRecordWebm = async () => {
+    if (previewFramesRef.current.length === 0) return;
+    setIsRecordingWebm(true);
+    setRecordProgress(0);
+    try {
+      const blob = await exportFramesToWebM(previewFramesRef.current, {
+        scale: 4,
+        fps: 30,
+        theme: 'cyan',
+        onProgress: (p) => setRecordProgress(p)
+      });
+      const filename = `kinetic_${(parsedLyrics.title || 'preview').toLowerCase().replace(/[^a-z0-9]+/g, '_')}.webm`;
+      downloadBlob(blob, filename);
+    } catch (err) {
+      console.error('WebM export failed:', err);
+    } finally {
+      setIsRecordingWebm(false);
+    }
+  };
+
+  // Expose automation hook on window for test scripts and agent evaluation
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).__oledStudio = {
+        setSong: (title: string, artist: string, lrcText: string, pacingMode?: 'ballad' | 'pop' | 'rap') => {
+          setPastedLrcText(lrcText);
+          setPlainLyricsTitle(title);
+          setPlainLyricsArtist(artist);
+          if (pacingMode) setPlainLyricsPacing(pacingMode);
+          const hasTimeTags = /\[\d{2}:\d{2}(?:\.\d{2,3})?\]/.test(lrcText);
+          const parsed = hasTimeTags
+            ? parseLrc(lrcText, undefined, { title, artist })
+            : parsePlainTextLyrics(lrcText, { title, artist, pacingMode: pacingMode || 'pop' });
+          parsed.title = title;
+          parsed.artist = artist;
+          setParsedLyrics(parsed);
+          setSelectedLineIndices(parsed.lines.map((_, i) => i));
+        },
+        runAiDirector: async () => {
+          await handleRunOllamaAnalysis();
+        },
+        exportWebmBase64: async () => {
+          const frames = previewFramesRef.current;
+          if (!frames || frames.length === 0) throw new Error('No frames rendered in previewFramesRef');
+          const blob = await exportFramesToWebM(frames, { scale: 4, fps: 30, theme: 'cyan' });
+          return new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const res = reader.result as string;
+              resolve(res.split(',')[1]);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        },
+        getFramesCount: () => previewFramesRef.current.length
+      };
+    }
+  }, [parsedLyrics, songMoodProfile, stylePack, archetype, aiWordOverrides, aiMotifOverrides]);
+
 
   // Auto-load lyrics on mount from session or fallback
   useEffect(() => {
@@ -640,9 +729,25 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
     try {
       sessionStorage.setItem('oled_studio_lyrics_text', pastedLrcText);
+      sessionStorage.setItem('oled_studio_plain_title', plainLyricsTitle);
+      sessionStorage.setItem('oled_studio_plain_artist', plainLyricsArtist);
     } catch (_) {}
 
-    const parsed = parseLrc(pastedLrcText);
+    const parsed = isLrcContent
+      ? parseLrc(pastedLrcText, audioAnalysis?.durationMs, {
+          title: plainLyricsTitle.trim() || undefined,
+          artist: plainLyricsArtist.trim() || undefined,
+        })
+      : parsePlainTextLyrics(pastedLrcText, {
+          totalDurationMs: audioAnalysis?.durationMs,
+          pacingMode: plainLyricsPacing,
+          title: plainLyricsTitle.trim() || undefined,
+          artist: plainLyricsArtist.trim() || undefined,
+        });
+
+    if (parsed.title && !plainLyricsTitle) setPlainLyricsTitle(parsed.title);
+    if (parsed.artist && !plainLyricsArtist) setPlainLyricsArtist(parsed.artist);
+
     setParsedLyrics(parsed);
     setSelectedLineIndices(Array.from({ length: Math.min(4, parsed.lines.length) }, (_, i) => i));
     setAnchorIndex(0);
@@ -1764,7 +1869,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
         {/* ============================================================== */}
         {/* COLUMN 1: INGESTION & SEARCH                                  */}
         {/* ============================================================== */}
-        <section className={`w-[340px] flex flex-col shrink-0 min-h-0 transition-colors duration-200 ${
+        <section className={`w-[340px] flex flex-col shrink-0 min-h-0 transition-colors duration-200 overflow-hidden ${
           themeMode === 'dark' ? 'bg-[#18181A] text-white' : 'bg-white text-[#141413]'
         }`}>
           <div className={`p-3 border-b ${
@@ -1779,13 +1884,13 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           </div>
 
           {/* Sub-tabs with Framer Motion sliding pill physics */}
-          <div className={`flex border-b p-1 gap-1 shrink-0 relative ${
+          <div className={`flex border-b p-1 gap-1 shrink-0 relative overflow-hidden ${
             themeMode === 'dark' ? 'border-[#2C2B29] bg-[#18181A]' : 'border-[#E8E5DE] bg-[#FAF9F5]'
           }`}>
             {[
-              { id: 'search' as const, label: 'LRCLIB Search', Icon: Search },
-              { id: 'paste' as const, label: 'Paste LRC', Icon: FileText },
-              { id: 'audio' as const, label: 'Audio Beat Sync', Icon: Music },
+              { id: 'search' as const, label: 'Search', Icon: Search },
+              { id: 'paste' as const, label: 'Paste Text', Icon: FileText },
+              { id: 'audio' as const, label: 'Audio Sync', Icon: Music },
             ].map(tab => {
               const isActive = ingestTab === tab.id;
               const TabIcon = tab.Icon;
@@ -1794,7 +1899,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                   key={tab.id}
                   type="button"
                   onClick={() => setIngestTab(tab.id)}
-                  className={`relative flex-1 py-1.5 px-2 text-xs font-sans rounded-md transition-colors cursor-pointer flex items-center justify-center gap-1.5 z-10 ${
+                  className={`relative flex-1 py-1.5 px-2 text-xs font-sans rounded-md transition-colors cursor-pointer flex items-center justify-center gap-1.5 z-10 min-w-0 ${
                     isActive
                       ? themeMode === 'dark'
                         ? 'text-white font-semibold'
@@ -1889,23 +1994,172 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             )}
 
             {ingestTab === 'paste' && (
-              <div className="flex-1 flex flex-col gap-2.5 min-h-0">
-                <textarea
-                  value={pastedLrcText}
-                  onChange={e => setPastedLrcText(e.target.value)}
-                  placeholder="Paste raw [mm:ss.xx] LRC or plain lyrics here..."
-                  className={`flex-1 p-3 text-xs font-mono rounded-xl resize-none focus:outline-none focus:border-[#D97757] focus:ring-1 focus:ring-[#D97757] border transition-colors shadow-xs ${
-                    themeMode === 'dark'
-                      ? 'bg-[#1C1C20] border-white/10 text-white placeholder-white/30'
-                      : 'bg-white border-[#E8E5DE] text-[#141413] placeholder-[#87867F]'
-                  }`}
-                />
+              <div className="flex-1 flex flex-col gap-2.5 min-h-0 overflow-y-auto pr-0.5">
+                {/* Title & Artist Input Row */}
+                <div className="grid grid-cols-2 gap-2 shrink-0">
+                  <div className="flex flex-col gap-1">
+                    <label className={`text-[10px] font-sans font-medium uppercase tracking-wider ${
+                      themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'
+                    }`}>
+                      Song Title
+                    </label>
+                    <input
+                      type="text"
+                      value={plainLyricsTitle}
+                      onChange={e => setPlainLyricsTitle(e.target.value)}
+                      placeholder="e.g. Can't Help Falling in Love"
+                      className={`px-2.5 py-1.5 text-xs font-sans rounded-lg border focus:outline-none focus:border-[#D97757] transition-colors shadow-xs ${
+                        themeMode === 'dark'
+                          ? 'bg-[#1C1C20] border-white/10 text-white placeholder-white/30'
+                          : 'bg-white border-[#E8E5DE] text-[#141413] placeholder-[#87867F]'
+                      }`}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className={`text-[10px] font-sans font-medium uppercase tracking-wider ${
+                      themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'
+                    }`}>
+                      Artist
+                    </label>
+                    <input
+                      type="text"
+                      value={plainLyricsArtist}
+                      onChange={e => setPlainLyricsArtist(e.target.value)}
+                      placeholder="e.g. Elvis Presley"
+                      className={`px-2.5 py-1.5 text-xs font-sans rounded-lg border focus:outline-none focus:border-[#D97757] transition-colors shadow-xs ${
+                        themeMode === 'dark'
+                          ? 'bg-[#1C1C20] border-white/10 text-white placeholder-white/30'
+                          : 'bg-white border-[#E8E5DE] text-[#141413] placeholder-[#87867F]'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                {/* Format Detection Badge */}
+                {pastedLrcText.trim() && (
+                  <div className={`px-2.5 py-1.5 rounded-lg border flex items-center justify-between gap-2 text-[11px] font-sans shrink-0 ${
+                    isLrcContent
+                      ? themeMode === 'dark'
+                        ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-300'
+                        : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                      : themeMode === 'dark'
+                        ? 'bg-[#D97757]/10 border-[#D97757]/30 text-[#E29377]'
+                        : 'bg-[#FBF3EF] border-[#D97757]/30 text-[#C66545]'
+                  }`}>
+                    <div className="flex items-center gap-1.5 truncate">
+                      {isLrcContent ? (
+                        <>
+                          <Clock className="w-3.5 h-3.5 shrink-0" />
+                          <span className="font-medium truncate">Timestamped LRC Detected</span>
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="w-3.5 h-3.5 shrink-0" />
+                          <span className="font-medium truncate">Plain Text Lyrics (No Timestamps)</span>
+                        </>
+                      )}
+                    </div>
+                    <span className="text-[10px] opacity-75 shrink-0 font-mono">
+                      {isLrcContent ? 'Exact Sync' : 'Auto-Timed'}
+                    </span>
+                  </div>
+                )}
+
+                {/* Pacing Preset Selector (shown when plain text without timestamps is detected or empty) */}
+                {!isLrcContent && (
+                  <div className="flex flex-col gap-1 shrink-0">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-[10px] font-sans font-medium uppercase tracking-wider ${
+                        themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'
+                      }`}>
+                        Line Delivery Pacing
+                      </span>
+                      <span className={`text-[10px] font-mono ${
+                        themeMode === 'dark' ? 'text-white/40' : 'text-[#87867F]'
+                      }`}>
+                        {plainLyricsPacing === 'ballad' ? '~4.5s/line' : plainLyricsPacing === 'rap' ? '~2.2s/line' : '~3.4s/line'}
+                      </span>
+                    </div>
+                    <div className={`grid grid-cols-3 gap-1 p-0.5 rounded-lg border ${
+                      themeMode === 'dark' ? 'bg-[#141416] border-white/10' : 'bg-[#FAF9F5] border-[#E8E5DE]'
+                    }`}>
+                      {[
+                        { id: 'ballad' as const, label: '🕊️ Ballad', desc: 'Slow' },
+                        { id: 'pop' as const, label: '🎵 Pop', desc: 'Mid' },
+                        { id: 'rap' as const, label: '⚡ Rap', desc: 'Fast' },
+                      ].map(p => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setPlainLyricsPacing(p.id)}
+                          className={`py-1 px-1.5 text-[11px] font-sans rounded-md transition-all text-center cursor-pointer ${
+                            plainLyricsPacing === p.id
+                              ? 'bg-[#D97757] text-white font-medium shadow-xs'
+                              : themeMode === 'dark'
+                                ? 'text-white/60 hover:text-white hover:bg-white/5'
+                                : 'text-[#5E5D59] hover:text-[#141413] hover:bg-black/5'
+                          }`}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Lyrics Textarea */}
+                <div className="flex-1 flex flex-col gap-1 min-h-[130px]">
+                  <textarea
+                    value={pastedLrcText}
+                    onChange={e => setPastedLrcText(e.target.value)}
+                    placeholder="Paste plain text lyrics (e.g. from Genius, Spotify, Notes) or raw [mm:ss.xx] LRC here..."
+                    className={`flex-1 p-3 text-xs font-mono rounded-xl resize-none focus:outline-none focus:border-[#D97757] focus:ring-1 focus:ring-[#D97757] border transition-colors shadow-xs leading-relaxed ${
+                      themeMode === 'dark'
+                        ? 'bg-[#1C1C20] border-white/10 text-white placeholder-white/30'
+                        : 'bg-white border-[#E8E5DE] text-[#141413] placeholder-[#87867F]'
+                    }`}
+                  />
+                </div>
+
+                {/* Primary Action Button */}
                 <button
+                  type="button"
                   onClick={handleApplyPastedLrc}
-                  className="w-full py-2.5 text-xs font-sans font-medium rounded-xl bg-[#D97757] hover:bg-[#C66545] text-white transition-colors cursor-pointer shadow-xs"
+                  className="w-full py-2 text-xs font-sans font-medium rounded-xl bg-[#D97757] hover:bg-[#C66545] text-white transition-colors cursor-pointer shadow-xs flex items-center justify-center gap-1.5 shrink-0"
                 >
-                  Parse & Load Lyrics
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>Parse & Load Into Studio</span>
                 </button>
+
+                {/* Quick Helper Actions */}
+                <div className="flex items-center justify-between pt-1 border-t border-dashed border-black/10 dark:border-white/10 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPlainLyricsTitle("Can't Help Falling in Love");
+                      setPlainLyricsArtist("Elvis Presley");
+                      setPlainLyricsPacing('ballad');
+                      setPastedLrcText(SAMPLE_PLAIN_FALLBACK_LYRICS);
+                    }}
+                    className={`text-[11px] font-sans transition-colors cursor-pointer hover:underline ${
+                      themeMode === 'dark' ? 'text-[#E29377]' : 'text-[#D97757]'
+                    }`}
+                  >
+                    Load Sample Ballad (Plain Text)
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPastedLrcText('');
+                    }}
+                    className={`text-[11px] font-sans transition-colors cursor-pointer hover:underline ${
+                      themeMode === 'dark' ? 'text-white/40 hover:text-white/70' : 'text-[#87867F] hover:text-[#141413]'
+                    }`}
+                  >
+                    Clear Text
+                  </button>
+                </div>
               </div>
             )}
 
@@ -2722,21 +2976,33 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                 }`} />
                 <span>OLED PREVIEW</span>
               </span>
-              <span className={`font-semibold tracking-wider ${
-                isAnalyzingOllama || isPreviewLoading || isRendering
-                  ? 'text-[#D97757] animate-pulse'
-                  : renderedMediaBuffer && !isDirty
-                  ? 'text-emerald-500'
-                  : 'text-[#D97757]'
-              }`}>
-                {isAnalyzingOllama
-                  ? (llmProvider === 'groq' ? 'GROQ 120B DIRECTING' : 'OLLAMA DIRECTING')
-                  : isPreviewLoading
-                  ? 'BUFFERING PREVIEW'
-                  : renderedMediaBuffer && !isDirty
-                  ? 'RENDERED BUFFER'
-                  : '30 FPS DRAFT'}
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={isRecordingWebm || previewFramesRef.current.length === 0}
+                  onClick={handleRecordWebm}
+                  className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-medium transition-colors bg-[#D97757]/10 text-[#D97757] hover:bg-[#D97757] hover:text-white disabled:opacity-40 cursor-pointer"
+                  title="Record and export animation to WebM video"
+                >
+                  <Video className="w-3 h-3" />
+                  <span>{isRecordingWebm ? `${recordProgress}%` : 'Record WebM'}</span>
+                </button>
+                <span className={`font-semibold tracking-wider ${
+                  isAnalyzingOllama || isPreviewLoading || isRendering
+                    ? 'text-[#D97757] animate-pulse'
+                    : renderedMediaBuffer && !isDirty
+                    ? 'text-emerald-500'
+                    : 'text-[#D97757]'
+                }`}>
+                  {isAnalyzingOllama
+                    ? (llmProvider === 'groq' ? 'GROQ 120B DIRECTING' : 'OLLAMA DIRECTING')
+                    : isPreviewLoading
+                    ? 'BUFFERING PREVIEW'
+                    : renderedMediaBuffer && !isDirty
+                    ? 'RENDERED BUFFER'
+                    : '30 FPS DRAFT'}
+                </span>
+              </div>
             </div>
 
             {/* OLED Monitor with Skiper #107 Knockout Corner L-Brackets */}

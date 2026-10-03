@@ -1,0 +1,366 @@
+{
+  "song": "52 Bars - Karan Aujla",
+  "vibe": "hype_aggressive",
+  "pack": "trap_drill",
+  "totalFrames": 312,
+  "wordSummary": [
+    {
+      "word": "Pehli",
+      "line": 1,
+      "startMs": 0,
+      "endMs": 350,
+      "archetype": "typewriter_ribbon",
+      "motif": "minimal_frame",
+      "meaning": "first / initial occurrence",
+      "reason": "introduces the story like typing the first line"
+    },
+    {
+      "word": "vaari",
+      "line": 1,
+      "startMs": 350,
+      "endMs": 700,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "boleya",
+      "line": 1,
+      "startMs": 700,
+      "endMs": 1100,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "te",
+      "line": 1,
+      "startMs": 1100,
+      "endMs": 1300,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "laggeya",
+      "line": 1,
+      "startMs": 1300,
+      "endMs": 1700,
+      "archetype": "echo_stack",
+      "motif": "sound_blast_rings",
+      "meaning": "felt (emotional sensation)",
+      "reason": "conveys drifting emotional weight"
+    },
+    {
+      "word": "si",
+      "line": 1,
+      "startMs": 1700,
+      "endMs": 1900,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "rokeya",
+      "line": 1,
+      "startMs": 1900,
+      "endMs": 2400,
+      "archetype": "waveform_karaoke",
+      "motif": "water_ripples",
+      "meaning": "crying / tears",
+      "reason": "visualizes tear flow with ripple effect"
+    },
+    {
+      "word": "Dooji",
+      "line": 2,
+      "startMs": 2600,
+      "endMs": 2950,
+      "archetype": "rolling_odometer",
+      "motif": "chrome_star",
+      "meaning": "second / repeat",
+      "reason": "counts the second turn like a slot reel"
+    },
+    {
+      "word": "vaari",
+      "line": 2,
+      "startMs": 2950,
+      "endMs": 3300,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "boleya",
+      "line": 2,
+      "startMs": 3300,
+      "endMs": 3700,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "te",
+      "line": 2,
+      "startMs": 3700,
+      "endMs": 3900,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "laggeya",
+      "line": 2,
+      "startMs": 3900,
+      "endMs": 4300,
+      "archetype": "echo_stack",
+      "motif": "sound_blast_rings",
+      "meaning": "felt (emotional sensation)",
+      "reason": "conveys drifting emotional weight"
+    },
+    {
+      "word": "si",
+      "line": 2,
+      "startMs": 4300,
+      "endMs": 4500,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "tokeya",
+      "line": 2,
+      "startMs": 4500,
+      "endMs": 5000,
+      "archetype": "blade_slash",
+      "motif": "razor_blade",
+      "meaning": "took / seized",
+      "reason": "sharp cutting impact of the second statement"
+    },
+    {
+      "word": "Teeji",
+      "line": 3,
+      "startMs": 5200,
+      "endMs": 5550,
+      "archetype": "cyber_glitch",
+      "motif": "lightning_arc",
+      "meaning": "third / another repeat",
+      "reason": "glitchy rapid third iteration"
+    },
+    {
+      "word": "vaari",
+      "line": 3,
+      "startMs": 5550,
+      "endMs": 5900,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "boleya",
+      "line": 3,
+      "startMs": 5900,
+      "endMs": 6300,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "te",
+      "line": 3,
+      "startMs": 6300,
+      "endMs": 6500,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "khadka",
+      "line": 3,
+      "startMs": 6500,
+      "endMs": 6900,
+      "archetype": "manga_impact",
+      "motif": "flame_tongue",
+      "meaning": "burn / ignite",
+      "reason": "explosive burning punchline"
+    },
+    {
+      "word": "hi",
+      "line": 3,
+      "startMs": 6900,
+      "endMs": 7100,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "karta",
+      "line": 3,
+      "startMs": 7100,
+      "endMs": 7600,
+      "archetype": "target_focus",
+      "motif": "tactical_scope",
+      "meaning": "does / performs",
+      "reason": "focuses on the action being performed"
+    },
+    {
+      "word": "Khoon",
+      "line": 4,
+      "startMs": 7800,
+      "endMs": 8200,
+      "archetype": "blade_slash",
+      "motif": "barbed_wire",
+      "meaning": "blood",
+      "reason": "sharp, dangerous blood imagery"
+    },
+    {
+      "word": "aale",
+      "line": 4,
+      "startMs": 8200,
+      "endMs": 8550,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "chitteyan",
+      "line": 4,
+      "startMs": 8550,
+      "endMs": 9100,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "na",
+      "line": 4,
+      "startMs": 9100,
+      "endMs": 9300,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "parcha",
+      "line": 4,
+      "startMs": 9300,
+      "endMs": 9750,
+      "archetype": "smooth_fluid",
+      "motif": "starlight_glimmer",
+      "meaning": "covers / spreads",
+      "reason": "fluid spread of blood across the scene"
+    },
+    {
+      "word": "hi",
+      "line": 4,
+      "startMs": 9750,
+      "endMs": 9950,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    },
+    {
+      "word": "bharta",
+      "line": 4,
+      "startMs": 9950,
+      "endMs": 10400,
+      "archetype": "auto_semantic",
+      "motif": "none"
+    }
+  ],
+  "rawLog": {
+    "id": "log-1790971829222-0",
+    "timestamp": 1790971829222,
+    "provider": "groq",
+    "batchIndex": 1,
+    "totalBatches": 1,
+    "model": "openai/gpt-oss-120b",
+    "songTitle": "52 Bars",
+    "artist": "Karan Aujla",
+    "linesAnalyzed": [
+      "Pehli vaari boleya te laggeya si rokeya",
+      "Dooji vaari boleya te laggeya si tokeya",
+      "Teeji vaari boleya te khadka hi karta",
+      "Khoon aale chitteyan na parcha hi bharta"
+    ],
+    "prompt": "You are an elite motion typography director for 1-bit OLED kinetic lyrics on a monochrome 128x64 display.\nTrack: \"52 Bars\" by Karan Aujla.\n\nLyrics:\nLine 1: \"Pehli vaari boleya te laggeya si rokeya\"\nLine 2: \"Dooji vaari boleya te laggeya si tokeya\"\nLine 3: \"Teeji vaari boleya te khadka hi karta\"\nLine 4: \"Khoon aale chitteyan na parcha hi bharta\"\n\nDIRECTOR MISSION:\n1. Deeply analyze the language, slang, metaphors, mood, rhythm, and emotional intensity of the lyrics.\n2. Determine the overarching song vibe:\n   - \"hype_aggressive\": hard rap, drill, trap, metal, rock, high-energy battle/flex tracks with aggressive cuts and heavy punchlines.\n   - \"chill_pop\": acoustic pop, R&B, lo-fi, melodic love songs, gentle storytelling.\n   - \"ballad_acoustic\": slow emotional ballads, deep heartbreak, quiet acoustic poetry.\n   - \"groove_dance\": upbeat rhythmic dance, disco, funk, bouncy midtempo beats.\n3. Recommend the best matching typography style pack:\n   - \"trap_drill\": aggressive display fonts, high contrast, hard cuts.\n   - \"pop_acoustic\": clean modern sans, friendly rounded geometry, elegant.\n   - \"editorial_fashion\": high-fashion editorial serif, chic, emotional.\n   - \"neo_tokyo\": cyberpunk condensed gothic, high velocity.\n   - \"retro_pixel\": 8-bit / arcade chiptune aesthetic.\n   - \"comic_pop\": playful cartoon, expressive pop-art.\n   - \"gothic_metal\": heavy blackletter, intense, dark energy.\n4. Select 2 to 4 key expressive words per line (punchlines, verbs, core metaphors, climax words). Direct the kinetic choreography so every line feels dynamic and alive.\n   - NEVER classify generic connective filler words, prepositions, conjunctions, or weak pronouns (e.g. \"and\", \"the\", \"with\", \"of\", \"to\", \"in\", \"it\", \"my\", \"you\", \"me\", \"is\", \"a\", \"an\", or their equivalents in any language).\n   - ANTI-MONOTONY & MAXIMUM VISUAL VARIETY MANDATE:\n     * Over long sequences, repeating the same archetype or motif feels robotic. Distribute choices broadly across the entire palette!\n     * NEVER assign the same archetype twice to consecutive words or adjacent lines.\n     * Balance high-impact punches (\"manga_impact\", \"blade_slash\", \"cyber_glitch\", \"3d_block_stack\") with structural and mechanical maneuvers (\"rolling_odometer\", \"inverted_badge\", \"target_focus\", \"snake_slither\", \"wiggly_boil\", \"echo_stack\", \"gentle_float\", \"typewriter_ribbon\").\n   - Tailor the motion archetype and background motif to match the word's genuine intensity:\n     * Hard punchlines, threats, flexes, fast flow: use \"manga_impact\", \"blade_slash\", \"cyber_glitch\", \"3d_block_stack\", \"echo_stack\" with motifs like \"razor_blade\", \"tactical_scope\", \"flame_tongue\", \"manga_speedlines\", \"lightning_arc\".\n     * Gentle vocal runs, love confessions, dreamy drift: use \"gentle_float\", \"waveform_karaoke\", \"typewriter_ribbon\", \"dither_dissolve\", \"smooth_fluid\" with motifs like \"floating_notes\", \"starlight_glimmer\", \"heartbeat_pulse\", \"water_ripples\", \"minimal_frame\".\n     * Rhythmic counts, bets, slot tumbling, bouncy lines: use \"rolling_odometer\", \"inverted_badge\", \"target_focus\", \"wiggly_boil\" with motifs like \"chrome_star\", \"comic_burst\", \"floating_notes\".\n5. ALWAYS assign an evocative background visual motif (\"motif\") to key punchlines and emotional climaxes matching the imagery. If no motif fits, use \"none\". Rotate motifs dynamically across lines to maintain visual freshness.\n6. For each selected word, provide its meaning and rationale for the motion choice.\n\nChoose from these 20 visual archetypes:\n- \"gentle_float\": weightless acoustic drift, floating, romance, calm breeze, dreaming\n- \"waveform_karaoke\": sing-along melody, catchy choruses, vocal rhythm, musical hooks\n- \"typewriter_ribbon\": storytelling reveal, confessions, letters, narrative, diary lines\n- \"dither_dissolve\": nostalgic memory, vintage Game Boy/Mac dither fade, fading away, shadows\n- \"manga_impact\": explosive hits, punches, loud shouts, beat drops\n- \"cyber_glitch\": high-tech speed, rapid flows, digital panic, lightning\n- \"3d_block_stack\": royalty, power, anthems, pride, heavy boss energy, solid blocks\n- \"target_focus\": eye contact, pointing, questions (\"who\", \"you\", \"why\"), aiming\n- \"blade_slash\": sharp slicing, weapons, danger, razor blades, conflict\n- \"snake_slither\": sinister, poison, dark crawl, toxic, venom, eerie mystery\n- \"echo_stack\": prolonged vocal notes, chants, reverberating shouting\n- \"inverted_badge\": declarations, \"NO\", stops, rules, verification stamps, warnings\n- \"smooth_fluid\": floating, love, breeze, calm sky/water, romantic drift, gentle\n- \"wiggly_boil\": wild dancing, boiling jitter, chaos, fun, quirky shaking\n- \"rolling_odometer\": slot machine tumbler, rolling digits, reels, mechanical spin, count, numbers, casino\n- \"anvil_stomp\": massive vertical slam onto baseline, heavy hits, bass drops, crushing power, ground slam\n- \"fracture_shatter\": angular diagonal crack splitting text, heartbreak, pain, cracking glass, tearing apart\n- \"pendulum_sway\": harmonic rocking acoustic tilt, guitar strums, ticking clock, steady rhythm, acoustic ballads\n- \"prism_shimmer\": light beam sweeping across glyphs, diamond shine, luxury, glow, star glints\n- \"squash_bounce\": elastic Disney squash and stretch rebound, playful hops, dance grooves, bouncy funk\n\nChoose from these 24 visual motifs (or \"none\"):\n- \"none\": clean typography only with zero background visual distractions\n- \"floating_notes\": drifting music notes (♪ ♫) for melodies, singing, instruments, romance\n- \"starlight_glimmer\": breathing twinkling stars for dreams, night, magic, sparkling emotions\n- \"heartbeat_pulse\": romantic heart pulse with concentric ripples for love, feelings, heartbeat\n- \"water_ripples\": calming ocean waves and liquid ripples along screen floor\n- \"minimal_frame\": cinematic minimalist border frame with corner cuts for elegant ballads\n- \"lofi_dust_motes\": cozy floating dust particles for coffee shop / bedroom pop warmth\n- \"barbed_wire\": razor barbed wire fence across corners for trap, danger, street, struggle\n- \"sound_blast_rings\": concentric shockwave blast rings expanding from center on heavy 808s\n- \"shattered_glass\": sharp flying glass shards exploding outward from center\n- \"sound_bars_vintage\": classic hi-fi graphic equalizer spectrum bars dancing along bottom\n- \"rain_window\": slanted falling rain streaks with splashes on bottom for melancholy and rain\n- \"cassette_spool\": retro dual spinning cassette tape hubs for analog nostalgia and lo-fi tapes\n- \"equalizer_radial\": circular 360-degree audio spectrum ring orbiting around text\n- \"vinyl_grooves\": concentric turntable record grooves with rotating center label for DJ/groove\n- \"manga_speedlines\": radial tapered focus lines converging around text\n- \"anime_rush\": horizontal rapid speed barrage streaks\n- \"crown_royal\": gothic 3-point crown for kings, bosses, wealth, royalty, supreme power\n- \"razor_blade\": sharp diagonal cut slice with impact glints for sharp cuts, danger\n- \"tactical_scope\": HUD corner brackets and targeting reticle for guns, aim, targets\n- \"flame_tongue\": rising fire contours with detached ember sparks for heat, cooked, fire\n- \"skull_cross\": 12x12 micro-sprite skull mark for lethal, death, danger, grave lyrics\n- \"chrome_star\": 4-point diamond glint sparkles for ice, diamonds, luxury, shine, jewelry\n- \"lightning_arc\": high-voltage jagged electric bolt for sudden voltage surges, shocks\n- \"comic_burst\": 14-point pop-art comic starburst bubble for punchy comic shoutouts\n\nOutput JSON strictly matching this format:\n{\n  \"songVibe\": \"hype_aggressive\",\n  \"recommendedStylePack\": \"trap_drill\",\n  \"classifications\": [\n    {\n      \"word\": \"FIRE\",\n      \"meaning\": \"energy / flames\",\n      \"archetype\": \"manga_impact\",\n      \"motif\": \"flame_tongue\",\n      \"reason\": \"explosive energetic punchline\"\n    }\n  ]\n}\n",
+    "rawResponse": "{\"songVibe\":\"hype_aggressive\",\"recommendedStylePack\":\"trap_drill\",\"classifications\":[{\"word\":\"Pehli\",\"meaning\":\"first / initial occurrence\",\"archetype\":\"typewriter_ribbon\",\"motif\":\"minimal_frame\",\"reason\":\"introduces the story like typing the first line\"},{\"word\":\"laggeya\",\"meaning\":\"felt (emotional sensation)\",\"archetype\":\"gentle_float\",\"motif\":\"floating_notes\",\"reason\":\"conveys drifting emotional weight\"},{\"word\":\"rokeya\",\"meaning\":\"crying / tears\",\"archetype\":\"waveform_karaoke\",\"motif\":\"water_ripples\",\"reason\":\"visualizes tear flow with ripple effect\"},{\"word\":\"Dooji\",\"meaning\":\"second / repeat\",\"archetype\":\"rolling_odometer\",\"motif\":\"chrome_star\",\"reason\":\"counts the second turn like a slot reel\"},{\"word\":\"tokeya\",\"meaning\":\"took / seized\",\"archetype\":\"blade_slash\",\"motif\":\"razor_blade\",\"reason\":\"sharp cutting impact of the second statement\"},{\"word\":\"laggeya\",\"meaning\":\"felt again\",\"archetype\":\"echo_stack\",\"motif\":\"sound_blast_rings\",\"reason\":\"echoes the feeling from the first line\"},{\"word\":\"Teeji\",\"meaning\":\"third / another repeat\",\"archetype\":\"cyber_glitch\",\"motif\":\"lightning_arc\",\"reason\":\"glitchy rapid third iteration\"},{\"word\":\"khadka\",\"meaning\":\"burn / ignite\",\"archetype\":\"manga_impact\",\"motif\":\"flame_tongue\",\"reason\":\"explosive burning punchline\"},{\"word\":\"karta\",\"meaning\":\"does / performs\",\"archetype\":\"target_focus\",\"motif\":\"tactical_scope\",\"reason\":\"focuses on the action being performed\"},{\"word\":\"Khoon\",\"meaning\":\"blood\",\"archetype\":\"blade_slash\",\"motif\":\"barbed_wire\",\"reason\":\"sharp, dangerous blood imagery\"},{\"word\":\"parcha\",\"meaning\":\"covers / spreads\",\"archetype\":\"smooth_fluid\",\"motif\":\"starlight_glimmer\",\"reason\":\"fluid spread of blood across the scene\"}]}",
+    "parsedClassifications": [
+      {
+        "word": "Pehli",
+        "startMs": 0,
+        "archetype": "typewriter_ribbon",
+        "motif": "minimal_frame",
+        "meaning": "first / initial occurrence",
+        "reason": "introduces the story like typing the first line"
+      },
+      {
+        "word": "laggeya",
+        "startMs": 0,
+        "archetype": "gentle_float",
+        "motif": "floating_notes",
+        "meaning": "felt (emotional sensation)",
+        "reason": "conveys drifting emotional weight"
+      },
+      {
+        "word": "rokeya",
+        "startMs": 0,
+        "archetype": "waveform_karaoke",
+        "motif": "water_ripples",
+        "meaning": "crying / tears",
+        "reason": "visualizes tear flow with ripple effect"
+      },
+      {
+        "word": "Dooji",
+        "startMs": 0,
+        "archetype": "rolling_odometer",
+        "motif": "chrome_star",
+        "meaning": "second / repeat",
+        "reason": "counts the second turn like a slot reel"
+      },
+      {
+        "word": "tokeya",
+        "startMs": 0,
+        "archetype": "blade_slash",
+        "motif": "razor_blade",
+        "meaning": "took / seized",
+        "reason": "sharp cutting impact of the second statement"
+      },
+      {
+        "word": "laggeya",
+        "startMs": 0,
+        "archetype": "echo_stack",
+        "motif": "sound_blast_rings",
+        "meaning": "felt again",
+        "reason": "echoes the feeling from the first line"
+      },
+      {
+        "word": "Teeji",
+        "startMs": 0,
+        "archetype": "cyber_glitch",
+        "motif": "lightning_arc",
+        "meaning": "third / another repeat",
+        "reason": "glitchy rapid third iteration"
+      },
+      {
+        "word": "khadka",
+        "startMs": 0,
+        "archetype": "manga_impact",
+        "motif": "flame_tongue",
+        "meaning": "burn / ignite",
+        "reason": "explosive burning punchline"
+      },
+      {
+        "word": "karta",
+        "startMs": 0,
+        "archetype": "target_focus",
+        "motif": "tactical_scope",
+        "meaning": "does / performs",
+        "reason": "focuses on the action being performed"
+      },
+      {
+        "word": "Khoon",
+        "startMs": 0,
+        "archetype": "blade_slash",
+        "motif": "barbed_wire",
+        "meaning": "blood",
+        "reason": "sharp, dangerous blood imagery"
+      },
+      {
+        "word": "parcha",
+        "startMs": 0,
+        "archetype": "smooth_fluid",
+        "motif": "starlight_glimmer",
+        "meaning": "covers / spreads",
+        "reason": "fluid spread of blood across the scene"
+      }
+    ],
+    "totalDurationMs": 6740,
+    "evalCount": 2958,
+    "promptEvalCount": 2097,
+    "tokensPerSecond": 477.9
+  }
+}

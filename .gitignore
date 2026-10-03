@@ -16,6 +16,8 @@ src/previews/
 *.mp4
 *.mov
 *.avi
+*.webm
+web/exports/
 
 # Personal Experiments & Test Builds
 experiments/

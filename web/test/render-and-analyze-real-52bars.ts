@@ -5,7 +5,7 @@ import { computeSongMoodProfile } from '../src/engine/kinetic/moodProfileEngine'
 import { AudioAnalysisResult } from '../src/engine/kinetic/audioAnalysisEngine';
 import { renderKineticSequence } from '../src/engine/kinetic/kineticEngine';
 
-const GROQ_API_KEY = 'GROQ_API_KEY_PLACEHOLDER';
+const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
 
 // ACTUAL 52 Bars (Karan Aujla, Prod. Ikky) Opening Verse
 const actual52BarsLyrics: LyricLine[] = [

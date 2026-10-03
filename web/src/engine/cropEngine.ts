@@ -287,13 +287,34 @@ export function renderCropTo128x64(
     ctx.imageSmoothingQuality = 'high';
   }
 
-  // Sanitize crop dimensions to avoid drawImage DOMException (IndexSizeError)
-  const sourceW = Math.max(1, crop.sourceWidth || OLED_TARGET_WIDTH);
-  const sourceH = Math.max(1, crop.sourceHeight || OLED_TARGET_HEIGHT);
-  const cropX = Math.max(0, Math.min(sourceW - 1, Math.floor(crop.x || 0)));
-  const cropY = Math.max(0, Math.min(sourceH - 1, Math.floor(crop.y || 0)));
-  const cropW = Math.max(1, Math.min(sourceW - cropX, Math.floor(crop.width || sourceW)));
-  const cropH = Math.max(1, Math.min(sourceH - cropY, Math.floor(crop.height || sourceH)));
+  // Detect actual source canvas/image dimensions
+  const actualW = Math.max(1, (source as any).width || (source as any).videoWidth || crop.sourceWidth || OLED_TARGET_WIDTH);
+  const actualH = Math.max(1, (source as any).height || (source as any).videoHeight || crop.sourceHeight || OLED_TARGET_HEIGHT);
+
+  // FAST PATH: If source is already 128x64 (kinetic typography, native OLED clips), render 1:1 directly
+  if (actualW === OLED_TARGET_WIDTH && actualH === OLED_TARGET_HEIGHT && crop.mode !== 'stretch') {
+    ctx.drawImage(source, 0, 0);
+    return ctx.getImageData(0, 0, OLED_TARGET_WIDTH, OLED_TARGET_HEIGHT);
+  }
+
+  // Sanitize crop dimensions to match actual source boundaries
+  let cropX = crop.x;
+  let cropY = crop.y;
+  let cropW = crop.width;
+  let cropH = crop.height;
+
+  if (crop.sourceWidth !== actualW || crop.sourceHeight !== actualH || !cropW || !cropH) {
+    const cover = computeCoverCrop(actualW, actualH);
+    cropX = cover.x;
+    cropY = cover.y;
+    cropW = cover.width;
+    cropH = cover.height;
+  }
+
+  const safeX = Math.max(0, Math.min(actualW - 1, Math.floor(cropX || 0)));
+  const safeY = Math.max(0, Math.min(actualH - 1, Math.floor(cropY || 0)));
+  const safeW = Math.max(1, Math.min(actualW - safeX, Math.floor(cropW || actualW)));
+  const safeH = Math.max(1, Math.min(actualH - safeY, Math.floor(cropH || actualH)));
 
   // 3. Render according to fit mode
   if (crop.mode === 'stretch') {
@@ -301,21 +322,21 @@ export function renderCropTo128x64(
       source,
       0,
       0,
-      sourceW,
-      sourceH,
+      actualW,
+      actualH,
       0,
       0,
       OLED_TARGET_WIDTH,
       OLED_TARGET_HEIGHT
     );
   } else if (crop.mode === 'contain') {
-    const { dx, dy, dw, dh } = computeContainDestRect(sourceW, sourceH);
+    const { dx, dy, dw, dh } = computeContainDestRect(actualW, actualH);
     ctx.drawImage(
       source,
       0,
       0,
-      sourceW,
-      sourceH,
+      actualW,
+      actualH,
       dx,
       dy,
       dw,
@@ -325,10 +346,10 @@ export function renderCropTo128x64(
     // 'cover' or custom interactive bounding box
     ctx.drawImage(
       source,
-      cropX,
-      cropY,
-      cropW,
-      cropH,
+      safeX,
+      safeY,
+      safeW,
+      safeH,
       0,
       0,
       OLED_TARGET_WIDTH,

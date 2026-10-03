@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { X, Copy, Download, Save, Check, Zap } from 'lucide-react';
-import { flashAnimationToDevice } from '../engine/flasher';
+import { X, Copy, Download, Save, Check, Zap, AlertCircle, Loader } from 'lucide-react';
+import { flashAnimationToDevice, FlashProgress } from '../engine/flasher';
 import { CountUp } from './reactbits/CountUp';
 import { ClickSpark } from './reactbits/ClickSpark';
 import { DecryptedText } from './reactbits/DecryptedText';
@@ -29,6 +29,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const [copied, setCopied] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [flashStatus, setFlashStatus] = useState<'idle' | 'flashing' | 'flashed' | 'error'>('idle');
+  const [flashProgress, setFlashProgress] = useState<FlashProgress>({ percent: 0, message: '' });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -72,10 +73,22 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     try {
       setErrorMessage(null);
       setFlashStatus('flashing');
-      await flashAnimationToDevice(xbmpFrames, targetFps);
+      setFlashProgress({ percent: 0, message: 'Initializing flasher...' });
+      await flashAnimationToDevice(xbmpFrames, targetFps, (p) => {
+        setFlashProgress(p);
+      });
       setFlashStatus('flashed');
-      setTimeout(() => setFlashStatus('idle'), 3000);
+      setTimeout(() => {
+        setFlashStatus('idle');
+        setFlashProgress({ percent: 0, message: '' });
+      }, 4000);
     } catch (err: any) {
+      if (err?.name === 'NotFoundError' || err?.message?.includes('No port selected')) {
+        // User closed or cancelled the port selection dialog - silently return to idle
+        setFlashStatus('idle');
+        setFlashProgress({ percent: 0, message: '' });
+        return;
+      }
       console.error(err);
       setFlashStatus('error');
       setErrorMessage(err.message || 'Flashing failed. Ensure WebSerial is supported and device is connected.');
@@ -131,8 +144,14 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  {flashStatus === 'flashed' ? <Check className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
-                  <span>{flashStatus === 'flashing' ? 'FLASHING...' : 'FLASH_DEVICE'}</span>
+                  {flashStatus === 'flashing' ? (
+                    <Loader className="w-4 h-4 animate-spin" />
+                  ) : flashStatus === 'flashed' ? (
+                    <Check className="w-4 h-4" />
+                  ) : (
+                    <Zap className="w-4 h-4" />
+                  )}
+                  <span>{flashStatus === 'flashing' ? `${flashProgress.percent}%` : 'FLASH_DEVICE'}</span>
                 </div>
               </button>
             </ClickSpark>
@@ -224,6 +243,55 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             </pre>
           </div>
         </div>
+
+        {/* Flash Status & Progress Banner */}
+        {flashStatus === 'flashing' && (
+          <div className={`mx-4 mb-4 p-3 border font-mono text-[10px] space-y-2 ${
+            isDark ? 'bg-[#140F24] border-[#00F0FF] text-[#00F0FF]' : 'bg-[#FFF5F0] border-[#E85D2A] text-[#E85D2A]'
+          }`}>
+            <div className="flex justify-between items-center font-bold">
+              <span className="flex items-center gap-2">
+                <Loader className="w-3.5 h-3.5 animate-spin" />
+                <span>FLASHING TO ESP32 (PARTITION 0x200000 @ 460800 BAUD)</span>
+              </span>
+              <span>{flashProgress.percent}%</span>
+            </div>
+            <div className={`w-full h-2 overflow-hidden ${isDark ? 'bg-[#2D2344]' : 'bg-[#E5D7C9]'}`}>
+              <div
+                className={`h-full transition-all duration-200 ${isDark ? 'bg-[#00F0FF]' : 'bg-[#E85D2A]'}`}
+                style={{ width: `${flashProgress.percent}%` }}
+              />
+            </div>
+            <div className={`text-[9px] truncate ${isDark ? 'text-[#A59CB8]' : 'text-[#6B6B6B]'}`}>
+              {flashProgress.message || 'Writing flash memory...'}
+            </div>
+          </div>
+        )}
+
+        {flashStatus === 'flashed' && (
+          <div className="mx-4 mb-4 p-3 border font-mono text-[10px] bg-emerald-950/40 border-emerald-500 text-emerald-400 flex items-start gap-2">
+            <Check className="w-4 h-4 shrink-0 text-emerald-400 mt-0.5" />
+            <div>
+              <div className="font-bold">FLASH COMPLETE! REBOOTING ESP32</div>
+              <div className="text-[9px] text-emerald-300 mt-0.5">
+                Animation loaded to partition 0x200000. ESP32 rebooted and is now playing standalone at {targetFps} FPS.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {errorMessage && (
+          <div className="mx-4 mb-4 p-3 border font-mono text-[10px] bg-red-950/40 border-red-500 text-red-400 space-y-1">
+            <div className="flex items-center gap-1.5 font-bold text-red-400">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              <span>FLASH ERROR</span>
+            </div>
+            <div className="text-[9px] text-red-300 break-words">{errorMessage}</div>
+            <div className="text-[9px] text-amber-300/80 pt-1 border-t border-red-900/50">
+              💡 Troubleshooting: Close serial monitors (PlatformIO/Arduino IDE). For ESP32-S3 USB, hold BOOT button, press RST once, release BOOT, then retry flashing.
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
         <div className={`px-4 py-3 border-t-2 flex justify-between items-center text-[10px] font-mono ${
