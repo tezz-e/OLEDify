@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <U8g2lib.h>
+#include <esp_partition.h>
 
 // Hardware I2C Pin Configuration
 #define OLED_SDA 8
@@ -14,6 +15,14 @@ static uint8_t liveStreamBuffer[1024];
 static unsigned long lastSerialFrameTime = 0;
 static bool isStreaming = false;
 static bool standbyDrawn = false;
+
+// Standalone Partition Animation
+static const esp_partition_t *animPartition = NULL;
+static uint32_t totalFrames = 0;
+static uint32_t targetFps = 30;
+static uint32_t currentFrame = 0;
+static unsigned long lastAnimFrameTime = 0;
+static uint8_t animFrameBuffer[1024];
 
 // Serial Packet State Machine
 enum StreamState { SEARCH_SYNC1, SEARCH_SYNC2, READING_PAYLOAD };
@@ -75,12 +84,38 @@ void setup() {
   // Initialize U8g2 display driver with 800kHz bus clock (takes only ~12ms per frame!)
   u8g2.begin();
   u8g2.setBusClock(800000);
-  
-  // Show clean standby screen on boot
-  drawStandby();
-  standbyDrawn = true;
 
-  Serial.println("\n=== OLED Visual Engine (Turbo 30FPS Receiver) ===");
+  Serial.println("\n=== OLED Visual Engine (Turbo 30FPS) ===");
+
+  // Find animation partition by label
+  animPartition = esp_partition_find_first(ESP_PARTITION_TYPE_ANY, ESP_PARTITION_SUBTYPE_ANY, "animation");
+  
+  if (animPartition != NULL) {
+    uint8_t header[8];
+    esp_err_t err = esp_partition_read(animPartition, 0, header, 8);
+    if (err == ESP_OK) {
+      totalFrames = (uint32_t)header[0] | ((uint32_t)header[1] << 8) | ((uint32_t)header[2] << 16) | ((uint32_t)header[3] << 24);
+      targetFps = (uint32_t)header[4] | ((uint32_t)header[5] << 8) | ((uint32_t)header[6] << 16) | ((uint32_t)header[7] << 24);
+    }
+    
+    // Sanity check: Ensure valid frame count and FPS
+    if (totalFrames == 0xFFFFFFFF || totalFrames == 0 || totalFrames > 10000) {
+      totalFrames = 0;
+    }
+    if (targetFps == 0xFFFFFFFF || targetFps == 0 || targetFps > 120) {
+      targetFps = 30;
+    }
+    
+    Serial.printf("Partition: %d frames @ %d FPS\n", totalFrames, targetFps);
+  } else {
+    Serial.println("No animation partition found.");
+  }
+
+  // If no animation stored in partition, show standby screen
+  if (totalFrames == 0) {
+    drawStandby();
+    standbyDrawn = true;
+  }
 }
 
 // Process incoming WebSerial stream bytes
@@ -125,20 +160,42 @@ void processSerialStream() {
 }
 
 void loop() {
-  // Watchdog: If no frame received for 1.5 seconds, revert to standby
+  // Watchdog: If live stream stops for 1.5 seconds, revert to standalone animation or standby
   if (isStreaming && (millis() - lastSerialFrameTime > 1500)) {
     isStreaming = false;
     standbyDrawn = false;
   }
 
-  // Always process incoming serial to catch new streams
+  // Always process incoming serial to catch live streams
   processSerialStream();
 
-  // If not actively streaming, keep standby screen drawn once
+  // If not actively streaming live from WebSerial:
   if (!isStreaming) {
-    if (!standbyDrawn) {
-      drawStandby();
-      standbyDrawn = true;
+    if (animPartition != NULL && totalFrames > 0) {
+      // Play standalone animation from flash partition at targetFps
+      const unsigned long frameIntervalMs = 1000 / targetFps;
+      unsigned long now = millis();
+
+      if (now - lastAnimFrameTime >= frameIntervalMs) {
+        lastAnimFrameTime = now;
+
+        esp_err_t err = esp_partition_read(animPartition, 8 + (currentFrame * 1024), animFrameBuffer, 1024);
+        if (err == ESP_OK) {
+          convertXBMPToU8g2Buffer(animFrameBuffer, u8g2.getBufferPtr());
+          u8g2.sendBuffer();
+        }
+
+        currentFrame++;
+        if (currentFrame >= totalFrames) {
+          currentFrame = 0;
+        }
+      }
+    } else {
+      // No animation in partition: show static standby screen
+      if (!standbyDrawn) {
+        drawStandby();
+        standbyDrawn = true;
+      }
     }
   }
 }
