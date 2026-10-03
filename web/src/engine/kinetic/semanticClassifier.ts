@@ -376,12 +376,12 @@ export function getWordFontRole(
     case 'snake_slither':
     case 'typewriter_ribbon':
     case 'fracture_shatter':
+    case 'rolling_odometer':
       return 'action';
     case 'cyber_glitch':
     case 'target_focus':
     case 'wiggly_boil':
     case 'echo_stack':
-    case 'rolling_odometer':
     case 'dither_dissolve':
     case 'prism_shimmer':
     case 'squash_bounce':
@@ -753,7 +753,7 @@ export function classifyWordMotif(
   songProfile?: SongMoodProfile | null
 ): VisualMotif | null {
   const clean = normalizeBadgeMotifToken(word);
-  if (!clean) return null;
+  if (!clean || isFillerWord(clean)) return null;
 
   // Direct keyword matching for specific visual motifs (multilingual)
   if (clean === 'khanda' || clean === 'chakkar' || clean === 'ਖੰਡਾ' || clean === 'खंडा') return 'punjabi_khanda';

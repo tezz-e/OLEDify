@@ -4,7 +4,7 @@ import { computeSafeTextLayout } from './kineticLayout';
 import { renderArchetypeFrame, getScratchCanvas, BAYER_4X4 } from './kineticArchetypes';
 import { renderMotifBackground } from './motifRenderer';
 import { renderWordBadge } from './wordBadgeRenderer';
-import { getWordEffectiveArchetype, getWordEffectiveFont, getWordEffectiveDressing, cleanLyricToken, classifyWordBadge, classifyWordMotif } from './semanticClassifier';
+import { getWordEffectiveArchetype, getWordEffectiveFont, getWordEffectiveDressing, cleanLyricToken, isFillerWord, classifyWordBadge, classifyWordMotif } from './semanticClassifier';
 import { LyricWord } from '../lyrics/types';
 import { isRTL } from './scriptDetector';
 import { ensureFontForText } from './fontLoader';
@@ -359,8 +359,9 @@ export async function renderKineticSequence(
 
       const effectiveMotifMode = options.motifMode || 'dynamic';
 
-      // Auto-synthesize complementary motif for hero/accent words when motif is unassigned
-      if (effectiveMotifMode !== 'off' && wordMotif === 'none') {
+      // Auto-synthesize complementary motif for hero/accent words when motif is unassigned (never on filler words)
+      const isFiller = isFillerWord(cleanLyricToken(activeWord.word));
+      if (!isFiller && effectiveMotifMode !== 'off' && wordMotif === 'none') {
         const isImportantWord = wordDuration >= 350 || (audioFrame?.isBeat && wordDuration >= 200);
         if (isImportantWord && activeWordIndex % 2 === 1) {
           switch (effectiveArchetype) {

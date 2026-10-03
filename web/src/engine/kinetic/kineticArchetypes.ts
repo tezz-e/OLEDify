@@ -891,7 +891,10 @@ function renderRollingOdometer(
 ) {
   const rtl = isRTL(text);
   ctx.save();
-  ctx.font = `bold ${layout.fontSize}px ${fontFamily}`;
+  const cleanFont = (fontFamily.includes('Gotisch') || fontFamily.includes('Caveat') || fontFamily.includes('Vendetta') || fontFamily.includes('Wicked') || fontFamily.includes('Bubblegum'))
+    ? `'Molot', 'Space Mono', monospace, sans-serif`
+    : fontFamily;
+  ctx.font = `bold ${layout.fontSize}px ${cleanFont}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
@@ -902,13 +905,14 @@ function renderRollingOdometer(
   const TUMBLER_CHARS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'X', '7', '#', '$', '!', '?'];
 
   for (let lineIdx = 0; lineIdx < layout.lines.length; lineIdx++) {
-    const lineText = layout.lines[lineIdx];
+    const rawLine = layout.lines[lineIdx];
+    const lineText = rtl ? rawLine : rawLine.toUpperCase();
     const graphemes = getGraphemes(lineText);
     const n = graphemes.length;
     if (n === 0) continue;
 
     const centerY = layout.yOffsets[lineIdx] + beatJitter;
-    const slotH = Math.min(56, Math.max(14, Math.floor(layout.fontSize * 1.3)));
+    const slotH = Math.min(56, Math.max(16, Math.floor(layout.fontSize * 1.45)));
 
     // Calculate per-character metrics
     const charWidths = graphemes.map(g => Math.max(6, Math.ceil(ctx.measureText(g).width)));
@@ -1014,13 +1018,6 @@ function renderRollingOdometer(
         ctx.fillText(displayTarget, charCenterX, centerY + reelOffset);
         ctx.fillText(charAbove, charCenterX, centerY + reelOffset - actualSlotH);
         ctx.fillText(charBelow, charCenterX, centerY + reelOffset + actualSlotH);
-
-        // Motion tick bars across spinning column (using binary #FFFFFF on alternating frames for 1-bit OLED)
-        if ((frameIndex + i) % 2 === 0) {
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(curX, slotTop + 2, charW, 1);
-          ctx.fillRect(curX, slotBottom - 3, charW, 1);
-        }
       }
 
       ctx.restore();
@@ -1494,26 +1491,31 @@ function renderPrismShimmer(
     drawTrackedText(ctx, layout.lines[i], 64, layout.yOffsets[i], layout.letterSpacing, false);
   }
 
-  const beamX = Math.round(-30 + tau * 188);
-  const beamW = 20;
+  const beamX = Math.round(-35 + tau * 198);
 
-  ctx.fillStyle = '#000000';
-  for (let y = 0; y < 64; y++) {
-    const xCenter = beamX + Math.round(y * 0.5);
-    for (let x = xCenter - beamW / 2; x <= xCenter + beamW / 2; x++) {
-      if (x >= 0 && x < 128) {
-        if ((x + y + frameIndex) % 3 === 0) {
-          ctx.fillRect(x, y, 1, 1);
-        }
-      }
-    }
+  // Clean 1-bit anamorphic diagonal prism sweep beam
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(beamX, 0);
+  ctx.lineTo(beamX + 28, 64);
+  ctx.stroke();
+
+  // Secondary fine flare line
+  ctx.beginPath();
+  ctx.moveTo(beamX + 4, 0);
+  ctx.lineTo(beamX + 32, 64);
+  ctx.stroke();
+
+  // Traveling diamond glint star at beam head (only while traversing visible canvas)
+  const glintX = beamX + 14;
+  const glintY = Math.round(18 + Math.sin(tau * Math.PI * 3) * 6);
+  if (glintX >= 8 && glintX <= 120) {
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(glintX - 2, glintY, 5, 1);
+    ctx.fillRect(glintX, glintY - 2, 1, 5);
+    ctx.fillRect(glintX - 1, glintY - 1, 3, 3);
   }
-
-  const sparkleX = Math.min(120, Math.max(8, beamX + 16));
-  const sparkleY = Math.round(32 + Math.sin(tau * Math.PI * 4) * 12);
-  ctx.fillStyle = '#FFFFFF';
-  ctx.fillRect(sparkleX - 2, sparkleY, 5, 1);
-  ctx.fillRect(sparkleX, sparkleY - 2, 1, 5);
 
   ctx.restore();
 }

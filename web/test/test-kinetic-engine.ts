@@ -636,9 +636,9 @@ for (const kw of odoKeywords) {
   const arch = classifyWordArchetype(kw, 350, 0, 0);
   assert.equal(arch, 'rolling_odometer', `Expected "${kw}" to classify as rolling_odometer, got: ${arch}`);
   const role = getWordFontRole(arch, kw);
-  assert.equal(role, 'novelty', `Expected rolling_odometer for "${kw}" to map to 'novelty' font role, got: ${role}`);
+  assert.equal(role, 'action', `Expected rolling_odometer for "${kw}" to map to 'action' font role, got: ${role}`);
 }
-console.log('✅ Semantic keyword classification and novelty font role verified for rolling_odometer.');
+console.log('✅ Semantic keyword classification and action font role verified for rolling_odometer.');
 
 // 7c: LLM Response Normalization
 const fuzzyInputs = ['rolling_odometer', 'odometer', 'mechanical_odometer', 'slot_machine', 'tumbler_reel', 'rolling_digits', 'counter_reel'];

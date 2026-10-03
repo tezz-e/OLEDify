@@ -48,16 +48,20 @@ export function renderWordBadge(
 
   // Position badge safely within 128x64 canvas headroom
   let badgeX = bounds.centerX;
-  let badgeY = Math.max(8, bounds.top - 8 + floatBob);
+  let badgeY = Math.max(8, bounds.top - 9 + floatBob);
 
-  // If text is near the top edge, tuck badge right above top line or clamp to top margin
+  // If text is near the top edge, tuck badge with safe clearance or clamp to top margin
   if (bounds.top <= 14) {
-    badgeY = Math.max(7, bounds.top - 6);
+    badgeY = Math.max(7, bounds.top - 7);
   }
 
   ctx.save();
   ctx.translate(Math.round(badgeX), Math.round(badgeY));
   ctx.scale(totalScale, totalScale);
+
+  // Solid black knockout backing to guarantee zero visual collision with glyph ascenders or motifs
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-14, -6, 28, 12);
 
   // Subtle flanking heraldic micro-accents: · [BADGE] ·
   ctx.fillStyle = '#FFFFFF';

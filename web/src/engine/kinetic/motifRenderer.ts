@@ -3198,25 +3198,29 @@ export function drawMatrixRainCode(
   ctx.save();
   ctx.fillStyle = '#FFFFFF';
 
-  // Digital streams kept in screen flanks (x < 24 and x > 104)
-  const columns = [4, 12, 20, 108, 116, 124];
+  // Symmetrical bilateral streams on both flanks (x <= 22 and x >= 106)
+  const streamPairs = [
+    { left: 6, right: 122, speed: 1.2, phase: 0 },
+    { left: 14, right: 114, speed: 1.6, phase: 28 },
+    { left: 22, right: 106, speed: 1.0, phase: 54 }
+  ];
 
-  for (let i = 0; i < columns.length; i++) {
-    const colX = columns[i];
-    const speed = 1.0 + (i % 3) * 0.5;
-    const headY = Math.round((frameIndex * speed + i * 22) % 80) - 10;
+  for (const stream of streamPairs) {
+    const headY = Math.round((frameIndex * stream.speed + stream.phase) % 86) - 12;
 
-    // Bright leading head character
-    if (headY >= 0 && headY < 64) {
-      ctx.fillRect(colX, headY, 3, 3);
-    }
+    for (const colX of [stream.left, stream.right]) {
+      // Bright leading head character
+      if (headY >= 0 && headY < 64) {
+        ctx.fillRect(colX, headY, 2, 3);
+      }
 
-    // Trailing glyph dots
-    for (let t = 1; t <= 5; t++) {
-      const trailY = headY - t * 4;
-      if (trailY >= 0 && trailY < 64) {
-        if ((t + frameIndex) % 2 === 0) {
-          ctx.fillRect(colX + (t % 2), trailY, 2, 2);
+      // Trailing glyph dots
+      for (let t = 1; t <= 5; t++) {
+        const trailY = headY - t * 4;
+        if (trailY >= 0 && trailY < 64) {
+          if ((t + frameIndex) % 2 === 0) {
+            ctx.fillRect(colX + (t % 2), trailY, 1, 2);
+          }
         }
       }
     }
