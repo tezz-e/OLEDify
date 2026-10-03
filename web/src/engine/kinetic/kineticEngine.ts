@@ -429,7 +429,10 @@ export async function renderKineticSequence(
       }
 
       // Compute Zero-Clip Layout with the effective font
-      const layout = computeSafeTextLayout(activeWord.word, ctx, effectiveFont);
+      // When a micro-badge is active, reserve 14px headroom (maxH = 46) so the badge sits cleanly above the word without clipping
+      const hasActiveBadge = effectiveBadge && effectiveBadge !== 'none';
+      const layoutMaxH = hasActiveBadge ? 46 : 58;
+      const layout = computeSafeTextLayout(activeWord.word, ctx, effectiveFont, 124, layoutMaxH);
 
       // Apply micro camera shake on heavy bass kicks / transients ONLY when enabled in mood profile
       ctx.save();
@@ -444,12 +447,15 @@ export async function renderKineticSequence(
       renderArchetypeFrame(ctx, effectiveArchetype, activeWord.word, tau, layout, f, effectiveFont, audioFrame, moodProfile, wordDressing);
 
       // Render Word Micro-Sprite Badge (if active)
-      if (effectiveBadge && effectiveBadge !== 'none') {
+      if (hasActiveBadge) {
+        const fontAscent = Math.round(layout.fontSize * 0.82);
+        const textTop = Math.max(0, (layout.yOffsets[0] ?? 32) - fontAscent);
+        const textBottom = (layout.yOffsets[layout.yOffsets.length - 1] ?? 32) + Math.round(layout.fontSize * 0.18);
         const badgeBounds = {
           centerX: 64,
           centerY: layout.yOffsets[0] ?? 32,
-          top: (layout.yOffsets[0] ?? 32) - layout.totalHeight / 2,
-          bottom: (layout.yOffsets[layout.yOffsets.length - 1] ?? 32) + layout.totalHeight / 2,
+          top: textTop,
+          bottom: textBottom,
           left: 0,
           right: 128,
           fontSize: layout.fontSize

@@ -2270,31 +2270,38 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                                   e.stopPropagation();
                                   handleOpenWordEditor(w, idx, wIdx, wordArch, wordFont, wordMotif, wordBadge);
                                 }}
-                                className={`text-xl md:text-2xl font-bold tracking-tight transition-all duration-150 inline-flex flex-col items-center cursor-pointer rounded px-1.5 py-0.5 -mx-1 group/word ${
-                                  isOverridden ? 'bg-[#D97757]/15 ring-1 ring-[#D97757]/40 shadow-xs' : ''
+                                className={`text-xl md:text-2xl font-bold tracking-tight transition-all duration-150 relative inline-flex items-baseline cursor-pointer rounded-lg px-2 py-1 -my-1 group/word ${
+                                  isOverridden 
+                                    ? 'bg-[#D97757]/15 dark:bg-[#D97757]/20 ring-1 ring-[#D97757]/45 shadow-xs' 
+                                    : 'hover:bg-black/5 dark:hover:bg-white/5'
                                 } ${
                                   themeMode === 'dark'
                                     ? isWordActive
-                                      ? 'text-white font-black underline decoration-[#D97757] decoration-2'
+                                      ? 'text-white font-black underline decoration-[#D97757] decoration-2 underline-offset-4'
                                       : isWordPast
                                       ? 'text-white/90 hover:text-[#D97757]'
                                       : 'text-white/40 hover:text-white/80'
                                     : isWordActive
-                                    ? 'text-[#1A1A1A] font-black underline decoration-[#D97757] decoration-3'
+                                    ? 'text-[#1A1A1A] font-black underline decoration-[#D97757] decoration-3 underline-offset-4'
                                     : isWordPast
                                     ? 'text-[#1A1A1A] font-bold hover:text-[#D97757]'
                                     : 'text-[#888] hover:text-[#1A1A1A]'
                                 }`}
                                 title={isOverridden ? `Active Override: ${ARCHETYPE_METADATA[wordArch]?.name || wordArch}${badgeMeta ? ` • Badge: ${badgeMeta.name}` : ''} • Click to edit` : `Click to customize style for "${w.word}"`}
                               >
+                                {/* Floating Superscript Micro-Pill Tag for Badge */}
                                 {badgeMeta && (
-                                  <span className="text-[12px] leading-none mb-0.5 filter drop-shadow-xs" title={`Badge: ${badgeMeta.name}`}>
+                                  <span 
+                                    className="absolute -top-3 -right-2 z-10 flex items-center justify-center min-w-4 h-4 px-1 rounded-full text-[10px] leading-none bg-[#241B17] dark:bg-[#1A1310] border border-[#D97757]/70 text-[#D97757] shadow-sm select-none pointer-events-none group-hover/word:scale-110 group-hover/word:border-[#D97757] transition-transform"
+                                    title={`Badge: ${badgeMeta.name}`}
+                                  >
                                     {badgeMeta.icon}
                                   </span>
                                 )}
                                 <span>{w.word}</span>
-                                {isOverridden && (
-                                  <span className="w-1.5 h-1.5 rounded-full bg-[#D97757] -mt-0.5" title="Custom override active" />
+                                {/* Discrete Top-Right Indicator Dot for overrides without badges */}
+                                {isOverridden && !badgeMeta && (
+                                  <span className="absolute -top-1 -right-0.5 w-1.5 h-1.5 rounded-full bg-[#D97757] shadow-xs" title="Custom override active" />
                                 )}
                               </button>
                             );

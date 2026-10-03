@@ -46,18 +46,23 @@ export function renderWordBadge(
 
   const totalScale = Math.max(0.01, springScale * beatScale);
 
-  // Position badge safely within 128x64 canvas
+  // Position badge safely within 128x64 canvas headroom
   let badgeX = bounds.centerX;
-  let badgeY = bounds.top - 6 + floatBob;
+  let badgeY = Math.max(8, bounds.top - 8 + floatBob);
 
   // If text is near the top edge, tuck badge right above top line or clamp to top margin
-  if (badgeY < 6) {
-    badgeY = Math.max(6, bounds.top - 3);
+  if (bounds.top <= 14) {
+    badgeY = Math.max(7, bounds.top - 6);
   }
 
   ctx.save();
   ctx.translate(Math.round(badgeX), Math.round(badgeY));
   ctx.scale(totalScale, totalScale);
+
+  // Subtle flanking heraldic micro-accents: · [BADGE] ·
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(-12, -0.5, 1.5, 1.5);
+  ctx.fillRect(10.5, -0.5, 1.5, 1.5);
 
   switch (badge) {
     case 'moustache':
@@ -455,23 +460,40 @@ function drawMicroSkull(ctx: CanvasRenderingContext2D | OffscreenCanvasRendering
 }
 
 /**
- * 🗡️ 12x12 Micro Crossed Daggers
+ * 🗡️ 14x14 Micro Dagger / Sword
  */
 function drawMicroSword(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D) {
+  // Black knockout
   ctx.fillStyle = '#000000';
-  ctx.fillRect(-7, -7, 14, 14);
+  ctx.fillRect(-7, -8, 14, 16);
 
+  ctx.fillStyle = '#FFFFFF';
   ctx.strokeStyle = '#FFFFFF';
   ctx.lineWidth = 1;
-  // Blade 1
-  ctx.beginPath();
-  ctx.moveTo(-5, -5); ctx.lineTo(5, 5);
-  ctx.moveTo(-5, 5); ctx.lineTo(5, -5);
-  ctx.stroke();
 
-  // Center glint
+  // Upright sword blade with sharp tip
+  ctx.beginPath();
+  ctx.moveTo(0, -7);   // tip
+  ctx.lineTo(2, -4);   // right blade edge
+  ctx.lineTo(1.5, 0);  // right base
+  ctx.lineTo(-1.5, 0); // left base
+  ctx.lineTo(-2, -4);  // left blade edge
+  ctx.closePath();
+  ctx.fill();
+
+  // Vertical dark fuller (groove) down the center of the blade
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(0, -5, 1, 4);
+
+  // Crossguard (horizontal bar with flared quillons)
   ctx.fillStyle = '#FFFFFF';
-  ctx.fillRect(-1, -1, 2, 2);
+  ctx.fillRect(-4, 0, 9, 2);
+
+  // Grip (wrapped handle)
+  ctx.fillRect(-1, 2, 3, 3);
+
+  // Pommel (rounded skull/ball end)
+  ctx.fillRect(-2, 5, 5, 2);
 }
 
 /**
