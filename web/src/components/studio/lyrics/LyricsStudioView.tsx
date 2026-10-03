@@ -2706,11 +2706,29 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
           }`}>
             <div className="flex justify-between items-center w-full px-0.5 mb-1.5 text-[10px] font-mono">
               <span className="opacity-60 flex items-center gap-1.5">
-                <span className={`w-1.5 h-1.5 rounded-full ${renderedMediaBuffer && !isDirty ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`} />
+                <span className={`w-1.5 h-1.5 rounded-full ${
+                  isAnalyzingOllama || isPreviewLoading || isRendering
+                    ? 'bg-[#D97757] animate-ping'
+                    : renderedMediaBuffer && !isDirty
+                    ? 'bg-emerald-500'
+                    : 'bg-amber-500 animate-pulse'
+                }`} />
                 <span>OLED PREVIEW</span>
               </span>
-              <span className={`font-semibold tracking-wider ${renderedMediaBuffer && !isDirty ? 'text-emerald-500' : 'text-[#D97757]'}`}>
-                {renderedMediaBuffer && !isDirty ? 'RENDERED BUFFER' : '30 FPS DRAFT'}
+              <span className={`font-semibold tracking-wider ${
+                isAnalyzingOllama || isPreviewLoading || isRendering
+                  ? 'text-[#D97757] animate-pulse'
+                  : renderedMediaBuffer && !isDirty
+                  ? 'text-emerald-500'
+                  : 'text-[#D97757]'
+              }`}>
+                {isAnalyzingOllama
+                  ? (llmProvider === 'groq' ? 'GROQ 120B DIRECTING' : 'OLLAMA DIRECTING')
+                  : isPreviewLoading
+                  ? 'BUFFERING PREVIEW'
+                  : renderedMediaBuffer && !isDirty
+                  ? 'RENDERED BUFFER'
+                  : '30 FPS DRAFT'}
               </span>
             </div>
 
@@ -2736,7 +2754,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
 
                 {/* Live Buffer / Render Progress Overlay */}
                 <AnimatePresence>
-                  {(isPreviewLoading || isRendering) && (
+                  {(isPreviewLoading || isRendering || isAnalyzingOllama) && (
                     <motion.div
                       key="oled-loader-overlay"
                       initial={{ opacity: 0 }}
@@ -2748,10 +2766,18 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                       <LoaderGooeyBlobs size={12} color="#D97757" duration={1.3} />
                       <div className="flex flex-col items-center gap-0.5 text-center px-4">
                         <span className="text-[11px] font-mono font-bold text-[#D97757] tracking-wider uppercase">
-                          {isRendering ? `Rendering Sequence (${renderProgress}%)` : 'Buffering Preview...'}
+                          {isAnalyzingOllama
+                            ? (ollamaProgress?.message || (llmProvider === 'groq' ? 'Groq 120B Directing...' : 'Ollama Directing...'))
+                            : isRendering
+                            ? `Rendering Sequence (${renderProgress}%)`
+                            : 'Buffering Preview...'}
                         </span>
                         <span className="text-[9px] font-mono text-white/50 tracking-wide">
-                          {isRendering ? 'Generating full 30 FPS media' : 'Computing kinetic sequence'}
+                          {isAnalyzingOllama
+                            ? (llmProvider === 'groq' ? 'Streaming choreography from Groq Cloud' : 'Computing local AI motion choreography')
+                            : isRendering
+                            ? 'Generating full 30 FPS media'
+                            : 'Computing kinetic sequence'}
                         </span>
                       </div>
                     </motion.div>
@@ -3481,7 +3507,12 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
             {/* Live Render State & Telemetry Row */}
             <div className="flex items-center justify-between text-[10px] font-mono">
               <div className="flex items-center gap-1.5 truncate">
-                {isPreviewLoading ? (
+                {isAnalyzingOllama ? (
+                  <span className="flex items-center gap-1.5 text-[#D97757] font-semibold truncate">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#D97757] animate-ping shrink-0" />
+                    <span>{llmProvider === 'groq' ? 'AWAITING GROQ 120B...' : 'ANALYZING OLLAMA...'}</span>
+                  </span>
+                ) : isPreviewLoading ? (
                   <span className="flex items-center gap-1.5 text-[#D97757] font-semibold truncate">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#D97757] animate-ping shrink-0" />
                     <span>BUFFERING PREVIEW...</span>
@@ -3518,9 +3549,9 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                 <button
                   type="button"
                   onClick={handleRenderInStudio}
-                  disabled={isRendering || selectedLines.length === 0}
+                  disabled={isRendering || isAnalyzingOllama || selectedLines.length === 0}
                   className={`flex-1 py-2 px-3 bg-[#D97757] hover:bg-[#C66545] text-white text-xs font-sans font-semibold rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                    isRendering ? 'opacity-70 cursor-wait' : ''
+                    isRendering || isAnalyzingOllama ? 'opacity-70 cursor-wait' : ''
                   }`}
                 >
                   {isRendering ? (
@@ -3539,7 +3570,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                 <button
                   type="button"
                   onClick={() => handleInjectToTimeline(true)}
-                  disabled={isRendering || selectedLines.length === 0}
+                  disabled={isRendering || isAnalyzingOllama || selectedLines.length === 0}
                   className={`py-2 px-3 text-xs font-sans font-medium rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1 shrink-0 ${
                     themeMode === 'dark'
                       ? 'border-white/10 hover:bg-white/5 text-white/80'
@@ -3556,7 +3587,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                 <button
                   type="button"
                   onClick={() => handleInjectToTimeline(true)}
-                  disabled={isRendering}
+                  disabled={isRendering || isAnalyzingOllama}
                   className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-sans font-semibold tracking-wide rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <ArrowRight className="w-3.5 h-3.5" />
