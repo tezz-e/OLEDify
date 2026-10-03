@@ -8,6 +8,41 @@ export interface FlashProgress {
 
 export type FlashProgressCallback = (progress: FlashProgress) => void;
 
+/**
+ * Safely disconnects and releases all reader/writer locks on a WebSerial transport.
+ * Prevents "The port is already open" or locked stream freezes in esptool-js.
+ */
+async function safeDisconnectTransport(transport: any, port?: any): Promise<void> {
+  if (transport) {
+    try {
+      if (transport.reader) {
+        try {
+          await transport.reader.cancel();
+        } catch {}
+        try {
+          transport.reader.releaseLock();
+        } catch {}
+        transport.reader = undefined;
+      }
+    } catch {}
+
+    try {
+      if (transport.device) {
+        await transport.device.close();
+      }
+    } catch {}
+  }
+
+  if (port) {
+    try {
+      await port.close();
+    } catch {}
+  }
+
+  // Allow USB serial driver and hardware buffers to settle
+  await new Promise((r) => setTimeout(r, 250));
+}
+
 export async function flashAnimationToDevice(
   xbmpFrames: Uint8Array[],
   targetFps: number,
@@ -65,55 +100,59 @@ export async function flashAnimationToDevice(
 
   // 4. Connect via WebSerial & esptool
   onProgress?.({ percent: 18, message: 'Connecting to ESP32 bootloader...' });
-  let transport = new Transport(port);
-  
-  try {
-    let loader = new ESPLoader({
-      transport,
-      baudrate: 460800,
-      terminal: {
-        writeLine: (data: string) => console.log('[esptool]', data),
-        clean: () => {}
-      } as any
-    });
-    
-    let chip = '';
-    // Strategy 1: no_reset (in case the board is already waiting in ROM bootloader mode)
+
+  const info = port.getInfo?.() || {};
+  const isUsbJtag = info.usbProductId === 0x1001 || (info.usbVendorId === 0x303a && (!info.usbProductId || info.usbProductId === 0x1001));
+
+  // Determine optimal reset sequence order based on detected hardware
+  // On ESP32-S3 Native USB (PID 0x1001), usb_reset is hardware-wired to the internal reset state machine
+  const strategies = isUsbJtag 
+    ? ['usb_reset', 'default_reset', 'no_reset'] 
+    : ['default_reset', 'usb_reset', 'no_reset'];
+
+  let activeTransport: any = null;
+  let activeLoader: any = null;
+  let detectedChip = '';
+
+  for (let idx = 0; idx < strategies.length; idx++) {
+    const strategy = strategies[idx];
     try {
-      chip = await loader.main('no_reset');
-    } catch {
-      // Strategy 2: default_reset (standard DTR/RTS pulse)
-      try {
-        chip = await loader.main('default_reset');
-      } catch (err: any) {
-        console.warn('default_reset failed, attempting clean usb_reset...', err);
-        try {
-          await transport.disconnect();
-        } catch {}
-        await new Promise((r) => setTimeout(r, 200));
+      console.log(`[flasher] Attempting sync with strategy: ${strategy} (attempt ${idx + 1}/${strategies.length})`);
+      activeTransport = new Transport(port);
+      activeLoader = new ESPLoader({
+        transport: activeTransport,
+        baudrate: 460800,
+        terminal: {
+          writeLine: (data: string) => console.log('[esptool]', data),
+          clean: () => {}
+        } as any
+      });
 
-        transport = new Transport(port);
-        loader = new ESPLoader({
-          transport,
-          baudrate: 460800,
-          terminal: {
-            writeLine: (data: string) => console.log('[esptool]', data),
-            clean: () => {}
-          } as any
-        });
-
-        onProgress?.({ percent: 20, message: 'Retrying with USB CDC reset...' });
-        try {
-          chip = await loader.main('usb_reset');
-        } catch (usbErr: any) {
-          throw new Error(
-            'Failed to sync with ESP32 bootloader. Hold the BOOT button on the board, press RST once, release BOOT, and click Flash again.'
-          );
-        }
+      detectedChip = await activeLoader.main(strategy);
+      if (detectedChip) {
+        console.log(`[flasher] Successfully connected to ${detectedChip} using ${strategy}!`);
+        break;
       }
+    } catch (err: any) {
+      console.warn(`[flasher] Strategy ${strategy} failed:`, err?.message || err);
+      await safeDisconnectTransport(activeTransport, port);
+      activeTransport = null;
+      activeLoader = null;
+      if (idx === strategies.length - 1) {
+        throw new Error(
+          'Failed to sync with ESP32 bootloader. Hold the BOOT button on the board, press RST once, release BOOT, and click Flash again.'
+        );
+      }
+      onProgress?.({ percent: 20, message: `Retrying connection (mode: ${strategies[idx + 1]})...` });
     }
+  }
 
-    onProgress?.({ percent: 25, message: `Connected to ${chip || 'ESP32'}. Preparing payload...` });
+  if (!activeLoader || !activeTransport) {
+    throw new Error('Failed to initialize ESP32 loader.');
+  }
+
+  try {
+    onProgress?.({ percent: 25, message: `Connected to ${detectedChip || 'ESP32'}. Preparing payload...` });
 
     // Build flash files array: firmware at 0x10000 + animation partition at 0x200000
     const filesToFlash: Array<{ data: Uint8Array | string; address: number }> = [];
@@ -148,22 +187,25 @@ export async function flashAnimationToDevice(
       }
     };
 
-    await loader.writeFlash(flashOptions);
+    await activeLoader.writeFlash(flashOptions);
 
     // 5. Hard reset device to run firmware from partition
     onProgress?.({ percent: 99, message: 'Rebooting ESP32 into 30 FPS firmware...' });
     try {
-      await loader.after('hard_reset');
+      await activeLoader.after('hard_reset');
     } catch (e) {
       console.log('Post-flash reset executed:', e);
     }
 
+    // Ensure chip reboot via DTR/RTS pulse for USB Serial/JTAG
+    try {
+      await activeTransport.setRTS(true);
+      await new Promise((r) => setTimeout(r, 100));
+      await activeTransport.setRTS(false);
+    } catch {}
+
     onProgress?.({ percent: 100, message: 'Flash complete! 30 FPS high-speed engine running on OLED.' });
   } finally {
-    try {
-      await transport.disconnect();
-    } catch {
-      // Ignore disconnect errors
-    }
+    await safeDisconnectTransport(activeTransport, port);
   }
 }
