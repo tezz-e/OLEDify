@@ -56,7 +56,8 @@ const ANTHEM_KEYWORDS = new Set([
   'roar', 'champion', 'lead', 'rule', 'empire', 'power', 'giant', 'iron', 'steel',
   'throne', 'hero', 'top', 'number', 'high', 'peak', 'legend', 'glory',
   'million', 'billion', 'rich', 'money', 'cash', 'dollar', 'star',
-  'prime', 'supreme', 'legacy', 'royal', 'sovereign', 'flex', 'chain', 'ice', 'block', 'solid'
+  'prime', 'supreme', 'legacy', 'royal', 'sovereign', 'flex', 'chain', 'ice', 'block', 'solid',
+  'zubaan', 'zuban', 'jubaan', 'bol', 'waada', 'vaada', 'lafz', 'shabad', 'sher', 'soorma'
 ]);
 
 const TARGET_KEYWORDS = new Set([
@@ -66,9 +67,9 @@ const TARGET_KEYWORDS = new Set([
 ]);
 
 const SNAKE_KEYWORDS = new Set([
-  'snake', 'venom', 'poison', 'toxic', 'creep', 'crawl', 'bite', 'sting', 'dark',
-  'evil', 'sly', 'hiss', 'spider', 'deadly', 'viper', 'cobra', 'poisonous',
-  'serpent', 'venomous', 'shadow', 'underworld'
+  'snake', 'snakes', 'cobra', 'viper', 'venom', 'poison', 'toxic',
+  'serpent', 'serpents', 'venomous', 'poisonous', 'python', 'rattlesnake',
+  'hiss', 'ਜ਼ਹਿਰ', 'ਸੱਪ', 'जहर', 'सांप', 'naja'
 ]);
 
 const GLITCH_KEYWORDS = new Set([
@@ -283,19 +284,16 @@ export function classifyWordArchetype(
   // 5. Dynamic Variety Rotation across ALL vibrant archetypes (never monotonous)
   const neutralPalette: MotionArchetype[] = [
     'smooth_fluid',
-    'blade_slash',
-    'anvil_stomp',
-    'rolling_odometer',
-    'cyber_glitch',
-    'inverted_badge',
-    'fracture_shatter',
     'manga_impact',
-    'squash_bounce',
-    'target_focus',
     '3d_block_stack',
-    'wiggly_boil',
-    'snake_slither',
-    'echo_stack'
+    'rolling_odometer',
+    'inverted_badge',
+    'echo_stack',
+    'anvil_stomp',
+    'target_focus',
+    'squash_bounce',
+    'blade_slash',
+    'cyber_glitch'
   ];
 
   const charHash = clean.split('').reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 1), 0);

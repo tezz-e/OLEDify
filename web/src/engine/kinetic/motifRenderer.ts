@@ -420,12 +420,15 @@ export function drawComicBurstBubble(
   frameIndex: number = 0
 ): void {
   ctx.save();
-  ctx.fillStyle = '#FFFFFF';
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1;
   let rot = (Math.PI / 2) * 3 + (frameIndex % 3) * 0.1;
   const step = Math.PI / spikes;
 
   ctx.beginPath();
-  ctx.moveTo(cx, cy - outerRadius);
+  const startX = cx + Math.cos(rot) * outerRadius;
+  const startY = cy + Math.sin(rot) * outerRadius;
+  ctx.moveTo(startX, startY);
 
   for (let i = 0; i < spikes; i++) {
     const rOut = outerRadius + ((i * 7 + frameIndex) % 5) - 2;
@@ -440,7 +443,22 @@ export function drawComicBurstBubble(
     rot += step;
   }
   ctx.closePath();
-  ctx.fill();
+  ctx.stroke();
+
+  // Draw comic burst action ticks radiating outward from spike tips
+  rot = (Math.PI / 2) * 3 + (frameIndex % 3) * 0.1;
+  for (let i = 0; i < spikes; i += 2) {
+    const rOut = outerRadius + ((i * 7 + frameIndex) % 5) - 2;
+    const x1 = cx + Math.cos(rot) * (rOut + 2);
+    const y1 = cy + Math.sin(rot) * (rOut + 2);
+    const x2 = cx + Math.cos(rot) * (rOut + 6);
+    const y2 = cy + Math.sin(rot) * (rOut + 6);
+    ctx.beginPath();
+    ctx.moveTo(Math.round(x1), Math.round(y1));
+    ctx.lineTo(Math.round(x2), Math.round(y2));
+    ctx.stroke();
+    rot += step * 2;
+  }
   ctx.restore();
 }
 

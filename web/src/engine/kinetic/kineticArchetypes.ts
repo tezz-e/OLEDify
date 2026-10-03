@@ -737,14 +737,14 @@ function renderSnakeSlither(
     drawTrackedText(tCtx, layout.lines[i], 64, layout.yOffsets[i], layout.letterSpacing, false);
   }
 
-  // Slice vertical strips and sine displace
-  const stripWidth = 4;
+  // Slice fine vertical strips and apply a smooth, continuous traveling S-curve wave
+  const stripWidth = 2;
   const numStrips = Math.ceil(128 / stripWidth);
-  const waveAmp = 3 + (audioFrame ? audioFrame.bass * 3 : 0);
+  const waveAmp = 1.5 + (audioFrame ? audioFrame.bass * 1.0 : 0);
 
   for (let s = 0; s < numStrips; s++) {
     const sx = s * stripWidth;
-    const waveY = Math.round(Math.sin(s * 0.4 + tau * 6 * Math.PI) * waveAmp);
+    const waveY = Math.round(Math.sin((sx / 128) * Math.PI * 2.2 + tau * 2.5 * Math.PI) * waveAmp);
     ctx.drawImage(tempCanvas, sx, 0, stripWidth, 64, sx, waveY, stripWidth, 64);
   }
 }

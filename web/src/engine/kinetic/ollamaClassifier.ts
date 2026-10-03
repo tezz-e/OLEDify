@@ -661,7 +661,7 @@ DIRECTOR MISSION:
    - ANTI-MONOTONY & MAXIMUM VISUAL VARIETY MANDATE:
      * Over long sequences, repeating the same archetype or motif feels robotic. Distribute choices broadly across the entire palette!
      * NEVER assign the same archetype twice to consecutive words or adjacent lines.
-     * Balance high-impact punches ("manga_impact", "blade_slash", "cyber_glitch", "3d_block_stack") with structural and mechanical maneuvers ("rolling_odometer", "inverted_badge", "target_focus", "snake_slither", "wiggly_boil", "echo_stack", "gentle_float", "typewriter_ribbon").
+     * Balance high-impact punches ("manga_impact", "blade_slash", "cyber_glitch", "3d_block_stack") with structural and mechanical maneuvers ("rolling_odometer", "inverted_badge", "target_focus", "wiggly_boil", "echo_stack", "gentle_float", "typewriter_ribbon").
    - Tailor the motion archetype and background motif to match the word's genuine intensity:
      * Hard punchlines, threats, flexes, fast flow: use "manga_impact", "blade_slash", "cyber_glitch", "3d_block_stack", "echo_stack" with motifs like "razor_blade", "tactical_scope", "flame_tongue", "manga_speedlines", "lightning_arc".
      * Gentle vocal runs, love confessions, dreamy drift: use "gentle_float", "waveform_karaoke", "typewriter_ribbon", "dither_dissolve", "smooth_fluid" with motifs like "floating_notes", "starlight_glimmer", "heartbeat_pulse", "water_ripples", "minimal_frame".
@@ -670,6 +670,7 @@ DIRECTOR MISSION:
    - In "hype_aggressive" (rap, drill, trap, metal, flex tracks): NEVER assign soft/dreamy motifs like "starlight_glimmer", "water_ripples", or "floating_notes". Treat colloquial street slang (police/FIR cases, rivalries, brawls, weapons, respect) as hard-hitting punchlines. Pair with "anvil_stomp", "fracture_shatter", "manga_impact", "blade_slash" and motifs like "sound_blast_rings", "barbed_wire", "shattered_glass", "crown_royal".
    - In "groove_dance" (pop, dance, disco, EDM, club): NEVER assign lethal combat/gore motifs like "razor_blade" or "barbed_wire" to dancefloor commands (e.g. "body rock", "move", "complete", "party"). Treat "rock" and "move" as kinetic groove cues, using "rolling_odometer", "wiggly_boil", "squash_bounce", "prism_shimmer" with motifs like "sound_bars_vintage", "equalizer_radial", "vinyl_grooves", "comic_burst".
    - In "chill_pop" & "ballad_acoustic": Avoid violent combat cuts ("blade_slash", "anvil_stomp"). Favor "gentle_float", "waveform_karaoke", "pendulum_sway", "dither_dissolve" with motifs like "heartbeat_pulse", "rain_window", "starlight_glimmer", "minimal_frame".
+   - "snake_slither" MANDATE: NEVER assign "snake_slither" unless the lyric explicitly refers to literal snakes, reptiles, venom, or poison. NEVER assign to normal speech, declarations, or words meaning speech/tongue/word (such as "zubaan", "bol", "vaada", "lafz"). For speech of honour, promises, or bold statements, use "3d_block_stack", "manga_impact", or "inverted_badge".
 6. ALWAYS assign an evocative background visual motif ("motif") to key punchlines and emotional climaxes matching the imagery. If no motif fits, use "none". Rotate motifs dynamically across lines to maintain visual freshness.
 7. For each selected word, provide its meaning and rationale for the motion choice.
 
@@ -683,7 +684,7 @@ Choose from these 20 visual archetypes:
 - "3d_block_stack": royalty, power, anthems, pride, heavy boss energy, solid blocks
 - "target_focus": eye contact, pointing, questions ("who", "you", "why"), aiming
 - "blade_slash": sharp slicing, weapons, danger, razor blades, conflict
-- "snake_slither": sinister, poison, dark crawl, toxic, venom, eerie mystery
+- "snake_slither": literal snakes, reptiles, cobra, venom, poison only (never use for speech, tongue, or promises)
 - "echo_stack": prolonged vocal notes, chants, reverberating shouting
 - "inverted_badge": declarations, "NO", stops, rules, verification stamps, warnings
 - "smooth_fluid": floating, love, breeze, calm sky/water, romantic drift, gentle
