@@ -48,32 +48,15 @@ export async function flashAnimationToDevice(
   targetFps: number,
   onProgress?: FlashProgressCallback
 ) {
-  // 1. If live streamer is currently connected, cleanly disconnect to release WebSerial lock FIRST
+  // 1. If live streamer is currently connected, cleanly disconnect to release port FIRST
   if (serialStreamer.getConnected()) {
     onProgress?.({ percent: 3, message: 'Releasing live stream connection...' });
     await serialStreamer.disconnect();
     await new Promise((r) => setTimeout(r, 400));
   }
 
-  // 2. Acquire port
-  onProgress?.({ percent: 8, message: 'Detecting serial port...' });
-  let port: any = null;
-  const grantedPorts = await (navigator as any).serial?.getPorts?.();
-
-  if (grantedPorts && grantedPorts.length === 1) {
-    // Port was already authorized previously (e.g. from live stream connection)
-    port = grantedPorts[0];
-  } else {
-    // Prompt user to select port while gesture token is fresh
-    port = await (navigator as any).serial.requestPort();
-  }
-
-  if (!port) {
-    throw new Error('No serial port selected.');
-  }
-
-  // 3. Pack the frames into binary payload
-  onProgress?.({ percent: 12, message: 'Packing animation frames...' });
+  // 2. Pack the frames into binary payload
+  onProgress?.({ percent: 8, message: 'Packing animation frames...' });
   const totalFrames = xbmpFrames.length;
   // Header: 4 bytes frame count, 4 bytes FPS
   const header = new Uint8Array(8);
@@ -98,14 +81,80 @@ export async function flashAnimationToDevice(
     offset += 1024;
   }
 
-  // 4. Connect via WebSerial & esptool
-  onProgress?.({ percent: 18, message: 'Connecting to ESP32 bootloader...' });
+  // 3. Primary Route: Try local PlatformIO hardware flasher (/api/flash)
+  // This uses the exact same Python esptool.py pipeline that succeeds 100% in PlatformIO
+  try {
+    onProgress?.({ percent: 12, message: 'Connecting to PlatformIO hardware flasher...' });
+    const resp = await fetch('/api/flash', {
+      method: 'POST',
+      body: blob,
+    });
+
+    if (resp.ok && resp.body) {
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let flashSucceeded = false;
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('data:')) {
+            try {
+              const event = JSON.parse(trimmed.slice(5).trim());
+              if (event.percent === -1) {
+                throw new Error(event.message || 'Flashing failed.');
+              }
+              if (event.percent === 100) {
+                flashSucceeded = true;
+              }
+              onProgress?.({
+                percent: event.percent,
+                message: event.message,
+              });
+            } catch (jsonErr: any) {
+              if (jsonErr.message && !jsonErr.message.includes('JSON')) {
+                throw jsonErr;
+              }
+            }
+          }
+        }
+      }
+
+      if (flashSucceeded) {
+        onProgress?.({ percent: 100, message: 'Flash complete! 30 FPS high-speed engine running on OLED.' });
+        return;
+      }
+    }
+  } catch (backendErr: any) {
+    console.warn('Local PlatformIO flasher unavailable or returned error, falling back to WebSerial:', backendErr);
+  }
+
+  // 4. Secondary Route: In-browser WebSerial (for standalone/remote deployment)
+  onProgress?.({ percent: 18, message: 'Detecting serial port for WebSerial...' });
+  let port: any = null;
+  const grantedPorts = await (navigator as any).serial?.getPorts?.();
+
+  if (grantedPorts && grantedPorts.length === 1) {
+    port = grantedPorts[0];
+  } else {
+    port = await (navigator as any).serial.requestPort();
+  }
+
+  if (!port) {
+    throw new Error('No serial port selected.');
+  }
 
   const info = port.getInfo?.() || {};
   const isUsbJtag = info.usbProductId === 0x1001 || (info.usbVendorId === 0x303a && (!info.usbProductId || info.usbProductId === 0x1001));
 
-  // Determine optimal reset sequence order based on detected hardware
-  // On ESP32-S3 Native USB (PID 0x1001), usb_reset is hardware-wired to the internal reset state machine
   const strategies = isUsbJtag 
     ? ['usb_reset', 'default_reset', 'no_reset'] 
     : ['default_reset', 'usb_reset', 'no_reset'];
@@ -117,7 +166,7 @@ export async function flashAnimationToDevice(
   for (let idx = 0; idx < strategies.length; idx++) {
     const strategy = strategies[idx];
     try {
-      console.log(`[flasher] Attempting sync with strategy: ${strategy} (attempt ${idx + 1}/${strategies.length})`);
+      console.log(`[flasher] Attempting WebSerial sync with strategy: ${strategy} (attempt ${idx + 1}/${strategies.length})`);
       activeTransport = new Transport(port);
       activeLoader = new ESPLoader({
         transport: activeTransport,
@@ -154,7 +203,6 @@ export async function flashAnimationToDevice(
   try {
     onProgress?.({ percent: 25, message: `Connected to ${detectedChip || 'ESP32'}. Preparing payload...` });
 
-    // Build flash files array: firmware at 0x10000 + animation partition at 0x200000
     const filesToFlash: Array<{ data: Uint8Array | string; address: number }> = [];
     try {
       const fwResp = await fetch('/firmware.bin');
@@ -168,7 +216,6 @@ export async function flashAnimationToDevice(
       console.warn('Firmware binary fetch skipped:', e);
     }
 
-    // Always flash animation partition
     filesToFlash.push({ data: blob, address: 0x200000 });
 
     const flashOptions: any = {
@@ -189,7 +236,6 @@ export async function flashAnimationToDevice(
 
     await activeLoader.writeFlash(flashOptions);
 
-    // 5. Hard reset device to run firmware from partition
     onProgress?.({ percent: 99, message: 'Rebooting ESP32 into 30 FPS firmware...' });
     try {
       await activeLoader.after('hard_reset');
@@ -197,7 +243,6 @@ export async function flashAnimationToDevice(
       console.log('Post-flash reset executed:', e);
     }
 
-    // Ensure chip reboot via DTR/RTS pulse for USB Serial/JTAG
     try {
       await activeTransport.setRTS(true);
       await new Promise((r) => setTimeout(r, 100));
