@@ -9,6 +9,7 @@ import { CropControls } from './components/CropControls';
 import { DecryptedText } from './components/reactbits/DecryptedText';
 import { CountUp } from './components/reactbits/CountUp';
 import { BlueprintHoverCard } from './components/reactbits/BlueprintHoverCard';
+import { SvgFilterLibrary } from './components/common/SvgFilters';
 
 // Lazy-loaded heavy studios and modals to speed up initial page reload
 const SettingsModal = React.lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
@@ -106,6 +107,13 @@ function MainApp() {
     try {
       localStorage.setItem('oled_studio_theme', themeMode);
     } catch (_) {}
+    if (themeMode === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
   }, [themeMode]);
 
   const isDark = themeMode === 'dark';
@@ -728,7 +736,8 @@ function MainApp() {
   };
 
   return (
-    <div className={`h-screen flex flex-col overflow-hidden relative transition-colors ${isDark ? 'bg-[#0E0B1A] text-[#F1EEF8]' : 'bg-[#F5F0EB] text-[#1A1A1A]'}`}>
+    <div className={`h-screen flex flex-col overflow-hidden relative transition-colors ${isDark ? 'bg-[#000000] text-[#FAFAFA]' : 'bg-[#F6F6F4] text-[#1A1A1A]'}`}>
+      <SvgFilterLibrary />
       <Header 
         serialConnected={serialConnected}
         baudRate={baudRate}

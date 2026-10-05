@@ -81,26 +81,139 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   OLED VISUAL STUDIO — DUAL-MODE HARDWARE & LIQUID GLASS TOKEN CONTRACT
+   ========================================================================== */
+
+:root {
+  /* ------------------------------------------------------------------------
+     MODE B: MATTE CERAMIC / OP-1 FIELD (Light Mode)
+     Inspiration: Teenage Engineering OP-1 Field, Braun ET66, Leica M11-D
+     ------------------------------------------------------------------------ */
+  --hw-bg-canvas: #F6F6F4;              /* Frosted titanium ceramic */
+  --hw-bg-surface: #FFFFFF;             /* Pure ceramic card body */
+  --hw-bg-chassis: #EBEAE5;             /* CNC milled housing block */
+  --hw-bg-recessed: #DCDAD5;            /* Slotted grooves, slider wells */
+  --hw-bg-acrylic: rgba(246, 246, 244, 0.82); /* Translucent white acrylic */
+  
+  --hw-border-perimeter: #1A1A1A;       /* Anodized razor black perimeter */
+  --hw-border-hairline: rgba(26, 26, 26, 0.22);
+  --hw-border-specular: rgba(255, 255, 255, 0.95); /* Top 45-deg light source */
+  
+  --hw-signal-amber: #E85D2A;           /* Industrial signal terracotta */
+  --hw-signal-phosphor: #02963B;        /* Calibrated green LED diode */
+  --hw-signal-flux: #0077CC;            /* Cobalt flux telemetry */
+  --hw-signal-danger: #E60026;          /* Record status tally red */
+
+  --hw-text-primary: #1A1A1A;           /* High-contrast ink */
+  --hw-text-secondary: #5E5D59;         /* Laser-etched legend */
+  --hw-text-tertiary: #8C8A84;          /* Silkscreen micro-label */
+
+  --hw-shadow-chassis: 0 4px 16px -2px rgba(0, 0, 0, 0.08);
+  --hw-shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.18);
+  --hw-shadow-specular: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  
+  --hw-grain-opacity: 0.025;
+}
+
+.dark, [data-theme="dark"] {
+  /* ------------------------------------------------------------------------
+     MODE A: OPTIC HARDWARE / NOTHING DARK (Dark Mode)
+     Inspiration: True 1-bit OLED displays, Nothing Phone Glyph, Dieter Rams Dark
+     ------------------------------------------------------------------------ */
+  --hw-bg-canvas: #000000;              /* Absolute 0.0 cd/m2 OLED black */
+  --hw-bg-surface: #080808;             /* Substrate optic glass */
+  --hw-bg-chassis: #0A0A0C;             /* Smoked magnesium frame */
+  --hw-bg-recessed: #050506;            /* Sub-surface milled wells */
+  --hw-bg-acrylic: rgba(12, 12, 14, 0.74); /* Smoked acrylic glass */
+
+  --hw-border-perimeter: #27272A;       /* High-precision zinc hairline */
+  --hw-border-hairline: rgba(255, 255, 255, 0.12);
+  --hw-border-specular: rgba(255, 255, 255, 0.22); /* Sub-surface highlight */
+
+  --hw-signal-amber: #FF5500;           /* High-energy sodium amber */
+  --hw-signal-phosphor: #00FF66;        /* Laser phosphor green (SH1106 / SSD1306) */
+  --hw-signal-flux: #00F0FF;            /* Cold cathode cyan flux */
+  --hw-signal-danger: #FF1A35;          /* Tally record beacon */
+
+  --hw-text-primary: #FAFAFA;           /* Unfiltered display white */
+  --hw-text-secondary: #A1A1AA;         /* Telemetry grey */
+  --hw-text-tertiary: #52525B;          /* Micro-tick readout */
+
+  --hw-shadow-chassis: 0 16px 40px -8px rgba(0, 0, 0, 0.85);
+  --hw-shadow-inset: inset 0 1px 3px rgba(0, 0, 0, 0.90);
+  --hw-shadow-specular: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+
+  --hw-grain-opacity: 0.038;
+}
+
+/* ==========================================================================
+   ACRYLIC LIQUID GLASS OPTICAL FORMULATIONS
+   ========================================================================== */
+
+.hw-acrylic-glass {
+  background: var(--hw-bg-acrylic);
+  backdrop-filter: blur(24px) saturate(190%) contrast(108%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%) contrast(108%);
+  border-top: 1px solid var(--hw-border-specular);
+  border-left: 1px solid var(--hw-border-hairline);
+  border-right: 1px solid var(--hw-border-hairline);
+  border-bottom: 1px solid var(--hw-border-perimeter);
+  box-shadow: var(--hw-shadow-specular), var(--hw-shadow-chassis);
+}
+
+.hw-milled-slot {
+  background: var(--hw-bg-recessed);
+  box-shadow: var(--hw-shadow-inset);
+  border: 1px solid var(--hw-border-hairline);
+}
+
+/* ==========================================================================
+   OLED GRAIN OVERLAY (Preserving absolute 0.0 cd/m2 black)
+   ========================================================================== */
+
+.hw-oled-grain {
+  position: relative;
+}
+
+.hw-oled-grain::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--hw-grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
 @layer base {
   * { box-sizing: border-box; }
   
   body {
     font-family: 'IBM Plex Mono', ui-monospace, monospace;
-    background-color: #F5F0EB;
+    background-color: var(--hw-bg-canvas);
     background-image:
       repeating-linear-gradient(0deg, #e0dbd5 0 1px, transparent 1px 40px),
       repeating-linear-gradient(90deg, #e0dbd5 0 1px, transparent 1px 40px);
-    color: #1A1A1A;
+    color: var(--hw-text-primary);
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
+  .dark body, [data-theme="dark"] body {
+    background-color: #000000;
+    background-image:
+      radial-gradient(circle at 50% 0%, rgba(255, 85, 0, 0.04) 0%, transparent 70%),
+      repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.02) 0 1px, transparent 1px 40px),
+      repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.02) 0 1px, transparent 1px 40px);
+  }
+
   /* Custom scrollbars - Technical style */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: #F5F0EB; }
-  ::-webkit-scrollbar-thumb { background: #1A1A1A; }
-  ::-webkit-scrollbar-thumb:hover { background: #E85D2A; }
+  ::-webkit-scrollbar-track { background: var(--hw-bg-canvas); }
+  ::-webkit-scrollbar-thumb { background: var(--hw-border-perimeter); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--hw-signal-amber); }
 
   /* Range slider styling - Technical flat style */
   input[type='range'] {
@@ -113,7 +226,7 @@
 
   input[type='range']::-webkit-slider-runnable-track {
     height: 2px;
-    background: #1A1A1A;
+    background: var(--hw-border-perimeter);
   }
 
   input[type='range']::-webkit-slider-thumb {
@@ -121,26 +234,26 @@
     width: 12px;
     height: 12px;
     border-radius: 0;
-    background: #E85D2A;
-    border: 2px solid #1A1A1A;
+    background: var(--hw-signal-amber);
+    border: 2px solid var(--hw-border-perimeter);
     margin-top: -5px;
   }
 
   input[type='range']::-webkit-slider-thumb:hover {
-    background: #1A1A1A;
+    background: var(--hw-text-primary);
   }
 
   /* Technical panel */
   .tech-panel {
-    background: #FFFFFF;
-    border: 2px solid #1A1A1A;
+    background: var(--hw-bg-surface);
+    border: 2px solid var(--hw-border-perimeter);
   }
 
   /* Technical button */
   .tech-btn {
-    background: #FFFFFF;
-    border: 1px solid #1A1A1A;
-    color: #1A1A1A;
+    background: var(--hw-bg-surface);
+    border: 1px solid var(--hw-border-perimeter);
+    color: var(--hw-text-primary);
     font-family: 'IBM Plex Mono', monospace;
     font-weight: 600;
     font-size: 10px;
@@ -152,19 +265,19 @@
   }
 
   .tech-btn:hover:not(:disabled) {
-    background: #1A1A1A;
-    color: #FFFFFF;
+    background: var(--hw-border-perimeter);
+    color: var(--hw-bg-surface);
   }
 
   .tech-btn.active {
-    background: #1A1A1A;
-    color: #FFFFFF;
+    background: var(--hw-border-perimeter);
+    color: var(--hw-bg-surface);
   }
 
   /* Accent button */
   .accent-btn {
-    background: #E85D2A;
-    border: 2px solid #1A1A1A;
+    background: var(--hw-signal-amber);
+    border: 2px solid var(--hw-border-perimeter);
     color: #FFFFFF;
     font-family: 'IBM Plex Mono', monospace;
     font-weight: 700;
@@ -177,7 +290,8 @@
   }
 
   .accent-btn:hover:not(:disabled) {
-    background: #C94E22;
+    background: var(--hw-signal-amber);
+    filter: brightness(0.9);
   }
 
   .accent-btn:disabled {
