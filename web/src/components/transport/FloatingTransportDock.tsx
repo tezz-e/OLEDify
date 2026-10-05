@@ -328,32 +328,60 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
   // 3D Inertial tilt springs driven by cursor proximity
   const rawTiltX = useMotionValue(0);
   const rawTiltY = useMotionValue(0);
-  const springRotateX = useSpring(rawTiltX, { stiffness: 220, damping: 20, mass: 0.3 });
-  const springRotateY = useSpring(rawTiltY, { stiffness: 220, damping: 20, mass: 0.3 });
+  const springRotateX = useSpring(rawTiltX, { stiffness: 240, damping: 22, mass: 0.28 });
+  const springRotateY = useSpring(rawTiltY, { stiffness: 240, damping: 22, mass: 0.28 });
+
+  // Floating magnetic translation (followPointer physics)
+  const rawFloatX = useMotionValue(0);
+  const rawFloatY = useMotionValue(0);
+  const springFloatX = useSpring(rawFloatX, { stiffness: 280, damping: 24, mass: 0.35 });
+  const springFloatY = useSpring(rawFloatY, { stiffness: 280, damping: 24, mass: 0.35 });
+
+  // Gelatinous aspect squish & stretch (fluid glass physics)
+  const rawScaleX = useMotionValue(1);
+  const rawScaleY = useMotionValue(1);
+  const springScaleX = useSpring(rawScaleX, { stiffness: 320, damping: 25, mass: 0.22 });
+  const springScaleY = useSpring(rawScaleY, { stiffness: 320, damping: 25, mass: 0.22 });
 
   // Real-time cursor coordinates inside dock for specular light highlight beam
   const [localCursor, setLocalCursor] = useState<{ x: number; y: number } | null>(null);
+  const [isHovered, setIsHovered] = useState(false);
 
   const handleDockMouseMove = (e: React.MouseEvent) => {
     if (!dockRef.current) return;
+    setIsHovered(true);
     const rect = dockRef.current.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
     const dx = e.clientX - cx;
     const dy = e.clientY - cy;
+    const normX = Math.max(-1, Math.min(1, dx / (rect.width / 2)));
+    const normY = Math.max(-1, Math.min(1, dy / (rect.height / 2)));
 
-    // Subtle 3D physical tilt (max ±2.2 degrees)
-    const rX = -(dy / (rect.height / 2)) * 2.2;
-    const rY = (dx / (rect.width / 2)) * 2.2;
-    rawTiltX.set(rX);
-    rawTiltY.set(rY);
+    // 1. Physical 3D tilt
+    rawTiltX.set(-normY * 2.6);
+    rawTiltY.set(normX * 2.6);
+
+    // 2. Magnetic followPointer displacement (±14px horizontally, ±5px vertically with -3px buoyant lift)
+    rawFloatX.set(normX * 14);
+    rawFloatY.set(normY * 5 - 4);
+
+    // 3. Gelatinous liquid stretch along movement axis (fluid glass aspect squish)
+    const stretch = Math.abs(normX) * 0.024;
+    rawScaleX.set(1 + stretch);
+    rawScaleY.set(1 - stretch * 0.75);
 
     setLocalCursor({ x: e.clientX - rect.left, y: e.clientY - rect.top });
   };
 
   const handleDockMouseLeave = () => {
+    setIsHovered(false);
     rawTiltX.set(0);
     rawTiltY.set(0);
+    rawFloatX.set(0);
+    rawFloatY.set(0);
+    rawScaleX.set(1);
+    rawScaleY.set(1);
     setLocalCursor(null);
   };
 
@@ -411,6 +439,7 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
   const scrubPct = scrubMax > 0 ? (scrubVal / scrubMax) * 100 : 0;
 
   // Dynamic Island inner dock classes
+  const isExpanded = isHovered || isPlaying;
   const innerClasses = docked
     ? `relative w-full px-4 py-2 rounded-xl border flex items-center justify-between gap-4 select-none font-mono transition-all duration-300 ${
         isDark
@@ -418,15 +447,19 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
           : 'bg-[#F6F6F4] border-[#1A1A1A] text-[#1A1A1A]'
       } ${className}`
     : `pointer-events-auto rounded-full border flex items-center select-none font-mono backdrop-blur-2xl transition-all duration-300 ${
-        isPlaying ? 'px-5 py-2.5 gap-3.5' : 'px-4 py-2 gap-3'
+        isExpanded ? 'px-6 py-2.5 gap-4' : 'px-4 py-2 gap-3'
       } ${
         isDark
           ? isPlaying
-            ? 'bg-[#08080A]/95 border-[#00FF66]/40 text-[#FAFAFA] shadow-[0_24px_65px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.22),0_0_24px_rgba(0,255,102,0.18)]'
-            : 'bg-[#08080A]/90 border-white/15 text-[#FAFAFA] shadow-[0_20px_50px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.18)]'
+            ? 'bg-[#08080A]/95 border-[#00FF66]/50 text-[#FAFAFA] shadow-[0_28px_70px_rgba(0,0,0,0.95),inset_0_1px_0_rgba(255,255,255,0.25),0_0_28px_rgba(0,255,102,0.2)]'
+            : isHovered
+            ? 'bg-[#08080A]/95 border-white/25 text-[#FAFAFA] shadow-[0_26px_65px_rgba(0,0,0,0.92),inset_0_1px_0_rgba(255,255,255,0.28),0_0_25px_rgba(255,255,255,0.06)]'
+            : 'bg-[#08080A]/90 border-white/15 text-[#FAFAFA] shadow-[0_18px_45px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.18)]'
           : isPlaying
-          ? 'bg-[#F6F6F4]/98 border-[#E85D2A]/60 text-[#1A1A1A] shadow-[0_16px_38px_rgba(232,93,42,0.18),inset_0_1px_0_rgba(255,255,255,0.95)]'
-          : 'bg-[#F6F6F4]/95 border-[#1A1A1A] text-[#1A1A1A] shadow-[0_12px_32px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.95)]'
+          ? 'bg-[#F6F6F4]/98 border-[#E85D2A]/60 text-[#1A1A1A] shadow-[0_18px_42px_rgba(232,93,42,0.22),inset_0_1px_0_rgba(255,255,255,0.98)]'
+          : isHovered
+          ? 'bg-[#F6F6F4]/98 border-[#1A1A1A] text-[#1A1A1A] shadow-[0_16px_38px_rgba(0,0,0,0.16),inset_0_1px_0_rgba(255,255,255,1),0_0_20px_rgba(232,93,42,0.08)]'
+          : 'bg-[#F6F6F4]/95 border-[#1A1A1A]/80 text-[#1A1A1A] shadow-[0_12px_32px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.95)]'
       }`;
 
   const dockContent = (
@@ -436,7 +469,7 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
       transition={HW_SPRINGS.islandExpand}
       onMouseMove={handleDockMouseMove}
       onMouseLeave={handleDockMouseLeave}
-      whileHover={{ y: -2 }}
+      whileHover={{ scale: 1.015 }}
       style={{
         rotateX: springRotateX,
         rotateY: springRotateY,
@@ -445,7 +478,7 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
       className={innerClasses}
       aria-label="Floating Transport Dock"
     >
-      {/* ── Dynamic Island Liquid Glass Specular Light Beam ── */}
+      {/* ── Dynamic Island Liquid Glass Specular Light Beam & Caustic Refraction ── */}
       <div
         className="pointer-events-none absolute inset-0 rounded-full overflow-hidden transition-opacity duration-300"
         style={{ opacity: localCursor ? 1 : 0 }}
@@ -455,20 +488,35 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
           className="absolute -inset-10"
           style={{
             background: localCursor
-              ? `radial-gradient(180px circle at ${localCursor.x + 40}px ${localCursor.y + 40}px, ${
-                  isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.05)'
-                }, transparent 70%)`
+              ? `radial-gradient(190px circle at ${localCursor.x + 40}px ${localCursor.y + 40}px, ${
+                  isDark ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.6)'
+                }, ${
+                  isDark ? 'rgba(0,255,102,0.04)' : 'rgba(232,93,42,0.05)'
+                } 50%, transparent 80%)`
               : 'none',
           }}
         />
         {/* Top rim specular edge highlight */}
         <div
-          className="absolute top-0 inset-x-0 h-[1px]"
+          className="absolute top-0 inset-x-0 h-[1.5px]"
           style={{
             background: localCursor
-              ? `radial-gradient(140px circle at ${localCursor.x}px 0px, ${
-                  isDark ? '#00FF66' : '#E85D2A'
-                }, transparent 80%)`
+              ? `radial-gradient(160px circle at ${localCursor.x}px 0px, ${
+                  isDark ? '#FFFFFF' : '#FFFFFF'
+                }, ${
+                  isDark ? 'rgba(0,255,102,0.7)' : 'rgba(232,93,42,0.7)'
+                } 40%, transparent 80%)`
+              : 'none',
+          }}
+        />
+        {/* Bottom rim specular bounce highlight */}
+        <div
+          className="absolute bottom-0 inset-x-0 h-[1px]"
+          style={{
+            background: localCursor
+              ? `radial-gradient(120px circle at ${localCursor.x}px 100%, ${
+                  isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.06)'
+                }, transparent 75%)`
               : 'none',
           }}
         />
@@ -691,7 +739,23 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
 
   return (
     <div className={`fixed bottom-5 left-1/2 -translate-x-1/2 z-40 pointer-events-none flex justify-center ${className}`}>
-      {dockContent}
+      <motion.div
+        animate={!isHovered ? { y: [0, -3.5, 0] } : { y: 0 }}
+        transition={
+          !isHovered
+            ? { repeat: Infinity, duration: 3.6, ease: 'easeInOut' }
+            : { duration: 0.25, ease: 'easeOut' }
+        }
+        style={{
+          x: springFloatX,
+          y: springFloatY,
+          scaleX: springScaleX,
+          scaleY: springScaleY,
+        }}
+        className="pointer-events-auto"
+      >
+        {dockContent}
+      </motion.div>
     </div>
   );
 };
