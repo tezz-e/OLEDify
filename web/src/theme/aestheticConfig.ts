@@ -126,3 +126,115 @@ export function getActiveTheme(): AestheticThemeTokens {
     ? ARCADE_NEO_POP_THEME
     : PRECISION_HARDWARE_THEME;
 }
+
+export type DockGlowColor = 'green' | 'cyan' | 'amber' | 'white' | 'violet' | 'crimson';
+
+export interface DockGlowPreset {
+  id: DockGlowColor;
+  label: string;
+  dotColor: string;
+  dark: {
+    accent: string;
+    glow: string;
+    rim: string;
+  };
+  light: {
+    accent: string;
+    glow: string;
+    rim: string;
+  };
+}
+
+export const DOCK_GLOW_PRESETS: Record<DockGlowColor, DockGlowPreset> = {
+  green: {
+    id: 'green',
+    label: 'Phosphor Green',
+    dotColor: '#00FF66',
+    dark: {
+      accent: '#00FF66',
+      glow: 'rgba(0, 255, 102, 0.25)',
+      rim: 'rgba(0, 255, 102, 0.75)',
+    },
+    light: {
+      accent: '#10B981',
+      glow: 'rgba(16, 185, 129, 0.22)',
+      rim: 'rgba(16, 185, 129, 0.65)',
+    },
+  },
+  cyan: {
+    id: 'cyan',
+    label: 'Cryo Cyan',
+    dotColor: '#00F0FF',
+    dark: {
+      accent: '#00F0FF',
+      glow: 'rgba(0, 240, 255, 0.28)',
+      rim: 'rgba(0, 240, 255, 0.8)',
+    },
+    light: {
+      accent: '#0284C7',
+      glow: 'rgba(2, 132, 199, 0.22)',
+      rim: 'rgba(2, 132, 199, 0.65)',
+    },
+  },
+  amber: {
+    id: 'amber',
+    label: 'Signal Amber',
+    dotColor: '#FF7700',
+    dark: {
+      accent: '#FF7700',
+      glow: 'rgba(255, 119, 0, 0.3)',
+      rim: 'rgba(255, 119, 0, 0.85)',
+    },
+    light: {
+      accent: '#E85D2A',
+      glow: 'rgba(232, 93, 42, 0.25)',
+      rim: 'rgba(232, 93, 42, 0.7)',
+    },
+  },
+  white: {
+    id: 'white',
+    label: 'Diamond Frost',
+    dotColor: '#FFFFFF',
+    dark: {
+      accent: '#FFFFFF',
+      glow: 'rgba(255, 255, 255, 0.25)',
+      rim: 'rgba(255, 255, 255, 0.9)',
+    },
+    light: {
+      accent: '#1A1A1A',
+      glow: 'rgba(0, 0, 0, 0.15)',
+      rim: 'rgba(0, 0, 0, 0.4)',
+    },
+  },
+  violet: {
+    id: 'violet',
+    label: 'Prism Violet',
+    dotColor: '#A855F7',
+    dark: {
+      accent: '#A855F7',
+      glow: 'rgba(168, 85, 247, 0.28)',
+      rim: 'rgba(168, 85, 247, 0.8)',
+    },
+    light: {
+      accent: '#7C3AED',
+      glow: 'rgba(124, 58, 237, 0.22)',
+      rim: 'rgba(124, 58, 237, 0.65)',
+    },
+  },
+  crimson: {
+    id: 'crimson',
+    label: 'Tape Rec Crimson',
+    dotColor: '#FF3344',
+    dark: {
+      accent: '#FF3344',
+      glow: 'rgba(255, 51, 68, 0.3)',
+      rim: 'rgba(255, 51, 68, 0.85)',
+    },
+    light: {
+      accent: '#DC2626',
+      glow: 'rgba(220, 38, 38, 0.24)',
+      rim: 'rgba(220, 38, 38, 0.7)',
+    },
+  },
+};
+

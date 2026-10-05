@@ -4,6 +4,7 @@ import { Play, Pause, SkipBack, SkipForward, RotateCcw, Repeat, Zap } from 'luci
 import { HW_SPRINGS } from '../../theme/springPresets';
 import { triggerNativeHaptic } from '../../theme/haptics';
 import { ClickSpark } from '../reactbits/ClickSpark';
+import { DockGlowColor, DOCK_GLOW_PRESETS } from '../../theme/aestheticConfig';
 
 export interface FloatingTransportDockProps {
   // Common & NLE Props
@@ -36,6 +37,10 @@ export interface FloatingTransportDockProps {
   baudRate?: number;
   themeMode?: 'light' | 'dark';
   className?: string;
+
+  // Custom Glow Colorway
+  initialGlowColor?: DockGlowColor;
+  onGlowColorChange?: (color: DockGlowColor) => void;
 }
 
 /**
@@ -50,6 +55,7 @@ function MagneticButton({
   stiffness = 3.5,
   padding = 20,
   type = 'button',
+  style,
 }: {
   children: React.ReactNode;
   className?: string;
@@ -58,6 +64,7 @@ function MagneticButton({
   stiffness?: number;
   padding?: number;
   type?: 'button' | 'submit' | 'reset';
+  style?: React.CSSProperties;
 }) {
   const ref = useRef<HTMLButtonElement>(null);
   const rawX = useMotionValue(0);
@@ -99,7 +106,7 @@ function MagneticButton({
       type={type}
       onClick={onClick}
       title={title}
-      style={{ x, y }}
+      style={{ x, y, ...style }}
       onMouseMove={onMouseMove}
       onMouseLeave={onMouseLeave}
       whileTap={{ scale: 0.9 }}
@@ -115,8 +122,7 @@ function MagneticButton({
  * DynamicIslandEqualizer — Apple-style animated audio bars inside the island
  * that dance during playback, settling to calm dots when paused.
  */
-function DynamicIslandEqualizer({ isPlaying, isDark }: { isPlaying: boolean; isDark: boolean }) {
-  const accent = isDark ? '#00FF66' : '#E85D2A';
+function DynamicIslandEqualizer({ isPlaying, accent }: { isPlaying: boolean; accent: string }) {
   return (
     <div className="flex items-center gap-[2.5px] h-3 px-1 select-none pointer-events-none">
       {[0, 1, 2, 3].map((i) => (
@@ -161,10 +167,14 @@ function DynamicIslandEqualizer({ isPlaying, isDark }: { isPlaying: boolean; isD
 function PlayButtonMagnetic({
   isPlaying,
   isDark,
+  accent,
+  glowRgba,
   onToggle,
 }: {
   isPlaying: boolean;
   isDark: boolean;
+  accent: string;
+  glowRgba: string;
   onToggle: () => void;
 }) {
   const ref = useRef<HTMLButtonElement>(null);
@@ -189,8 +199,6 @@ function PlayButtonMagnetic({
 
   const onML = useCallback(() => { rawX.set(0); rawY.set(0); }, [rawX, rawY]);
 
-  const accentColor = isDark ? '#00FF66' : '#E85D2A';
-
   return (
     <div className="relative flex items-center justify-center shrink-0">
       {/* Dynamic Island Gooey expanding pulse halo when playing */}
@@ -203,19 +211,25 @@ function PlayButtonMagnetic({
             transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }}
             className="absolute -inset-1.5 rounded-full pointer-events-none"
             style={{
-              background: isDark ? 'rgba(0, 255, 102, 0.3)' : 'rgba(232, 93, 42, 0.3)',
+              background: glowRgba,
               filter: 'blur(3px)',
             }}
           />
         )}
       </AnimatePresence>
 
-      <ClickSpark sparkColor={accentColor} sparkCount={8} sparkRadius={24} duration={400}>
+      <ClickSpark sparkColor={accent} sparkCount={8} sparkRadius={24} duration={400}>
         <motion.button
           ref={ref}
           type="button"
           onClick={onToggle}
-          style={{ x, y }}
+          style={{
+            x,
+            y,
+            backgroundColor: isPlaying ? accent : undefined,
+            color: isPlaying ? (accent === '#FFFFFF' || !isDark ? '#000000' : '#000000') : undefined,
+            boxShadow: isPlaying ? `0 0 20px ${glowRgba}, 0 0 40px ${glowRgba}` : undefined,
+          }}
           onMouseMove={onMM}
           onMouseLeave={onML}
           whileHover={{ scale: 1.12 }}
@@ -223,12 +237,10 @@ function PlayButtonMagnetic({
           transition={HW_SPRINGS.tactileTap}
           className={`w-9 h-9 rounded-full flex items-center justify-center cursor-pointer transition-colors relative z-10 ${
             isPlaying
-              ? isDark
-                ? 'bg-[#00FF66] text-black shadow-[0_0_20px_rgba(0,255,102,0.6),0_0_40px_rgba(0,255,102,0.25)]'
-                : 'bg-[#E85D2A] text-white shadow-[0_0_20px_rgba(232,93,42,0.5)]'
+              ? ''
               : isDark
-              ? 'bg-white text-black shadow-[0_2px_8px_rgba(0,0,0,0.5)] hover:bg-[#00FF66] hover:shadow-[0_0_20px_rgba(0,255,102,0.5)]'
-              : 'bg-black text-white shadow-[0_2px_8px_rgba(0,0,0,0.2)] hover:bg-[#E85D2A]'
+              ? 'bg-white text-black shadow-[0_2px_8px_rgba(0,0,0,0.5)]'
+              : 'bg-black text-white shadow-[0_2px_8px_rgba(0,0,0,0.2)]'
           }`}
           title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}
         >
@@ -242,7 +254,7 @@ function PlayButtonMagnetic({
               className="flex items-center justify-center"
             >
               {isPlaying ? (
-                <Pause className={`w-4 h-4 ${isDark ? 'fill-black text-black' : 'fill-white text-white'}`} />
+                <Pause className="w-4 h-4 fill-black text-black" />
               ) : (
                 <Play className={`w-4 h-4 ${isDark ? 'fill-black text-black' : 'fill-white text-white'} ml-0.5`} />
               )}
@@ -258,8 +270,8 @@ function PlayButtonMagnetic({
  * GooeyStatusBlob — Skiper Gooey Blobs style dynamic indicator
  * Two microscopic cells that coalesce and pulse organically.
  */
-function GooeyStatusBlob({ active, isDark }: { active: boolean; isDark: boolean }) {
-  const color = active ? (isDark ? '#00FF66' : '#E85D2A') : '#71717A';
+function GooeyStatusBlob({ active, accent }: { active: boolean; accent: string }) {
+  const color = active ? accent : '#71717A';
   return (
     <div className="relative flex items-center justify-center w-3 h-3">
       {active ? (
@@ -294,6 +306,71 @@ function GooeyStatusBlob({ active, isDark }: { active: boolean; isDark: boolean 
   );
 }
 
+/**
+ * GlowPaletteToggle — Interactive colorway picker for the dock.
+ * Shows a compact clickable pill with the 6 color dots.
+ */
+function GlowPaletteToggle({
+  activeColor,
+  onSelectColor,
+  isDark,
+}: {
+  activeColor: DockGlowColor;
+  onSelectColor: (c: DockGlowColor) => void;
+  isDark: boolean;
+}) {
+  const [hoveredColor, setHoveredColor] = useState<DockGlowColor | null>(null);
+  const colorKeys = Object.keys(DOCK_GLOW_PRESETS) as DockGlowColor[];
+
+  return (
+    <div
+      className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-[9px] font-bold tracking-wider shrink-0 z-10 select-none transition-all ${
+        isDark ? 'bg-[#121214] border-white/10' : 'bg-[#E8E6E1] border-[#1A1A1A]'
+      }`}
+      title="Dock Glow Colorway (Click to test)"
+    >
+      <span className="text-[8px] uppercase opacity-40 mr-1 tracking-widest hidden md:inline">
+        GLOW:
+      </span>
+      <div className="flex items-center gap-1.5">
+        {colorKeys.map((key) => {
+          const preset = DOCK_GLOW_PRESETS[key];
+          const isSelected = activeColor === key;
+          const isHov = hoveredColor === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onSelectColor(key)}
+              onMouseEnter={() => setHoveredColor(key)}
+              onMouseLeave={() => setHoveredColor(null)}
+              title={`${preset.label}${isSelected ? ' (Active)' : ''}`}
+              className="relative p-0.5 rounded-full cursor-pointer focus:outline-none transition-transform"
+              style={{
+                transform: isSelected || isHov ? 'scale(1.25)' : 'scale(0.9)',
+              }}
+            >
+              <span
+                className="block w-2.5 h-2.5 rounded-full transition-all duration-200"
+                style={{
+                  backgroundColor: preset.dotColor,
+                  boxShadow: isSelected
+                    ? `0 0 10px ${preset.dotColor}, 0 0 2px #FFFFFF`
+                    : isHov
+                    ? `0 0 6px ${preset.dotColor}`
+                    : 'none',
+                  opacity: isSelected ? 1 : isHov ? 0.9 : 0.45,
+                  border: isSelected ? '1px solid #FFFFFF' : 'none',
+                }}
+              />
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
   isPlaying,
   onTogglePlay,
@@ -320,9 +397,37 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
   baudRate = 921600,
   themeMode = 'dark',
   className = '',
+  initialGlowColor = 'green',
+  onGlowColorChange,
 }) => {
   const isDark = themeMode === 'dark';
-  const accent = isDark ? '#00FF66' : '#E85D2A';
+
+  // Glow Colorway State (persisted in localStorage for instant testing)
+  const [glowColor, setGlowColor] = useState<DockGlowColor>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('oled_dock_glow');
+      if (saved && saved in DOCK_GLOW_PRESETS) {
+        return saved as DockGlowColor;
+      }
+    }
+    return initialGlowColor || 'green';
+  });
+
+  const handleSelectGlowColor = (color: DockGlowColor) => {
+    triggerNativeHaptic(12);
+    setGlowColor(color);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('oled_dock_glow', color);
+    }
+    if (onGlowColorChange) {
+      onGlowColorChange(color);
+    }
+  };
+
+  const currentPreset = DOCK_GLOW_PRESETS[glowColor] || DOCK_GLOW_PRESETS.green;
+  const activeGlowTheme = isDark ? currentPreset.dark : currentPreset.light;
+  const accent = activeGlowTheme.accent;
+
   const dockRef = useRef<HTMLElement>(null);
 
   // 3D Inertial tilt springs driven by cursor proximity
@@ -451,15 +556,15 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
       } ${
         isDark
           ? isPlaying
-            ? 'bg-[#08080A]/95 border-[#00FF66]/50 text-[#FAFAFA] shadow-[0_28px_70px_rgba(0,0,0,0.95),inset_0_1px_0_rgba(255,255,255,0.25),0_0_28px_rgba(0,255,102,0.2)]'
+            ? 'bg-[#08080A]/95 text-[#FAFAFA]'
             : isHovered
-            ? 'bg-[#08080A]/95 border-white/25 text-[#FAFAFA] shadow-[0_26px_65px_rgba(0,0,0,0.92),inset_0_1px_0_rgba(255,255,255,0.28),0_0_25px_rgba(255,255,255,0.06)]'
-            : 'bg-[#08080A]/90 border-white/15 text-[#FAFAFA] shadow-[0_18px_45px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.18)]'
+            ? 'bg-[#08080A]/95 text-[#FAFAFA]'
+            : 'bg-[#08080A]/90 text-[#FAFAFA]'
           : isPlaying
-          ? 'bg-[#F6F6F4]/98 border-[#E85D2A]/60 text-[#1A1A1A] shadow-[0_18px_42px_rgba(232,93,42,0.22),inset_0_1px_0_rgba(255,255,255,0.98)]'
+          ? 'bg-[#F6F6F4]/98 text-[#1A1A1A]'
           : isHovered
-          ? 'bg-[#F6F6F4]/98 border-[#1A1A1A] text-[#1A1A1A] shadow-[0_16px_38px_rgba(0,0,0,0.16),inset_0_1px_0_rgba(255,255,255,1),0_0_20px_rgba(232,93,42,0.08)]'
-          : 'bg-[#F6F6F4]/95 border-[#1A1A1A]/80 text-[#1A1A1A] shadow-[0_12px_32px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.95)]'
+          ? 'bg-[#F6F6F4]/98 text-[#1A1A1A]'
+          : 'bg-[#F6F6F4]/95 text-[#1A1A1A]'
       }`;
 
   const dockContent = (
@@ -474,6 +579,22 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
         rotateX: springRotateX,
         rotateY: springRotateY,
         transformPerspective: 1000,
+        borderColor: isPlaying
+          ? accent
+          : isHovered
+          ? (isDark ? 'rgba(255,255,255,0.25)' : 'rgba(26,26,26,0.3)')
+          : (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(26,26,26,0.15)'),
+        boxShadow: isDark
+          ? isPlaying
+            ? `0 28px 70px rgba(0,0,0,0.95), inset 0 1px 0 rgba(255,255,255,0.25), 0 0 28px ${activeGlowTheme.glow}`
+            : isHovered
+            ? `0 26px 65px rgba(0,0,0,0.92), inset 0 1px 0 rgba(255,255,255,0.28), 0 0 24px ${activeGlowTheme.glow}`
+            : `0 18px 45px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.18)`
+          : isPlaying
+          ? `0 18px 42px ${activeGlowTheme.glow}, inset 0 1px 0 rgba(255,255,255,0.98)`
+          : isHovered
+          ? `0 16px 38px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,1), 0 0 20px ${activeGlowTheme.glow}`
+          : `0 12px 32px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.95)`,
       }}
       className={innerClasses}
       aria-label="Floating Transport Dock"
@@ -490,9 +611,7 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
             background: localCursor
               ? `radial-gradient(190px circle at ${localCursor.x + 40}px ${localCursor.y + 40}px, ${
                   isDark ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.6)'
-                }, ${
-                  isDark ? 'rgba(0,255,102,0.04)' : 'rgba(232,93,42,0.05)'
-                } 50%, transparent 80%)`
+                }, ${activeGlowTheme.glow} 50%, transparent 80%)`
               : 'none',
           }}
         />
@@ -501,11 +620,7 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
           className="absolute top-0 inset-x-0 h-[1.5px]"
           style={{
             background: localCursor
-              ? `radial-gradient(160px circle at ${localCursor.x}px 0px, ${
-                  isDark ? '#FFFFFF' : '#FFFFFF'
-                }, ${
-                  isDark ? 'rgba(0,255,102,0.7)' : 'rgba(232,93,42,0.7)'
-                } 40%, transparent 80%)`
+              ? `radial-gradient(160px circle at ${localCursor.x}px 0px, #FFFFFF, ${activeGlowTheme.rim} 40%, transparent 80%)`
               : 'none',
           }}
         />
@@ -551,6 +666,8 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
         <PlayButtonMagnetic
           isPlaying={isPlaying}
           isDark={isDark}
+          accent={accent}
+          glowRgba={activeGlowTheme.glow}
           onToggle={handlePlayToggle}
         />
 
@@ -569,13 +686,12 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
         {onToggleLoop && (
           <MagneticButton
             onClick={() => { triggerNativeHaptic(8); onToggleLoop(); }}
-            className={`p-1.5 rounded-full transition-colors cursor-pointer ${
-              isLooping
-                ? isDark
-                  ? 'bg-[#00FF66]/20 text-[#00FF66] shadow-[0_0_8px_rgba(0,255,102,0.3)]'
-                  : 'bg-[#E85D2A]/20 text-[#E85D2A]'
-                : 'hover:bg-current/10 opacity-50 hover:opacity-100'
-            }`}
+            className="p-1.5 rounded-full transition-colors cursor-pointer"
+            style={{
+              backgroundColor: isLooping ? activeGlowTheme.glow : undefined,
+              color: isLooping ? accent : undefined,
+              boxShadow: isLooping ? `0 0 8px ${activeGlowTheme.glow}` : undefined,
+            }}
             title={isLooping ? 'Looping enabled' : 'Loop playback'}
             stiffness={4}
             padding={16}
@@ -587,10 +703,14 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
 
       {/* ── 2. Precision Sub-Frame Rolling Timecode + Dynamic Island EQ ── */}
       <div className="flex items-center gap-1.5 px-3 border-x border-current/15 text-[11px] font-bold tabular-nums shrink-0 relative z-10">
-        <DynamicIslandEqualizer isPlaying={isPlaying} isDark={isDark} />
+        <DynamicIslandEqualizer isPlaying={isPlaying} accent={accent} />
 
         <motion.span
-          className={`tracking-wider ${isDark ? 'text-[#00FF66]' : 'text-[#E85D2A]'}`}
+          className="tracking-wider"
+          style={{
+            color: accent,
+            textShadow: isDark ? `0 0 10px ${activeGlowTheme.glow}` : 'none',
+          }}
           animate={isPlaying ? { opacity: [1, 0.75, 1] } : { opacity: 1 }}
           transition={isPlaying ? { duration: 1, repeat: Infinity, ease: 'linear' } : {}}
         >
@@ -605,8 +725,8 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
             onChange={(e) => onFpsChange(parseInt(e.target.value, 10))}
             className={`text-[9px] px-1.5 py-0.5 rounded-full border uppercase font-mono font-semibold cursor-pointer outline-none ml-1 transition-colors ${
               isDark
-                ? 'bg-[#18181C] border-white/15 text-[#A1A1AA] hover:border-[#00FF66] focus:border-[#00FF66]'
-                : 'bg-[#EBEAE5] border-[#D1CFCA] text-[#5E5D59] hover:border-[#E85D2A] focus:border-[#E85D2A]'
+                ? 'bg-[#18181C] border-white/15 text-[#A1A1AA] hover:border-white/30 focus:border-white/40'
+                : 'bg-[#EBEAE5] border-[#D1CFCA] text-[#5E5D59] hover:border-[#1A1A1A] focus:border-[#1A1A1A]'
             }`}
             title="Select target frame rate"
           >
@@ -633,15 +753,14 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
       <div className="flex-1 flex items-center min-w-[100px] max-w-[200px] relative group z-10">
         {/* Glow track backing */}
         <div
-          className={`absolute inset-y-0 left-0 rounded-full transition-all duration-100 ${
-            isDark ? 'bg-[#00FF66]' : 'bg-[#E85D2A]'
-          }`}
+          className="absolute inset-y-0 left-0 rounded-full transition-all duration-100"
           style={{
             width: `${scrubPct}%`,
             top: '50%',
             height: '2px',
             transform: 'translateY(-50%)',
-            boxShadow: isDark ? `0 0 8px #00FF66` : `0 0 8px #E85D2A`,
+            backgroundColor: accent,
+            boxShadow: `0 0 8px ${accent}`,
             opacity: 0.85,
           }}
         />
@@ -686,13 +805,11 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
               onClick={() => onScrubScopeChange(scope)}
               stiffness={5}
               padding={10}
-              className={`px-2 py-0.5 rounded-full font-bold uppercase transition-all cursor-pointer ${
-                scrubScope === scope
-                  ? isDark
-                    ? 'bg-[#00FF66] text-black'
-                    : 'bg-[#E85D2A] text-white'
-                  : 'opacity-60 hover:opacity-100'
-              }`}
+              className="px-2 py-0.5 rounded-full font-bold uppercase transition-all cursor-pointer"
+              style={{
+                backgroundColor: scrubScope === scope ? accent : undefined,
+                color: scrubScope === scope ? (accent === '#FFFFFF' || !isDark ? '#000000' : '#000000') : undefined,
+              }}
             >
               {scope}
             </MagneticButton>
@@ -718,18 +835,31 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
                 animate={isLiveBeat ? { scale: [1, 1.3, 1] } : { scale: 1 }}
                 transition={{ duration: 60 / (bpm || 120), repeat: Infinity, ease: 'easeInOut' }}
               >
-                <Zap className={`w-3 h-3 ${isLiveBeat ? (isDark ? 'text-[#00FF66]' : 'text-[#E85D2A]') : 'opacity-40'}`} />
+                <Zap
+                  className="w-3 h-3"
+                  style={{
+                    color: isLiveBeat ? accent : undefined,
+                    opacity: isLiveBeat ? 1 : 0.4,
+                  }}
+                />
               </motion.span>
               <span>{bpm} BPM</span>
             </>
           ) : (
             <>
-              <GooeyStatusBlob active={serialConnected || isPlaying} isDark={isDark} />
+              <GooeyStatusBlob active={serialConnected || isPlaying} accent={accent} />
               <span>{serialConnected ? `${portName} • ${baudRate}B` : 'OLED SIMULATOR'}</span>
             </>
           )}
         </motion.div>
       </AnimatePresence>
+
+      {/* ── 6. Glow Colorway Quick Switcher (6 Curated Swatches) ────────── */}
+      <GlowPaletteToggle
+        activeColor={glowColor}
+        onSelectColor={handleSelectGlowColor}
+        isDark={isDark}
+      />
     </motion.aside>
   );
 
@@ -740,12 +870,6 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
   return (
     <div className={`fixed bottom-5 left-1/2 -translate-x-1/2 z-40 pointer-events-none flex justify-center ${className}`}>
       <motion.div
-        animate={!isHovered ? { y: [0, -3.5, 0] } : { y: 0 }}
-        transition={
-          !isHovered
-            ? { repeat: Infinity, duration: 3.6, ease: 'easeInOut' }
-            : { duration: 0.25, ease: 'easeOut' }
-        }
         style={{
           x: springFloatX,
           y: springFloatY,
