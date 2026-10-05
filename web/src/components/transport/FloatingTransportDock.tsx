@@ -410,14 +410,14 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
   const scrubVal = mode === 'audio-lyrics' ? (playheadMs || 0) : safeFrame;
   const scrubPct = scrubMax > 0 ? (scrubVal / scrubMax) * 100 : 0;
 
-  // Dynamic Island elastic expansion classes
-  const containerClasses = docked
+  // Dynamic Island inner dock classes
+  const innerClasses = docked
     ? `relative w-full px-4 py-2 rounded-xl border flex items-center justify-between gap-4 select-none font-mono transition-all duration-300 ${
         isDark
           ? 'bg-[#08080A] border-white/10 text-[#FAFAFA]'
           : 'bg-[#F6F6F4] border-[#1A1A1A] text-[#1A1A1A]'
       } ${className}`
-    : `fixed bottom-5 left-1/2 -translate-x-1/2 z-40 rounded-full border flex items-center select-none font-mono backdrop-blur-2xl transition-all duration-300 ${
+    : `pointer-events-auto rounded-full border flex items-center select-none font-mono backdrop-blur-2xl transition-all duration-300 ${
         isPlaying ? 'px-5 py-2.5 gap-3.5' : 'px-4 py-2 gap-3'
       } ${
         isDark
@@ -427,9 +427,9 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
           : isPlaying
           ? 'bg-[#F6F6F4]/98 border-[#E85D2A]/60 text-[#1A1A1A] shadow-[0_16px_38px_rgba(232,93,42,0.18),inset_0_1px_0_rgba(255,255,255,0.95)]'
           : 'bg-[#F6F6F4]/95 border-[#1A1A1A] text-[#1A1A1A] shadow-[0_12px_32px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.95)]'
-      } ${className}`;
+      }`;
 
-  return (
+  const dockContent = (
     <motion.aside
       ref={dockRef as React.RefObject<HTMLElement>}
       layout
@@ -442,7 +442,7 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
         rotateY: springRotateY,
         transformPerspective: 1000,
       }}
-      className={containerClasses}
+      className={innerClasses}
       aria-label="Floating Transport Dock"
     >
       {/* ── Dynamic Island Liquid Glass Specular Light Beam ── */}
@@ -683,5 +683,15 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
         </motion.div>
       </AnimatePresence>
     </motion.aside>
+  );
+
+  if (docked) {
+    return dockContent;
+  }
+
+  return (
+    <div className={`fixed bottom-5 left-1/2 -translate-x-1/2 z-40 pointer-events-none flex justify-center ${className}`}>
+      {dockContent}
+    </div>
   );
 };
