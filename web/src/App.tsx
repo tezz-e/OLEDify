@@ -3,13 +3,13 @@ import { Header } from './components/Header';
 import { DropZone } from './components/DropZone';
 import { TimelineTrack } from './components/TimelineTrack';
 import { OledCanvas } from './components/OledCanvas';
-import { PlaybackBar } from './components/PlaybackBar';
 import { DitherControls } from './components/DitherControls';
 import { CropControls } from './components/CropControls';
 import { DecryptedText } from './components/reactbits/DecryptedText';
 import { CountUp } from './components/reactbits/CountUp';
 import { BlueprintHoverCard } from './components/reactbits/BlueprintHoverCard';
 import { SvgFilterLibrary } from './components/common/SvgFilters';
+import { FloatingTransportDock } from './components/transport/FloatingTransportDock';
 
 // Lazy-loaded heavy studios and modals to speed up initial page reload
 const SettingsModal = React.lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
@@ -1331,7 +1331,7 @@ function MainApp() {
             </h2>
 
             {/* Timeline track — fills remaining space */}
-            <div className="flex-1 min-h-0 overflow-hidden z-[2] relative">
+            <div className="flex-1 min-h-0 overflow-hidden z-[2] relative pb-16">
               <TimelineTrack 
                 clips={clips}
                 assets={assets}
@@ -1354,29 +1354,6 @@ function MainApp() {
                 onSelectClips={setSelectedClipIds}
                 onAssetDrop={handleAddAssetToTimeline}
                 onSplitClip={handleSplitClip}
-                themeMode={themeMode}
-              />
-            </div>
-
-            {/* Playback bar — always at the bottom, never scrolled away */}
-            <div className={`shrink-0 px-6 py-3 border-t z-[2] ${
-              isDark ? 'border-[#2D2344] bg-[#140F24]' : 'border-[#1A1A1A]/20 bg-[#F5F0EB]'
-            }`}>
-              <PlaybackBar 
-                isPlaying={isPlaying}
-                onTogglePlay={() => setIsPlaying(p => !p)}
-                currentFrame={activeFrameIndex}
-                totalFrames={timelineMedia ? timelineMedia.frames.length : 0}
-                targetFps={targetFps}
-                onFpsChange={setTargetFps}
-                onFrameSeek={(f) => {
-                  setIsPlaying(false);
-                  setActiveFrameIndex(f);
-                }}
-                onReset={() => {
-                  setIsPlaying(false);
-                  setActiveFrameIndex(0);
-                }}
                 themeMode={themeMode}
               />
             </div>
@@ -1486,6 +1463,30 @@ function MainApp() {
           />
         </div>
       </React.Suspense>
+
+      {/* Floating Dynamic Island Transport Dock (Option A) */}
+      {activeView === 'editor' && (
+        <FloatingTransportDock
+          isPlaying={isPlaying}
+          onTogglePlay={() => setIsPlaying(p => !p)}
+          currentFrame={activeFrameIndex}
+          totalFrames={timelineMedia ? timelineMedia.frames.length : 0}
+          targetFps={targetFps}
+          onFpsChange={setTargetFps}
+          onFrameSeek={(f) => {
+            setIsPlaying(false);
+            setActiveFrameIndex(f);
+          }}
+          onReset={() => {
+            setIsPlaying(false);
+            setActiveFrameIndex(0);
+          }}
+          docked={false}
+          serialConnected={serialConnected}
+          baudRate={baudRate}
+          themeMode={themeMode}
+        />
+      )}
     </div>
   );
 }
