@@ -5,6 +5,7 @@ import { ClickSpark } from './reactbits/ClickSpark';
 import SpecularButton from './reactbits/SpecularButton';
 import { ThemeToggle } from './reactbits/ThemeToggle';
 import { detectGpu, GpuTelemetry } from '../engine/gpuDetector';
+import { LiquidStudioNav } from './navigation/LiquidStudioNav';
 
 interface HeaderProps {
   serialConnected: boolean;
@@ -47,14 +48,14 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   return (
-    <header className={`relative w-full h-14 px-6 border-b-2 flex items-center justify-between shrink-0 z-20 transition-colors duration-200 ${
-      isDark ? 'bg-[#120E1F] border-[#2D2344] text-[#FAF8FC]' : 'bg-white border-[#1A1A1A] text-[#1A1A1A]'
+    <header className={`relative w-full h-14 px-6 border-b flex items-center justify-between shrink-0 z-20 transition-colors duration-200 ${
+      isDark ? 'bg-[#000000] border-white/10 text-[#FAFAFA]' : 'bg-[#FFFFFF] border-[#1A1A1A] text-[#1A1A1A]'
     }`}>
       <div className="flex items-center">
-        <h1 className={`text-base font-bold tracking-wider font-mono flex items-center gap-1.5 cursor-pointer select-none ${
+        <h1 className={`text-base font-bold tracking-wider font-mono flex items-center gap-2 cursor-pointer select-none ${
           isDark ? 'text-white' : 'text-[#1A1A1A]'
         }`}>
-          <span className={isDark ? 'text-[#00F0FF] drop-shadow-[0_0_8px_#00F0FF]' : 'text-[#E85D2A]'}>▲</span>
+          <span className={isDark ? 'text-[#00FF66] drop-shadow-[0_0_8px_rgba(0,255,102,0.6)]' : 'text-[#E85D2A]'}>▲</span>
           <DecryptedText
             text="OLED_STUDIO"
             speed={35}
@@ -65,36 +66,14 @@ export const Header: React.FC<HeaderProps> = ({
         </h1>
       </div>
 
-      {/* Center View Mode Switcher */}
+      {/* Center View Mode Switcher: Liquid Mercury Gooey Nav */}
       {onViewChange && (
-        <div className={`hidden md:flex items-center border p-0.5 font-mono text-[10px] font-bold ${
-          isDark ? 'border-[#2D2344] bg-[#181328]' : 'border-[#1A1A1A] bg-[#F5F0EB]'
-        }`}>
-          <button
-            onClick={() => onViewChange('editor')}
-            className={`px-3 py-1 transition-all cursor-pointer ${
-              activeView === 'editor'
-                ? isDark
-                  ? 'bg-[#00F0FF] text-black shadow-[2px_2px_0_#FF2A85] font-extrabold'
-                  : 'bg-[#1A1A1A] text-white shadow-sm'
-                : isDark ? 'text-zinc-400 hover:text-white' : 'text-[#6B6B6B] hover:text-[#1A1A1A]'
-            }`}
-          >
-            🎞️ NLE TIMELINE
-          </button>
-          <button
-            onClick={() => onViewChange('lyrics-studio')}
-            className={`px-3 py-1 transition-all cursor-pointer flex items-center gap-1 ${
-              activeView === 'lyrics-studio'
-                ? isDark
-                  ? 'bg-[#FF2A85] text-white shadow-[2px_2px_0_#00F0FF] font-extrabold'
-                  : 'bg-[#E85D2A] text-white shadow-sm'
-                : isDark ? 'text-zinc-400 hover:text-[#FF2A85]' : 'text-[#6B6B6B] hover:text-[#E85D2A]'
-            }`}
-          >
-            <span>✨</span>
-            <span>KINETIC LYRICS STUDIO</span>
-          </button>
+        <div className="hidden md:flex items-center justify-center">
+          <LiquidStudioNav
+            activeView={activeView}
+            onViewChange={onViewChange}
+            themeMode={themeMode}
+          />
         </div>
       )}
       
