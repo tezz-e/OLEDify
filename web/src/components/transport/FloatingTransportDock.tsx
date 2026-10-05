@@ -4,7 +4,12 @@ import { Play, Pause, SkipBack, SkipForward, RotateCcw, Repeat, Zap } from 'luci
 import { HW_SPRINGS } from '../../theme/springPresets';
 import { triggerNativeHaptic } from '../../theme/haptics';
 import { ClickSpark } from '../reactbits/ClickSpark';
-import { DockGlowColor, DOCK_GLOW_PRESETS } from '../../theme/aestheticConfig';
+import {
+  DockGlowColor,
+  DOCK_GLOW_PRESETS,
+  DockGlowGeometry,
+  DOCK_GLOW_GEOMETRIES,
+} from '../../theme/aestheticConfig';
 
 export interface FloatingTransportDockProps {
   // Common & NLE Props
@@ -38,9 +43,11 @@ export interface FloatingTransportDockProps {
   themeMode?: 'light' | 'dark';
   className?: string;
 
-  // Custom Glow Colorway
+  // Custom Glow Colorway & Geometry
   initialGlowColor?: DockGlowColor;
   onGlowColorChange?: (color: DockGlowColor) => void;
+  initialGlowGeometry?: DockGlowGeometry;
+  onGlowGeometryChange?: (geom: DockGlowGeometry) => void;
 }
 
 /**
@@ -307,32 +314,35 @@ function GooeyStatusBlob({ active, accent }: { active: boolean; accent: string }
 }
 
 /**
- * GlowPaletteToggle — Interactive colorway picker for the dock.
- * Shows a compact clickable pill with the 6 color dots.
+ * GlowPaletteToggle — Interactive colorway & geometry picker for the dock.
+ * Combines 6 color dots with a 3-way geometry switch:
+ * ⊙ Radial Orb | ↔ Anamorphic Flare | ⦚ YDSE Slit
  */
 function GlowPaletteToggle({
   activeColor,
   onSelectColor,
+  activeGeometry,
+  onSelectGeometry,
   isDark,
 }: {
   activeColor: DockGlowColor;
   onSelectColor: (c: DockGlowColor) => void;
+  activeGeometry: DockGlowGeometry;
+  onSelectGeometry: (g: DockGlowGeometry) => void;
   isDark: boolean;
 }) {
   const [hoveredColor, setHoveredColor] = useState<DockGlowColor | null>(null);
   const colorKeys = Object.keys(DOCK_GLOW_PRESETS) as DockGlowColor[];
+  const geometryKeys = Object.keys(DOCK_GLOW_GEOMETRIES) as DockGlowGeometry[];
 
   return (
     <div
-      className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-[9px] font-bold tracking-wider shrink-0 z-10 select-none transition-all ${
+      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[9px] font-bold tracking-wider shrink-0 z-10 select-none transition-all ${
         isDark ? 'bg-[#121214] border-white/10' : 'bg-[#E8E6E1] border-[#1A1A1A]'
       }`}
-      title="Dock Glow Colorway (Click to test)"
     >
-      <span className="text-[8px] uppercase opacity-40 mr-1 tracking-widest hidden md:inline">
-        GLOW:
-      </span>
-      <div className="flex items-center gap-1.5">
+      {/* 6 Color Swatches */}
+      <div className="flex items-center gap-1.5" title="Click color swatch to test">
         {colorKeys.map((key) => {
           const preset = DOCK_GLOW_PRESETS[key];
           const isSelected = activeColor === key;
@@ -363,6 +373,35 @@ function GlowPaletteToggle({
                   border: isSelected ? '1px solid #FFFFFF' : 'none',
                 }}
               />
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Divider */}
+      <span className="opacity-20 select-none">|</span>
+
+      {/* Geometry Mode Toggle */}
+      <div className="flex items-center gap-0.5" title="Glow Geometry: Radial vs Slit vs Flare">
+        {geometryKeys.map((gKey) => {
+          const gPreset = DOCK_GLOW_GEOMETRIES[gKey];
+          const isSelected = activeGeometry === gKey;
+          return (
+            <button
+              key={gKey}
+              type="button"
+              onClick={() => onSelectGeometry(gKey)}
+              title={`${gPreset.label}: ${gPreset.description}`}
+              className={`px-1.5 py-0.5 rounded-full text-[8px] uppercase font-mono tracking-tight transition-all cursor-pointer ${
+                isSelected
+                  ? isDark
+                    ? 'bg-white text-black font-extrabold shadow-sm'
+                    : 'bg-[#1A1A1A] text-white font-extrabold shadow-sm'
+                  : 'opacity-50 hover:opacity-100'
+              }`}
+            >
+              <span className="mr-0.5">{gPreset.symbol}</span>
+              <span className="hidden sm:inline">{gKey}</span>
             </button>
           );
         })}
@@ -399,6 +438,8 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
   className = '',
   initialGlowColor = 'green',
   onGlowColorChange,
+  initialGlowGeometry = 'radial',
+  onGlowGeometryChange,
 }) => {
   const isDark = themeMode === 'dark';
 
@@ -421,6 +462,28 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
     }
     if (onGlowColorChange) {
       onGlowColorChange(color);
+    }
+  };
+
+  // Glow Geometry State ('radial' | 'directional' | 'slit')
+  const [glowGeometry, setGlowGeometry] = useState<DockGlowGeometry>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('oled_glow_geometry');
+      if (saved && saved in DOCK_GLOW_GEOMETRIES) {
+        return saved as DockGlowGeometry;
+      }
+    }
+    return initialGlowGeometry || 'radial';
+  });
+
+  const handleSelectGeometry = (geom: DockGlowGeometry) => {
+    triggerNativeHaptic(10);
+    setGlowGeometry(geom);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('oled_glow_geometry', geom);
+    }
+    if (onGlowGeometryChange) {
+      onGlowGeometryChange(geom);
     }
   };
 
@@ -605,33 +668,74 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
         style={{ opacity: localCursor ? 1 : 0 }}
       >
         {/* Specular spotlight following cursor across the acrylic substrate */}
-        <div
-          className="absolute -inset-10"
-          style={{
-            background: localCursor
-              ? `radial-gradient(190px circle at ${localCursor.x + 40}px ${localCursor.y + 40}px, ${
-                  isDark ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.6)'
-                }, ${activeGlowTheme.glow} 50%, transparent 80%)`
-              : 'none',
-          }}
-        />
+        {glowGeometry === 'radial' ? (
+          // Concentrated 2D Circular Radial Orb (Eliminates vertical slit smear)
+          <div
+            className="absolute inset-0"
+            style={{
+              background: localCursor
+                ? `radial-gradient(circle 50px at ${localCursor.x}px ${localCursor.y}px, ${
+                    isDark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.85)'
+                  } 0%, ${activeGlowTheme.glow} 45%, transparent 75%)`
+                : 'none',
+            }}
+          />
+        ) : glowGeometry === 'directional' ? (
+          // Anamorphic horizontal lens streak
+          <div
+            className="absolute inset-0"
+            style={{
+              background: localCursor
+                ? `radial-gradient(ellipse 110px 28px at ${localCursor.x}px ${localCursor.y}px, ${
+                    isDark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.75)'
+                  } 0%, ${activeGlowTheme.glow} 50%, transparent 80%)`
+                : 'none',
+            }}
+          />
+        ) : (
+          // YDSE Slit Curtain Beam
+          <div
+            className="absolute -inset-10"
+            style={{
+              background: localCursor
+                ? `radial-gradient(190px circle at ${localCursor.x + 40}px ${localCursor.y + 40}px, ${
+                    isDark ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.6)'
+                  }, ${activeGlowTheme.glow} 50%, transparent 80%)`
+                : 'none',
+            }}
+          />
+        )}
+
         {/* Top rim specular edge highlight */}
         <div
           className="absolute top-0 inset-x-0 h-[1.5px]"
           style={{
             background: localCursor
-              ? `radial-gradient(160px circle at ${localCursor.x}px 0px, #FFFFFF, ${activeGlowTheme.rim} 40%, transparent 80%)`
+              ? glowGeometry === 'radial'
+                ? `radial-gradient(65px circle at ${localCursor.x}px 0px, #FFFFFF 0%, ${activeGlowTheme.rim} 45%, transparent 75%)`
+                : glowGeometry === 'directional'
+                ? `radial-gradient(110px circle at ${localCursor.x}px 0px, #FFFFFF 0%, ${activeGlowTheme.rim} 45%, transparent 80%)`
+                : `radial-gradient(160px circle at ${localCursor.x}px 0px, #FFFFFF, ${activeGlowTheme.rim} 40%, transparent 80%)`
               : 'none',
           }}
         />
+
         {/* Bottom rim specular bounce highlight */}
         <div
           className="absolute bottom-0 inset-x-0 h-[1px]"
           style={{
             background: localCursor
-              ? `radial-gradient(120px circle at ${localCursor.x}px 100%, ${
-                  isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.06)'
-                }, transparent 75%)`
+              ? glowGeometry === 'radial'
+                ? `radial-gradient(55px circle at ${localCursor.x}px 100%, ${
+                    isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.08)'
+                  } 0%, transparent 70%)`
+                : glowGeometry === 'directional'
+                ? `radial-gradient(90px circle at ${localCursor.x}px 100%, ${
+                    isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.06)'
+                  } 0%, transparent 75%)`
+                : `radial-gradient(120px circle at ${localCursor.x}px 100%, ${
+                    isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.06)'
+                  }, transparent 75%)`
               : 'none',
           }}
         />
@@ -854,10 +958,12 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
         </motion.div>
       </AnimatePresence>
 
-      {/* ── 6. Glow Colorway Quick Switcher (6 Curated Swatches) ────────── */}
+      {/* ── 6. Glow Colorway & Geometry Quick Switcher ────────── */}
       <GlowPaletteToggle
         activeColor={glowColor}
         onSelectColor={handleSelectGlowColor}
+        activeGeometry={glowGeometry}
+        onSelectGeometry={handleSelectGeometry}
         isDark={isDark}
       />
     </motion.aside>

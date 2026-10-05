@@ -129,6 +129,36 @@ export function getActiveTheme(): AestheticThemeTokens {
 
 export type DockGlowColor = 'green' | 'cyan' | 'amber' | 'white' | 'violet' | 'crimson';
 
+export type DockGlowGeometry = 'radial' | 'slit' | 'directional';
+
+export interface DockGlowGeometryPreset {
+  id: DockGlowGeometry;
+  label: string;
+  symbol: string;
+  description: string;
+}
+
+export const DOCK_GLOW_GEOMETRIES: Record<DockGlowGeometry, DockGlowGeometryPreset> = {
+  radial: {
+    id: 'radial',
+    label: 'Radial Orb',
+    symbol: '⊙',
+    description: 'Circular concentrated optical orb directly under cursor'
+  },
+  directional: {
+    id: 'directional',
+    label: 'Anamorphic Flare',
+    symbol: '↔',
+    description: 'Directional horizontal lens streak'
+  },
+  slit: {
+    id: 'slit',
+    label: 'YDSE Slit',
+    symbol: '⦚',
+    description: 'Wide vertical aperture interference beam'
+  }
+};
+
 export interface DockGlowPreset {
   id: DockGlowColor;
   label: string;
