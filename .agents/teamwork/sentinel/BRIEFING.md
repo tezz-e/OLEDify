@@ -5,7 +5,7 @@ Oversee the exploration of 8 open-source UI libraries to design a unified, hyper
 
 ## 🔒 My Identity
 - Archetype: sentinel
-- Working directory: D:\espprojects\oled\.agents\sentinel
+- Working directory: D:\espprojects\oled\.agents\teamwork\sentinel
 - Orchestrator: 403d56ba-7e49-4da7-a462-57b185dbdda3
 - Victory Auditor: 4b012f40-a935-49fe-a452-630f2691091e
 
