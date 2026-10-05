@@ -10,6 +10,8 @@ import { CountUp } from './components/reactbits/CountUp';
 import { BlueprintHoverCard } from './components/reactbits/BlueprintHoverCard';
 import { SvgFilterLibrary } from './components/common/SvgFilters';
 import { FloatingTransportDock } from './components/transport/FloatingTransportDock';
+import { HardwareTelemetryHUD } from './components/transport/HardwareTelemetryHUD';
+import { getActiveTheme } from './theme/aestheticConfig';
 
 // Lazy-loaded heavy studios and modals to speed up initial page reload
 const SettingsModal = React.lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
@@ -735,6 +737,8 @@ function MainApp() {
     }
   };
 
+  const aesthetic = getActiveTheme();
+
   return (
     <div className={`h-screen flex flex-col overflow-hidden relative transition-colors ${isDark ? 'bg-[#000000] text-[#FAFAFA]' : 'bg-[#F6F6F4] text-[#1A1A1A]'}`}>
       <SvgFilterLibrary />
@@ -756,24 +760,18 @@ function MainApp() {
       />
 
       <main className="flex-1 flex flex-col min-h-0 z-10">
-        {/* Top: New 3-Column Preview Section */}
+        {/* Top: 3-Column Preview Section */}
         <section className={`flex-1 flex items-stretch relative min-h-0 border-b transition-colors ${
-          isDark ? 'bg-[#100D1C] border-[#2D2344]' : 'bg-[#F5F0EB] border-[#1A1A1A]/20'
-        }`} style={{
-          backgroundImage: isDark
-            ? `repeating-linear-gradient(0deg, rgba(0, 240, 255, 0.06) 0 1px, transparent 1px 40px),
-               repeating-linear-gradient(90deg, rgba(255, 42, 133, 0.06) 0 1px, transparent 1px 40px)`
-            : `repeating-linear-gradient(0deg, #e0dbd5 0 1px, transparent 1px 40px),
-               repeating-linear-gradient(90deg, #e0dbd5 0 1px, transparent 1px 40px)`
-        }}>
+          aesthetic.sectionBg(isDark)
+        } ${aesthetic.sectionBorder(isDark)}`} style={aesthetic.gridStyle(isDark)}>
           {/* Column 1: Full Preview */}
           <div className={`flex-[2.5] p-2 lg:p-4 flex flex-col items-center justify-start relative border-r min-w-0 h-full transition-colors ${
-            isDark ? 'border-[#2D2344]' : 'border-[#1A1A1A]/20'
+            aesthetic.sectionBorder(isDark)
           }`}>
             <div className="w-full flex flex-col items-center justify-start h-full min-h-0">
               <div className="mb-1.5 shrink-0 text-center w-full">
-                <h3 className={`font-mono font-bold text-xs tracking-wider ${isDark ? 'text-[#00F0FF]' : 'text-[#1A1A1A]'}`}>FULL PREVIEW</h3>
-                <p className={`font-mono text-[10px] ${isDark ? 'text-[#7E7694]' : 'text-[#6B6B6B]'}`}>See the full video/animation here at normal scale</p>
+                <h3 className={`font-mono font-bold text-xs tracking-wider ${aesthetic.accentTitle(isDark)}`}>FULL PREVIEW</h3>
+                <p className={`font-mono text-[10px] ${aesthetic.accentSub(isDark)}`}>See the full video/animation here at normal scale</p>
               </div>
               
               <div className="flex-1 w-full relative min-h-0">
@@ -790,11 +788,9 @@ function MainApp() {
                       style={{ objectFit: 'contain' }}
                     />
 
-                    {/* Actual Black Container Box overlaying the exact expanded bounds */}
+                    {/* Actual Container Box overlaying the exact expanded bounds */}
                     <div className={`absolute inset-0 border-2 rounded-md flex flex-col justify-between p-2 overflow-hidden transition-all ${
-                      isDark 
-                        ? 'bg-[#0A0713] border-[#00F0FF]/60 shadow-[4px_4px_0_0_#FF2A85]' 
-                        : 'bg-[#080808] border-[#1A1A1A] shadow-[4px_4px_0_0_#1A1A1A]'
+                      aesthetic.previewBox(isDark)
                     }`}>
                       {/* Media Display Area */}
                       <div className="flex-1 w-full min-h-0 relative flex items-center justify-center overflow-hidden">
@@ -805,8 +801,8 @@ function MainApp() {
                             style={{ imageRendering: 'pixelated' }}
                           />
                         ) : (
-                          <div className={`flex items-center justify-center w-full h-full ${isDark ? 'bg-[#0E0A1A]' : 'bg-[#111]'}`}>
-                            <span className={`font-mono text-xs ${isDark ? 'text-[#7E7694]' : 'text-[#6B6B6B]'}`}>NO MEDIA</span>
+                          <div className={`flex items-center justify-center w-full h-full ${isDark ? 'bg-[#0A0A0C]' : 'bg-[#111]'}`}>
+                            <span className={`font-mono text-xs ${aesthetic.accentSub(isDark)}`}>NO MEDIA</span>
                           </div>
                         )}
                       </div>
@@ -814,7 +810,7 @@ function MainApp() {
                       {/* Playback Control Bar */}
                       <div className={`h-7 flex items-center px-2 gap-2 rounded border shrink-0 mt-1 z-10 transition-colors ${
                         isDark 
-                          ? 'bg-[#140F24]/90 backdrop-blur border-[#2D2344] text-[#F1EEF8]' 
+                          ? 'bg-[#121214]/90 backdrop-blur border-white/10 text-[#FAFAFA]' 
                           : 'bg-[#111]/90 backdrop-blur border-white/10 text-white'
                       }`}>
                         <button 
@@ -824,18 +820,18 @@ function MainApp() {
                             setIsPlaying(p => !p);
                           }} 
                           className={`text-xs font-bold transition-colors cursor-pointer px-1 py-1 ${
-                            isDark ? 'text-[#00F0FF] hover:text-[#E2FF00]' : 'text-[#E85D2A] hover:text-white'
+                            isDark ? 'text-[#00FF66] hover:text-white' : 'text-[#E85D2A] hover:text-white'
                           }`}
                         >
                           {isPlaying ? '❚❚' : '▶'}
                         </button>
-                        <div className={`text-[9px] font-mono whitespace-nowrap ${isDark ? 'text-[#00F0FF]/90' : 'opacity-70'}`}>
+                        <div className={`text-[9px] font-mono whitespace-nowrap ${isDark ? 'text-[#00FF66]/90' : 'opacity-70'}`}>
                           {(activeFrameIndex / targetFps).toFixed(2)}s
                         </div>
                         <div className={`flex-1 h-1 rounded-full relative min-w-[30px] ${isDark ? 'bg-white/10' : 'bg-white/20'}`}>
                           <div 
                             className={`absolute inset-y-0 left-0 rounded-full ${
-                              isDark ? 'bg-[#00F0FF] shadow-[0_0_6px_#00F0FF]' : 'bg-[#E85D2A]'
+                              isDark ? 'bg-[#00FF66] shadow-[0_0_6px_#00FF66]' : 'bg-[#E85D2A]'
                             }`} 
                             style={{ width: media && media.frames.length ? `${(activeFrameIndex / media.frames.length) * 100}%` : '0%' }}
                           />
@@ -848,7 +844,7 @@ function MainApp() {
                           }} 
                           className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded transition-colors cursor-pointer uppercase tracking-wider ${
                             isDark 
-                              ? 'bg-[#1E1635] border border-[#2D2344] text-[#00F0FF] hover:bg-[#00F0FF] hover:text-[#100D1C]' 
+                              ? 'bg-white/10 border border-white/10 text-[#FAFAFA] hover:bg-[#00FF66] hover:text-black' 
                               : 'bg-white/10 hover:bg-[#E85D2A] text-white'
                           }`}
                           title="Toggle FIT (contain full frame) vs FILL (zoom to fill box)"
@@ -856,7 +852,7 @@ function MainApp() {
                           {previewFitMode === 'cover' ? 'FILL' : 'FIT'}
                         </button>
                         <div className={`text-[9px] font-mono whitespace-nowrap font-bold ${
-                          isDark ? 'text-[#E2FF00]' : 'text-[#E85D2A]'
+                          isDark ? 'text-[#00FF66]' : 'text-[#E85D2A]'
                         }`}>{targetFps} FPS</div>
                       </div>
                     </div>
@@ -871,24 +867,24 @@ function MainApp() {
           {/* Column 2: True OLED Preview */}
           <div className="flex-1 p-3 flex flex-col items-center justify-center relative min-w-0">
             <div className="text-center mb-2 shrink-0">
-              <h3 className={`font-mono font-bold text-xs tracking-wider ${isDark ? 'text-[#00F0FF]' : 'text-[#1A1A1A]'}`}>TRUE OLED PREVIEW (128 × 64)</h3>
-              <p className={`font-mono text-[10px] ${isDark ? 'text-[#7E7694]' : 'text-[#6B6B6B]'}`}>Exact physical scale • 1:1 pixels</p>
+              <h3 className={`font-mono font-bold text-xs tracking-wider ${aesthetic.accentTitle(isDark)}`}>TRUE OLED PREVIEW (128 × 64)</h3>
+              <p className={`font-mono text-[10px] ${aesthetic.accentSub(isDark)}`}>Exact physical scale • 1:1 pixels</p>
             </div>
 
             <div className="relative flex items-center justify-center w-full max-h-full flex-1 min-h-0 gap-3">
               {/* Hardware Bezel */}
               <div className={`rounded-xl p-3 border relative z-10 shrink-0 max-w-full max-h-full flex flex-col justify-center transition-all ${
                 isDark 
-                  ? 'bg-[#161226] border-[#2D2344] shadow-[0_10px_35px_rgba(0,240,255,0.12),inset_0_2px_1px_rgba(255,255,255,0.1),inset_0_-2px_1px_rgba(0,0,0,0.5)]' 
+                  ? 'bg-[#111114] border-white/15 shadow-[0_12px_40px_rgba(0,0,0,0.9),inset_0_1px_1px_rgba(255,255,255,0.12),inset_0_-2px_2px_rgba(0,0,0,0.8)]' 
                   : 'bg-[#2A2A2A] border-[#111] shadow-[0_10px_30px_rgba(0,0,0,0.5),inset_0_2px_1px_rgba(255,255,255,0.1),inset_0_-2px_1px_rgba(0,0,0,0.5)]'
               }`}>
                 {/* Screws */}
-                <div className="absolute top-2 left-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-45"><div className="w-full h-[1px] bg-[#333]" /></div>
-                <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-12"><div className="w-full h-[1px] bg-[#333]" /></div>
-                <div className="absolute bottom-2 left-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center -rotate-12"><div className="w-full h-[1px] bg-[#333]" /></div>
-                <div className="absolute bottom-2 right-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-90"><div className="w-full h-[1px] bg-[#333]" /></div>
+                <div className="absolute top-2 left-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-45"><div className="w-full h-[1px] bg-[#444]" /></div>
+                <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-12"><div className="w-full h-[1px] bg-[#444]" /></div>
+                <div className="absolute bottom-2 left-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center -rotate-12"><div className="w-full h-[1px] bg-[#444]" /></div>
+                <div className="absolute bottom-2 right-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-90"><div className="w-full h-[1px] bg-[#444]" /></div>
                 
-                <div className={`font-mono text-[8px] text-center mb-1 ${isDark ? 'text-[#7E7694]' : 'text-[#555]'}`}>SSD1306 128x64</div>
+                <div className={`font-mono text-[8px] text-center mb-1 ${aesthetic.accentSub(isDark)}`}>SSD1306 128x64</div>
                 
                 <div className="bg-[#000] p-1 shadow-[inset_0_0_10px_#000] rounded shrink flex items-center justify-center">
                   <div className="pointer-events-auto w-[128px]">
@@ -896,96 +892,115 @@ function MainApp() {
                   </div>
                 </div>
 
-                <div className={`font-mono text-[8px] text-center mt-1 ${isDark ? 'text-[#7E7694]' : 'text-[#555]'}`}>I²C 0x3C</div>
+                <div className={`font-mono text-[8px] text-center mt-1 ${aesthetic.accentSub(isDark)}`}>I²C 0x3C</div>
               </div>
 
-              {/* Decorative Sticky Note (Right) */}
-              <div className="hidden xl:block shrink-0">
-                <div className={`p-2.5 font-mono text-[9px] w-32 rotate-2 transition-all ${
-                  isDark 
-                    ? 'bg-[#1E1735] text-[#00F0FF] border border-[#00F0FF]/40 shadow-[3px_3px_0_#FF2A85]' 
-                    : 'bg-[#FFD485] text-[#1A1A1A] shadow-lg'
-                }`}>
-                  <div className="flex justify-between items-start mb-1">
-                    <div className={`w-2 h-2 rounded-full ${isDark ? 'bg-[#FF2A85]' : 'bg-[#1A1A1A]/20'}`} />
-                    <span>💡</span>
+              {/* Sticky Note / Technical Calibration Badge */}
+              {aesthetic.showStickyNote ? (
+                <div className="hidden xl:block shrink-0">
+                  <div className={`p-2.5 font-mono text-[9px] w-32 rotate-2 transition-all ${aesthetic.stickyNote(isDark)}`}>
+                    <div className="flex justify-between items-start mb-1">
+                      <div className={`w-2 h-2 rounded-full ${isDark ? 'bg-[#FF2A85]' : 'bg-[#1A1A1A]/20'}`} />
+                      <span>💡</span>
+                    </div>
+                    OLED output shows 1:1 true scale.
                   </div>
-                  OLED output shows 1:1 true scale.
                 </div>
-              </div>
+              ) : (
+                <div className="hidden xl:block shrink-0">
+                  <div className={`p-2.5 font-mono text-[8px] tracking-wider uppercase border rounded backdrop-blur-xl ${
+                    isDark ? 'bg-[#0E0E10]/90 border-white/10 text-[#71717A]' : 'bg-[#EAE8E3]/90 border-[#1A1A1A]/20 text-[#5E5D59]'
+                  }`}>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#00FF66] shadow-[0_0_6px_#00FF66]" />
+                      <span className="font-bold text-white">SCALE 1:1</span>
+                    </div>
+                    <span>0.96" OLED MONO</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Column 3: Display Info */}
-          <div className={`w-[180px] shrink-0 p-4 border-l flex flex-col justify-start overflow-y-auto transition-colors ${
-            isDark ? 'border-[#2D2344]' : 'border-[#1A1A1A]/20'
+          {/* Column 3: Hardware Telemetry HUD / Display Info */}
+          <div className={`w-[210px] shrink-0 p-3 border-l flex flex-col justify-start overflow-y-auto transition-colors ${
+            aesthetic.sectionBorder(isDark)
           }`}>
-            <div className={`border-2 p-3 font-mono text-xs flex flex-col gap-4 mb-auto transition-all ${
-              isDark 
-                ? 'bg-[#161126] border-[#2D2344] shadow-[3px_3px_0_0_#FF2A85] text-[#F1EEF8]' 
-                : 'bg-white border-[#1A1A1A] shadow-[3px_3px_0_0_#1A1A1A] text-[#1A1A1A]'
-            }`}>
-              
-              <div>
-                <div className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider mb-2 flex justify-between items-center ${
-                  isDark ? 'bg-[#1E1635] text-[#00F0FF]' : 'bg-[#1A1A1A] text-white'
-                }`}>
-                  <span>DISPLAY INFO</span>
-                  <span className={`w-1.5 h-1.5 rounded-full ${isDark ? 'bg-[#E2FF00]' : 'bg-[#E85D2A]'}`}></span>
+            {aesthetic.id === 'hardware' ? (
+              <HardwareTelemetryHUD
+                mcu="ESP32-S3"
+                displayDriver="SSD1306"
+                baudRate={baudRate}
+                fps={targetFps}
+                currentFrame={activeFrameIndex}
+                totalFrames={media ? media.frames.length : 0}
+                isConnected={serialConnected}
+                themeMode={themeMode}
+              />
+            ) : (
+              <div className={`border-2 p-3 font-mono text-xs flex flex-col gap-4 mb-auto transition-all ${
+                isDark 
+                  ? 'bg-[#161126] border-[#2D2344] shadow-[3px_3px_0_0_#FF2A85] text-[#F1EEF8]' 
+                  : 'bg-white border-[#1A1A1A] shadow-[3px_3px_0_0_#1A1A1A] text-[#1A1A1A]'
+              }`}>
+                <div>
+                  <div className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider mb-2 flex justify-between items-center ${
+                    isDark ? 'bg-[#1E1635] text-[#00F0FF]' : 'bg-[#1A1A1A] text-white'
+                  }`}>
+                    <span>DISPLAY INFO</span>
+                    <span className={`w-1.5 h-1.5 rounded-full ${isDark ? 'bg-[#E2FF00]' : 'bg-[#E85D2A]'}`}></span>
+                  </div>
+                  <div className={`flex flex-col gap-0.5 text-[11px] ${isDark ? 'text-[#A59CB8]' : 'text-[#6B6B6B]'}`}>
+                    <div>128 × 64</div>
+                    <div>1-BIT (MONO)</div>
+                    <div>I²C 0x3C</div>
+                    <div>{targetFps} FPS</div>
+                  </div>
                 </div>
-                <div className={`flex flex-col gap-0.5 text-[11px] ${isDark ? 'text-[#A59CB8]' : 'text-[#6B6B6B]'}`}>
-                  <div>128 × 64</div>
-                  <div>1-BIT (MONO)</div>
-                  <div>I²C 0x3C</div>
-                  <div>{targetFps} FPS</div>
+
+                <div className={`h-px ${isDark ? 'bg-[#2D2344]' : 'bg-[#1A1A1A]/20'}`} />
+
+                <div>
+                  <div className={`text-[9px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-[#F1EEF8]' : 'text-[#1A1A1A]'}`}>CURRENT FRAME</div>
+                  <div className={`text-[11px] ${isDark ? 'text-[#A59CB8]' : 'text-[#6B6B6B]'}`}>
+                    {activeFrameIndex.toString().padStart(3, '0')} / {media ? media.frames.length.toString().padStart(3, '0') : '000'}
+                  </div>
+                  <div className={`text-[11px] ${isDark ? 'text-[#A59CB8]' : 'text-[#6B6B6B]'}`}>
+                    {(activeFrameIndex / targetFps).toFixed(2)}s
+                  </div>
+                </div>
+
+                <div className={`h-px ${isDark ? 'bg-[#2D2344]' : 'bg-[#1A1A1A]/20'}`} />
+
+                <div>
+                  <div className={`text-[9px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-[#F1EEF8]' : 'text-[#1A1A1A]'}`}>OUTPUT SIZE</div>
+                  <div className={`text-[11px] ${isDark ? 'text-[#A59CB8]' : 'text-[#6B6B6B]'}`}>1024 bytes/frame</div>
                 </div>
               </div>
-
-              <div className={`h-px ${isDark ? 'bg-[#2D2344]' : 'bg-[#1A1A1A]/20'}`} />
-
-              <div>
-                <div className={`text-[9px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-[#F1EEF8]' : 'text-[#1A1A1A]'}`}>CURRENT FRAME</div>
-                <div className={`text-[11px] ${isDark ? 'text-[#A59CB8]' : 'text-[#6B6B6B]'}`}>
-                  {activeFrameIndex.toString().padStart(3, '0')} / {media ? media.frames.length.toString().padStart(3, '0') : '000'}
-                </div>
-                <div className={`text-[11px] ${isDark ? 'text-[#A59CB8]' : 'text-[#6B6B6B]'}`}>
-                  {(activeFrameIndex / targetFps).toFixed(2)}s
-                </div>
-              </div>
-
-              <div className={`h-px ${isDark ? 'bg-[#2D2344]' : 'bg-[#1A1A1A]/20'}`} />
-
-              <div>
-                <div className={`text-[9px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-[#F1EEF8]' : 'text-[#1A1A1A]'}`}>OUTPUT SIZE</div>
-                <div className={`text-[11px] ${isDark ? 'text-[#A59CB8]' : 'text-[#6B6B6B]'}`}>1024 bytes/frame</div>
-              </div>
-
-            </div>
+            )}
           </div>
         </section>
 
         {/* Bottom Console — Technical Control Panel */}
         <aside className={`h-[340px] shrink-0 flex z-20 p-4 gap-4 relative border-t-2 transition-colors ${
-          isDark ? 'bg-[#100D1C] border-[#2D2344]' : 'bg-white border-[#1A1A1A]'
-        }`}>
+          aesthetic.sectionBg(isDark)
+        } ${aesthetic.sectionBorder(isDark)}`}>
           
           {/* Zone 1: Media Pool (Left) */}
           <BlueprintHoverCard className="w-[280px] shrink-0 min-w-0" themeMode={themeMode}>
             <h2 className={`text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-3 border-b-2 font-mono z-[2] relative flex items-center gap-2 ${
-              isDark ? 'bg-[#140F24] border-[#2D2344] text-[#A59CB8]' : 'bg-transparent border-[#1A1A1A] text-[#6B6B6B]'
+              aesthetic.panelHeader(isDark)
             }`}>
-              <span className={`w-2 h-2 ${isDark ? 'bg-[#00F0FF]' : 'bg-[#E85D2A]'}`}></span>
-              <span className={isDark ? 'text-[#00F0FF]' : 'text-[#1A1A1A]'}>MEDIA_POOL</span>
+              <span className={`w-2 h-2 rounded-full ${aesthetic.signalDot(isDark)}`}></span>
+              <span className={aesthetic.accentTitle(isDark)}>MEDIA_POOL</span>
             </h2>
             
             {/* Tabs */}
-            <div className={`flex border-b shrink-0 ${isDark ? 'border-[#2D2344] bg-[#140F24]' : 'border-[#1A1A1A]/20 bg-[#F5F0EB]'}`}>
+            <div className={`flex border-b shrink-0 ${isDark ? 'border-white/10 bg-[#0E0E10]' : 'border-[#1A1A1A]/20 bg-[#F5F0EB]'}`}>
               <button 
                 onClick={() => setMediaPoolTab('import')}
                 className={`flex-1 py-2 text-[9px] font-bold font-mono tracking-widest cursor-pointer transition-colors ${
-                  mediaPoolTab === 'import' 
-                    ? (isDark ? 'text-[#00F0FF] border-b-2 border-[#00F0FF] bg-[#1A142C]' : 'text-[#1A1A1A] border-b-2 border-[#E85D2A] bg-white') 
-                    : (isDark ? 'text-[#7E7694] hover:text-[#00F0FF]' : 'text-[#6B6B6B] hover:text-[#1A1A1A]')
+                  mediaPoolTab === 'import' ? aesthetic.tabActive(isDark) : aesthetic.tabInactive(isDark)
                 }`}
               >
                 + IMPORT
@@ -993,9 +1008,7 @@ function MainApp() {
               <button 
                 onClick={() => setMediaPoolTab('samples')}
                 className={`flex-1 py-2 text-[9px] font-bold font-mono tracking-widest cursor-pointer transition-colors ${
-                  mediaPoolTab === 'samples' 
-                    ? (isDark ? 'text-[#00F0FF] border-b-2 border-[#00F0FF] bg-[#1A142C]' : 'text-[#1A1A1A] border-b-2 border-[#E85D2A] bg-white') 
-                    : (isDark ? 'text-[#7E7694] hover:text-[#00F0FF]' : 'text-[#6B6B6B] hover:text-[#1A1A1A]')
+                  mediaPoolTab === 'samples' ? aesthetic.tabActive(isDark) : aesthetic.tabInactive(isDark)
                 }`}
               >
                 SAMPLES
@@ -1003,9 +1016,7 @@ function MainApp() {
               <button 
                 onClick={() => setMediaPoolTab('recent')}
                 className={`flex-1 py-2 text-[9px] font-bold font-mono tracking-widest cursor-pointer transition-colors ${
-                  mediaPoolTab === 'recent' 
-                    ? (isDark ? 'text-[#00F0FF] border-b-2 border-[#00F0FF] bg-[#1A142C]' : 'text-[#1A1A1A] border-b-2 border-[#E85D2A] bg-white') 
-                    : (isDark ? 'text-[#7E7694] hover:text-[#00F0FF]' : 'text-[#6B6B6B] hover:text-[#1A1A1A]')
+                  mediaPoolTab === 'recent' ? aesthetic.tabActive(isDark) : aesthetic.tabInactive(isDark)
                 }`}
               >
                 RECENT
@@ -1013,9 +1024,7 @@ function MainApp() {
               <button 
                 onClick={() => setMediaPoolTab('create')}
                 className={`flex-1 py-2 text-[9px] font-bold font-mono tracking-widest cursor-pointer transition-colors ${
-                  mediaPoolTab === 'create' 
-                    ? (isDark ? 'text-[#FF2A85] border-b-2 border-[#FF2A85] bg-[#1A142C]' : 'text-[#1A1A1A] border-b-2 border-[#E85D2A] bg-white') 
-                    : (isDark ? 'text-[#FF2A85]/80 hover:text-[#FF2A85]' : 'text-[#e85d2a] hover:text-[#1A1A1A]')
+                  mediaPoolTab === 'create' ? aesthetic.tabActive(isDark) : aesthetic.tabInactive(isDark)
                 }`}
               >
                 ✨ CREATE
@@ -1321,13 +1330,13 @@ function MainApp() {
           {/* Zone 2: Timeline & Trimming (Center) */}
           <BlueprintHoverCard className="flex-1 min-w-0 flex flex-col overflow-hidden" themeMode={themeMode}>
             <h2 className={`text-[10px] font-bold uppercase tracking-[0.2em] px-6 py-3 border-b-2 font-mono z-[2] relative flex justify-between items-center shrink-0 ${
-              isDark ? 'bg-[#140F24] border-[#2D2344] text-[#A59CB8]' : 'bg-[#F5F0EB] border-[#1A1A1A] text-[#6B6B6B]'
+              aesthetic.panelHeader(isDark)
             }`}>
               <div className="flex items-center gap-2">
-                <span className={`w-2 h-2 ${isDark ? 'bg-[#00F0FF]' : 'bg-[#E85D2A]'}`}></span>
-                <span className={isDark ? 'text-[#00F0FF]' : 'text-[#1A1A1A]'}>TIMELINE</span>
+                <span className={`w-2 h-2 rounded-full ${aesthetic.signalDot(isDark)}`}></span>
+                <span className={aesthetic.accentTitle(isDark)}>TIMELINE</span>
               </div>
-              {media && <span className={isDark ? 'text-[#A59CB8]' : ''}>{media.frames.length} FRAMES | {targetFps} FPS</span>}
+              {media && <span className={aesthetic.accentSub(isDark)}>{media.frames.length} FRAMES | {targetFps} FPS</span>}
             </h2>
 
             {/* Timeline track — fills remaining space */}
@@ -1362,8 +1371,10 @@ function MainApp() {
           {/* Zone 3: Inspector (Right) */}
           <BlueprintHoverCard className="w-[340px] shrink-0 min-w-0" themeMode={themeMode}>
             <h2 className={`text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-3 border-b-2 font-mono z-[2] relative ${
-              isDark ? 'text-[#00F0FF] border-[#2D2344] bg-[#140F24]' : 'text-[#E85D2A] border-[#1A1A1A]'
-            }`}>INSPECTOR</h2>
+              aesthetic.panelHeader(isDark)
+            }`}>
+              <span className={aesthetic.accentTitle(isDark)}>INSPECTOR</span>
+            </h2>
             <div className="flex-1 overflow-y-auto pr-4 px-4 py-4 space-y-6 z-[2] relative">
               <div>
                 <DitherControls 
@@ -1373,7 +1384,7 @@ function MainApp() {
                   themeMode={themeMode}
                 />
               </div>
-              <div className={`border-t pt-4 ${isDark ? 'border-[#2D2344]' : 'border-[#1A1A1A]'}`}>
+              <div className={`border-t pt-4 ${aesthetic.sectionBorder(isDark)}`}>
                 <CropControls 
                   settings={cropSettings} 
                   onChange={(newSettings) => {
