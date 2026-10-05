@@ -11,23 +11,26 @@ export const SvgFilterLibrary: React.FC = () => {
       aria-hidden="true"
     >
       <defs>
-        {/* Skiper UI Liquid Mercury Gooey Filter */}
+        {/* Skiper UI Liquid Mercury Gooey Filter
+            σ=8 → blur radius. feColorMatrix amplifies α by 19 and offsets by -9,
+            creating a hard threshold at α=9/19≈0.474. Overlapping blobs whose
+            combined α exceeds this boundary merge into one opaque liquid shape.
+            NO feComposite atop — that would composite the original sharp source
+            OVER the goo, making the liquid bridge invisible. */}
         <filter
           id="hw-mercury-goo"
-          x="-25%"
-          y="-25%"
-          width="150%"
-          height="150%"
+          x="-30%"
+          y="-30%"
+          width="160%"
+          height="160%"
           colorInterpolationFilters="sRGB"
         >
-          <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur" />
+          <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
           <feColorMatrix
             in="blur"
             mode="matrix"
             values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9"
-            result="goo"
           />
-          <feComposite in="SourceGraphic" in2="goo" operator="atop" />
         </filter>
 
         {/* OLED 1-Bit Phosphor Bloom Filter */}
