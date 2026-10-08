@@ -11,7 +11,7 @@ interface BlueprintHoverCardProps {
 export const BlueprintHoverCard: React.FC<BlueprintHoverCardProps> = ({ 
   children, 
   className = "",
-  glowColor = "rgba(26, 26, 26, 0.3)",
+  glowColor = "rgba(255, 85, 0, 0.12)",
   themeMode = 'light'
 }) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -22,24 +22,30 @@ export const BlueprintHoverCard: React.FC<BlueprintHoverCardProps> = ({
   const rotateY = useSpring(useMotionValue(0), springConfig);
   const scale = useSpring(1, springConfig);
 
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!ref.current) return;
     const rect = ref.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const mouseX = e.clientX - centerX;
-    const mouseY = e.clientY - centerY;
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
     
-    // Subtle tilt: max 3 degrees
-    rotateX.set((mouseY / (rect.height / 2)) * -3);
-    rotateY.set((mouseX / (rect.width / 2)) * 3);
+    setMousePos({ x: mouseX, y: mouseY });
+
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const relX = mouseX - centerX;
+    const relY = mouseY - centerY;
+    
+    // Subtle tilt: max 2 degrees for refined high-end feel
+    rotateX.set((relY / centerY) * -2);
+    rotateY.set((relX / centerX) * 2);
   };
 
   const handleMouseEnter = () => {
     setIsHovered(true);
-    scale.set(1.015);
+    scale.set(1.008);
   };
 
   const handleMouseLeave = () => {
@@ -55,14 +61,14 @@ export const BlueprintHoverCard: React.FC<BlueprintHoverCardProps> = ({
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className={`relative border will-change-transform transition-all duration-200 ${
+      className={`relative border will-change-transform overflow-hidden transition-all duration-300 ${
         isDark
           ? isHovered
-            ? 'shadow-[0_12px_32px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.15)] border-white/20 bg-[#0D0D10]'
-            : 'shadow-[0_4px_16px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.06)] border-white/10 bg-[#08080A]'
+            ? 'shadow-[0_16px_40px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.2)] border-white/25 bg-[#0C0C10]/80 backdrop-blur-2xl'
+            : 'shadow-[0_8px_24px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.1)] border-white/12 bg-[#0A0A0E]/70 backdrop-blur-xl'
           : isHovered
-          ? 'shadow-[0_20px_40px_-15px_rgba(26,26,26,0.5)] border-[#1A1A1A] bg-[#E0DBD5]'
-          : 'shadow-none border-[#1A1A1A] bg-[#F5F0EB]'
+          ? 'shadow-[0_20px_40px_-15px_rgba(26,26,26,0.35)] border-[#1A1A1A] bg-[#EAE7E1]'
+          : 'shadow-none border-[#1A1A1A]/30 bg-[#F5F0EB]'
       } ${className}`}
       style={{
         rotateX,
@@ -71,11 +77,28 @@ export const BlueprintHoverCard: React.FC<BlueprintHoverCardProps> = ({
         transformPerspective: 1200,
       }}
     >
-      {/* Corner Technical Registration Marks */}
-      <div className={`absolute -top-1 -left-1 text-[8px] font-mono select-none pointer-events-none transition-colors ${isDark ? 'text-[#00FF66]/50' : 'text-[#1A1A1A]/30'}`}>+</div>
-      <div className={`absolute -top-1 -right-1 text-[8px] font-mono select-none pointer-events-none transition-colors ${isDark ? 'text-[#00FF66]/50' : 'text-[#1A1A1A]/30'}`}>+</div>
-      <div className={`absolute -bottom-1 -left-1 text-[8px] font-mono select-none pointer-events-none transition-colors ${isDark ? 'text-[#00FF66]/50' : 'text-[#1A1A1A]/30'}`}>+</div>
-      <div className={`absolute -bottom-1 -right-1 text-[8px] font-mono select-none pointer-events-none transition-colors ${isDark ? 'text-[#00FF66]/50' : 'text-[#1A1A1A]/30'}`}>+</div>
+      {/* Dynamic Cursor Spotlight Layer (React Bits / 21st.dev) */}
+      {isHovered && (
+        <div
+          className="pointer-events-none absolute inset-0 z-0 transition-opacity duration-300"
+          style={{
+            background: isDark
+              ? `radial-gradient(350px circle at ${mousePos.x}px ${mousePos.y}px, rgba(255, 85, 0, 0.14), transparent 80%)`
+              : `radial-gradient(350px circle at ${mousePos.x}px ${mousePos.y}px, rgba(232, 93, 42, 0.1), transparent 80%)`,
+          }}
+        />
+      )}
+
+      {/* Top Specular Edge Highlight (Apple Liquid Glass) */}
+      <div className={`pointer-events-none absolute top-0 left-0 right-0 h-[1px] z-10 ${
+        isDark ? 'bg-gradient-to-r from-transparent via-white/30 to-transparent' : 'bg-gradient-to-r from-transparent via-white/80 to-transparent'
+      }`} />
+
+      {/* Corner Technical Precision Marks (Teenage Engineering) */}
+      <div className={`absolute top-1 left-1.5 text-[8px] font-mono select-none pointer-events-none z-10 transition-colors ${isDark ? 'text-white/20' : 'text-[#1A1A1A]/30'}`}>+</div>
+      <div className={`absolute top-1 right-1.5 text-[8px] font-mono select-none pointer-events-none z-10 transition-colors ${isDark ? 'text-white/20' : 'text-[#1A1A1A]/30'}`}>+</div>
+      <div className={`absolute bottom-1 left-1.5 text-[8px] font-mono select-none pointer-events-none z-10 transition-colors ${isDark ? 'text-white/20' : 'text-[#1A1A1A]/30'}`}>+</div>
+      <div className={`absolute bottom-1 right-1.5 text-[8px] font-mono select-none pointer-events-none z-10 transition-colors ${isDark ? 'text-white/20' : 'text-[#1A1A1A]/30'}`}>+</div>
 
       <div className="relative z-10 w-full h-full bg-transparent flex flex-col">
         {children}

@@ -316,14 +316,14 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
       }`}>
         <div className="flex items-center gap-2">
           <span className={`text-[9px] font-mono font-bold tracking-widest uppercase ${
-            isDark ? 'text-[#00FF66]' : 'text-[#1A1A1A]'
+            isDark ? 'text-[#FAFAFA]' : 'text-[#1A1A1A]'
           }`}>
             {totalActiveFrames} frames ({clips.length} clips)
           </span>
           {selectedClipIds.length > 0 && (
             <span className={`text-[8px] font-mono font-bold px-1.5 py-0.5 tracking-wider uppercase ${
               isDark 
-                ? 'bg-[#00FF66] text-[#000000] border-none' 
+                ? 'bg-[#FF5500] text-white border-none shadow-[0_0_8px_rgba(255,85,0,0.4)]' 
                 : 'bg-[#E85D2A] text-white border border-[#1A1A1A] shadow-[1px_1px_0_0_#1A1A1A]'
             }`}>
               SELECTED: {selectedClipIds.length} CLIP{selectedClipIds.length > 1 ? 'S' : ''}
@@ -418,8 +418,8 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
                 width: 0, height: 0,
                 borderLeft: '5px solid transparent',
                 borderRight: '5px solid transparent',
-                borderTop: `${RULER_H}px solid ${isDark ? '#00FF66' : '#E85D2A'}`,
-                filter: isDark ? 'drop-shadow(0 0 5px #00FF66)' : undefined,
+                borderTop: `${RULER_H}px solid ${isDark ? '#FF5500' : '#E85D2A'}`,
+                filter: isDark ? 'drop-shadow(0 0 5px rgba(255,85,0,0.8))' : undefined,
               }} />
             </div>
           </div>
@@ -489,8 +489,8 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
               left: playheadPx,
               width: isDark ? 2 : 1,
               height: '100%',
-              background: isDark ? '#00FF66' : '#E85D2A',
-              boxShadow: isDark ? '0 0 10px #00FF66, 0 0 2px #FFFFFF' : '0 0 4px rgba(232,93,42,0.5)',
+              background: isDark ? '#FF5500' : '#E85D2A',
+              boxShadow: isDark ? '0 0 10px rgba(255,85,0,0.8), 0 0 2px #FFFFFF' : '0 0 4px rgba(232,93,42,0.5)',
               transform: 'translateX(-50%)',
             }}
           />
@@ -500,7 +500,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
             <div
               className={`absolute border-2 border-dashed pointer-events-none z-40 ${
                 isDark 
-                  ? 'border-[#00FF66] bg-[#00FF66]/15' 
+                  ? 'border-[#FF5500] bg-[#FF5500]/15' 
                   : 'border-[#E85D2A] bg-[#E85D2A]/15'
               }`}
               style={{
@@ -517,10 +517,10 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
 
       {isDropTargetOver && (
         <div className={`absolute inset-0 border-2 border-dashed pointer-events-none flex items-center justify-center z-50 ${
-          isDark ? 'bg-[#00FF66]/15 border-[#00FF66]' : 'bg-[#E85D2A]/15 border-[#E85D2A]'
+          isDark ? 'bg-[#FF5500]/15 border-[#FF5500]' : 'bg-[#E85D2A]/15 border-[#E85D2A]'
         }`}>
           <div className={`text-[10px] font-mono px-3 py-1.5 font-bold tracking-widest uppercase shadow-lg ${
-            isDark ? 'bg-[#08080A] text-[#00FF66] border border-[#00FF66]/50' : 'bg-[#1A1A1A] text-white'
+            isDark ? 'bg-[#08080A] text-[#FF5500] border border-[#FF5500]/50' : 'bg-[#1A1A1A] text-white'
           }`}>
             + RELEASE TO APPEND CLIP TO TIMELINE
           </div>

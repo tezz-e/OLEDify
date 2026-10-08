@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { Header } from './components/Header';
 import { DropZone } from './components/DropZone';
 import { TimelineTrack } from './components/TimelineTrack';
@@ -742,8 +743,8 @@ function MainApp() {
   const aesthetic = getActiveTheme();
 
   return (
-    <div className={`h-screen flex flex-col overflow-hidden relative transition-colors ${isDark ? 'bg-[#000000] text-[#FAFAFA]' : 'bg-[#F6F6F4] text-[#1A1A1A]'}`}>
-      <ZeroBloatWaveField themeMode={themeMode} gridSpacing={28} className="absolute inset-0 pointer-events-none opacity-40 z-0" />
+    <div className={`h-screen flex flex-col overflow-hidden relative transition-colors ${isDark ? 'bg-[#08080A] text-[#FAFAFA]' : 'bg-[#F6F6F4] text-[#1A1A1A]'}`}>
+      <ZeroBloatWaveField themeMode={themeMode} gridSpacing={28} className="absolute inset-0 pointer-events-none opacity-60 z-0" />
       <SvgFilterLibrary />
       <Header 
         serialConnected={serialConnected}
@@ -1007,40 +1008,45 @@ function MainApp() {
               <span className={aesthetic.accentTitle(isDark)}>MEDIA_POOL</span>
             </h2>
             
-            {/* Tabs */}
-            <div className={`flex border-b shrink-0 ${isDark ? 'border-white/10 bg-[#0E0E10]' : 'border-[#1A1A1A]/20 bg-[#F5F0EB]'}`}>
-              <button 
-                onClick={() => setMediaPoolTab('import')}
-                className={`flex-1 py-2 text-[9px] font-bold font-mono tracking-widest cursor-pointer transition-colors ${
-                  mediaPoolTab === 'import' ? aesthetic.tabActive(isDark) : aesthetic.tabInactive(isDark)
-                }`}
-              >
-                + IMPORT
-              </button>
-              <button 
-                onClick={() => setMediaPoolTab('samples')}
-                className={`flex-1 py-2 text-[9px] font-bold font-mono tracking-widest cursor-pointer transition-colors ${
-                  mediaPoolTab === 'samples' ? aesthetic.tabActive(isDark) : aesthetic.tabInactive(isDark)
-                }`}
-              >
-                SAMPLES
-              </button>
-              <button 
-                onClick={() => setMediaPoolTab('recent')}
-                className={`flex-1 py-2 text-[9px] font-bold font-mono tracking-widest cursor-pointer transition-colors ${
-                  mediaPoolTab === 'recent' ? aesthetic.tabActive(isDark) : aesthetic.tabInactive(isDark)
-                }`}
-              >
-                RECENT
-              </button>
-              <button 
-                onClick={() => setMediaPoolTab('create')}
-                className={`flex-1 py-2 text-[9px] font-bold font-mono tracking-widest cursor-pointer transition-colors ${
-                  mediaPoolTab === 'create' ? aesthetic.tabActive(isDark) : aesthetic.tabInactive(isDark)
-                }`}
-              >
-                ✨ CREATE
-              </button>
+            {/* Fluid Sliding Tabs (Skiper UI / Framer Motion layoutId) */}
+            <div className={`flex border-b shrink-0 p-1 gap-1 relative ${isDark ? 'border-white/10 bg-[#0A0A0E]/80 backdrop-blur-md' : 'border-[#1A1A1A]/15 bg-[#EAE7E1]'}`}>
+              {(
+                [
+                  { id: 'import', label: '+ IMPORT' },
+                  { id: 'samples', label: 'SAMPLES' },
+                  { id: 'recent', label: 'RECENT' },
+                  { id: 'create', label: '✨ CREATE' },
+                ] as const
+              ).map((tab) => {
+                const isActive = mediaPoolTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setMediaPoolTab(tab.id)}
+                    className={`relative flex-1 py-1.5 text-[9px] font-bold font-mono tracking-widest cursor-pointer transition-colors duration-200 z-10 ${
+                      isActive
+                        ? isDark ? 'text-white' : 'text-[#1A1A1A]'
+                        : isDark ? 'text-[#71717A] hover:text-[#FAFAFA]' : 'text-[#5E5D59] hover:text-[#1A1A1A]'
+                    }`}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="mediaPoolActivePill"
+                        transition={{ type: 'spring', stiffness: 450, damping: 30 }}
+                        className={`absolute inset-0 rounded-sm z-[-1] border shadow-sm ${
+                          isDark
+                            ? 'bg-[#181822] border-white/20 shadow-[0_2px_8px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.15)]'
+                            : 'bg-white border-[#1A1A1A]/30 shadow-sm'
+                        }`}
+                      >
+                        {/* High-visibility active accent hairline */}
+                        <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-[#FF5500] rounded-full" />
+                      </motion.div>
+                    )}
+                    <span className="relative z-10">{tab.label}</span>
+                  </button>
+                );
+              })}
             </div>
 
             <div className="flex-1 flex flex-col min-h-0 overflow-y-auto z-[2] relative">

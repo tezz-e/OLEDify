@@ -65,8 +65,8 @@ export const LiquidStudioNav: React.FC<LiquidStudioNavProps> = ({
     }
   };
 
-  const accentColor = isDark ? '#00FF66' : '#1A1A1A';
-  const accentGlow = isDark ? 'rgba(0,255,102,0.55)' : 'rgba(26,26,26,0.22)';
+  const accentColor = isDark ? '#FF5500' : '#1A1A1A';
+  const accentGlow = isDark ? 'rgba(255,85,0,0.5)' : 'rgba(26,26,26,0.22)';
 
   return (
     <nav

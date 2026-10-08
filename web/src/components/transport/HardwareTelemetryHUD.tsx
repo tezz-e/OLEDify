@@ -96,7 +96,7 @@ export const HardwareTelemetryHUD: React.FC<HardwareTelemetryHUDProps> = ({
         </div>
         <div>
           <span className="opacity-50 block text-[8px] uppercase">SERIAL SPEED</span>
-          <span className="font-bold text-[#00FF66]">{baudRate.toLocaleString()} BAUD</span>
+          <span className="font-bold text-[#FAFAFA]">{baudRate.toLocaleString()} BAUD</span>
         </div>
         <div>
           <span className="opacity-50 block text-[8px] uppercase">STREAM CLOCK</span>
@@ -108,7 +108,7 @@ export const HardwareTelemetryHUD: React.FC<HardwareTelemetryHUDProps> = ({
       <div className="flex items-center justify-between gap-2 p-1.5 rounded-[4px] bg-black/40 border border-current/15">
         <div className="flex flex-col">
           <span className="opacity-50 text-[8px]">FRAME BUFFER</span>
-          <span className="font-bold text-[#00FF66] tabular-nums">
+          <span className="font-bold text-[#FF5500] tabular-nums">
             {String(currentFrame + 1).padStart(3, '0')} / {String(totalFrames).padStart(3, '0')}
           </span>
         </div>

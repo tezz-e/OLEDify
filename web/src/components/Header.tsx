@@ -55,7 +55,7 @@ export const Header: React.FC<HeaderProps> = ({
         <h1 className={`text-base font-bold tracking-wider font-mono flex items-center gap-2 cursor-pointer select-none ${
           isDark ? 'text-white' : 'text-[#1A1A1A]'
         }`}>
-          <span className={isDark ? 'text-[#00FF66] drop-shadow-[0_0_8px_rgba(0,255,102,0.6)]' : 'text-[#E85D2A]'}>▲</span>
+          <span className={isDark ? 'text-[#FF5500] drop-shadow-[0_0_8px_rgba(255,85,0,0.6)]' : 'text-[#E85D2A]'}>▲</span>
           <DecryptedText
             text="OLED_STUDIO"
             speed={35}
@@ -127,7 +127,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         <div className="flex items-center">
           <ClickSpark
-            sparkColor={isDark ? "#00FF66" : "#E85D2A"}
+            sparkColor={isDark ? "#FF5500" : "#E85D2A"}
             sparkCount={8}
             sparkSize={6}
             sparkRadius={18}
@@ -137,14 +137,14 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={onSerialToggle}
               className={`flex items-center space-x-2 px-3 py-1.5 border text-xs font-mono font-medium transition-colors duration-150 cursor-pointer ${
                 isDark 
-                  ? 'bg-[#0A0A0C] border-white/10 text-white hover:border-[#00FF66] hover:bg-white/5' 
+                  ? 'bg-[#0A0A0E] border-white/10 text-white hover:border-[#FF5500] hover:bg-white/5' 
                   : 'bg-white border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white'
               }`}
             >
               <span
                 className={`w-[6px] h-[6px] shrink-0 rounded-full ${
                   serialConnected 
-                    ? isDark ? 'bg-[#00FF66] shadow-[0_0_8px_#00FF66]' : 'bg-[#E85D2A]'
+                    ? isDark ? 'bg-[#FF5500] shadow-[0_0_8px_#FF5500]' : 'bg-[#E85D2A]'
                     : 'bg-[#6B6B6B]'
                 }`}
               />
@@ -166,7 +166,7 @@ export const Header: React.FC<HeaderProps> = ({
               title={`Serial Speed: ${baudRate === 115200 ? '115,200 Baud (Standard)' : '921,600 Baud (Turbo 30FPS)'}\nClick to toggle.`}
               className={`ml-1 px-2 py-1.5 border text-[10px] font-mono font-bold transition-colors cursor-pointer select-none ${
                 baudRate === 921600
-                  ? isDark ? 'border-[#00FF66] bg-[#00FF66]/15 text-[#00FF66] shadow-[0_0_8px_rgba(0,255,102,0.2)]' : 'border-[#E85D2A] bg-[#FFF5F0] text-[#E85D2A]'
+                  ? isDark ? 'border-[#FF5500] bg-[#FF5500]/15 text-[#FF5500] shadow-[0_0_10px_rgba(255,85,0,0.25)]' : 'border-[#E85D2A] bg-[#FFF5F0] text-[#E85D2A]'
                   : isDark ? 'border-white/10 bg-[#0A0A0C] text-zinc-400 hover:text-white' : 'border-[#1A1A1A] bg-white text-[#6B6B6B] hover:text-[#1A1A1A]'
               }`}
             >
@@ -178,7 +178,7 @@ export const Header: React.FC<HeaderProps> = ({
             <span
               title={`Streaming active at ${baudRate} baud`}
               className={`ml-1 px-1.5 py-1 text-[9px] font-mono font-bold border ${
-                isDark ? 'border-white/10 bg-[#0A0A0C] text-[#00FF66]' : 'border-[#1A1A1A]/30 bg-white text-[#E85D2A]'
+                isDark ? 'border-white/10 bg-[#0A0A0C] text-[#FF5500]' : 'border-[#1A1A1A]/30 bg-white text-[#E85D2A]'
               }`}
             >
               {baudRate === 115200 ? '115.2K' : '921.6K'}
@@ -187,7 +187,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         <ClickSpark
-          sparkColor={isDark ? "#00FF66" : "#E85D2A"}
+          sparkColor={isDark ? "#FF5500" : "#E85D2A"}
           sparkSize={7}
           sparkRadius={22}
           sparkCount={12}

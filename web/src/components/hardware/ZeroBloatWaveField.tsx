@@ -57,8 +57,9 @@ export const ZeroBloatWaveField: React.FC<ZeroBloatWaveFieldProps> = ({
     window.addEventListener('scroll', () => { canvasRect = canvas.getBoundingClientRect(); }, { passive: true });
 
     const isDark = themeMode === 'dark';
-    const baseR = isDark ? 0 : 26;
-    const baseG = isDark ? 240 : 26;
+    // Clean ice-white/subtle warm tint for dark mode; clean dark graphite in light mode
+    const baseR = isDark ? 255 : 26;
+    const baseG = isDark ? 255 : 26;
     const baseB = isDark ? 255 : 26;
 
     const render = () => {

@@ -201,7 +201,7 @@ const Slider: React.FC<SliderProps> = ({
               <div 
                 className={`absolute h-full transition-colors ${
                   isDark 
-                    ? 'bg-[#00FF66] border-r border-[#00FF66] shadow-[0_0_8px_rgba(0,255,102,0.5)]' 
+                    ? 'bg-[#FF5500] border-r border-[#FF7700] shadow-[0_0_8px_rgba(255,85,0,0.5)]' 
                     : 'bg-[#E85D2A] border-r border-[#1A1A1A]'
                 }`} 
                 style={{ width: `${getRangePercentage()}%` }} 
@@ -219,7 +219,7 @@ const Slider: React.FC<SliderProps> = ({
             x: useTransform(() => (region === 'right' ? overflow.get() / scale.get() : 0))
           }}
           className={`font-bold font-mono text-xs shrink-0 w-3 text-center cursor-pointer flex items-center justify-center transition-colors ${
-            isDark ? 'text-[#00FF66]' : 'text-[#1A1A1A]'
+            isDark ? 'text-[#FF5500]' : 'text-[#1A1A1A]'
           }`}
         >
           {rightIcon}
