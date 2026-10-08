@@ -227,13 +227,21 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
         <label className={`text-[10px] font-bold tracking-widest uppercase font-mono ${
           isDark ? 'text-[#A1A1AA]' : 'text-[#6B6B6B]'
         }`}>Bicubic Smoothing</label>
-        <input
-          type="checkbox"
-          checked={settings.smoothing}
-          onChange={(e) => onChange({ ...settings, smoothing: e.target.checked })}
-          className="w-4 h-4 cursor-pointer"
-          style={{ accentColor: isDark ? '#00FF66' : '#E85D2A' }}
-        />
+        <button
+          type="button"
+          onClick={() => onChange({ ...settings, smoothing: !settings.smoothing })}
+          className={`px-3 py-1 text-[9px] font-mono font-bold tracking-wider uppercase border transition-colors cursor-pointer ${
+            settings.smoothing
+              ? isDark
+                ? 'bg-[#00FF66] text-black border-[#00FF66] font-extrabold shadow-[0_0_8px_rgba(0,255,102,0.4)]'
+                : 'bg-[#1A1A1A] text-white border-[#1A1A1A]'
+              : isDark
+                ? 'bg-[#121214] text-[#71717A] border-white/10 hover:border-white/30'
+                : 'bg-white text-[#6B6B6B] border-[#1A1A1A]'
+          }`}
+        >
+          {settings.smoothing ? 'ACTIVE' : 'OFF'}
+        </button>
       </div>
 
       {settings.mode === 'manual' && (

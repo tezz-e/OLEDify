@@ -1,5 +1,6 @@
 import React from 'react';
 import { DitherConfig, DitherAlgorithm, PhosphorTheme } from '../types/dither';
+import { TactileRotaryKnob } from './hardware/TactileRotaryKnob';
 
 interface DitherControlsProps {
   config: DitherConfig;
@@ -48,85 +49,69 @@ export const DitherControls: React.FC<DitherControlsProps> = ({ config, onChange
         </div>
       </div>
 
-      {config.algorithm === 'threshold' && (
-        <div className="space-y-1 pt-1">
-          <div className="flex justify-between items-center">
-            <span className={`text-[10px] font-bold tracking-widest uppercase font-mono ${
-              isDark ? 'text-[#A1A1AA]' : 'text-[#6B6B6B]'
-            }`}>Threshold</span>
-            <span className={`font-mono text-xs font-bold ${isDark ? 'text-[#00FF66]' : 'text-[#1A1A1A]'}`}>{config.threshold}</span>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max="255"
-            value={config.threshold}
-            onChange={(e) => onChange({ ...config, threshold: parseInt(e.target.value) })}
-            className="w-full cursor-pointer h-1"
-            style={{ accentColor: isDark ? '#00FF66' : '#E85D2A' }}
+      {/* Precision Tactile Rotary Encoders */}
+      <div className="pt-2 pb-1 border-y border-white/10 my-2">
+        <div className="grid grid-cols-2 gap-2 justify-items-center">
+          <TactileRotaryKnob
+            label="Brightness"
+            value={config.brightness}
+            onChange={(val) => onChange({ ...config, brightness: val })}
+            min={-100}
+            max={100}
+            step={1}
+            unit=""
+            accent="phosphor"
+            themeMode={themeMode}
+          />
+          <TactileRotaryKnob
+            label="Contrast"
+            value={config.contrast}
+            onChange={(val) => onChange({ ...config, contrast: val })}
+            min={-100}
+            max={100}
+            step={1}
+            unit=""
+            accent="amber"
+            themeMode={themeMode}
           />
         </div>
-      )}
 
-      <div className="space-y-1 pt-1">
-        <div className="flex justify-between items-center">
-          <span className={`text-[10px] font-bold tracking-widest uppercase font-mono ${
-            isDark ? 'text-[#A1A1AA]' : 'text-[#6B6B6B]'
-          }`}>Brightness</span>
-          <span className={`text-xs font-mono font-bold ${
-            config.brightness > 0 
-              ? isDark ? 'text-[#00FF66]' : 'text-[#E85D2A]' 
-              : isDark ? 'text-[#FAFAFA]' : 'text-[#1A1A1A]'
-          }`}>
-            {config.brightness > 0 ? `+${config.brightness}` : config.brightness}
-          </span>
-        </div>
-        <input
-          type="range"
-          min="-100"
-          max="100"
-          value={config.brightness}
-          onChange={(e) => onChange({ ...config, brightness: parseInt(e.target.value) })}
-          className="w-full cursor-pointer h-1"
-          style={{ accentColor: isDark ? '#00FF66' : '#E85D2A' }}
-        />
+        {config.algorithm === 'threshold' && (
+          <div className="flex justify-center pt-3 border-t border-white/5 mt-3">
+            <TactileRotaryKnob
+              label="Threshold"
+              value={config.threshold}
+              onChange={(val) => onChange({ ...config, threshold: val })}
+              min={0}
+              max={255}
+              step={1}
+              unit=""
+              accent="phosphor"
+              themeMode={themeMode}
+            />
+          </div>
+        )}
       </div>
 
-      <div className="space-y-1 pt-1">
-        <div className="flex justify-between items-center">
-          <span className={`text-[10px] font-bold tracking-widest uppercase font-mono ${
-            isDark ? 'text-[#A1A1AA]' : 'text-[#6B6B6B]'
-          }`}>Contrast</span>
-          <span className={`text-xs font-mono font-bold ${
-            config.contrast > 0 
-              ? isDark ? 'text-[#00FF66]' : 'text-[#E85D2A]' 
-              : isDark ? 'text-[#FAFAFA]' : 'text-[#1A1A1A]'
-          }`}>
-            {config.contrast > 0 ? `+${config.contrast}` : config.contrast}
-          </span>
-        </div>
-        <input
-          type="range"
-          min="-100"
-          max="100"
-          value={config.contrast}
-          onChange={(e) => onChange({ ...config, contrast: parseInt(e.target.value) })}
-          className="w-full cursor-pointer h-1"
-          style={{ accentColor: isDark ? '#00FF66' : '#E85D2A' }}
-        />
-      </div>
-
-      <div className="flex items-center justify-between pt-4">
+      <div className="flex items-center justify-between pt-2">
         <label className={`text-[10px] font-bold tracking-widest uppercase font-mono ${
           isDark ? 'text-[#A1A1AA]' : 'text-[#6B6B6B]'
         }`}>Invert Colors</label>
-        <input
-          type="checkbox"
-          checked={config.invert}
-          onChange={(e) => onChange({ ...config, invert: e.target.checked })}
-          className="w-4 h-4 cursor-pointer"
-          style={{ accentColor: isDark ? '#00FF66' : '#E85D2A' }}
-        />
+        <button
+          type="button"
+          onClick={() => onChange({ ...config, invert: !config.invert })}
+          className={`px-3 py-1 text-[9px] font-mono font-bold tracking-wider uppercase border transition-colors cursor-pointer ${
+            config.invert
+              ? isDark
+                ? 'bg-[#00FF66] text-black border-[#00FF66] font-extrabold shadow-[0_0_8px_rgba(0,255,102,0.4)]'
+                : 'bg-[#1A1A1A] text-white border-[#1A1A1A]'
+              : isDark
+                ? 'bg-[#121214] text-[#71717A] border-white/10 hover:border-white/30'
+                : 'bg-white text-[#6B6B6B] border-[#1A1A1A]'
+          }`}
+        >
+          {config.invert ? 'INVERTED' : 'NORMAL'}
+        </button>
       </div>
 
       <div className={`space-y-2 pt-4 border-t ${isDark ? 'border-white/10' : 'border-[#1A1A1A]'}`}>

@@ -11,6 +11,8 @@ import { BlueprintHoverCard } from './components/reactbits/BlueprintHoverCard';
 import { SvgFilterLibrary } from './components/common/SvgFilters';
 import { FloatingTransportDock } from './components/transport/FloatingTransportDock';
 import { HardwareTelemetryHUD } from './components/transport/HardwareTelemetryHUD';
+import { PixelCard } from './components/hardware/PixelCard';
+import { ZeroBloatWaveField } from './components/hardware/ZeroBloatWaveField';
 import { getActiveTheme } from './theme/aestheticConfig';
 
 // Lazy-loaded heavy studios and modals to speed up initial page reload
@@ -741,6 +743,7 @@ function MainApp() {
 
   return (
     <div className={`h-screen flex flex-col overflow-hidden relative transition-colors ${isDark ? 'bg-[#000000] text-[#FAFAFA]' : 'bg-[#F6F6F4] text-[#1A1A1A]'}`}>
+      <ZeroBloatWaveField themeMode={themeMode} gridSpacing={28} className="absolute inset-0 pointer-events-none opacity-40 z-0" />
       <SvgFilterLibrary />
       <Header 
         serialConnected={serialConnected}
@@ -872,28 +875,37 @@ function MainApp() {
             </div>
 
             <div className="relative flex items-center justify-center w-full max-h-full flex-1 min-h-0 gap-3">
-              {/* Hardware Bezel */}
-              <div className={`rounded-xl p-3 border relative z-10 shrink-0 max-w-full max-h-full flex flex-col justify-center transition-all ${
-                isDark 
-                  ? 'bg-[#111114] border-white/15 shadow-[0_12px_40px_rgba(0,0,0,0.9),inset_0_1px_1px_rgba(255,255,255,0.12),inset_0_-2px_2px_rgba(0,0,0,0.8)]' 
-                  : 'bg-[#2A2A2A] border-[#111] shadow-[0_10px_30px_rgba(0,0,0,0.5),inset_0_2px_1px_rgba(255,255,255,0.1),inset_0_-2px_1px_rgba(0,0,0,0.5)]'
-              }`}>
-                {/* Screws */}
-                <div className="absolute top-2 left-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-45"><div className="w-full h-[1px] bg-[#444]" /></div>
-                <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-12"><div className="w-full h-[1px] bg-[#444]" /></div>
-                <div className="absolute bottom-2 left-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center -rotate-12"><div className="w-full h-[1px] bg-[#444]" /></div>
-                <div className="absolute bottom-2 right-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-90"><div className="w-full h-[1px] bg-[#444]" /></div>
-                
-                <div className={`font-mono text-[8px] text-center mb-1 ${aesthetic.accentSub(isDark)}`}>SSD1306 128x64</div>
-                
-                <div className="bg-[#000] p-1 shadow-[inset_0_0_10px_#000] rounded shrink flex items-center justify-center">
-                  <div className="pointer-events-auto w-[128px]">
-                    <OledCanvas frameData={processedFrame} theme={ditherConfig.theme} scale={8} />
+              {/* Interactive PixelCard Frame */}
+              <PixelCard
+                gridSpacing={12}
+                decayMs={400}
+                accent="phosphor"
+                themeMode={themeMode}
+                className="rounded-2xl p-2 shrink-0 max-w-full max-h-full flex items-center justify-center"
+              >
+                {/* Hardware Bezel */}
+                <div className={`rounded-xl p-3 border relative z-10 shrink-0 max-w-full max-h-full flex flex-col justify-center transition-all ${
+                  isDark 
+                    ? 'bg-[#111114] border-white/15 shadow-[0_12px_40px_rgba(0,0,0,0.9),inset_0_1px_1px_rgba(255,255,255,0.12),inset_0_-2px_2px_rgba(0,0,0,0.8)]' 
+                    : 'bg-[#2A2A2A] border-[#111] shadow-[0_10px_30px_rgba(0,0,0,0.5),inset_0_2px_1px_rgba(255,255,255,0.1),inset_0_-2px_1px_rgba(0,0,0,0.5)]'
+                }`}>
+                  {/* Screws */}
+                  <div className="absolute top-2 left-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-45"><div className="w-full h-[1px] bg-[#444]" /></div>
+                  <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-12"><div className="w-full h-[1px] bg-[#444]" /></div>
+                  <div className="absolute bottom-2 left-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center -rotate-12"><div className="w-full h-[1px] bg-[#444]" /></div>
+                  <div className="absolute bottom-2 right-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-90"><div className="w-full h-[1px] bg-[#444]" /></div>
+                  
+                  <div className={`font-mono text-[8px] text-center mb-1 ${aesthetic.accentSub(isDark)}`}>SSD1306 128x64</div>
+                  
+                  <div className="bg-[#000] p-1 shadow-[inset_0_0_10px_#000] rounded shrink flex items-center justify-center">
+                    <div className="pointer-events-auto w-[128px]">
+                      <OledCanvas frameData={processedFrame} theme={ditherConfig.theme} scale={8} />
+                    </div>
                   </div>
-                </div>
 
-                <div className={`font-mono text-[8px] text-center mt-1 ${aesthetic.accentSub(isDark)}`}>I²C 0x3C</div>
-              </div>
+                  <div className={`font-mono text-[8px] text-center mt-1 ${aesthetic.accentSub(isDark)}`}>I²C 0x3C</div>
+                </div>
+              </PixelCard>
 
               {/* Sticky Note / Technical Calibration Badge */}
               {aesthetic.showStickyNote ? (
