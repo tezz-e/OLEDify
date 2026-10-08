@@ -22,7 +22,11 @@ export const DitherControls: React.FC<DitherControlsProps> = ({ config, onChange
 
 
   return (
-    <div className={`space-y-4 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+    <div className={`space-y-4 transition-all duration-300 ${
+      disabled 
+        ? 'opacity-35 grayscale pointer-events-none select-none cursor-not-allowed' 
+        : ''
+    }`}>
       <div className="space-y-2">
         <label className={`text-[10px] font-bold tracking-widest uppercase font-mono ${
           isDark ? 'text-[#FAFAFA]' : 'text-[#1A1A1A]'

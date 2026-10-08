@@ -96,7 +96,11 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
   };
 
   return (
-    <div className={`space-y-6 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+    <div className={`space-y-6 transition-all duration-300 ${
+      disabled 
+        ? 'opacity-35 grayscale pointer-events-none select-none cursor-not-allowed' 
+        : ''
+    }`}>
       
       {settings.mode === 'manual' && sourceFrame && (
         <div className="space-y-2">
@@ -201,19 +205,20 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
           isDark ? 'text-[#FAFAFA]' : 'text-[#1A1A1A]'
         }`}>Crop Mode</label>
         <div className={`border p-1 flex gap-1 ${
-          isDark ? 'bg-[#0A0A0C] border-white/10' : 'bg-[#F6F6F4] border-[#1A1A1A]'
+          isDark ? 'bg-[#0A0A0C]/80 border-white/10' : 'bg-[#F6F6F4] border-[#1A1A1A]'
         }`}>
           {modes.map((mode) => (
             <button
               key={mode}
               onClick={() => handleModeChange(mode)}
-              className={`flex-1 text-[10px] font-mono font-bold tracking-wide py-1.5 transition-all duration-150 border uppercase ${
+              disabled={disabled}
+              className={`flex-1 text-[10px] font-mono font-bold tracking-wide py-1.5 transition-all duration-150 border uppercase cursor-pointer ${
                 settings.mode === mode
                   ? isDark
-                    ? 'bg-[#00FF66] text-black border-[#00FF66] font-extrabold shadow-[0_0_12px_rgba(0,255,102,0.35)]'
+                    ? 'bg-[#FF5500] text-white border-[#FF5500] font-extrabold shadow-[0_0_10px_rgba(255,85,0,0.35)]'
                     : 'bg-[#1A1A1A] text-white border-[#1A1A1A]'
                   : isDark
-                    ? 'bg-[#121214] text-[#A1A1AA] border-white/10 hover:border-white/30 hover:text-white'
+                    ? 'bg-[#121216] text-[#A1A1AA] border-white/10 hover:border-white/30 hover:text-white'
                     : 'bg-white text-[#6B6B6B] border-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white'
               }`}
             >
@@ -229,14 +234,15 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
         }`}>Bicubic Smoothing</label>
         <button
           type="button"
+          disabled={disabled}
           onClick={() => onChange({ ...settings, smoothing: !settings.smoothing })}
           className={`px-3 py-1 text-[9px] font-mono font-bold tracking-wider uppercase border transition-colors cursor-pointer ${
             settings.smoothing
               ? isDark
-                ? 'bg-[#00FF66] text-black border-[#00FF66] font-extrabold shadow-[0_0_8px_rgba(0,255,102,0.4)]'
+                ? 'bg-[#FF5500] text-white border-[#FF5500] font-extrabold shadow-[0_0_8px_rgba(255,85,0,0.4)]'
                 : 'bg-[#1A1A1A] text-white border-[#1A1A1A]'
               : isDark
-                ? 'bg-[#121214] text-[#71717A] border-white/10 hover:border-white/30'
+                ? 'bg-[#121216] text-[#71717A] border-white/10 hover:border-white/30'
                 : 'bg-white text-[#6B6B6B] border-[#1A1A1A]'
           }`}
         >

@@ -63,6 +63,7 @@ function MagneticButton({
   padding = 20,
   type = 'button',
   style,
+  disabled = false,
 }: {
   children: React.ReactNode;
   className?: string;
@@ -72,6 +73,7 @@ function MagneticButton({
   padding?: number;
   type?: 'button' | 'submit' | 'reset';
   style?: React.CSSProperties;
+  disabled?: boolean;
 }) {
   const ref = useRef<HTMLButtonElement>(null);
   const rawX = useMotionValue(0);
@@ -111,14 +113,15 @@ function MagneticButton({
     <motion.button
       ref={ref}
       type={type}
-      onClick={onClick}
+      disabled={disabled}
+      onClick={disabled ? undefined : onClick}
       title={title}
       style={{ x, y, ...style }}
-      onMouseMove={onMouseMove}
+      onMouseMove={disabled ? undefined : onMouseMove}
       onMouseLeave={onMouseLeave}
-      whileTap={{ scale: 0.9 }}
+      whileTap={disabled ? undefined : { scale: 0.9 }}
       transition={{ type: 'spring', stiffness: 500, damping: 28, mass: 0.1 }}
-      className={className}
+      className={`${className} ${disabled ? 'opacity-30 cursor-not-allowed pointer-events-none' : ''}`}
     >
       {children}
     </motion.button>
@@ -177,12 +180,14 @@ function PlayButtonMagnetic({
   accent,
   glowRgba,
   onToggle,
+  disabled = false,
 }: {
   isPlaying: boolean;
   isDark: boolean;
   accent: string;
   glowRgba: string;
   onToggle: () => void;
+  disabled?: boolean;
 }) {
   const ref = useRef<HTMLButtonElement>(null);
   const rawX = useMotionValue(0);
@@ -191,7 +196,7 @@ function PlayButtonMagnetic({
   const y = useSpring(rawY, { stiffness: 300, damping: 20, mass: 0.3 });
 
   const onMM = useCallback((e: React.MouseEvent) => {
-    if (!ref.current) return;
+    if (disabled || !ref.current) return;
     const rect = ref.current.getBoundingClientRect();
     const dx = e.clientX - (rect.left + rect.width / 2);
     const dy = e.clientY - (rect.top + rect.height / 2);
@@ -202,7 +207,7 @@ function PlayButtonMagnetic({
       rawX.set((dx / 2.8) * force);
       rawY.set((dy / 2.8) * force);
     }
-  }, [rawX, rawY]);
+  }, [disabled, rawX, rawY]);
 
   const onML = useCallback(() => { rawX.set(0); rawY.set(0); }, [rawX, rawY]);
 
@@ -210,7 +215,7 @@ function PlayButtonMagnetic({
     <div className="relative flex items-center justify-center shrink-0">
       {/* Dynamic Island Gooey expanding pulse halo when playing */}
       <AnimatePresence>
-        {isPlaying && (
+        {!disabled && isPlaying && (
           <motion.span
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: [1, 1.4, 1], opacity: [0.55, 0, 0.55] }}
@@ -229,7 +234,8 @@ function PlayButtonMagnetic({
         <motion.button
           ref={ref}
           type="button"
-          onClick={onToggle}
+          disabled={disabled}
+          onClick={disabled ? undefined : onToggle}
           style={{
             x,
             y,
@@ -237,19 +243,21 @@ function PlayButtonMagnetic({
             color: isPlaying ? (accent === '#FFFFFF' || !isDark ? '#000000' : '#000000') : undefined,
             boxShadow: isPlaying ? `0 0 20px ${glowRgba}, 0 0 40px ${glowRgba}` : undefined,
           }}
-          onMouseMove={onMM}
+          onMouseMove={disabled ? undefined : onMM}
           onMouseLeave={onML}
-          whileHover={{ scale: 1.12 }}
-          whileTap={{ scale: 0.86 }}
+          whileHover={disabled ? undefined : { scale: 1.12 }}
+          whileTap={disabled ? undefined : { scale: 0.86 }}
           transition={HW_SPRINGS.tactileTap}
-          className={`w-9 h-9 rounded-full flex items-center justify-center cursor-pointer transition-colors relative z-10 ${
-            isPlaying
-              ? ''
+          className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors relative z-10 ${
+            disabled
+              ? 'opacity-25 cursor-not-allowed pointer-events-none bg-zinc-700 text-zinc-500 shadow-none'
+              : isPlaying
+              ? 'cursor-pointer'
               : isDark
-              ? 'bg-white text-black shadow-[0_2px_8px_rgba(0,0,0,0.5)]'
-              : 'bg-black text-white shadow-[0_2px_8px_rgba(0,0,0,0.2)]'
+              ? 'cursor-pointer bg-white text-black shadow-[0_2px_8px_rgba(0,0,0,0.5)]'
+              : 'cursor-pointer bg-black text-white shadow-[0_2px_8px_rgba(0,0,0,0.2)]'
           }`}
-          title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}
+          title={disabled ? 'Timeline empty' : isPlaying ? 'Pause (Space)' : 'Play (Space)'}
         >
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.span
@@ -556,6 +564,7 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
   // Frame math
   const maxFrames = Math.max(0, totalFrames - 1);
   const safeFrame = Math.min(Math.max(0, currentFrame), maxFrames);
+  const hasNoMedia = mode === 'audio-lyrics' ? (!durationMs || durationMs <= 0) : totalFrames <= 0;
 
   // Sub-frame calculation using integer millisecond arithmetic (Blueprint Eq. F)
   const totalMs = mode === 'audio-lyrics' && playheadMs !== undefined
@@ -826,6 +835,7 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
       <div className="flex items-center gap-1 shrink-0 relative z-10">
         {/* Reset button — magnetic pull */}
         <MagneticButton
+          disabled={hasNoMedia}
           onClick={() => { triggerNativeHaptic(10); onReset(); }}
           className="p-1.5 rounded-full hover:bg-current/10 transition-colors cursor-pointer"
           title="Return to origin (Frame 0 / 0.00s)"
@@ -837,6 +847,7 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
 
         {mode === 'nle' && (
           <MagneticButton
+            disabled={hasNoMedia}
             onClick={() => stepFrame(-1)}
             className="p-1.5 rounded-full hover:bg-current/10 transition-colors cursor-pointer"
             title="Step back 1 frame (Left Arrow)"
@@ -849,6 +860,7 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
 
         {/* ── Skiper 3 Apple Play Button with Gooey Halo & ClickSpark ── */}
         <PlayButtonMagnetic
+          disabled={hasNoMedia}
           isPlaying={isPlaying}
           isDark={isDark}
           accent={accent}
@@ -858,6 +870,7 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
 
         {mode === 'nle' && (
           <MagneticButton
+            disabled={hasNoMedia}
             onClick={() => stepFrame(1)}
             className="p-1.5 rounded-full hover:bg-current/10 transition-colors cursor-pointer"
             title="Step forward 1 frame (Right Arrow)"
@@ -870,6 +883,7 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
 
         {onToggleLoop && (
           <MagneticButton
+            disabled={hasNoMedia}
             onClick={() => { triggerNativeHaptic(8); onToggleLoop(); }}
             className="p-1.5 rounded-full transition-colors cursor-pointer"
             style={{
@@ -935,7 +949,7 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
       </div>
 
       {/* ── 3. Glowing Recessed Scrub Track ───────────────────────────────── */}
-      <div className="flex-1 flex items-center min-w-[100px] max-w-[200px] relative group z-10">
+      <div className={`flex-1 flex items-center min-w-[100px] max-w-[200px] relative group z-10 transition-opacity ${hasNoMedia ? 'opacity-30 pointer-events-none' : ''}`}>
         {/* Glow track backing */}
         <div
           className="absolute inset-y-0 left-0 rounded-full transition-all duration-100"
@@ -946,7 +960,7 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
             transform: 'translateY(-50%)',
             backgroundColor: accent,
             boxShadow: `0 0 8px ${accent}`,
-            opacity: 0.85,
+            opacity: hasNoMedia ? 0.2 : 0.85,
           }}
         />
         <input
@@ -954,8 +968,9 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
           min={0}
           max={scrubMax}
           value={scrubVal}
+          disabled={hasNoMedia}
           onChange={handleSeek}
-          className="hw-scrub-track w-full cursor-pointer appearance-none rounded-full focus:outline-none"
+          className="hw-scrub-track w-full cursor-pointer appearance-none rounded-full focus:outline-none disabled:cursor-not-allowed"
           style={
             {
               '--accent': accent,
