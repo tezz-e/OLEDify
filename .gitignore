@@ -11,6 +11,10 @@ web/dist/
 src/previews/
 *.log
 *.tmp
+test_captures/
+*.png
+start_dev_bg.bat
+web/run_full_ui_test.cjs
 
 # User Media Inputs (Keep codebase lightweight)
 *.mp4
