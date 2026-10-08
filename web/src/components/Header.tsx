@@ -83,8 +83,8 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onSettingsOpen}
             className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 border text-[9px] font-mono cursor-pointer transition-colors ${
               isDark 
-                ? 'border-[#2D2344] bg-[#181328] text-zinc-300 hover:border-[#00F0FF]' 
-                : 'border-[#1A1A1A] bg-[#F5F0EB] text-[#1A1A1A] hover:border-[#E85D2A]'
+                ? 'border-white/10 bg-[#0A0A0C] text-zinc-300 hover:border-white/30' 
+                : 'border-[#1A1A1A] bg-[#F6F6F4] text-[#1A1A1A] hover:border-[#E85D2A]'
             }`}
             title={`${gpuInfo.renderer}\nArchitecture: ${gpuInfo.isDedicated ? 'Dedicated GPU' : 'Integrated GPU'}`}
           >
@@ -96,7 +96,7 @@ export const Header: React.FC<HeaderProps> = ({
             <span className={`font-bold ${isDark ? 'text-white' : 'text-[#1A1A1A]'}`}>{gpuInfo.simplifiedName}</span>
             <span className={`text-[7px] px-1 py-0.2 font-bold uppercase rounded-xs ${
               gpuInfo.isDedicated 
-                ? isDark ? 'bg-[#00F0FF] text-black font-extrabold' : 'bg-[#1A1A1A] text-white' 
+                ? isDark ? 'bg-[#00FF66] text-black font-extrabold shadow-[0_0_6px_rgba(0,255,102,0.4)]' : 'bg-[#1A1A1A] text-white' 
                 : 'bg-amber-100 text-amber-900 border border-amber-300'
             }`}>
               {gpuInfo.isDedicated ? 'DEDICATED' : 'INTEGRATED'}
@@ -116,7 +116,7 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={onSettingsOpen}
           className={`p-2 border transition-colors duration-150 cursor-pointer ${
             isDark 
-              ? 'bg-[#181328] border-[#2D2344] text-white hover:bg-[#251D3D] hover:border-[#00F0FF]' 
+              ? 'bg-[#0A0A0C] border-white/10 text-white hover:bg-white/10 hover:border-white/30' 
               : 'bg-white border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white'
           }`}
           title="Settings"
@@ -127,7 +127,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         <div className="flex items-center">
           <ClickSpark
-            sparkColor={isDark ? "#00F0FF" : "#E85D2A"}
+            sparkColor={isDark ? "#00FF66" : "#E85D2A"}
             sparkCount={8}
             sparkSize={6}
             sparkRadius={18}
@@ -137,14 +137,14 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={onSerialToggle}
               className={`flex items-center space-x-2 px-3 py-1.5 border text-xs font-mono font-medium transition-colors duration-150 cursor-pointer ${
                 isDark 
-                  ? 'bg-[#181328] border-[#2D2344] text-white hover:border-[#00F0FF]' 
+                  ? 'bg-[#0A0A0C] border-white/10 text-white hover:border-[#00FF66] hover:bg-white/5' 
                   : 'bg-white border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white'
               }`}
             >
               <span
-                className={`w-[6px] h-[6px] shrink-0 ${
+                className={`w-[6px] h-[6px] shrink-0 rounded-full ${
                   serialConnected 
-                    ? isDark ? 'bg-[#00F0FF] shadow-[0_0_6px_#00F0FF]' : 'bg-[#E85D2A]'
+                    ? isDark ? 'bg-[#00FF66] shadow-[0_0_8px_#00FF66]' : 'bg-[#E85D2A]'
                     : 'bg-[#6B6B6B]'
                 }`}
               />
@@ -166,8 +166,8 @@ export const Header: React.FC<HeaderProps> = ({
               title={`Serial Speed: ${baudRate === 115200 ? '115,200 Baud (Standard)' : '921,600 Baud (Turbo 30FPS)'}\nClick to toggle.`}
               className={`ml-1 px-2 py-1.5 border text-[10px] font-mono font-bold transition-colors cursor-pointer select-none ${
                 baudRate === 921600
-                  ? isDark ? 'border-[#00F0FF] bg-[#00F0FF]/15 text-[#00F0FF]' : 'border-[#E85D2A] bg-[#FFF5F0] text-[#E85D2A]'
-                  : isDark ? 'border-[#2D2344] bg-[#181328] text-zinc-400 hover:text-white' : 'border-[#1A1A1A] bg-white text-[#6B6B6B] hover:text-[#1A1A1A]'
+                  ? isDark ? 'border-[#00FF66] bg-[#00FF66]/15 text-[#00FF66] shadow-[0_0_8px_rgba(0,255,102,0.2)]' : 'border-[#E85D2A] bg-[#FFF5F0] text-[#E85D2A]'
+                  : isDark ? 'border-white/10 bg-[#0A0A0C] text-zinc-400 hover:text-white' : 'border-[#1A1A1A] bg-white text-[#6B6B6B] hover:text-[#1A1A1A]'
               }`}
             >
               {baudRate === 115200 ? '115.2K' : '921.6K ⚡'}
@@ -178,7 +178,7 @@ export const Header: React.FC<HeaderProps> = ({
             <span
               title={`Streaming active at ${baudRate} baud`}
               className={`ml-1 px-1.5 py-1 text-[9px] font-mono font-bold border ${
-                isDark ? 'border-[#2D2344] bg-[#181328] text-[#00F0FF]' : 'border-[#1A1A1A]/30 bg-white text-[#E85D2A]'
+                isDark ? 'border-white/10 bg-[#0A0A0C] text-[#00FF66]' : 'border-[#1A1A1A]/30 bg-white text-[#E85D2A]'
               }`}
             >
               {baudRate === 115200 ? '115.2K' : '921.6K'}
@@ -187,7 +187,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         <ClickSpark
-          sparkColor={isDark ? "#E2FF00" : "#E85D2A"}
+          sparkColor={isDark ? "#00FF66" : "#E85D2A"}
           sparkSize={7}
           sparkRadius={22}
           sparkCount={12}
@@ -197,15 +197,15 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onExportClick}
             disabled={!hasMedia || isExporting}
             size="sm"
-            tint={hasMedia ? (isDark ? "#E2FF00" : "#E85D2A") : (isDark ? "#181328" : "#F5F0EB")}
+            tint={hasMedia ? (isDark ? "#00FF66" : "#E85D2A") : (isDark ? "#121214" : "#F5F0EB")}
             tintOpacity={1}
-            baseColor={hasMedia ? (isDark ? "#E2FF00" : "#E85D2A") : (isDark ? "#181328" : "#F5F0EB")}
+            baseColor={hasMedia ? (isDark ? "#00FF66" : "#E85D2A") : (isDark ? "#121214" : "#F5F0EB")}
             lineColor={isDark ? "#000000" : "#1A1A1A"}
-            textColor={hasMedia ? (isDark ? "#000000" : "#FFFFFF") : (isDark ? "#7E7694" : "#6B6B6B")}
+            textColor={hasMedia ? (isDark ? "#000000" : "#FFFFFF") : (isDark ? "#71717A" : "#6B6B6B")}
             radius={0}
-            className={`text-xs font-mono font-bold tracking-wider rounded-none border-2 ${
+            className={`text-xs font-mono font-bold tracking-wider rounded-none border ${
               isDark 
-                ? 'border-black shadow-[3px_3px_0_#FF2A85] active:translate-x-[1px] active:translate-y-[1px]' 
+                ? 'border-white/20 shadow-[0_0_12px_rgba(0,255,102,0.35)] active:translate-y-[1px]' 
                 : 'border-[#1A1A1A]'
             } ${!hasMedia || isExporting ? 'opacity-60 cursor-not-allowed' : ''}`}
           >
@@ -216,7 +216,7 @@ export const Header: React.FC<HeaderProps> = ({
       {exportError && (
         <div role="alert" className={`absolute right-6 top-full mt-2 max-w-sm border px-3 py-2 text-[10px] font-mono shadow-md ${
           isDark 
-            ? 'border-[#FF2A85] bg-[#181328] text-[#FF4365]' 
+            ? 'border-[#FF1A35] bg-[#0A0A0C] text-[#FF1A35]' 
             : 'border-[#1A1A1A] bg-white text-[#B42318]'
         }`}>
           EXPORT FAILED: {exportError}

@@ -17,7 +17,7 @@ export interface ThemeToggleProps {
  * - Fluid Framer Motion spring sliding pill with `layoutId` physics
  * - Dynamic Sun ray rotation and warm terracotta amber glow in Light mode
  * - Cyber Cyan crescent moon with glowing twinkle stars in Dark mode
- * - Neobrutal offset drop shadows (`#FF2A85` bubblegum pink in dark, `#1A1A1A` in light)
+ * - Precision hardware shadows (deep ambient occlusion with specular rim in dark, `#1A1A1A` in light)
  * - ClickSpark micro-particle burst upon theme switch
  * - Tactile whileTap and whileHover squash & stretch
  * - Full accessibility with role="switch" and aria-checked
@@ -38,7 +38,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
 
   return (
     <ClickSpark
-      sparkColor={isDark ? '#00F0FF' : '#E85D2A'}
+      sparkColor={isDark ? '#00FF66' : '#E85D2A'}
       sparkCount={10}
       sparkSize={6}
       sparkRadius={20}
@@ -49,8 +49,8 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
         type="button"
         role="switch"
         aria-checked={isDark}
-        aria-label={isDark ? 'Switch to Blueprint Light Mode' : 'Switch to Arcade Neo-Pop Dark Mode'}
-        title={isDark ? 'Switch to Blueprint Light Mode' : 'Switch to Arcade Neo-Pop Dark Mode'}
+        aria-label={isDark ? 'Switch to Blueprint Light Mode' : 'Switch to Precision Hardware Dark Mode'}
+        title={isDark ? 'Switch to Blueprint Light Mode' : 'Switch to Precision Hardware Dark Mode'}
         onClick={onToggle}
         whileHover={{ scale: 1.04 }}
         whileTap={{ scale: 0.94 }}
@@ -60,11 +60,11 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
         }}
         className={`relative inline-flex items-center p-0.5 rounded-full border cursor-pointer select-none transition-colors duration-250 focus:outline-none focus-visible:ring-2 ${
           isDark
-            ? 'bg-[#140F24] border-[#2D2344] focus-visible:ring-[#00F0FF] hover:border-[#00F0FF]/60 shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)]'
+            ? 'bg-[#08080A] border-white/20 focus-visible:ring-[#00FF66] hover:border-white/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)]'
             : 'bg-[#ECE6DE] border-[#1A1A1A] focus-visible:ring-[#E85D2A] hover:border-[#E85D2A] shadow-[inset_0_1px_2px_rgba(0,0,0,0.08)]'
         } ${className}`}
       >
-        {/* Background Decorative Starlight Dots in Dark Mode */}
+        {/* Background Decorative Diode Dot in Dark Mode */}
         <AnimatePresence>
           {isDark && (
             <motion.div
@@ -74,9 +74,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
               transition={{ duration: 0.2 }}
               className="absolute inset-0 pointer-events-none overflow-hidden rounded-full"
             >
-              <span className="absolute top-[6px] left-[10px] w-[2px] h-[2px] rounded-full bg-[#00F0FF]/40" />
-              <span className="absolute bottom-[7px] left-[18px] w-[1.5px] h-[1.5px] rounded-full bg-[#E2FF00]/50" />
-              <span className="absolute top-[8px] right-[10px] w-[2px] h-[2px] rounded-full bg-[#FF2A85]/40" />
+              <span className="absolute top-[8px] left-[10px] w-[2.5px] h-[2.5px] rounded-full bg-[#00FF66]/60 shadow-[0_0_4px_#00FF66]" />
             </motion.div>
           )}
         </AnimatePresence>
@@ -97,7 +95,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
           }}
           className={`absolute rounded-full flex items-center justify-center border transition-shadow duration-200 z-10 ${
             isDark
-              ? 'bg-[#1D1633] border-[#00F0FF] shadow-[2px_2px_0_0_#FF2A85]'
+              ? 'bg-[#18181C] border-white/20 shadow-[0_2px_8px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.2)]'
               : 'bg-white border-[#1A1A1A] shadow-[1.5px_1.5px_0_0_#1A1A1A]'
           }`}
         >
@@ -112,24 +110,9 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
               className="relative flex items-center justify-center w-full h-full"
             >
               <Moon 
-                className="w-3.5 h-3.5 text-[#00F0FF] fill-[#00F0FF]/15 filter drop-shadow-[0_0_4px_rgba(0,240,255,0.7)]" 
+                className="w-3.5 h-3.5 text-[#00FF66] fill-[#00FF66]/20 filter drop-shadow-[0_0_4px_rgba(0,255,102,0.6)]" 
                 strokeWidth={2}
               />
-              {/* Twinkling micro-star beside the moon */}
-              <motion.span
-                animate={{
-                  scale: [0.8, 1.25, 0.8],
-                  opacity: [0.6, 1, 0.6]
-                }}
-                transition={{
-                  repeat: Infinity,
-                  duration: 2.2,
-                  ease: 'easeInOut'
-                }}
-                className="absolute top-1 right-1.5 text-[8px] leading-none text-[#E2FF00] font-mono pointer-events-none select-none"
-              >
-                ✦
-              </motion.span>
             </motion.div>
           ) : (
             /* Light Mode Active Sun Icon */
@@ -155,7 +138,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
           <div className="flex items-center justify-center w-5 h-5">
             <Sun 
               className={`w-3 h-3 transition-opacity duration-200 ${
-                isDark ? 'opacity-35 text-[#7E7694]' : 'opacity-0 text-[#E85D2A]'
+                isDark ? 'opacity-35 text-[#71717A]' : 'opacity-0 text-[#E85D2A]'
               }`} 
               strokeWidth={1.8}
             />
@@ -165,7 +148,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
           <div className="flex items-center justify-center w-5 h-5">
             <Moon 
               className={`w-3 h-3 transition-opacity duration-200 ${
-                isDark ? 'opacity-0 text-[#00F0FF]' : 'opacity-35 text-[#8A847C]'
+                isDark ? 'opacity-0 text-[#00FF66]' : 'opacity-35 text-[#8A847C]'
               }`} 
               strokeWidth={1.8}
             />

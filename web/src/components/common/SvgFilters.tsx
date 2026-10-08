@@ -41,6 +41,13 @@ export const SvgFilterLibrary: React.FC = () => {
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
+
+        {/* Apple Liquid Glass Refraction & Optical Dispersion Filter (rdev/liquid-glass-react) */}
+        <filter id="hw-liquid-glass" x="-20%" y="-20%" width="140%" height="140%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.018 0.024" numOctaves="2" result="noise" seed="7" />
+          <feGaussianBlur in="noise" stdDeviation="1.6" result="softNoise" />
+          <feDisplacementMap in="SourceGraphic" in2="softNoise" scale="18" xChannelSelector="R" yChannelSelector="G" result="displaced" />
+        </filter>
       </defs>
     </svg>
   );

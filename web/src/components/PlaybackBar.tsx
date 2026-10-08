@@ -41,7 +41,7 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
         onChange={e => onFrameSeek(parseInt(e.target.value))}
         className="w-full cursor-pointer h-1 transition-colors"
         disabled={totalFrames === 0}
-        style={{ accentColor: isDark ? '#00F0FF' : '#E85D2A' }}
+        style={{ accentColor: isDark ? '#00FF66' : '#E85D2A' }}
       />
 
       {/* Controls row */}
@@ -52,7 +52,7 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
             onClick={onReset}
             className={`p-2 w-8 h-8 rounded-md transition-colors ${
               isDark 
-                ? 'bg-[#181328] border-[#2D2344] text-[#F1EEF8] hover:border-[#00F0FF] hover:text-[#00F0FF]' 
+                ? 'bg-[#121216] border-white/10 text-[#F1EEF8] hover:border-[#00FF66] hover:text-[#00FF66]' 
                 : ''
             }`}
             title="Go to start"
@@ -64,7 +64,7 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
             onClick={() => onFrameSeek(Math.max(0, safeFrame - 1))}
             className={`p-2 w-8 h-8 rounded-md transition-colors ${
               isDark 
-                ? 'bg-[#181328] border-[#2D2344] text-[#F1EEF8] hover:border-[#00F0FF] hover:text-[#00F0FF]' 
+                ? 'bg-[#121216] border-white/10 text-[#F1EEF8] hover:border-[#00FF66] hover:text-[#00FF66]' 
                 : ''
             }`}
             title="Previous frame (←)"
@@ -77,8 +77,8 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
             className={`w-11 h-9 rounded-md font-bold transition-all ${
               isDark
                 ? isPlaying
-                  ? 'bg-[#00F0FF]/15 border-2 border-[#00F0FF] text-[#00F0FF] shadow-[0_0_10px_rgba(0,240,255,0.4)]'
-                  : 'bg-[#00F0FF] border-2 border-black text-[#100D1C] shadow-[3px_3px_0_0_#FF2A85] hover:bg-[#E2FF00] active:translate-x-[1px] active:translate-y-[1px]'
+                  ? 'bg-[#00FF66]/15 border-2 border-[#00FF66] text-[#00FF66] shadow-[0_0_12px_rgba(0,255,102,0.4)]'
+                  : 'bg-[#00FF66] border border-transparent text-[#000000] shadow-[0_4px_16px_rgba(0,255,102,0.3)] hover:brightness-110 active:translate-x-[1px] active:translate-y-[1px]'
                 : isPlaying
                   ? 'bg-[#E85D2A]/10 border-[#E85D2A]/50 text-[#E85D2A]'
                   : 'bg-[#E85D2A] border-[#1A1A1A] text-white hover:bg-[#C94E22]'
@@ -95,7 +95,7 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
             onClick={() => onFrameSeek(Math.min(max, safeFrame + 1))}
             className={`p-2 w-8 h-8 rounded-md transition-colors ${
               isDark 
-                ? 'bg-[#181328] border-[#2D2344] text-[#F1EEF8] hover:border-[#00F0FF] hover:text-[#00F0FF]' 
+                ? 'bg-[#121216] border-white/10 text-[#F1EEF8] hover:border-[#00FF66] hover:text-[#00FF66]' 
                 : ''
             }`}
             title="Next frame (→)"
@@ -107,7 +107,7 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
         {/* Right: frame counter + FPS */}
         <div className="absolute right-0 flex items-center gap-2">
           <span className={`text-[10px] font-mono font-bold tabular-nums tracking-widest ${
-            isDark ? 'text-[#00F0FF]' : 'text-[#1A1A1A]'
+            isDark ? 'text-[#00FF66]' : 'text-[#1A1A1A]'
           }`}>
             {pad(safeFrame + 1)}/{pad(totalFrames)}
           </span>
@@ -116,7 +116,7 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
             onChange={e => onFpsChange(parseInt(e.target.value))}
             className={`font-mono text-[10px] px-1.5 py-1 outline-none cursor-pointer transition-colors ${
               isDark 
-                ? 'bg-[#181328] border border-[#2D2344] text-[#F1EEF8] focus:border-[#00F0FF]' 
+                ? 'bg-[#121216] border border-white/10 text-[#F1EEF8] focus:border-[#00FF66]' 
                 : 'bg-white border border-[#1A1A1A] text-[#1A1A1A] focus:border-[#E85D2A]'
             }`}
           >

@@ -329,12 +329,12 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
         style={{
           left: isActiveDrag ? activeIn * thumbPx : 0,
           width: HANDLE_W,
-          background: isDark ? '#FF2A85' : '#E85D2A',
-          boxShadow: isDark ? '0 0 8px rgba(255,42,133,0.4)' : undefined,
+          background: isDark ? '#FF5500' : '#E85D2A',
+          boxShadow: isDark ? '0 0 10px rgba(255,85,0,0.5)' : undefined,
         }}
         title="Trim in-point"
       >
-        <div className={`w-[3px] h-6 rounded-full group-hover:scale-y-110 transition-transform ${isDark ? 'bg-[#E2FF00]' : 'bg-white/90 group-hover:bg-white'}`} />
+        <div className={`w-[3px] h-6 rounded-full group-hover:scale-y-110 transition-transform ${isDark ? 'bg-[#00FF66]' : 'bg-white/90 group-hover:bg-white'}`} />
       </div>
 
       {/* ---- Right trim handle ---- */}
@@ -346,12 +346,12 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
             ? (activeOut + 1) * thumbPx - HANDLE_W
             : clipWidth - HANDLE_W,
           width: HANDLE_W,
-          background: isDark ? '#FF2A85' : '#E85D2A',
-          boxShadow: isDark ? '0 0 8px rgba(255,42,133,0.4)' : undefined,
+          background: isDark ? '#FF5500' : '#E85D2A',
+          boxShadow: isDark ? '0 0 10px rgba(255,85,0,0.5)' : undefined,
         }}
         title="Trim out-point"
       >
-        <div className={`w-[3px] h-6 rounded-full group-hover:scale-y-110 transition-transform ${isDark ? 'bg-[#E2FF00]' : 'bg-white/90 group-hover:bg-white'}`} />
+        <div className={`w-[3px] h-6 rounded-full group-hover:scale-y-110 transition-transform ${isDark ? 'bg-[#00FF66]' : 'bg-white/90 group-hover:bg-white'}`} />
       </div>
     </div>
   );

@@ -55,11 +55,11 @@ export const BlueprintHoverCard: React.FC<BlueprintHoverCardProps> = ({
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className={`relative border-2 will-change-transform transition-all duration-200 ${
+      className={`relative border will-change-transform transition-all duration-200 ${
         isDark
           ? isHovered
-            ? 'shadow-[4px_4px_0_0_#FF2A85] border-[#00F0FF]/60 bg-[#1A142C]'
-            : 'shadow-[2px_2px_0_0_#2D2344] border-[#2D2344] bg-[#161126]'
+            ? 'shadow-[0_12px_32px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.15)] border-white/20 bg-[#0D0D10]'
+            : 'shadow-[0_4px_16px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.06)] border-white/10 bg-[#08080A]'
           : isHovered
           ? 'shadow-[0_20px_40px_-15px_rgba(26,26,26,0.5)] border-[#1A1A1A] bg-[#E0DBD5]'
           : 'shadow-none border-[#1A1A1A] bg-[#F5F0EB]'
@@ -72,10 +72,10 @@ export const BlueprintHoverCard: React.FC<BlueprintHoverCardProps> = ({
       }}
     >
       {/* Corner Technical Registration Marks */}
-      <div className={`absolute -top-1 -left-1 text-[8px] font-mono select-none pointer-events-none transition-colors ${isDark ? 'text-[#00F0FF]/50' : 'text-[#1A1A1A]/30'}`}>+</div>
-      <div className={`absolute -top-1 -right-1 text-[8px] font-mono select-none pointer-events-none transition-colors ${isDark ? 'text-[#00F0FF]/50' : 'text-[#1A1A1A]/30'}`}>+</div>
-      <div className={`absolute -bottom-1 -left-1 text-[8px] font-mono select-none pointer-events-none transition-colors ${isDark ? 'text-[#00F0FF]/50' : 'text-[#1A1A1A]/30'}`}>+</div>
-      <div className={`absolute -bottom-1 -right-1 text-[8px] font-mono select-none pointer-events-none transition-colors ${isDark ? 'text-[#00F0FF]/50' : 'text-[#1A1A1A]/30'}`}>+</div>
+      <div className={`absolute -top-1 -left-1 text-[8px] font-mono select-none pointer-events-none transition-colors ${isDark ? 'text-[#00FF66]/50' : 'text-[#1A1A1A]/30'}`}>+</div>
+      <div className={`absolute -top-1 -right-1 text-[8px] font-mono select-none pointer-events-none transition-colors ${isDark ? 'text-[#00FF66]/50' : 'text-[#1A1A1A]/30'}`}>+</div>
+      <div className={`absolute -bottom-1 -left-1 text-[8px] font-mono select-none pointer-events-none transition-colors ${isDark ? 'text-[#00FF66]/50' : 'text-[#1A1A1A]/30'}`}>+</div>
+      <div className={`absolute -bottom-1 -right-1 text-[8px] font-mono select-none pointer-events-none transition-colors ${isDark ? 'text-[#00FF66]/50' : 'text-[#1A1A1A]/30'}`}>+</div>
 
       <div className="relative z-10 w-full h-full bg-transparent flex flex-col">
         {children}

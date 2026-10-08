@@ -900,7 +900,7 @@ function MainApp() {
                 <div className="hidden xl:block shrink-0">
                   <div className={`p-2.5 font-mono text-[9px] w-32 rotate-2 transition-all ${aesthetic.stickyNote(isDark)}`}>
                     <div className="flex justify-between items-start mb-1">
-                      <div className={`w-2 h-2 rounded-full ${isDark ? 'bg-[#FF2A85]' : 'bg-[#1A1A1A]/20'}`} />
+                      <div className={`w-2 h-2 rounded-full ${isDark ? 'bg-[#00FF66]' : 'bg-[#1A1A1A]/20'}`} />
                       <span>💡</span>
                     </div>
                     OLED output shows 1:1 true scale.
@@ -938,19 +938,19 @@ function MainApp() {
                 themeMode={themeMode}
               />
             ) : (
-              <div className={`border-2 p-3 font-mono text-xs flex flex-col gap-4 mb-auto transition-all ${
+              <div className={`border p-3 font-mono text-xs flex flex-col gap-4 mb-auto transition-all ${
                 isDark 
-                  ? 'bg-[#161126] border-[#2D2344] shadow-[3px_3px_0_0_#FF2A85] text-[#F1EEF8]' 
+                  ? 'bg-[#0D0D10] border-white/10 shadow-[0_4px_16px_rgba(0,0,0,0.8)] text-[#F1EEF8]' 
                   : 'bg-white border-[#1A1A1A] shadow-[3px_3px_0_0_#1A1A1A] text-[#1A1A1A]'
               }`}>
                 <div>
                   <div className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider mb-2 flex justify-between items-center ${
-                    isDark ? 'bg-[#1E1635] text-[#00F0FF]' : 'bg-[#1A1A1A] text-white'
+                    isDark ? 'bg-[#18181C] text-[#00FF66]' : 'bg-[#1A1A1A] text-white'
                   }`}>
                     <span>DISPLAY INFO</span>
-                    <span className={`w-1.5 h-1.5 rounded-full ${isDark ? 'bg-[#E2FF00]' : 'bg-[#E85D2A]'}`}></span>
+                    <span className={`w-1.5 h-1.5 rounded-full ${isDark ? 'bg-[#00FF66]' : 'bg-[#E85D2A]'}`}></span>
                   </div>
-                  <div className={`flex flex-col gap-0.5 text-[11px] ${isDark ? 'text-[#A59CB8]' : 'text-[#6B6B6B]'}`}>
+                  <div className={`flex flex-col gap-0.5 text-[11px] ${isDark ? 'text-[#A1A1AA]' : 'text-[#6B6B6B]'}`}>
                     <div>128 × 64</div>
                     <div>1-BIT (MONO)</div>
                     <div>I²C 0x3C</div>
@@ -958,19 +958,19 @@ function MainApp() {
                   </div>
                 </div>
 
-                <div className={`h-px ${isDark ? 'bg-[#2D2344]' : 'bg-[#1A1A1A]/20'}`} />
+                <div className={`h-px ${isDark ? 'bg-white/10' : 'bg-[#1A1A1A]/20'}`} />
 
                 <div>
                   <div className={`text-[9px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-[#F1EEF8]' : 'text-[#1A1A1A]'}`}>CURRENT FRAME</div>
-                  <div className={`text-[11px] ${isDark ? 'text-[#A59CB8]' : 'text-[#6B6B6B]'}`}>
+                  <div className={`text-[11px] ${isDark ? 'text-[#A1A1AA]' : 'text-[#6B6B6B]'}`}>
                     {activeFrameIndex.toString().padStart(3, '0')} / {media ? media.frames.length.toString().padStart(3, '0') : '000'}
                   </div>
-                  <div className={`text-[11px] ${isDark ? 'text-[#A59CB8]' : 'text-[#6B6B6B]'}`}>
+                  <div className={`text-[11px] ${isDark ? 'text-[#A1A1AA]' : 'text-[#6B6B6B]'}`}>
                     {(activeFrameIndex / targetFps).toFixed(2)}s
                   </div>
                 </div>
 
-                <div className={`h-px ${isDark ? 'bg-[#2D2344]' : 'bg-[#1A1A1A]/20'}`} />
+                <div className={`h-px ${isDark ? 'bg-white/10' : 'bg-[#1A1A1A]/20'}`} />
 
                 <div>
                   <div className={`text-[9px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-[#F1EEF8]' : 'text-[#1A1A1A]'}`}>OUTPUT SIZE</div>
@@ -1040,7 +1040,7 @@ function MainApp() {
                   <div className="p-2.5">
                     {Object.values(assets).length === 0 ? (
                       <p className={`text-[9px] font-mono text-center py-6 border border-dashed ${
-                        isDark ? 'text-[#7E7694] border-[#2D2344]' : 'text-[#6B6B6B] border-[#1A1A1A]/30'
+                        isDark ? 'text-[#71717A] border-white/10' : 'text-[#6B6B6B] border-[#1A1A1A]/30'
                       }`}>
                         No imported video assets yet. Drop a file above to add to your bin!
                       </p>
@@ -1057,8 +1057,8 @@ function MainApp() {
                                 e.dataTransfer.setData('text/plain', asset.id);
                               }}
                               onDoubleClick={() => handleAddAssetToTimeline(asset.id)}
-                              className={`bg-[#080808] border-2 transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-sm ${
-                                isDark ? 'border-[#2D2344] hover:border-[#00F0FF]' : 'border-[#1A1A1A] hover:border-[#E85D2A]'
+                              className={`bg-[#080808] border transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-sm ${
+                                isDark ? 'border-white/10 hover:border-[#00FF66]' : 'border-[#1A1A1A] hover:border-[#E85D2A]'
                               }`}
                               title={`Double click or drag ${asset.media.sourceInfo.filename} to timeline`}
                             >
@@ -1081,7 +1081,7 @@ function MainApp() {
 
                                 {/* Frame badge */}
                                 <span className={`absolute top-1 right-1 bg-black/80 text-[7px] font-mono px-1 py-0.5 border font-bold ${
-                                  isDark ? 'text-[#00F0FF] border-[#00F0FF]/40' : 'text-white border-white/20'
+                                  isDark ? 'text-[#00FF66] border-[#00FF66]/30' : 'text-white border-white/20'
                                 }`}>
                                   {asset.media.frames.length}f
                                 </span>
@@ -1094,14 +1094,14 @@ function MainApp() {
                                 {/* Hover Action Overlay */}
                                 <div className="absolute inset-0 bg-black/85 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-1.5 gap-1.5 z-10">
                                   <span className={`text-[7px] font-mono font-bold uppercase tracking-wider ${
-                                    isDark ? 'text-[#00F0FF]' : 'text-[#E85D2A]'
+                                    isDark ? 'text-[#00FF66]' : 'text-[#E85D2A]'
                                   }`}>
                                     DRAG OR CHOOSE
                                   </span>
                                   <button 
                                     onClick={(e) => { e.stopPropagation(); handleAddAssetToTimeline(asset.id); }}
                                     className={`w-full py-1 text-[8px] font-bold transition-colors cursor-pointer uppercase font-mono tracking-wider ${
-                                      isDark ? 'bg-[#00F0FF] text-[#100D1C] hover:bg-[#FF2A85] hover:text-white' : 'bg-[#E85D2A] text-white hover:bg-white hover:text-[#1A1A1A]'
+                                      isDark ? 'bg-[#00FF66] text-black font-extrabold hover:bg-white' : 'bg-[#E85D2A] text-white hover:bg-white hover:text-[#1A1A1A]'
                                     }`}
                                   >
                                     + ADD CLIP
@@ -1109,7 +1109,7 @@ function MainApp() {
                                   <button 
                                     onClick={(e) => { e.stopPropagation(); handleReplaceTimelineWithAsset(asset.id); }}
                                     className={`w-full py-0.5 text-[7px] font-bold transition-colors cursor-pointer uppercase font-mono tracking-wider ${
-                                      isDark ? 'border border-[#00F0FF]/40 text-[#00F0FF] hover:bg-[#00F0FF] hover:text-[#100D1C]' : 'border border-white/40 text-white hover:bg-white hover:text-[#1A1A1A]'
+                                      isDark ? 'border border-white/20 text-white hover:bg-white/10' : 'border border-white/40 text-white hover:bg-white hover:text-[#1A1A1A]'
                                     }`}
                                   >
                                     REPLACE
@@ -1167,8 +1167,8 @@ function MainApp() {
                           e.dataTransfer.setData('text/plain', sample.id);
                         }}
                         onDoubleClick={() => handleLoadSample(sample.id as any, 'append')}
-                        className={`bg-[#080808] border-2 transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-sm ${
-                          isDark ? 'border-[#2D2344] hover:border-[#00F0FF]' : 'border-[#1A1A1A] hover:border-[#E85D2A]'
+                        className={`bg-[#080808] border transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-sm ${
+                          isDark ? 'border-white/10 hover:border-[#00FF66]' : 'border-[#1A1A1A] hover:border-[#E85D2A]'
                         }`}
                         title={`Double click or drag ${sample.name} to timeline`}
                       >
@@ -1186,7 +1186,7 @@ function MainApp() {
 
                           {/* FPS Badge */}
                           <span className={`absolute top-1 right-1 bg-black/80 text-[7px] font-mono px-1 py-0.5 border font-bold ${
-                            isDark ? 'text-[#00F0FF] border-[#00F0FF]/40' : 'text-white border-white/20'
+                            isDark ? 'text-[#00FF66] border-[#00FF66]/30' : 'text-white border-white/20'
                           }`}>
                             {sample.tag}
                           </span>
@@ -1202,12 +1202,12 @@ function MainApp() {
                           {/* Hover Action Overlay */}
                           <div className="absolute inset-0 bg-black/85 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-1.5 gap-1.5 z-10">
                             <span className={`text-[7px] font-mono font-bold uppercase tracking-wider ${
-                              isDark ? 'text-[#00F0FF]' : 'text-[#E85D2A]'
+                              isDark ? 'text-[#00FF66]' : 'text-[#E85D2A]'
                             }`}>DRAG OR CHOOSE</span>
                             <button 
                               onClick={(e) => { e.stopPropagation(); handleLoadSample(sample.id as any, 'append'); }}
                               className={`w-full py-1 text-[8px] font-bold transition-colors cursor-pointer uppercase font-mono tracking-wider ${
-                                isDark ? 'bg-[#00F0FF] text-[#100D1C] hover:bg-[#FF2A85] hover:text-white' : 'bg-[#E85D2A] text-white hover:bg-white hover:text-[#1A1A1A]'
+                                isDark ? 'bg-[#00FF66] text-black font-extrabold hover:bg-white' : 'bg-[#E85D2A] text-white hover:bg-white hover:text-[#1A1A1A]'
                               }`}
                               title="Append sample animation to timeline"
                             >
@@ -1216,7 +1216,7 @@ function MainApp() {
                             <button 
                               onClick={(e) => { e.stopPropagation(); handleLoadSample(sample.id as any, 'replace'); }}
                               className={`w-full py-0.5 text-[7px] font-bold transition-colors cursor-pointer uppercase font-mono tracking-wider ${
-                                isDark ? 'border border-[#00F0FF]/40 text-[#00F0FF] hover:bg-[#00F0FF] hover:text-[#100D1C]' : 'border border-white/40 text-white hover:bg-white hover:text-[#1A1A1A]'
+                                isDark ? 'border border-white/20 text-white hover:bg-white/10' : 'border border-white/40 text-white hover:bg-white hover:text-[#1A1A1A]'
                               }`}
                               title="Replace sequence with this sample animation"
                             >
@@ -1231,17 +1231,17 @@ function MainApp() {
               )}
 
               {mediaPoolTab === 'create' && (
-                <div className={`p-4 flex-1 flex flex-col items-center justify-center text-center gap-4 border border-dashed m-2 ${
-                  isDark ? 'border-[#2D2344]' : 'border-[#1A1A1A]/30'
+                <div className={`p-4 flex-1 flex flex-col items-center justify-center text-center gap-4 border border-dashed m-2 rounded ${
+                  isDark ? 'border-white/10 bg-[#08080A]/60' : 'border-[#1A1A1A]/30 bg-[#F6F6F4]'
                 }`}>
-                  <p className={`text-[10px] font-mono ${isDark ? 'text-[#A59CB8]' : 'text-[#6B6B6B]'}`}>
+                  <p className={`text-[10px] font-mono ${isDark ? 'text-[#A1A1AA]' : 'text-[#6B6B6B]'}`}>
                     Generate pure beat-synced kinetic typography with Apple Music fluid glass selector
                   </p>
                   <button
                     onClick={() => setActiveView('lyrics-studio')}
-                    className={`py-3 px-6 text-xs font-mono font-bold tracking-widest border-2 transition-all cursor-pointer ${
+                    className={`py-3 px-6 text-xs font-mono font-bold tracking-widest border transition-all cursor-pointer ${
                       isDark 
-                        ? 'bg-[#FF2A85] text-white border-[#00F0FF] shadow-[4px_4px_0_#00F0FF] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#00F0FF]'
+                        ? 'bg-[#00FF66] text-black font-extrabold border-[#00FF66] shadow-[0_0_16px_rgba(0,255,102,0.35)] hover:bg-white hover:border-white'
                         : 'bg-[#E85D2A] text-[#f5f0eb] border-[#1A1A1A] shadow-[4px_4px_0_#1A1A1A] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#1A1A1A]'
                     }`}
                   >
@@ -1254,7 +1254,7 @@ function MainApp() {
                 <div className="p-2.5">
                   {Object.values(assets).length === 0 ? (
                     <p className={`text-[9px] font-mono text-center py-6 border border-dashed ${
-                      isDark ? 'text-[#7E7694] border-[#2D2344]' : 'text-[#6B6B6B] border-[#1A1A1A]/30'
+                      isDark ? 'text-[#71717A] border-white/10' : 'text-[#6B6B6B] border-[#1A1A1A]/30'
                     }`}>
                       No recent files.
                     </p>
@@ -1271,8 +1271,8 @@ function MainApp() {
                               e.dataTransfer.setData('text/plain', asset.id);
                             }}
                             onDoubleClick={() => handleAddAssetToTimeline(asset.id)}
-                            className={`bg-[#080808] border-2 transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-sm ${
-                              isDark ? 'border-[#2D2344] hover:border-[#00F0FF]' : 'border-[#1A1A1A] hover:border-[#E85D2A]'
+                            className={`bg-[#080808] border transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-sm ${
+                              isDark ? 'border-white/10 hover:border-[#00FF66]' : 'border-[#1A1A1A] hover:border-[#E85D2A]'
                             }`}
                           >
                             <div className="flex-1 w-full h-full relative overflow-hidden bg-[#050505]">
@@ -1291,7 +1291,7 @@ function MainApp() {
                                 />
                               )}
                               <span className={`absolute top-1 right-1 bg-black/80 text-[7px] font-mono px-1 py-0.5 border font-bold ${
-                                isDark ? 'text-[#00F0FF] border-[#00F0FF]/40' : 'text-white border-white/20'
+                                isDark ? 'text-[#00FF66] border-[#00FF66]/30' : 'text-white border-white/20'
                               }`}>
                                 {asset.media.frames.length}f
                               </span>
@@ -1302,7 +1302,7 @@ function MainApp() {
                                 <button 
                                   onClick={(e) => { e.stopPropagation(); handleAddAssetToTimeline(asset.id); }}
                                   className={`w-full py-1 text-[8px] font-bold transition-colors cursor-pointer uppercase font-mono tracking-wider ${
-                                    isDark ? 'bg-[#00F0FF] text-[#100D1C] hover:bg-[#FF2A85] hover:text-white' : 'bg-[#E85D2A] text-white hover:bg-white hover:text-[#1A1A1A]'
+                                    isDark ? 'bg-[#00FF66] text-black font-extrabold hover:bg-white' : 'bg-[#E85D2A] text-white hover:bg-white hover:text-[#1A1A1A]'
                                   }`}
                                 >
                                   + ADD CLIP
@@ -1310,7 +1310,7 @@ function MainApp() {
                                 <button 
                                   onClick={(e) => { e.stopPropagation(); handleReplaceTimelineWithAsset(asset.id); }}
                                   className={`w-full py-0.5 text-[7px] font-bold transition-colors cursor-pointer uppercase font-mono tracking-wider ${
-                                    isDark ? 'border border-[#00F0FF]/40 text-[#00F0FF] hover:bg-[#00F0FF] hover:text-[#100D1C]' : 'border border-white/40 text-white hover:bg-white hover:text-[#1A1A1A]'
+                                    isDark ? 'border border-white/20 text-white hover:bg-white/10' : 'border border-white/40 text-white hover:bg-white hover:text-[#1A1A1A]'
                                   }`}
                                 >
                                   REPLACE
