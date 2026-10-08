@@ -182,6 +182,7 @@ export const InertiaTimelineScrubber: React.FC<InertiaTimelineScrubberProps> = (
     e.preventDefault();
     isScrubbingRef.current = true;
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    if (containerRef.current) containerRef.current.style.cursor = 'none';
     scrubAt(e.clientX);
   };
 
@@ -195,6 +196,7 @@ export const InertiaTimelineScrubber: React.FC<InertiaTimelineScrubberProps> = (
     if (isScrubbingRef.current) {
       isScrubbingRef.current = false;
       targetFrameRef.current = Math.max(0, Math.min(totalFrames - 1, targetFrameRef.current));
+      if (containerRef.current) containerRef.current.style.cursor = 'none';
     }
   };
 
@@ -206,7 +208,7 @@ export const InertiaTimelineScrubber: React.FC<InertiaTimelineScrubberProps> = (
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
-      className={`relative h-14 select-none cursor-ew-resize overflow-hidden font-mono ${
+      className={`relative h-14 select-none cursor-none overflow-hidden font-mono ${
         isDark ? 'bg-[#08080A]' : 'bg-[#EBEAE5]'
       } ${className}`}
       style={{ width: `${totalWidth}px` }}

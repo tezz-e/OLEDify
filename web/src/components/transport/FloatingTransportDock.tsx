@@ -438,7 +438,7 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
   className = '',
   initialGlowColor = 'green',
   onGlowColorChange,
-  initialGlowGeometry = 'radial',
+  initialGlowGeometry = 'fluid-diffusion',
   onGlowGeometryChange,
 }) => {
   const isDark = themeMode === 'dark';
@@ -465,7 +465,7 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
     }
   };
 
-  // Glow Geometry State ('radial' | 'directional' | 'slit')
+  // Glow Geometry State — 'border-beam' | 'fluid-diffusion' | 'fresnel-caustic'
   const [glowGeometry, setGlowGeometry] = useState<DockGlowGeometry>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('oled_glow_geometry');
@@ -473,7 +473,7 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
         return saved as DockGlowGeometry;
       }
     }
-    return initialGlowGeometry || 'radial';
+    return initialGlowGeometry || 'fluid-diffusion';
   });
 
   const handleSelectGeometry = (geom: DockGlowGeometry) => {
@@ -619,15 +619,15 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
       } ${
         isDark
           ? isPlaying
-            ? 'bg-[#08080A]/95 text-[#FAFAFA]'
+            ? 'bg-[#08080A]/80 text-[#FAFAFA]'
             : isHovered
-            ? 'bg-[#08080A]/95 text-[#FAFAFA]'
-            : 'bg-[#08080A]/90 text-[#FAFAFA]'
+            ? 'bg-[#08080A]/75 text-[#FAFAFA]'
+            : 'bg-[#08080A]/65 text-[#FAFAFA]'
           : isPlaying
-          ? 'bg-[#F6F6F4]/98 text-[#1A1A1A]'
+          ? 'bg-[#F6F6F4]/85 text-[#1A1A1A]'
           : isHovered
-          ? 'bg-[#F6F6F4]/98 text-[#1A1A1A]'
-          : 'bg-[#F6F6F4]/95 text-[#1A1A1A]'
+          ? 'bg-[#F6F6F4]/80 text-[#1A1A1A]'
+          : 'bg-[#F6F6F4]/70 text-[#1A1A1A]'
       }`;
 
   const dockContent = (
@@ -647,99 +647,180 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
           : isHovered
           ? (isDark ? 'rgba(255,255,255,0.25)' : 'rgba(26,26,26,0.3)')
           : (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(26,26,26,0.15)'),
-        boxShadow: isDark
-          ? isPlaying
-            ? `0 28px 70px rgba(0,0,0,0.95), inset 0 1px 0 rgba(255,255,255,0.25), 0 0 28px ${activeGlowTheme.glow}`
-            : isHovered
-            ? `0 26px 65px rgba(0,0,0,0.92), inset 0 1px 0 rgba(255,255,255,0.28), 0 0 24px ${activeGlowTheme.glow}`
-            : `0 18px 45px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.18)`
-          : isPlaying
-          ? `0 18px 42px ${activeGlowTheme.glow}, inset 0 1px 0 rgba(255,255,255,0.98)`
-          : isHovered
-          ? `0 16px 38px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,1), 0 0 20px ${activeGlowTheme.glow}`
-          : `0 12px 32px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.95)`,
+        boxShadow: (() => {
+                    // fresnel-caustic uses an inset box-shadow for the top crown specular
+          // inset shadows are NEVER clipped by border-radius or overflow-hidden
+          const fresnelInset = (glowGeometry === 'fresnel-caustic')
+            ? localCursor
+              ? `, inset 0 1px 1px 0 rgba(255,255,255,${isDark ? 0.7 : 0.95}), inset 0 -1px 1px 0 rgba(0,0,0,0.45), inset 0 0 16px ${activeGlowTheme.glow}`
+              : `, inset 0 1px 0 rgba(255,255,255,${isDark ? 0.25 : 0.45})`
+            : '';
+          if (isDark) {
+            if (isPlaying) return `0 28px 70px rgba(0,0,0,0.95), inset 0 1px 0 rgba(255,255,255,0.25), 0 0 28px ${activeGlowTheme.glow}${fresnelInset}`;
+            if (isHovered) return `0 26px 65px rgba(0,0,0,0.92), inset 0 1px 0 rgba(255,255,255,0.28), 0 0 24px ${activeGlowTheme.glow}${fresnelInset}`;
+            return `0 18px 45px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.18)${fresnelInset}`;
+          } else {
+            if (isPlaying) return `0 18px 42px ${activeGlowTheme.glow}, inset 0 1px 0 rgba(255,255,255,0.98)${fresnelInset}`;
+            if (isHovered) return `0 16px 38px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,1), 0 0 20px ${activeGlowTheme.glow}${fresnelInset}`;
+            return `0 12px 32px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.95)${fresnelInset}`;
+          }
+        })(),
       }}
       className={innerClasses}
       aria-label="Floating Transport Dock"
     >
       {/* ── Dynamic Island Liquid Glass Specular Light Beam & Caustic Refraction ── */}
-      <div
-        className="pointer-events-none absolute inset-0 rounded-full overflow-hidden transition-opacity duration-300"
-        style={{ opacity: localCursor ? 1 : 0 }}
-      >
-        {/* Specular spotlight following cursor across the acrylic substrate */}
-        {glowGeometry === 'radial' ? (
-          // Concentrated 2D Circular Radial Orb (Eliminates vertical slit smear)
+      {/* 1. Outer Atmospheric Bloom for border-beam */}
+      {glowGeometry === 'border-beam' && localCursor && (
+        <div
+          className="pointer-events-none absolute -inset-[2px] rounded-full blur-[4px]"
+          style={{
+            background: `radial-gradient(130px circle at ${localCursor.x}px ${localCursor.y}px, ${accent} 0%, transparent 70%)`,
+            opacity: isDark ? 0.75 : 0.5,
+          }}
+        />
+      )}
+
+      {/* 2. Perimeter Masked Border Ring (Border-Beam: Magic UI / 21st style) */}
+      {glowGeometry === 'border-beam' && (
+        localCursor ? (
           <div
-            className="absolute inset-0"
+            className="pointer-events-none absolute inset-0 rounded-full"
             style={{
-              background: localCursor
-                ? `radial-gradient(circle 50px at ${localCursor.x}px ${localCursor.y}px, ${
-                    isDark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.85)'
-                  } 0%, ${activeGlowTheme.glow} 45%, transparent 75%)`
-                : 'none',
-            }}
-          />
-        ) : glowGeometry === 'directional' ? (
-          // Anamorphic horizontal lens streak
-          <div
-            className="absolute inset-0"
-            style={{
-              background: localCursor
-                ? `radial-gradient(ellipse 110px 28px at ${localCursor.x}px ${localCursor.y}px, ${
-                    isDark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.75)'
-                  } 0%, ${activeGlowTheme.glow} 50%, transparent 80%)`
-                : 'none',
+              padding: '1.5px',
+              background: `radial-gradient(140px circle at ${localCursor.x}px ${localCursor.y}px, #FFFFFF 0%, ${accent} 28%, ${activeGlowTheme.rim} 55%, transparent 75%)`,
+              WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+              WebkitMaskComposite: 'xor',
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              maskComposite: 'exclude' as any,
             }}
           />
         ) : (
-          // YDSE Slit Curtain Beam
-          <div
-            className="absolute -inset-10"
+          <motion.div
+            className="pointer-events-none absolute inset-0 rounded-full"
             style={{
-              background: localCursor
-                ? `radial-gradient(190px circle at ${localCursor.x + 40}px ${localCursor.y + 40}px, ${
-                    isDark ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.6)'
-                  }, ${activeGlowTheme.glow} 50%, transparent 80%)`
-                : 'none',
+              padding: '1.5px',
+              background: `linear-gradient(90deg, transparent 0%, ${activeGlowTheme.rim} 20%, ${accent} 40%, #FFFFFF 50%, ${accent} 60%, ${activeGlowTheme.rim} 80%, transparent 100%)`,
+              backgroundSize: '200% 100%',
+              WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+              WebkitMaskComposite: 'xor',
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              maskComposite: 'exclude' as any,
+              opacity: isPlaying ? 0.85 : 0.5,
             }}
+            animate={{ backgroundPosition: ['200% 0%', '-200% 0%'] }}
+            transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
           />
+        )
+      )}
+
+      {/* 3. Fully Clipped Internal Glass & Diffusion Container (Rounded-Full Overflow-Hidden) */}
+      <div
+        className="pointer-events-none absolute inset-0 rounded-full overflow-hidden transition-opacity duration-300"
+        style={{ opacity: localCursor ? 1 : 0.35 }}
+      >
+        {/* ══════════════════════════════════════════════════════════════════════════════
+         * GLOW GEOMETRY 2: fluid-diffusion ≋
+         * Source: ibelick / motion-primitives Spotlight
+         * ════════════════════════════════════════════════════════════════════════════ */}
+        {glowGeometry === 'fluid-diffusion' && localCursor && (
+          <>
+            <div
+              className="pointer-events-none absolute rounded-full blur-2xl"
+              style={{
+                width: 240,
+                height: 240,
+                left: localCursor.x - 120,
+                top: localCursor.y - 120,
+                background: `radial-gradient(circle at center,
+                  ${accent} 0%,
+                  ${activeGlowTheme.glow} 40%,
+                  transparent 80%)`,
+                opacity: isDark ? 0.35 : 0.50,
+                willChange: 'left, top',
+              }}
+            />
+            <div
+              className="pointer-events-none absolute rounded-full blur-3xl"
+              style={{
+                width: 420,
+                height: 120,
+                left: localCursor.x - 210,
+                top: localCursor.y - 60,
+                background: accent,
+                opacity: isDark ? 0.08 : 0.13,
+              }}
+            />
+            <div
+              className="pointer-events-none absolute top-0 inset-x-0 h-[1.5px] rounded-full"
+              style={{
+                background: `radial-gradient(600px circle at ${localCursor.x}px 0px,
+                  rgba(255,255,255,0.85) 0%,
+                  ${accent} 10%,
+                  transparent 40%)`,
+              }}
+            />
+          </>
         )}
 
-        {/* Top rim specular edge highlight */}
-        <div
-          className="absolute top-0 inset-x-0 h-[1.5px]"
-          style={{
-            background: localCursor
-              ? glowGeometry === 'radial'
-                ? `radial-gradient(65px circle at ${localCursor.x}px 0px, #FFFFFF 0%, ${activeGlowTheme.rim} 45%, transparent 75%)`
-                : glowGeometry === 'directional'
-                ? `radial-gradient(110px circle at ${localCursor.x}px 0px, #FFFFFF 0%, ${activeGlowTheme.rim} 45%, transparent 80%)`
-                : `radial-gradient(160px circle at ${localCursor.x}px 0px, #FFFFFF, ${activeGlowTheme.rim} 40%, transparent 80%)`
-              : 'none',
-          }}
-        />
+        {/* ══════════════════════════════════════════════════════════════════════════════
+         * GLOW GEOMETRY 3: fresnel-caustic ⌒
+         * True Optical Glass Capsule Refraction (Apple visionOS / Dynamic Island style).
+         * Mathematically bound to the capsule silhouette via rounded-full overflow-hidden.
+         * ════════════════════════════════════════════════════════════════════════════ */}
+        {glowGeometry === 'fresnel-caustic' && (
+          <>
+            {/* Layer A — Refractive Glass Bevel Rim (1.5px Masked Edge) */}
+            <div
+              className="pointer-events-none absolute inset-0 rounded-full"
+              style={{
+                padding: '1.5px',
+                background: localCursor
+                  ? `radial-gradient(180px circle at ${localCursor.x}px ${localCursor.y}px, rgba(255,255,255,0.95) 0%, ${accent} 30%, ${activeGlowTheme.rim} 55%, transparent 75%)`
+                  : `radial-gradient(300px circle at 50% 0px, rgba(255,255,255,0.6) 0%, ${accent} 35%, transparent 75%)`,
+                WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                WebkitMaskComposite: 'xor',
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                maskComposite: 'exclude' as any,
+              }}
+            />
 
-        {/* Bottom rim specular bounce highlight */}
-        <div
-          className="absolute bottom-0 inset-x-0 h-[1px]"
-          style={{
-            background: localCursor
-              ? glowGeometry === 'radial'
-                ? `radial-gradient(55px circle at ${localCursor.x}px 100%, ${
-                    isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.08)'
-                  } 0%, transparent 70%)`
-                : glowGeometry === 'directional'
-                ? `radial-gradient(90px circle at ${localCursor.x}px 100%, ${
-                    isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.06)'
-                  } 0%, transparent 75%)`
-                : `radial-gradient(120px circle at ${localCursor.x}px 100%, ${
-                    isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.06)'
-                  }, transparent 75%)`
-              : 'none',
-          }}
-        />
+            {/* Layer B — Top Specular Curved Glass Glint (curves seamlessly with end caps) */}
+            <div
+              className="pointer-events-none absolute top-0 inset-x-0 h-3"
+              style={{
+                background: localCursor
+                  ? `radial-gradient(360px 18px at ${localCursor.x}px 0px, rgba(255,255,255,0.95) 0%, ${accent} 25%, ${activeGlowTheme.rim} 50%, transparent 80%)`
+                  : `radial-gradient(450px 16px at 50% 0px, rgba(255,255,255,0.55) 0%, ${accent} 25%, transparent 75%)`,
+                opacity: isDark ? 0.9 : 1,
+              }}
+            />
+
+            {/* Layer C — Volumetric Internal Caustic Pool */}
+            {localCursor && (
+              <div
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  background: `radial-gradient(180px 45px at ${localCursor.x}px ${localCursor.y}px, ${activeGlowTheme.glow} 0%, rgba(255,255,255,0.04) 35%, transparent 80%)`,
+                  opacity: isDark ? 0.75 : 0.5,
+                }}
+              />
+            )}
+
+            {/* Layer D — Bottom Bevel Ground Reflection */}
+            <div
+              className="pointer-events-none absolute bottom-0 inset-x-0 h-2.5"
+              style={{
+                background: localCursor
+                  ? `radial-gradient(280px 14px at ${localCursor.x}px 100%, rgba(255,255,255,0.45) 0%, ${activeGlowTheme.rim} 35%, transparent 75%)`
+                  : `radial-gradient(350px 12px at 50% 100%, rgba(255,255,255,0.25) 0%, transparent 70%)`,
+                opacity: isDark ? 0.6 : 0.4,
+              }}
+            />
+          </>
+        )}
       </div>
+
 
       {/* ── 1. Reset, Step & Play Controls ───────────────────────────────── */}
       <div className="flex items-center gap-1 shrink-0 relative z-10">

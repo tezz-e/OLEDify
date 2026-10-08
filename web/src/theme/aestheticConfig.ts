@@ -129,7 +129,7 @@ export function getActiveTheme(): AestheticThemeTokens {
 
 export type DockGlowColor = 'green' | 'cyan' | 'amber' | 'white' | 'violet' | 'crimson';
 
-export type DockGlowGeometry = 'radial' | 'slit' | 'directional';
+export type DockGlowGeometry = 'border-beam' | 'fluid-diffusion' | 'fresnel-caustic';
 
 export interface DockGlowGeometryPreset {
   id: DockGlowGeometry;
@@ -139,24 +139,24 @@ export interface DockGlowGeometryPreset {
 }
 
 export const DOCK_GLOW_GEOMETRIES: Record<DockGlowGeometry, DockGlowGeometryPreset> = {
-  radial: {
-    id: 'radial',
-    label: 'Radial Orb',
-    symbol: '⊙',
-    description: 'Circular concentrated optical orb directly under cursor'
+  'border-beam': {
+    id: 'border-beam',
+    label: 'Border Spotlight',
+    symbol: '▢',
+    description: '21st / React Bits masked perimeter border illumination (zero face obstruction)',
   },
-  directional: {
-    id: 'directional',
-    label: 'Anamorphic Flare',
-    symbol: '↔',
-    description: 'Directional horizontal lens streak'
+  'fluid-diffusion': {
+    id: 'fluid-diffusion',
+    label: 'Fluid Diffusion',
+    symbol: '≋',
+    description: 'Soft volumetric ambient back-illumination with blur-2xl Gaussian falloff',
   },
-  slit: {
-    id: 'slit',
-    label: 'YDSE Slit',
-    symbol: '⦚',
-    description: 'Wide vertical aperture interference beam'
-  }
+  'fresnel-caustic': {
+    id: 'fresnel-caustic',
+    label: 'Fresnel Caustics',
+    symbol: '⌒',
+    description: 'Curved glass lens refraction along top and bottom bevel edges',
+  },
 };
 
 export interface DockGlowPreset {
