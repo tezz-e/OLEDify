@@ -384,7 +384,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
       >
         <div
           className="relative min-h-full"
-          style={{ width: Math.max(contentWidth, 100), minHeight: clips.length === 0 ? 250 : RULER_H + CLIP_HEIGHT + 40 }}
+          style={{ width: clips.length === 0 ? '100%' : Math.max(contentWidth, 100), minHeight: clips.length === 0 ? 250 : RULER_H + CLIP_HEIGHT + 40 }}
         >
 
           {/* RULER */}
@@ -425,26 +425,26 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
 
           {/* CLIP TRACK: Hairline Tape Cradle Empty State */}
           {clips.length === 0 && (
-            <div className="absolute inset-x-0 top-8 bottom-0 flex flex-col items-center justify-center z-10 py-2 pointer-events-auto select-none">
-              <div className="w-[280px] h-[155px] overflow-hidden rounded-[4px] border border-white/10 bg-[#181A1B] flex items-center justify-center shadow-inner relative group">
-                <iframe
-                  src="/hairline-cradle.html?embed=1"
-                  className="w-[400px] h-[320px] scale-[0.55] origin-center border-none pointer-events-auto select-none"
-                  title="Hairline Tape Splicer Cradle"
-                  tabIndex={-1}
-                />
-              </div>
-              <div className="flex flex-col items-center mt-2 pointer-events-none">
-                <span className={`text-[9px] font-mono uppercase tracking-widest font-bold ${
-                  isDark ? 'text-[#A1A1AA]' : 'text-[#6B6B6B]'
+            <div className="absolute inset-x-0 top-7 bottom-4 flex flex-col items-center justify-start z-10 pt-1 pointer-events-auto select-none">
+              <div className="flex flex-col items-center mb-2 pointer-events-none text-center">
+                <span className={`text-[10px] font-mono uppercase tracking-widest font-bold ${
+                  isDark ? 'text-[#FAFAFA]' : 'text-[#1A1A1A]'
                 }`}>
                   {isDropTargetOver ? '+ DROP ASSET TO START TIMELINE' : 'EMPTY TIMELINE • DRAG & DROP MEDIA FROM POOL'}
                 </span>
-                <span className={`text-[8px] font-mono uppercase tracking-wider ${
+                <span className={`text-[8px] font-mono uppercase tracking-wider mt-0.5 ${
                   isDark ? 'text-[#71717A]' : 'text-[#888]'
                 }`}>
                   or click + ADD on any sample or imported card
                 </span>
+              </div>
+              <div className="w-[250px] h-[115px] overflow-hidden rounded-[4px] border border-white/10 bg-[#181A1B] flex items-center justify-center shadow-inner relative group">
+                <iframe
+                  src="/hairline-cradle.html?embed=1"
+                  className="w-[380px] h-[300px] scale-[0.46] origin-center border-none pointer-events-auto select-none"
+                  title="Hairline Tape Splicer Cradle"
+                  tabIndex={-1}
+                />
               </div>
             </div>
           )}
