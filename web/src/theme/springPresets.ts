@@ -1,22 +1,22 @@
 /**
- * Calibrated spring presets for physical hardware & liquid glass transitions.
+ * Strict 3-Preset Spring Motion Contract (Teenage Engineering / Apple)
+ * Springs only, no cubic-bezier, <= 300ms perceived duration.
  */
 export const HW_SPRINGS = {
-  // Ultra-responsive for magnetic cursor pull and button taps
-  tactileTap: { mass: 0.1, stiffness: 450, damping: 24 },
+  // Snappy: button taps, switches, toggles (< 150ms perceived)
+  snappy: { type: 'spring', mass: 0.1, stiffness: 500, damping: 28 },
   
-  // High-inertia dock icon magnification
-  dockMagnify: { mass: 0.1, stiffness: 220, damping: 14 },
+  // Smooth: layoutId tab slides, morphs, position tracking (~ 220ms perceived)
+  smooth: { type: 'spring', mass: 0.2, stiffness: 380, damping: 26 },
   
-  // Liquid pill navigation morphing
-  mercuryMorph: { mass: 0.6, stiffness: 380, damping: 28 },
-  
-  // Heavy mechanical toggle switch snap-back
-  switchSnap: { mass: 0.3, stiffness: 500, damping: 20 },
-  
-  // Floating transport bar expansion/contraction
-  islandExpand: { mass: 0.8, stiffness: 320, damping: 30 },
-  
-  // Jog wheel scrub detent catch-up
-  jogCatchUp: { mass: 0.2, stiffness: 300, damping: 26 },
+  // Soft: transport island expand/collapse, popover reveals (~ 280ms perceived)
+  soft: { type: 'spring', mass: 0.4, stiffness: 300, damping: 24 },
+
+  // Compatibility aliases
+  tactileTap: { type: 'spring', mass: 0.1, stiffness: 500, damping: 28 },
+  mercuryMorph: { type: 'spring', mass: 0.2, stiffness: 380, damping: 26 },
+  islandExpand: { type: 'spring', mass: 0.4, stiffness: 300, damping: 24 },
+  dockMagnify: { type: 'spring', mass: 0.1, stiffness: 500, damping: 28 },
+  switchSnap: { type: 'spring', mass: 0.1, stiffness: 500, damping: 28 },
+  jogCatchUp: { type: 'spring', mass: 0.2, stiffness: 380, damping: 26 },
 } as const;

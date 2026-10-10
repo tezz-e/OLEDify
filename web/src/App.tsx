@@ -9,12 +9,10 @@ import { CropControls } from './components/CropControls';
 import { DecryptedText } from './components/reactbits/DecryptedText';
 import { CountUp } from './components/reactbits/CountUp';
 import { BlueprintHoverCard } from './components/reactbits/BlueprintHoverCard';
-import { SvgFilterLibrary } from './components/common/SvgFilters';
 import { FloatingTransportDock } from './components/transport/FloatingTransportDock';
 import { HardwareTelemetryHUD } from './components/transport/HardwareTelemetryHUD';
-import { PixelCard } from './components/hardware/PixelCard';
-import { ZeroBloatWaveField } from './components/hardware/ZeroBloatWaveField';
 import { getActiveTheme } from './theme/aestheticConfig';
+import { HW_SPRINGS } from './theme/springPresets';
 
 // Lazy-loaded heavy studios and modals to speed up initial page reload
 const SettingsModal = React.lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
@@ -145,7 +143,7 @@ function MainApp() {
   const [exportProgress, setExportProgress] = useState(0);
   const [exportError, setExportError] = useState<string | null>(null);
   const [rawSourceFrame, setRawSourceFrame] = useState<ImageData | null>(null);
-  const [previewFitMode, setPreviewFitMode] = useState<'contain' | 'cover'>('cover');
+  const [previewFitMode, setPreviewFitMode] = useState<'contain' | 'cover'>('contain');
   const [cppCode, setCppCode] = useState('');
   const [exportXbmpFrames, setExportXbmpFrames] = useState<Uint8Array[]>([]);
 
@@ -743,9 +741,7 @@ function MainApp() {
   const aesthetic = getActiveTheme();
 
   return (
-    <div className={`h-screen flex flex-col overflow-hidden relative transition-colors ${isDark ? 'bg-[#08080A] text-[#FAFAFA]' : 'bg-[#F6F6F4] text-[#1A1A1A]'}`}>
-      <ZeroBloatWaveField themeMode={themeMode} gridSpacing={28} className="absolute inset-0 pointer-events-none opacity-60 z-0" />
-      <SvgFilterLibrary />
+    <div className={`h-screen flex flex-col overflow-hidden relative transition-colors ${isDark ? 'bg-[#181A1B] text-[#FAFAFA]' : 'bg-[#F6F6F4] text-[#1A1A1A]'}`}>
       <Header 
         serialConnected={serialConnected}
         baudRate={baudRate}
@@ -781,19 +777,19 @@ function MainApp() {
               <div className="flex-1 w-full relative min-h-0">
                 <div className="absolute inset-0 p-1 flex items-center justify-center">
                   
-                  {/* Flawless Aspect-Ratio Bounding Box (Always Stable 572:367 Container) */}
+                  {/* Flawless Aspect-Ratio Bounding Box (2:1 Container matching 128x64 display) */}
                   <div className="relative flex items-center justify-center max-w-full max-h-full shrink-0">
-                    {/* Sizing SVG establishing constant 572:367 box size before & after media import */}
+                    {/* Sizing SVG establishing constant 2:1 (512x256) box size */}
                     <svg 
-                      viewBox="0 0 572 367"
-                      width={572}
-                      height={367}
+                      viewBox="0 0 512 256"
+                      width={512}
+                      height={256}
                       className="max-w-full max-h-full w-full h-full block opacity-0 pointer-events-none"
                       style={{ objectFit: 'contain' }}
                     />
 
                     {/* Actual Container Box overlaying the exact expanded bounds */}
-                    <div className={`absolute inset-0 border-2 rounded-md flex flex-col justify-between p-2 overflow-hidden transition-all ${
+                    <div className={`absolute inset-0 border rounded-[4px] flex flex-col justify-between p-2 overflow-hidden transition-all ${
                       aesthetic.previewBox(isDark)
                     }`}>
                       {/* Media Display Area */}
@@ -805,17 +801,17 @@ function MainApp() {
                             style={{ imageRendering: 'pixelated' }}
                           />
                         ) : (
-                          <div className={`flex items-center justify-center w-full h-full ${isDark ? 'bg-[#0A0A0C]' : 'bg-[#111]'}`}>
+                          <div className={`flex items-center justify-center w-full h-full ${isDark ? 'bg-[#181A1B]' : 'bg-[#111]'}`}>
                             <span className={`font-mono text-xs ${aesthetic.accentSub(isDark)}`}>NO MEDIA</span>
                           </div>
                         )}
                       </div>
                       
                       {/* Playback Control Bar */}
-                      <div className={`h-7 flex items-center px-2 gap-2 rounded border shrink-0 mt-1 z-10 transition-colors ${
+                      <div className={`h-7 flex items-center px-2 gap-2 rounded-[4px] border shrink-0 mt-1 z-10 transition-colors ${
                         isDark 
-                          ? 'bg-[#121214]/90 backdrop-blur border-white/10 text-[#FAFAFA]' 
-                          : 'bg-[#111]/90 backdrop-blur border-white/10 text-white'
+                          ? 'bg-[#282A2E] border-white/10 text-[#FAFAFA]' 
+                          : 'bg-[#111] border-white/10 text-white'
                       }`}>
                         <button 
                           onClick={(e) => {
@@ -824,19 +820,23 @@ function MainApp() {
                             setIsPlaying(p => !p);
                           }} 
                           className={`text-xs font-bold transition-colors cursor-pointer px-1 py-1 ${
-                            isDark ? 'text-[#00FF66] hover:text-white' : 'text-[#E85D2A] hover:text-white'
+                            isPlaying ? 'text-[#00FF66]' : 'text-[#FAFAFA] hover:text-[#FF5500]'
                           }`}
                         >
                           {isPlaying ? '❚❚' : '▶'}
                         </button>
-                        <div className={`text-[9px] font-mono whitespace-nowrap ${isDark ? 'text-[#00FF66]/90' : 'opacity-70'}`}>
-                          {(activeFrameIndex / targetFps).toFixed(2)}s
+                        <div className="text-[9px] font-mono tabular-nums whitespace-nowrap text-[#FAFAFA]">
+                          {(() => {
+                            const totalMs = Math.round((activeFrameIndex / targetFps) * 1000);
+                            const m = Math.floor(totalMs / 60000);
+                            const s = Math.floor((totalMs % 60000) / 1000);
+                            const ms = totalMs % 1000;
+                            return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
+                          })()}
                         </div>
-                        <div className={`flex-1 h-1 rounded-full relative min-w-[30px] ${isDark ? 'bg-white/10' : 'bg-white/20'}`}>
+                        <div className="flex-1 h-1 rounded-full relative min-w-[30px] bg-white/10">
                           <div 
-                            className={`absolute inset-y-0 left-0 rounded-full ${
-                              isDark ? 'bg-[#00FF66] shadow-[0_0_6px_#00FF66]' : 'bg-[#E85D2A]'
-                            }`} 
+                            className="absolute inset-y-0 left-0 rounded-full bg-[#FF5500]" 
                             style={{ width: media && media.frames.length ? `${(activeFrameIndex / media.frames.length) * 100}%` : '0%' }}
                           />
                         </div>
@@ -846,18 +846,12 @@ function MainApp() {
                             e.stopPropagation();
                             setPreviewFitMode(m => m === 'cover' ? 'contain' : 'cover');
                           }} 
-                          className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded transition-colors cursor-pointer uppercase tracking-wider ${
-                            isDark 
-                              ? 'bg-white/10 border border-white/10 text-[#FAFAFA] hover:bg-[#00FF66] hover:text-black' 
-                              : 'bg-white/10 hover:bg-[#E85D2A] text-white'
-                          }`}
+                          className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-[4px] transition-colors cursor-pointer uppercase tracking-wider bg-white/10 border border-white/10 text-[#FAFAFA] hover:bg-[#FF5500] hover:text-black hover:border-[#FF5500]"
                           title="Toggle FIT (contain full frame) vs FILL (zoom to fill box)"
                         >
                           {previewFitMode === 'cover' ? 'FILL' : 'FIT'}
                         </button>
-                        <div className={`text-[9px] font-mono whitespace-nowrap font-bold ${
-                          isDark ? 'text-[#00FF66]' : 'text-[#E85D2A]'
-                        }`}>{targetFps} FPS</div>
+                        <div className="text-[9px] font-mono whitespace-nowrap font-bold text-[#A1A1AA]">{targetFps} FPS</div>
                       </div>
                     </div>
 
@@ -876,62 +870,41 @@ function MainApp() {
             </div>
 
             <div className="relative flex items-center justify-center w-full max-h-full flex-1 min-h-0 gap-3">
-              {/* Interactive PixelCard Frame */}
-              <PixelCard
-                gridSpacing={12}
-                decayMs={400}
-                accent="phosphor"
-                themeMode={themeMode}
-                className="rounded-2xl p-2 shrink-0 max-w-full max-h-full flex items-center justify-center"
-              >
-                {/* Hardware Bezel */}
-                <div className={`rounded-xl p-3 border relative z-10 shrink-0 max-w-full max-h-full flex flex-col justify-center transition-all ${
-                  isDark 
-                    ? 'bg-[#111114] border-white/15 shadow-[0_12px_40px_rgba(0,0,0,0.9),inset_0_1px_1px_rgba(255,255,255,0.12),inset_0_-2px_2px_rgba(0,0,0,0.8)]' 
-                    : 'bg-[#2A2A2A] border-[#111] shadow-[0_10px_30px_rgba(0,0,0,0.5),inset_0_2px_1px_rgba(255,255,255,0.1),inset_0_-2px_1px_rgba(0,0,0,0.5)]'
+              {/* Hardware Bezel */}
+              <div className={`rounded-xl p-3 border relative z-10 shrink-0 max-w-full max-h-full flex flex-col justify-center transition-all ${
+                isDark 
+                  ? 'bg-[#202225] border-white/15 shadow-[0_12px_40px_rgba(0,0,0,0.5)]' 
+                  : 'bg-[#2A2A2A] border-[#111] shadow-[0_10px_30px_rgba(0,0,0,0.5)]'
+              }`}>
+                {/* Screws */}
+                <div className="absolute top-2 left-2 w-2.5 h-2.5 rounded-full bg-[#181A1B] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-45"><div className="w-full h-[1px] bg-[#444]" /></div>
+                <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-[#181A1B] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-12"><div className="w-full h-[1px] bg-[#444]" /></div>
+                <div className="absolute bottom-2 left-2 w-2.5 h-2.5 rounded-full bg-[#181A1B] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center -rotate-12"><div className="w-full h-[1px] bg-[#444]" /></div>
+                <div className="absolute bottom-2 right-2 w-2.5 h-2.5 rounded-full bg-[#181A1B] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-90"><div className="w-full h-[1px] bg-[#444]" /></div>
+                
+                <div className={`font-mono text-[8px] text-center mb-1 ${aesthetic.accentSub(isDark)}`}>SSD1306 128x64</div>
+                
+                <div className="bg-[#000] p-1 shadow-[inset_0_0_10px_#000] rounded shrink flex items-center justify-center">
+                  <div className="pointer-events-auto w-[128px]">
+                    <OledCanvas frameData={processedFrame} theme={ditherConfig.theme} scale={8} />
+                  </div>
+                </div>
+
+                <div className={`font-mono text-[8px] text-center mt-1 ${aesthetic.accentSub(isDark)}`}>I²C 0x3C</div>
+              </div>
+
+              {/* Technical Calibration Badge */}
+              <div className="hidden xl:block shrink-0">
+                <div className={`p-2.5 font-mono text-[8px] tracking-wider uppercase border rounded-[4px] ${
+                  isDark ? 'bg-[#202225] border-white/10 text-[#71717A]' : 'bg-[#EAE8E3] border-[#1A1A1A]/20 text-[#5E5D59]'
                 }`}>
-                  {/* Screws */}
-                  <div className="absolute top-2 left-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-45"><div className="w-full h-[1px] bg-[#444]" /></div>
-                  <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-12"><div className="w-full h-[1px] bg-[#444]" /></div>
-                  <div className="absolute bottom-2 left-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center -rotate-12"><div className="w-full h-[1px] bg-[#444]" /></div>
-                  <div className="absolute bottom-2 right-2 w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-90"><div className="w-full h-[1px] bg-[#444]" /></div>
-                  
-                  <div className={`font-mono text-[8px] text-center mb-1 ${aesthetic.accentSub(isDark)}`}>SSD1306 128x64</div>
-                  
-                  <div className="bg-[#000] p-1 shadow-[inset_0_0_10px_#000] rounded shrink flex items-center justify-center">
-                    <div className="pointer-events-auto w-[128px]">
-                      <OledCanvas frameData={processedFrame} theme={ditherConfig.theme} scale={8} />
-                    </div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#00FF66]" />
+                    <span className="font-bold text-[#FAFAFA]">SCALE 1:1</span>
                   </div>
-
-                  <div className={`font-mono text-[8px] text-center mt-1 ${aesthetic.accentSub(isDark)}`}>I²C 0x3C</div>
+                  <span>0.96" OLED MONO</span>
                 </div>
-              </PixelCard>
-
-              {/* Sticky Note / Technical Calibration Badge */}
-              {aesthetic.showStickyNote ? (
-                <div className="hidden xl:block shrink-0">
-                  <div className={`p-2.5 font-mono text-[9px] w-32 rotate-2 transition-all ${aesthetic.stickyNote(isDark)}`}>
-                    <div className="flex justify-between items-start mb-1">
-                      <div className={`w-2 h-2 rounded-full ${isDark ? 'bg-[#00FF66]' : 'bg-[#1A1A1A]/20'}`} />
-                      <span>💡</span>
-                    </div>
-                    OLED output shows 1:1 true scale.
-                  </div>
-                </div>
-              ) : (
-                <div className="hidden xl:block shrink-0">
-                  <div className={`p-2.5 font-mono text-[8px] tracking-wider uppercase border rounded backdrop-blur-xl ${
-                    isDark ? 'bg-[#0E0E10]/90 border-white/10 text-[#71717A]' : 'bg-[#EAE8E3]/90 border-[#1A1A1A]/20 text-[#5E5D59]'
-                  }`}>
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#00FF66] shadow-[0_0_6px_#00FF66]" />
-                      <span className="font-bold text-white">SCALE 1:1</span>
-                    </div>
-                    <span>0.96" OLED MONO</span>
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
           </div>
 
@@ -1008,14 +981,14 @@ function MainApp() {
               <span className={aesthetic.accentTitle(isDark)}>MEDIA_POOL</span>
             </h2>
             
-            {/* Fluid Sliding Tabs (Skiper UI / Framer Motion layoutId) */}
-            <div className={`flex border-b shrink-0 p-1 gap-1 relative ${isDark ? 'border-white/10 bg-[#0A0A0E]/80 backdrop-blur-md' : 'border-[#1A1A1A]/15 bg-[#EAE7E1]'}`}>
+            {/* Media Pool Tabs */}
+            <div className={`flex border-b shrink-0 p-1 gap-1 relative ${isDark ? 'border-white/10 bg-[#202225]' : 'border-[#1A1A1A]/15 bg-[#EAE7E1]'}`}>
               {(
                 [
                   { id: 'import', label: '+ IMPORT' },
                   { id: 'samples', label: 'SAMPLES' },
                   { id: 'recent', label: 'RECENT' },
-                  { id: 'create', label: '✨ CREATE' },
+                  { id: 'create', label: 'CREATE' },
                 ] as const
               ).map((tab) => {
                 const isActive = mediaPoolTab === tab.id;
@@ -1023,25 +996,20 @@ function MainApp() {
                   <button
                     key={tab.id}
                     onClick={() => setMediaPoolTab(tab.id)}
-                    className={`relative flex-1 py-1.5 text-[9px] font-bold font-mono tracking-widest cursor-pointer transition-colors duration-200 z-10 ${
+                    className={`relative flex-1 py-1.5 rounded-[4px] text-[9px] font-bold font-mono tracking-widest cursor-pointer transition-colors duration-150 z-10 ${
                       isActive
-                        ? isDark ? 'text-white' : 'text-[#1A1A1A]'
-                        : isDark ? 'text-[#71717A] hover:text-[#FAFAFA]' : 'text-[#5E5D59] hover:text-[#1A1A1A]'
+                        ? isDark ? 'text-black' : 'text-white'
+                        : isDark ? 'text-[#A1A1AA] hover:text-[#FAFAFA]' : 'text-[#5E5D59] hover:text-[#1A1A1A]'
                     }`}
                   >
                     {isActive && (
                       <motion.div
                         layoutId="mediaPoolActivePill"
-                        transition={{ type: 'spring', stiffness: 450, damping: 30 }}
-                        className={`absolute inset-0 rounded-sm z-[-1] border shadow-sm ${
-                          isDark
-                            ? 'bg-[#181822] border-white/20 shadow-[0_2px_8px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.15)]'
-                            : 'bg-white border-[#1A1A1A]/30 shadow-sm'
+                        transition={HW_SPRINGS.smooth}
+                        className={`absolute inset-0 rounded-[4px] z-[-1] ${
+                          isDark ? 'bg-[#FF5500]' : 'bg-[#1A1A1A]'
                         }`}
-                      >
-                        {/* High-visibility active accent hairline */}
-                        <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-[#FF5500] rounded-full" />
-                      </motion.div>
+                      />
                     )}
                     <span className="relative z-10">{tab.label}</span>
                   </button>
@@ -1075,13 +1043,13 @@ function MainApp() {
                                 e.dataTransfer.setData('text/plain', asset.id);
                               }}
                               onDoubleClick={() => handleAddAssetToTimeline(asset.id)}
-                              className={`bg-[#080808] border transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-sm ${
-                                isDark ? 'border-white/10 hover:border-[#00FF66]' : 'border-[#1A1A1A] hover:border-[#E85D2A]'
+                              className={`bg-[#202225] border transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-sm ${
+                                isDark ? 'border-white/10 hover:border-[#FF5500]' : 'border-[#1A1A1A] hover:border-[#FF5500]'
                               }`}
                               title={`Double click or drag ${asset.media.sourceInfo.filename} to timeline`}
                             >
                               {/* Thumbnail Image */}
-                              <div className="flex-1 w-full h-full relative overflow-hidden bg-[#050505]">
+                              <div className="flex-1 w-full h-full relative overflow-hidden bg-[#181A1B]">
                                 {firstFrame && (
                                   <img 
                                     src={(() => {
@@ -1099,7 +1067,7 @@ function MainApp() {
 
                                 {/* Frame badge */}
                                 <span className={`absolute top-1 right-1 bg-black/80 text-[7px] font-mono px-1 py-0.5 border font-bold ${
-                                  isDark ? 'text-[#00FF66] border-[#00FF66]/30' : 'text-white border-white/20'
+                                  isDark ? 'text-[#FAFAFA] border-white/20' : 'text-white border-white/20'
                                 }`}>
                                   {asset.media.frames.length}f
                                 </span>
@@ -1111,16 +1079,12 @@ function MainApp() {
 
                                 {/* Hover Action Overlay */}
                                 <div className="absolute inset-0 bg-black/85 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-1.5 gap-1.5 z-10">
-                                  <span className={`text-[7px] font-mono font-bold uppercase tracking-wider ${
-                                    isDark ? 'text-[#00FF66]' : 'text-[#E85D2A]'
-                                  }`}>
+                                  <span className="text-[7px] font-mono font-bold uppercase tracking-wider text-[#FF5500]">
                                     DRAG OR CHOOSE
                                   </span>
                                   <button 
                                     onClick={(e) => { e.stopPropagation(); handleAddAssetToTimeline(asset.id); }}
-                                    className={`w-full py-1 text-[8px] font-bold transition-colors cursor-pointer uppercase font-mono tracking-wider ${
-                                      isDark ? 'bg-[#00FF66] text-black font-extrabold hover:bg-white' : 'bg-[#E85D2A] text-white hover:bg-white hover:text-[#1A1A1A]'
-                                    }`}
+                                    className="w-full py-1 text-[8px] font-bold transition-colors cursor-pointer uppercase font-mono tracking-wider bg-[#FF5500] text-black font-extrabold hover:bg-white"
                                   >
                                     + ADD CLIP
                                   </button>
@@ -1154,28 +1118,28 @@ function MainApp() {
 
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { id: 'dino', icon: '🦖', name: 'DINO RUNNER', tag: '30FPS' },
-                      { id: 'heartbeat', icon: '💓', name: 'ECG HEARTBEAT', tag: 'PQRST' },
-                      { id: 'spinner', icon: '🔄', name: 'LOADING SPINNER', tag: 'ARC' },
-                      { id: 'wificonnect', icon: '📶', name: 'WIFI SIGNAL', tag: 'PULSE' },
-                      { id: 'bouncing', icon: '📀', name: 'BOUNCING LOGO', tag: '60f' },
-                      { id: 'pacman', icon: '👾', name: 'PAC-MAN LOOP', tag: 'CHOMP' },
-                      { id: 'battery', icon: '🔋', name: 'BATTERY CHARGE', tag: '100%' },
-                      { id: 'sinewave', icon: '🌊', name: 'SINE WAVE OSC', tag: '1.2kHz' },
-                      { id: 'ripple', icon: '🎯', name: 'RADAR RIPPLE', tag: 'SCAN' },
-                      { id: 'analogclock', icon: '🕒', name: 'ANALOG CLOCK', tag: 'TICKS' },
-                      { id: 'starfield', icon: '🌌', name: 'STARFIELD WARP', tag: '3D' },
-                      { id: 'matrix', icon: '🟩', name: 'MATRIX RAIN', tag: '1-BIT' },
-                      { id: 'rain', icon: '🌧', name: 'RAIN STORM', tag: 'SHOWER' },
-                      { id: 'badapple', icon: '🍎', name: 'BAD APPLE', tag: 'MONO' },
-                      { id: 'dvd', icon: '📀', name: 'DVD BOUNCE', tag: 'CORNER' },
-                      { id: 'cube3d', icon: '🎲', name: '3D CUBE WIRING', tag: '3D MESH' },
-                      { id: 'flame', icon: '🔥', name: 'DOOM FIRE SIM', tag: 'AUTOMATA' },
-                      { id: 'plasma', icon: '⚡', name: 'DITHERED PLASMA', tag: 'BAYER4x4' },
-                      { id: 'fireworks', icon: '🎆', name: 'FIREWORKS BURST', tag: 'SPARKS' },
-                      { id: 'roboeyes', icon: '🤖', name: 'ROBO-EYES FACE', tag: 'DYNAMIC' },
-                      { id: 'spirograph', icon: '🌀', name: 'SPIROGRAPH ROULETTE', tag: 'MATH' },
-                      { id: 'qrcode', icon: '🏁', name: 'QR SCANNER WIPE', tag: 'LASER' },
+                      { id: 'dino', name: 'DINO RUNNER', tag: '30FPS' },
+                      { id: 'heartbeat', name: 'ECG HEARTBEAT', tag: 'PQRST' },
+                      { id: 'spinner', name: 'LOADING SPINNER', tag: 'ARC' },
+                      { id: 'wificonnect', name: 'WIFI SIGNAL', tag: 'PULSE' },
+                      { id: 'bouncing', name: 'BOUNCING LOGO', tag: '60f' },
+                      { id: 'pacman', name: 'PAC-MAN LOOP', tag: 'CHOMP' },
+                      { id: 'battery', name: 'BATTERY CHARGE', tag: '100%' },
+                      { id: 'sinewave', name: 'SINE WAVE OSC', tag: '1.2kHz' },
+                      { id: 'ripple', name: 'RADAR RIPPLE', tag: 'SCAN' },
+                      { id: 'analogclock', name: 'ANALOG CLOCK', tag: 'TICKS' },
+                      { id: 'starfield', name: 'STARFIELD WARP', tag: '3D' },
+                      { id: 'matrix', name: 'MATRIX RAIN', tag: '1-BIT' },
+                      { id: 'rain', name: 'RAIN STORM', tag: 'SHOWER' },
+                      { id: 'badapple', name: 'BAD APPLE', tag: 'MONO' },
+                      { id: 'dvd', name: 'DVD BOUNCE', tag: 'CORNER' },
+                      { id: 'cube3d', name: '3D CUBE WIRING', tag: '3D MESH' },
+                      { id: 'flame', name: 'DOOM FIRE SIM', tag: 'AUTOMATA' },
+                      { id: 'plasma', name: 'DITHERED PLASMA', tag: 'BAYER4x4' },
+                      { id: 'fireworks', name: 'FIREWORKS BURST', tag: 'SPARKS' },
+                      { id: 'roboeyes', name: 'ROBO-EYES FACE', tag: 'DYNAMIC' },
+                      { id: 'spirograph', name: 'SPIROGRAPH ROULETTE', tag: 'MATH' },
+                      { id: 'qrcode', name: 'QR SCANNER WIPE', tag: 'LASER' },
                     ].map(sample => (
                       <div
                         key={sample.id}
@@ -1185,13 +1149,13 @@ function MainApp() {
                           e.dataTransfer.setData('text/plain', sample.id);
                         }}
                         onDoubleClick={() => handleLoadSample(sample.id as any, 'append')}
-                        className={`bg-[#080808] border transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-sm ${
-                          isDark ? 'border-white/10 hover:border-[#00FF66]' : 'border-[#1A1A1A] hover:border-[#E85D2A]'
+                        className={`bg-[#202225] border rounded-[4px] transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-sm ${
+                          isDark ? 'border-white/10 hover:border-[#FF5500]' : 'border-[#1A1A1A] hover:border-[#FF5500]'
                         }`}
                         title={`Double click or drag ${sample.name} to timeline`}
                       >
                         {/* Thumbnail Image */}
-                        <div className="flex-1 w-full h-full relative overflow-hidden bg-[#050505]">
+                        <div className="flex-1 w-full h-full relative overflow-hidden bg-[#181A1B]">
                           {sampleThumbnails[sample.id] ? (
                             <img 
                               src={sampleThumbnails[sample.id]} 
@@ -1199,43 +1163,36 @@ function MainApp() {
                               className="w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity" 
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-xl">{sample.icon}</div>
+                            <div className="w-full h-full flex items-center justify-center text-xs font-mono text-[#71717A]">{sample.id}</div>
                           )}
 
                           {/* FPS Badge */}
-                          <span className={`absolute top-1 right-1 bg-black/80 text-[7px] font-mono px-1 py-0.5 border font-bold ${
-                            isDark ? 'text-[#00FF66] border-[#00FF66]/30' : 'text-white border-white/20'
+                          <span className={`absolute top-1 right-1 bg-black/90 text-[7px] font-mono px-1 py-0.5 border rounded-[2px] font-bold ${
+                            isDark ? 'text-[#FAFAFA] border-white/20' : 'text-white border-white/20'
                           }`}>
                             {sample.tag}
                           </span>
 
                           {/* Bottom Title Bar */}
-                          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/90 to-transparent p-1 pt-3">
-                            <p className="text-[8px] font-bold text-white font-mono truncate flex items-center gap-1">
-                              <span>{sample.icon}</span>
-                              <span>{sample.name}</span>
+                          <div className="absolute bottom-0 inset-x-0 bg-black/90 p-1">
+                            <p className="text-[8px] font-bold text-white font-mono truncate">
+                              {sample.name}
                             </p>
                           </div>
 
                           {/* Hover Action Overlay */}
-                          <div className="absolute inset-0 bg-black/85 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-1.5 gap-1.5 z-10">
-                            <span className={`text-[7px] font-mono font-bold uppercase tracking-wider ${
-                              isDark ? 'text-[#00FF66]' : 'text-[#E85D2A]'
-                            }`}>DRAG OR CHOOSE</span>
+                          <div className="absolute inset-0 bg-black/90 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-1.5 gap-1.5 z-10">
+                            <span className="text-[7px] font-mono font-bold uppercase tracking-wider text-[#FF5500]">DRAG OR CHOOSE</span>
                             <button 
                               onClick={(e) => { e.stopPropagation(); handleLoadSample(sample.id as any, 'append'); }}
-                              className={`w-full py-1 text-[8px] font-bold transition-colors cursor-pointer uppercase font-mono tracking-wider ${
-                                isDark ? 'bg-[#00FF66] text-black font-extrabold hover:bg-white' : 'bg-[#E85D2A] text-white hover:bg-white hover:text-[#1A1A1A]'
-                              }`}
+                              className="w-full py-1 text-[8px] font-bold transition-colors cursor-pointer uppercase font-mono tracking-wider rounded-[4px] bg-[#FF5500] text-black font-extrabold hover:bg-white"
                               title="Append sample animation to timeline"
                             >
                               + ADD CLIP
                             </button>
                             <button 
                               onClick={(e) => { e.stopPropagation(); handleLoadSample(sample.id as any, 'replace'); }}
-                              className={`w-full py-0.5 text-[7px] font-bold transition-colors cursor-pointer uppercase font-mono tracking-wider ${
-                                isDark ? 'border border-white/20 text-white hover:bg-white/10' : 'border border-white/40 text-white hover:bg-white hover:text-[#1A1A1A]'
-                              }`}
+                              className="w-full py-0.5 text-[7px] font-bold transition-colors cursor-pointer uppercase font-mono tracking-wider rounded-[4px] border border-white/20 text-white hover:bg-white/10"
                               title="Replace sequence with this sample animation"
                             >
                               REPLACE
@@ -1250,20 +1207,16 @@ function MainApp() {
 
               {mediaPoolTab === 'create' && (
                 <div className={`p-4 flex-1 flex flex-col items-center justify-center text-center gap-4 border border-dashed m-2 rounded ${
-                  isDark ? 'border-white/10 bg-[#08080A]/60' : 'border-[#1A1A1A]/30 bg-[#F6F6F4]'
+                  isDark ? 'border-white/10 bg-[#202225]' : 'border-[#1A1A1A]/30 bg-[#F6F6F4]'
                 }`}>
                   <p className={`text-[10px] font-mono ${isDark ? 'text-[#A1A1AA]' : 'text-[#6B6B6B]'}`}>
-                    Generate pure beat-synced kinetic typography with Apple Music fluid glass selector
+                    Generate pure beat-synced kinetic typography sequence
                   </p>
                   <button
                     onClick={() => setActiveView('lyrics-studio')}
-                    className={`py-3 px-6 text-xs font-mono font-bold tracking-widest border transition-all cursor-pointer ${
-                      isDark 
-                        ? 'bg-[#00FF66] text-black font-extrabold border-[#00FF66] shadow-[0_0_16px_rgba(0,255,102,0.35)] hover:bg-white hover:border-white'
-                        : 'bg-[#E85D2A] text-[#f5f0eb] border-[#1A1A1A] shadow-[4px_4px_0_#1A1A1A] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#1A1A1A]'
-                    }`}
+                    className="py-2.5 px-5 text-xs font-mono font-bold tracking-widest border rounded-[4px] transition-colors cursor-pointer bg-[#FF5500] text-black border-[#FF5500] hover:bg-white hover:border-white"
                   >
-                    ✨ LAUNCH KINETIC LYRICS STUDIO
+                    LAUNCH KINETIC LYRICS STUDIO
                   </button>
                 </div>
               )}
@@ -1289,11 +1242,11 @@ function MainApp() {
                               e.dataTransfer.setData('text/plain', asset.id);
                             }}
                             onDoubleClick={() => handleAddAssetToTimeline(asset.id)}
-                            className={`bg-[#080808] border transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-sm ${
-                              isDark ? 'border-white/10 hover:border-[#00FF66]' : 'border-[#1A1A1A] hover:border-[#E85D2A]'
+                            className={`bg-[#202225] border transition-all cursor-grab active:cursor-grabbing relative group aspect-[4/3] flex flex-col overflow-hidden shadow-sm ${
+                              isDark ? 'border-white/10 hover:border-[#FF5500]' : 'border-[#1A1A1A] hover:border-[#FF5500]'
                             }`}
                           >
-                            <div className="flex-1 w-full h-full relative overflow-hidden bg-[#050505]">
+                            <div className="flex-1 w-full h-full relative overflow-hidden bg-[#181A1B]">
                               {firstFrame && (
                                 <img 
                                   src={(() => {
@@ -1319,9 +1272,7 @@ function MainApp() {
                               <div className="absolute inset-0 bg-black/85 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-1.5 gap-1.5 z-10">
                                 <button 
                                   onClick={(e) => { e.stopPropagation(); handleAddAssetToTimeline(asset.id); }}
-                                  className={`w-full py-1 text-[8px] font-bold transition-colors cursor-pointer uppercase font-mono tracking-wider ${
-                                    isDark ? 'bg-[#00FF66] text-black font-extrabold hover:bg-white' : 'bg-[#E85D2A] text-white hover:bg-white hover:text-[#1A1A1A]'
-                                  }`}
+                                  className="w-full py-1 text-[8px] font-bold transition-colors cursor-pointer uppercase font-mono tracking-wider bg-[#FF5500] text-black font-extrabold hover:bg-white"
                                 >
                                   + ADD CLIP
                                 </button>
@@ -1393,7 +1344,7 @@ function MainApp() {
             }`}>
               <span className={aesthetic.accentTitle(isDark)}>INSPECTOR</span>
             </h2>
-            <div className="flex-1 overflow-y-auto pr-4 px-4 py-4 space-y-6 z-[2] relative">
+            <div className="flex-1 overflow-y-auto pr-4 px-4 py-4 pb-24 space-y-6 z-[2] relative">
               <div>
                 <DitherControls 
                   config={ditherConfig} 

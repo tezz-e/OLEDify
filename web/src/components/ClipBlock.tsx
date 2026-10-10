@@ -285,9 +285,7 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
         <div
           className="absolute inset-0 pointer-events-none z-20"
           style={{ 
-            boxShadow: isDark
-              ? 'inset 0 0 0 2px #00F0FF, 0 0 10px rgba(0,240,255,0.45)'
-              : 'inset 0 0 0 2px #E85D2A, 0 0 8px rgba(232,93,42,0.35)',
+            boxShadow: 'inset 0 0 0 2px #FF5500',
           }}
         />
       )}
@@ -296,28 +294,28 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
       <div
         {...dragHandleProps}
         className="absolute top-0 left-0 right-0 flex items-center justify-center cursor-grab active:cursor-grabbing z-30"
-        style={{ height: 12, background: isDark ? 'rgba(16,13,28,0.75)' : 'rgba(0,0,0,0.5)' }}
+        style={{ height: 12, background: isDark ? 'rgba(10,10,10,0.85)' : 'rgba(0,0,0,0.5)' }}
         title="Drag to reorder"
       >
         <div className={`w-8 h-[2px] rounded-full transition-colors ${
           isSelected 
-            ? isDark ? 'bg-[#00F0FF] shadow-[0_0_4px_#00F0FF]' : 'bg-[#E85D2A]'
-            : isDark ? 'bg-[#7E7694]' : 'bg-white/40'
+            ? 'bg-[#FF5500]'
+            : isDark ? 'bg-[#71717A]' : 'bg-white/40'
         }`} />
       </div>
 
       {/* ---- Clip label ---- */}
       <div
         className="absolute bottom-0 left-0 right-0 flex items-center px-1.5 pointer-events-none z-20 overflow-hidden"
-        style={{ height: 16, background: isDark ? 'rgba(16,13,28,0.85)' : 'rgba(0,0,0,0.7)' }}
+        style={{ height: 16, background: isDark ? 'rgba(10,10,10,0.9)' : 'rgba(0,0,0,0.7)' }}
       >
-        <span className={`text-[7px] font-mono truncate tracking-wide flex items-center gap-1 ${isDark ? 'text-[#F1EEF8]' : 'text-white/80'}`}>
+        <span className={`text-[7px] font-mono truncate tracking-wide flex items-center gap-1 ${isDark ? 'text-[#FAFAFA]' : 'text-white/80'}`}>
           {isSelected && (
-            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isDark ? 'bg-[#00F0FF] shadow-[0_0_4px_#00F0FF]' : 'bg-[#E85D2A]'}`} />
+            <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-[#FF5500]" />
           )}
           <span>{asset.media.sourceInfo.filename}</span>
           {isActiveDrag && !trimDrag?.fading && (
-            <span className={`ml-1 ${isDark ? 'text-[#00F0FF] font-bold' : 'text-[#E85D2A]'}`}>[{activeIn}–{activeOut}]</span>
+            <span className="ml-1 text-[#FF5500] font-bold">[{activeIn}–{activeOut}]</span>
           )}
         </span>
       </div>
@@ -329,12 +327,11 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
         style={{
           left: isActiveDrag ? activeIn * thumbPx : 0,
           width: HANDLE_W,
-          background: isDark ? '#FF5500' : '#E85D2A',
-          boxShadow: isDark ? '0 0 10px rgba(255,85,0,0.5)' : undefined,
+          background: '#FF5500',
         }}
         title="Trim in-point"
       >
-        <div className={`w-[3px] h-6 rounded-full group-hover:scale-y-110 transition-transform ${isDark ? 'bg-[#00FF66]' : 'bg-white/90 group-hover:bg-white'}`} />
+        <div className="w-[2px] h-5 rounded-full bg-[#000000]" />
       </div>
 
       {/* ---- Right trim handle ---- */}
@@ -346,12 +343,11 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
             ? (activeOut + 1) * thumbPx - HANDLE_W
             : clipWidth - HANDLE_W,
           width: HANDLE_W,
-          background: isDark ? '#FF5500' : '#E85D2A',
-          boxShadow: isDark ? '0 0 10px rgba(255,85,0,0.5)' : undefined,
+          background: '#FF5500',
         }}
         title="Trim out-point"
       >
-        <div className={`w-[3px] h-6 rounded-full group-hover:scale-y-110 transition-transform ${isDark ? 'bg-[#00FF66]' : 'bg-white/90 group-hover:bg-white'}`} />
+        <div className="w-[2px] h-5 rounded-full bg-[#000000]" />
       </div>
     </div>
   );

@@ -75,47 +75,22 @@ export const ARCADE_NEO_POP_THEME: AestheticThemeTokens = {
  */
 export const PRECISION_HARDWARE_THEME: AestheticThemeTokens = {
   id: 'hardware',
-  name: 'Teenage Engineering OP-1 Field & Apple Liquid Glass',
-  sectionBg: (isDark) => (isDark ? 'bg-[#08080A]' : 'bg-[#F6F6F4]'),
-  sectionBorder: (isDark) => (isDark ? 'border-white/10' : 'border-[#1A1A1A]/15'),
-  gridStyle: (isDark) => ({
-    backgroundImage: isDark
-      ? `radial-gradient(circle at 50% 0%, rgba(255, 85, 0, 0.05) 0%, transparent 70%),
-         repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.02) 0 1px, transparent 1px 40px),
-         repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.02) 0 1px, transparent 1px 40px)`
-      : `repeating-linear-gradient(0deg, #E0DBD5 0 1px, transparent 1px 40px),
-         repeating-linear-gradient(90deg, #E0DBD5 0 1px, transparent 1px 40px)`,
-  }),
-  cardBg: (isDark) => (isDark ? 'bg-[#0E0E12]/75 backdrop-blur-xl' : 'bg-[#FFFFFF]/90 backdrop-blur-xl'),
-  cardBorder: (isDark) => (isDark ? 'border-white/15' : 'border-[#1A1A1A]/30'),
-  cardShadow: (isDark) =>
-    isDark
-      ? 'shadow-[0_12px_40px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.15)]'
-      : 'shadow-[0_4px_24px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.95)]',
-  accentTitle: (isDark) => (isDark ? 'text-[#FAFAFA]' : 'text-[#1A1A1A]'),
-  accentSub: (isDark) => (isDark ? 'text-[#A1A1AA]' : 'text-[#5E5D59]'),
-  previewBox: (isDark) =>
-    isDark
-      ? 'bg-[#08080C]/85 backdrop-blur-2xl border-white/20 shadow-[0_16px_48px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.18)]'
-      : 'bg-[#FFFFFF] border-[#1A1A1A] shadow-[0_6px_24px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.95)]',
-  stickyNote: (isDark) =>
-    isDark
-      ? 'bg-[#141418]/90 text-[#FAFAFA] border border-white/15 shadow-[0_8px_24px_rgba(0,0,0,0.6)]'
-      : 'bg-[#EAE8E3] text-[#1A1A1A] border border-[#1A1A1A]/30 shadow-sm',
-  panelHeader: (isDark) =>
-    isDark
-      ? 'bg-[#121216]/80 backdrop-blur-md border-white/10 text-[#FAFAFA]'
-      : 'bg-[#F2F1EE] border-[#1A1A1A] text-[#1A1A1A]',
-  tabActive: (isDark) =>
-    isDark
-      ? 'text-[#FAFAFA] border-b-2 border-[#FF5500] bg-[#1A1A22]'
-      : 'text-[#1A1A1A] border-b-2 border-[#E85D2A] bg-white',
-  tabInactive: (isDark) =>
-    isDark
-      ? 'text-[#71717A] hover:text-[#FAFAFA]'
-      : 'text-[#5E5D59] hover:text-[#1A1A1A]',
-  signalDot: (isDark) => (isDark ? 'bg-[#FF5500]' : 'bg-[#E85D2A]'),
-  showStickyNote: false, // Replaced with clean technical calibration readout
+  name: 'Teenage Engineering / Nothing Monospaced Hardware',
+  sectionBg: () => 'bg-[#181A1B]',
+  sectionBorder: () => 'border-white/10',
+  gridStyle: () => ({}), // HARD BAN: No gradient or colored background haze on canvas
+  cardBg: () => 'bg-[#202225]', // Surface #202225
+  cardBorder: () => 'border-white/10', // Hairline border
+  cardShadow: () => 'shadow-none',
+  accentTitle: () => 'text-[#FAFAFA]', // Primary text #FAFAFA
+  accentSub: () => 'text-[#A1A1AA]',   // Secondary text #A1A1AA
+  previewBox: () => 'bg-[#202225] border-white/10',
+  stickyNote: () => 'bg-[#282A2E] text-[#FAFAFA] border-white/10',
+  panelHeader: () => 'bg-[#202225] border-white/10 text-[#FAFAFA]',
+  tabActive: () => 'text-black bg-[#FF5500]',
+  tabInactive: () => 'text-[#A1A1AA] hover:text-[#FAFAFA]',
+  signalDot: () => 'bg-[#FF5500]',
+  showStickyNote: false,
 };
 
 /**

@@ -156,8 +156,8 @@ const Slider: React.FC<SliderProps> = ({
           style={{
             x: useTransform(() => (region === 'left' ? -overflow.get() / scale.get() : 0))
           }}
-          className={`font-bold font-mono text-lg shrink-0 w-auto min-w-4 px-1 text-center cursor-pointer flex items-center justify-center transition-colors ${
-            isDark ? 'text-[#00FF66]' : 'text-[#1A1A1A]'
+          className={`font-bold font-mono text-xs shrink-0 w-auto min-w-4 px-1 text-center cursor-pointer flex items-center justify-center transition-colors ${
+            isDark ? 'text-[#A1A1AA] hover:text-[#FAFAFA]' : 'text-[#1A1A1A]'
           }`}
         >
           {leftIcon}
@@ -195,14 +195,14 @@ const Slider: React.FC<SliderProps> = ({
             }}
             className="flex flex-grow"
           >
-            <div className={`relative h-full flex-grow overflow-hidden ${
-              isDark ? 'bg-[#0D0D10] border border-white/10' : 'bg-[#E8E4DF] border border-[#1A1A1A]'
+            <div className={`relative h-full flex-grow overflow-hidden rounded-[2px] ${
+              isDark ? 'bg-[#282A2E] border border-white/10' : 'bg-[#E8E4DF] border border-[#1A1A1A]'
             }`}>
               <div 
                 className={`absolute h-full transition-colors ${
                   isDark 
-                    ? 'bg-[#FF5500] border-r border-[#FF7700] shadow-[0_0_8px_rgba(255,85,0,0.5)]' 
-                    : 'bg-[#E85D2A] border-r border-[#1A1A1A]'
+                    ? 'bg-[#FF5500]' 
+                    : 'bg-[#1A1A1A]'
                 }`} 
                 style={{ width: `${getRangePercentage()}%` }} 
               />
@@ -219,7 +219,7 @@ const Slider: React.FC<SliderProps> = ({
             x: useTransform(() => (region === 'right' ? overflow.get() / scale.get() : 0))
           }}
           className={`font-bold font-mono text-xs shrink-0 w-3 text-center cursor-pointer flex items-center justify-center transition-colors ${
-            isDark ? 'text-[#FF5500]' : 'text-[#1A1A1A]'
+            isDark ? 'text-[#A1A1AA] hover:text-[#FAFAFA]' : 'text-[#1A1A1A]'
           }`}
         >
           {rightIcon}

@@ -55,20 +55,20 @@ export const DropZone: React.FC<DropZoneProps> = ({ onMediaLoaded, currentMedia,
   // Processing state
   if (progress) {
     return (
-      <div className={`p-4 border-b-2 shrink-0 ${isDark ? 'border-white/10' : 'border-[#1A1A1A]'}`}>
+      <div className={`p-4 border-b shrink-0 ${isDark ? 'border-white/10' : 'border-[#1A1A1A]'}`}>
         <div className="flex flex-col items-center justify-center py-4 space-y-3">
-          <FileVideo className={`w-8 h-8 ${isDark ? 'text-[#00FF66]' : 'text-[#E85D2A]'}`} />
+          <FileVideo className={`w-8 h-8 ${isDark ? 'text-[#00FF66]' : 'text-[#FF5500]'}`} />
           <div className="text-center">
             <p className={`text-xs font-bold mb-1 uppercase tracking-widest font-mono ${
-              isDark ? 'text-[#F1EEF8]' : 'text-[#1A1A1A]'
+              isDark ? 'text-[#FAFAFA]' : 'text-[#1A1A1A]'
             }`}>{progress.stage}...</p>
             <p className={`text-[10px] font-mono ${isDark ? 'text-[#71717A]' : 'text-[#6B6B6B]'}`}>
               {progress.currentFrame} / {progress.totalFrames || '?'} frames
             </p>
           </div>
-          <div className={`w-full h-2 border ${isDark ? 'bg-[#0D0D10] border-white/10' : 'bg-[#F5F0EB] border-[#1A1A1A]'}`}>
+          <div className={`w-full h-2 border rounded-[4px] overflow-hidden ${isDark ? 'bg-[#282A2E] border-white/10' : 'bg-[#F5F0EB] border-[#1A1A1A]'}`}>
             <div 
-              className={`h-full transition-all duration-200 ${isDark ? 'bg-[#00FF66]' : 'bg-[#E85D2A]'}`} 
+              className={`h-full transition-all duration-200 ${isDark ? 'bg-[#00FF66]' : 'bg-[#FF5500]'}`} 
               style={{ width: `${progress.percent}%` }}
             />
           </div>
@@ -79,25 +79,25 @@ export const DropZone: React.FC<DropZoneProps> = ({ onMediaLoaded, currentMedia,
 
   // Idle dropzone (Always available to add more media)
   return (
-    <div className={`p-3 border-b-2 shrink-0 ${isDark ? 'border-white/10' : 'border-[#1A1A1A]'}`}>
+    <div className={`p-3 border-b shrink-0 ${isDark ? 'border-white/10' : 'border-[#1A1A1A]'}`}>
       <label
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
-        className={`flex flex-col items-center justify-center p-4 border-2 border-dashed cursor-pointer transition-colors duration-150 ${
+        className={`flex flex-col items-center justify-center p-4 border border-dashed rounded-[4px] cursor-pointer transition-colors duration-150 ${
           isDragging 
-            ? isDark ? 'border-[#00FF66] bg-[#00FF66]/10' : 'border-[#E85D2A] bg-[#E85D2A]/5' 
-            : isDark ? 'border-white/10 hover:border-[#00FF66]/60 hover:bg-white/[0.03]' : 'border-[#1A1A1A] hover:border-[#E85D2A] hover:bg-[#F5F0EB]'
+            ? isDark ? 'border-[#FF5500] bg-[#FF5500]/10' : 'border-[#FF5500] bg-[#FF5500]/5' 
+            : isDark ? 'border-white/10 hover:border-[#FF5500]/60 hover:bg-white/[0.03]' : 'border-[#1A1A1A] hover:border-[#FF5500] hover:bg-[#F5F0EB]'
         }`}
       >
         <UploadCloud className={`w-8 h-8 mb-2 transition-colors ${
           isDragging 
-            ? isDark ? 'text-[#00FF66]' : 'text-[#E85D2A]' 
-            : isDark ? 'text-[#71717A] hover:text-[#00FF66]' : 'text-[#6B6B6B]'
+            ? 'text-[#FF5500]' 
+            : isDark ? 'text-[#71717A] hover:text-[#FF5500]' : 'text-[#6B6B6B]'
         }`} />
         <span className={`text-xs font-bold tracking-widest mb-1 font-mono uppercase ${
-          isDark ? 'text-[#F1EEF8]' : 'text-[#1A1A1A]'
+          isDark ? 'text-[#FAFAFA]' : 'text-[#1A1A1A]'
         }`}>IMPORT_MEDIA</span>
         <span className={`text-[10px] text-center uppercase tracking-widest font-mono ${
           isDark ? 'text-[#71717A]' : 'text-[#6B6B6B]'
