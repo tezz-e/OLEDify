@@ -31,3 +31,6 @@ experiments/
 .env.*
 *.local
 
+# IDE / Editor
+.kiro/
+
