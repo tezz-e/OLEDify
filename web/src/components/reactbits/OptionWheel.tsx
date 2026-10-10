@@ -29,7 +29,7 @@ export function OptionWheel({
   defaultSelected = 0,
   onChange,
   textColor = '#888888',
-  activeColor = '#E85D2A',
+  activeColor = '#FF5500',
   side = 'left',
   fontSize = 1.1,
   spacing = 1.8,

@@ -10,7 +10,7 @@ interface GridScanProps {
 
 export const GridScan: React.FC<GridScanProps> = ({
   gridColor = '#1A1A1A20',
-  scanColor = '#E85D2A',
+  scanColor = '#FF5500',
   gridSize = 40,
   scanSpeed = 2,
   className = ''

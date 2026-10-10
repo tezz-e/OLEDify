@@ -10,7 +10,7 @@ import { DecryptedText } from './components/reactbits/DecryptedText';
 import { CountUp } from './components/reactbits/CountUp';
 import { BlueprintHoverCard } from './components/reactbits/BlueprintHoverCard';
 import { FloatingTransportDock } from './components/transport/FloatingTransportDock';
-import { HardwareTelemetryHUD } from './components/transport/HardwareTelemetryHUD';
+import { HardwareTelemetryHUD } from './components/hardware/HardwareTelemetryHUD';
 import { getActiveTheme } from './theme/aestheticConfig';
 import { HW_SPRINGS } from './theme/springPresets';
 
@@ -56,14 +56,14 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
       return (
         <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#F5F0EB] text-[#1A1A1A] p-6 font-mono">
           <div className="bg-white border-2 border-[#1A1A1A] p-6 max-w-lg shadow-[8px_8px_0_0_#1A1A1A] flex flex-col gap-4">
-            <h2 className="text-sm font-bold text-[#E85D2A] uppercase tracking-wider">⚠️ RECOVERY MODE ACTIVATED</h2>
+            <h2 className="text-sm font-bold text-[#FF5500] uppercase tracking-wider">⚠️ RECOVERY MODE ACTIVATED</h2>
             <p className="text-xs text-[#6B6B6B]">An unexpected runtime error occurred, but application state was preserved.</p>
             <pre className="p-3 bg-[#1A1A1A] text-white text-[10px] rounded overflow-auto max-h-36">
               {this.state.error?.message || 'Unknown error'}
             </pre>
             <button
               onClick={() => { this.setState({ hasError: false, error: null }); window.location.reload(); }}
-              className="py-2 px-4 bg-[#E85D2A] text-white text-xs font-bold border border-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white transition-colors cursor-pointer"
+              className="py-2 px-4 bg-[#FF5500] text-white text-xs font-bold border border-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white transition-colors cursor-pointer"
             >
               RELOAD STUDIO
             </button>
@@ -739,6 +739,7 @@ function MainApp() {
   };
 
   const aesthetic = getActiveTheme();
+  const isStreaming = Boolean(serialConnected && isPlaying && (timelineMedia || media));
 
   return (
     <div className={`h-screen flex flex-col overflow-hidden relative transition-colors ${isDark ? 'bg-[#181A1B] text-[#FAFAFA]' : 'bg-[#F6F6F4] text-[#1A1A1A]'}`}>
@@ -820,7 +821,7 @@ function MainApp() {
                             setIsPlaying(p => !p);
                           }} 
                           className={`text-xs font-bold transition-colors cursor-pointer px-1 py-1 ${
-                            isPlaying ? 'text-[#00FF66]' : 'text-[#FAFAFA] hover:text-[#FF5500]'
+                            isPlaying ? 'text-[#FF5500]' : 'text-[#FAFAFA] hover:text-[#FF5500]'
                           }`}
                         >
                           {isPlaying ? '❚❚' : '▶'}
@@ -899,7 +900,7 @@ function MainApp() {
                   isDark ? 'bg-[#202225] border-white/10 text-[#71717A]' : 'bg-[#EAE8E3] border-[#1A1A1A]/20 text-[#5E5D59]'
                 }`}>
                   <div className="flex items-center gap-1.5 mb-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#00FF66]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
                     <span className="font-bold text-[#FAFAFA]">SCALE 1:1</span>
                   </div>
                   <span>0.96" OLED MONO</span>
@@ -931,10 +932,10 @@ function MainApp() {
               }`}>
                 <div>
                   <div className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider mb-2 flex justify-between items-center ${
-                    isDark ? 'bg-[#18181C] text-[#00FF66]' : 'bg-[#1A1A1A] text-white'
+                    isDark ? 'bg-[#18181C] text-[#FAFAFA]' : 'bg-[#1A1A1A] text-white'
                   }`}>
                     <span>DISPLAY INFO</span>
-                    <span className={`w-1.5 h-1.5 rounded-full ${isDark ? 'bg-[#00FF66]' : 'bg-[#E85D2A]'}`}></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500]"></span>
                   </div>
                   <div className={`flex flex-col gap-0.5 text-[11px] ${isDark ? 'text-[#A1A1AA]' : 'text-[#6B6B6B]'}`}>
                     <div>128 × 64</div>
@@ -1022,15 +1023,9 @@ function MainApp() {
                 <>
                   <DropZone onMediaLoaded={handleMediaLoaded} currentMedia={null} themeMode={themeMode} />
                   
-                  {/* Asset Pool Grid */}
-                  <div className="p-2.5">
-                    {Object.values(assets).length === 0 ? (
-                      <p className={`text-[9px] font-mono text-center py-6 border border-dashed ${
-                        isDark ? 'text-[#71717A] border-white/10' : 'text-[#6B6B6B] border-[#1A1A1A]/30'
-                      }`}>
-                        No imported video assets yet. Drop a file above to add to your bin!
-                      </p>
-                    ) : (
+                  {/* Asset Pool Grid - only shown when assets exist to avoid duplicate empty state with DropZone */}
+                  {Object.values(assets).length > 0 && (
+                    <div className="p-2.5">
                       <div className="grid grid-cols-2 gap-2">
                         {Object.values(assets).map(asset => {
                           const firstFrame = asset.media.frames[0];
@@ -1102,8 +1097,8 @@ function MainApp() {
                           );
                         })}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </>
               )}
 
@@ -1262,7 +1257,7 @@ function MainApp() {
                                 />
                               )}
                               <span className={`absolute top-1 right-1 bg-black/80 text-[7px] font-mono px-1 py-0.5 border font-bold ${
-                                isDark ? 'text-[#00FF66] border-[#00FF66]/30' : 'text-white border-white/20'
+                                isDark ? 'text-[#FAFAFA] border-white/20' : 'text-white border-white/20'
                               }`}>
                                 {asset.media.frames.length}f
                               </span>
@@ -1309,7 +1304,7 @@ function MainApp() {
             </h2>
 
             {/* Timeline track — fills remaining space */}
-            <div className="flex-1 min-h-0 overflow-hidden z-[2] relative pb-16">
+            <div className="flex-1 min-h-0 overflow-hidden z-[2] relative flex flex-col">
               <TimelineTrack 
                 clips={clips}
                 assets={assets}
@@ -1334,10 +1329,12 @@ function MainApp() {
                 onLaunchLyrics={() => setActiveView('lyrics-studio')}
                 onSplitClip={handleSplitClip}
                 serialConnected={serialConnected}
+                isStreaming={isStreaming}
                 baudRate={baudRate}
                 targetFps={targetFps}
                 themeMode={themeMode}
                 onToggleSerial={() => setSerialConnected(prev => !prev)}
+                onOpenSamples={() => setMediaPoolTab('samples')}
               />
             </div>
           </BlueprintHoverCard>

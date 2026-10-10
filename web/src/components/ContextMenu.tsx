@@ -179,10 +179,10 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             : 'bg-[#EFECE6] border-[#1A1A1A] shadow-[1px_1px_0_0_#1A1A1A]'
         }`}>
           <span className={`text-[9px] font-bold tracking-widest uppercase flex items-center gap-1.5 font-mono ${
-            isDark ? 'text-[#00FF66]' : 'text-[#E85D2A]'
+            isDark ? 'text-[#00FF66]' : 'text-[#FF5500]'
           }`}>
             <span className={`w-2 h-2 border animate-pulse shrink-0 ${
-              isDark ? 'bg-[#00FF66] border-[#00FF66]/50' : 'bg-[#E85D2A] border-[#1A1A1A]'
+              isDark ? 'bg-[#00FF66] border-[#00FF66]/50' : 'bg-[#FF5500] border-[#1A1A1A]'
             }`} />
             {hasSpecificClip ? 'CLIP EDITING' : 'TIMELINE MENU'}
           </span>
@@ -203,11 +203,11 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
               className={`w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group border border-transparent rounded-none font-bold ${
                 isDark 
                   ? 'text-[#F1EEF8] hover:bg-[#00FF66] hover:text-[#000000] hover:border-[#00FF66]' 
-                  : 'text-[#1A1A1A] hover:bg-[#E85D2A] hover:text-white hover:border-[#1A1A1A]'
+                  : 'text-[#1A1A1A] hover:bg-[#FF5500] hover:text-white hover:border-[#1A1A1A]'
               }`}
             >
               <span className="flex items-center gap-2 font-medium text-[10px]">
-                <span className={isDark ? 'text-[#00FF66] group-hover:text-[#000000]' : 'text-[#E85D2A] group-hover:text-white'}>✂</span> Split at Playhead
+                <span className={isDark ? 'text-[#00FF66] group-hover:text-[#000000]' : 'text-[#FF5500] group-hover:text-white'}>✂</span> Split at Playhead
               </span>
               <kbd className={`text-[8px] border px-1 py-0.5 font-mono font-bold ${
                 isDark 
@@ -230,7 +230,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                 className={`w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group border border-transparent rounded-none font-bold ${
                   isDark 
                     ? 'text-[#F1EEF8] hover:bg-[#00FF66] hover:text-[#000000] hover:border-[#00FF66]' 
-                    : 'text-[#1A1A1A] hover:bg-[#E85D2A] hover:text-white hover:border-[#1A1A1A]'
+                    : 'text-[#1A1A1A] hover:bg-[#FF5500] hover:text-white hover:border-[#1A1A1A]'
                 }`}
               >
                 <span className="flex items-center gap-2 font-medium text-[10px]">
@@ -254,7 +254,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                 className={`w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group border border-transparent rounded-none font-bold ${
                   isDark 
                     ? 'text-[#F1EEF8] hover:bg-[#00FF66] hover:text-[#000000] hover:border-[#00FF66]' 
-                    : 'text-[#1A1A1A] hover:bg-[#E85D2A] hover:text-white hover:border-[#1A1A1A]'
+                    : 'text-[#1A1A1A] hover:bg-[#FF5500] hover:text-white hover:border-[#1A1A1A]'
                 }`}
               >
                 <span className="flex items-center gap-2 font-medium text-[10px]">
@@ -274,7 +274,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                     className={`flex-1 px-1.5 py-0.5 text-[8px] font-mono font-bold border transition-colors flex items-center justify-center gap-1 cursor-pointer ${
                       isDark 
                         ? 'border-white/10 bg-[#121216] text-[#F1EEF8] hover:bg-[#00FF66] hover:text-[#000000]' 
-                        : 'border-[#1A1A1A] bg-white hover:bg-[#E85D2A] hover:text-white shadow-[1px_1px_0_0_#1A1A1A]'
+                        : 'border-[#1A1A1A] bg-white hover:bg-[#FF5500] hover:text-white shadow-[1px_1px_0_0_#1A1A1A]'
                     }`}
                     title="Move clip left in timeline"
                   >
@@ -289,7 +289,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                     className={`flex-1 px-1.5 py-0.5 text-[8px] font-mono font-bold border transition-colors flex items-center justify-center gap-1 cursor-pointer ${
                       isDark 
                         ? 'border-white/10 bg-[#121216] text-[#F1EEF8] hover:bg-[#00FF66] hover:text-[#000000]' 
-                        : 'border-[#1A1A1A] bg-white hover:bg-[#E85D2A] hover:text-white shadow-[1px_1px_0_0_#1A1A1A]'
+                        : 'border-[#1A1A1A] bg-white hover:bg-[#FF5500] hover:text-white shadow-[1px_1px_0_0_#1A1A1A]'
                     }`}
                     title="Move clip right in timeline"
                   >
@@ -340,7 +340,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             className={`w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group border border-transparent rounded-none font-bold ${
               isDark 
                 ? 'text-[#F1EEF8] hover:bg-[#00FF66] hover:text-[#000000] hover:border-[#00FF66]' 
-                : 'text-[#1A1A1A] hover:bg-[#E85D2A] hover:text-white hover:border-[#1A1A1A]'
+                : 'text-[#1A1A1A] hover:bg-[#FF5500] hover:text-white hover:border-[#1A1A1A]'
             }`}
           >
             <span className="flex items-center gap-2 font-medium text-[10px]">
@@ -363,7 +363,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             className={`w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group border border-transparent rounded-none font-bold ${
               isDark 
                 ? 'text-[#F1EEF8] hover:bg-[#00FF66] hover:text-[#000000] hover:border-[#00FF66]' 
-                : 'text-[#1A1A1A] hover:bg-[#E85D2A] hover:text-white hover:border-[#1A1A1A]'
+                : 'text-[#1A1A1A] hover:bg-[#FF5500] hover:text-white hover:border-[#1A1A1A]'
             }`}
           >
             <span className="flex items-center gap-2 font-medium text-[10px]">
@@ -382,7 +382,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
               className={`w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group border border-transparent rounded-none font-bold ${
                 isDark 
                   ? 'text-[#F1EEF8] hover:bg-[#00FF66] hover:text-[#000000] hover:border-[#00FF66]' 
-                  : 'text-[#1A1A1A] hover:bg-[#E85D2A] hover:text-white hover:border-[#1A1A1A]'
+                  : 'text-[#1A1A1A] hover:bg-[#FF5500] hover:text-white hover:border-[#1A1A1A]'
               }`}
             >
               <span className="flex items-center gap-2 font-medium text-[10px]">

@@ -38,7 +38,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
 
   return (
     <ClickSpark
-      sparkColor={isDark ? '#00FF66' : '#E85D2A'}
+      sparkColor={isDark ? '#00FF66' : '#FF5500'}
       sparkCount={10}
       sparkSize={6}
       sparkRadius={20}
@@ -61,7 +61,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
         className={`relative inline-flex items-center p-0.5 rounded-full border cursor-pointer select-none transition-colors duration-250 focus:outline-none focus-visible:ring-2 ${
           isDark
             ? 'bg-[#08080A] border-white/20 focus-visible:ring-[#00FF66] hover:border-white/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)]'
-            : 'bg-[#ECE6DE] border-[#1A1A1A] focus-visible:ring-[#E85D2A] hover:border-[#E85D2A] shadow-[inset_0_1px_2px_rgba(0,0,0,0.08)]'
+            : 'bg-[#ECE6DE] border-[#1A1A1A] focus-visible:ring-[#FF5500] hover:border-[#FF5500] shadow-[inset_0_1px_2px_rgba(0,0,0,0.08)]'
         } ${className}`}
       >
         {/* Background Decorative Diode Dot in Dark Mode */}
@@ -125,7 +125,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
               className="flex items-center justify-center w-full h-full"
             >
               <Sun 
-                className="w-3.5 h-3.5 text-[#E85D2A] fill-[#E85D2A]/20" 
+                className="w-3.5 h-3.5 text-[#FF5500] fill-[#FF5500]/20" 
                 strokeWidth={2.2}
               />
             </motion.div>
@@ -138,7 +138,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
           <div className="flex items-center justify-center w-5 h-5">
             <Sun 
               className={`w-3 h-3 transition-opacity duration-200 ${
-                isDark ? 'opacity-35 text-[#71717A]' : 'opacity-0 text-[#E85D2A]'
+                isDark ? 'opacity-35 text-[#71717A]' : 'opacity-0 text-[#FF5500]'
               }`} 
               strokeWidth={1.8}
             />

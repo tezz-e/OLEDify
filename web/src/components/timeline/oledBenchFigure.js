@@ -23,20 +23,29 @@ const {
 const TG = 2.0, TIC = 1.2, TFPC = 1.0, TPCB = 2.0;
 const REST_EXPLODE = [1.2, 0.35, 0.35];
 
-const getPipelineLabel = (connected, fps = 30, baud = 921600) => {
-  if (!connected) {
-    return "pc ──[usb disconnected]── esp32-s3 ──[i²c standby]── ssd1306";
-  }
-  const baudText = baud >= 1000000 ? `${(baud / 1000000).toFixed(1)}m` : `${Math.round(baud / 1000)}k`;
-  return `pc ──[usb ${baudText} baud @ ${fps}fps]──> esp32-s3 ──[i²c 400 khz]──> ssd1306`;
+export const formatBaudRate = (b) => {
+  if (b === 921600) return "921.6K";
+  if (b === 115200) return "115.2K";
+  if (b >= 1000000) return `${(b / 1000000).toFixed(1)}M`;
+  return `${(b / 1000).toFixed(1)}K`;
 };
 
-const NAMES = [
-  "host workstation · webserial cdc interface",
-  "usb-c 2.0 · 921,600 baud serial (1024 b/frame)",
-  "esp32-s3 · 240mhz dual-core controller",
-  "i²c bus · 400 khz fast mode (3.3v scl/sda)",
-  "ssd1306 · 0.96″ 128×64 mono oled (exploded)"
+export const getPipelineLabel = (connected, streaming, fps = 30, baud = 921600) => {
+  if (!connected) {
+    return "Standby · USB disconnected";
+  }
+  if (!streaming) {
+    return `Connected · ${formatBaudRate(baud)} baud · Idle`;
+  }
+  return `Streaming · ${formatBaudRate(baud)} baud · ${fps} fps`;
+};
+
+export const NAMES = [
+  "Host workstation · WebSerial CDC interface",
+  "USB-C 2.0 · 921.6K baud serial",
+  "ESP32-S3 · 240 MHz dual-core controller",
+  "I2C bus · 400 kHz fast mode",
+  "SSD1306 · 0.96″ 128×64 mono OLED (exploded)"
 ];
 
 const atPt = (ring, cx, cy) => ring.map((q) => ({ ...q, u: q.u + cx, v: q.v + cy }));
@@ -67,21 +76,24 @@ export function mountOledBench(
   const bag = disposer();
   let GAP = 24, share = null, act = -1;
   let isConnected = Boolean(options.serialConnected);
+  let isStreaming = Boolean(options.isStreaming);
   let baudRate = options.baudRate || 921600;
   let targetFps = options.targetFps || 30;
   let packetPhase = 0;
 
-  // Panoramic camera: viewBox 800 x 160
-  // C.oy = 64 lifts drawing to leave 60px+ of clean breathing room above playback pill dock
-  const C = Cam(45, 0.5, 2.05);
-  C.ox = 400;
-  C.oy = 64;
+  // ViewBox: 0 0 760 160.
+  // Scaled & centered camera parameters with ample inner margins:
+  // PC icon on the left (minX > 68px) is never cut off
+  // Exploded OLED stack on the right (minY > 10px) never touches top toolbar
+  const C = Cam(45, 0.5, 1.75);
+  C.ox = 430;
+  C.oy = 96;
   const P = proj(C), front = facing(C);
   const flat = (pts, z) => poly(pts.map(([x, y]) => P(x, y, z)));
 
   const g = mk("g", {}, svg);
   g.style.transition = "opacity 320ms cubic-bezier(0.4, 0, 0.2, 1)";
-  g.style.opacity = isConnected ? "1.0" : "0.45";
+  g.style.opacity = isConnected ? "1.0" : "0.75";
 
   // ─────────────────────────────────────────────────────────────
   // 0. BENCH SURFACE & ALIGNMENT GUIDES (Backdrop at z = 0)
@@ -114,7 +126,7 @@ export function mountOledBench(
   pcDeck.setAttribute("d", poly(ringAt(P, dkR, 3.8)));
 
   // PC Power / USB Status LED
-  const pcPwrLed = mk("path", { class: isConnected ? "nf hi" : "nf lo" }, pcG);
+  const pcPwrLed = mk("path", { class: isStreaming ? "nf hi" : (isConnected ? "nf" : "nf lo") }, pcG);
   pcPwrLed.setAttribute("d", poly(ringAt(P, atPt(circ(0.9, 8), -141, 129), 3.8)));
 
   // PC USB-C Port receptacle
@@ -127,7 +139,7 @@ export function mountOledBench(
   // From PC port (-124.5, 136) to ESP32 port (-92, 92)
   // ─────────────────────────────────────────────────────────────
   const ucg = mk("g", {}, g);
-  const cablePath = mk("path", { class: isConnected ? "nf hi" : "nf lo" }, ucg);
+  const cablePath = mk("path", { class: isStreaming ? "nf hi" : (isConnected ? "nf" : "nf lo") }, ucg);
   cablePath.style.transition = "stroke 260ms ease";
   if (!isConnected) cablePath.style.strokeDasharray = "3 3";
   const usbP0 = P(-124.5, 136, 1.8);
@@ -144,7 +156,7 @@ export function mountOledBench(
   // USB Packet Indicator Dots (traveling from PC to ESP32)
   const usbPackets = [0, 1].map(() => {
     const dot = mk("circle", { r: "1.4", class: "dot" }, ucg);
-    dot.style.opacity = isConnected ? "1" : "0";
+    dot.style.opacity = isStreaming ? "1" : "0";
     dot.style.transition = "opacity 200ms ease";
     return dot;
   });
@@ -196,7 +208,7 @@ export function mountOledBench(
   put(bootBtn, prism(P, front, bbR, bbI, 2.2, 3.6));
 
   // Status LED indicators
-  const pwrLed = mk("path", { class: isConnected ? "nf hi" : "nf" }, eg);
+  const pwrLed = mk("path", { class: isStreaming ? "nf hi" : (isConnected ? "nf" : "nf lo") }, eg);
   pwrLed.setAttribute("d", poly(ringAt(P, atPt(circ(0.9, 8), -60, 72), 2.2)));
 
   // ESP32 Dupont female connector shell
@@ -235,7 +247,7 @@ export function mountOledBench(
   // I2C Signal Packet Indicator Dots
   const i2cPackets = [0, 1].map(() => {
     const dot = mk("circle", { r: "1.4", class: "dot" }, bg);
-    dot.style.opacity = isConnected ? "1" : "0";
+    dot.style.opacity = isStreaming ? "1" : "0";
     dot.style.transition = "opacity 200ms ease";
     return dot;
   });
@@ -248,10 +260,21 @@ export function mountOledBench(
       const p3 = P(46, y1, 3.5);
       const d = `M${p0[0]} ${p0[1]} C${p1[0]} ${p1[1]} ${p2[0]} ${p2[1]} ${p3[0]} ${p3[1]}`;
       path.setAttribute("d", d);
-      // SCL (2) and SDA (3) are bright amber ONLY when connected or when bus is actively hovered
+      // SCL (2) and SDA (3) signal traces: bright amber when streaming or bus is hovered
       const isSig = (i === 2 || i === 3);
-      const isHi = (act === 3 || (act < 0 && isSig && isConnected));
-      path.setAttribute("class", isHi ? "nf hi" : (isConnected ? "nf" : "nf lo"));
+      if (act === 3) {
+        path.setAttribute("class", "nf hi");
+      } else if (act < 0) {
+        if (isStreaming && isSig) {
+          path.setAttribute("class", "nf hi");
+        } else if (isConnected) {
+          path.setAttribute("class", "nf");
+        } else {
+          path.setAttribute("class", isSig ? "nf lo" : "nf");
+        }
+      } else {
+        path.setAttribute("class", isConnected ? "nf" : "nf lo");
+      }
     });
   }
 
@@ -363,8 +386,8 @@ export function mountOledBench(
   // 6. ANIMATION LOOP: Physics + Data Packet Transmission Stream
   // ─────────────────────────────────────────────────────────────
   const B = register(stage, (dt) => {
-    // 1. Advance data packets along wires ONLY when connected
-    if (isConnected) {
+    // 1. Advance data packets along wires ONLY when actively streaming frames
+    if (isStreaming) {
       const pSpeed = (targetFps / 30) * 1.35;
       packetPhase = (packetPhase + dt * pSpeed) % 1.0;
 
@@ -396,7 +419,7 @@ export function mountOledBench(
 
     // 2. Step spring physics for exploded display layers
     const T = targets();
-    let m = isConnected; // Keep continuous packet stream awake when connected
+    let m = isStreaming; // Keep continuous packet stream awake only while streaming
     for (let j = 0; j < 3; j++) { gs[j].t = T[j]; if (stepS(gs[j], dt)) m = true; }
     const b = bases(gs.map((s) => s.x));
     let changed = false;
@@ -412,7 +435,7 @@ export function mountOledBench(
     if (k === act) return;
     act = k;
     pcChassis.sil.classList.toggle("hi", act === 0);
-    cablePath.classList.toggle("hi", act === 1 || isConnected);
+    cablePath.classList.toggle("hi", act === 1 || isStreaming);
     espPcb.sil.classList.toggle("hi", act === 2);
     soc.sil.classList.toggle("hi", act === 2);
     espDupont.sil.classList.toggle("hi", act === 3);
@@ -420,34 +443,29 @@ export function mountOledBench(
     glass.sil.classList.toggle("hi", act === 4);
     dispPath.classList.toggle("hi", act === -1 || act === 4);
     drawBusWires();
-    if (read) read.textContent = act < 0 ? getPipelineLabel(isConnected, targetFps, baudRate) : NAMES[act];
+    if (read) read.textContent = act < 0 ? getPipelineLabel(isConnected, isStreaming, targetFps, baudRate) : NAMES[act];
     B.wake();
   }
 
-  if (read) read.textContent = getPipelineLabel(isConnected, targetFps, baudRate);
+  if (read) read.textContent = getPipelineLabel(isConnected, isStreaming, targetFps, baudRate);
 
   bag.add(pointer(stage, {
     move: (p) => {
-      // HL pointer scales stage to [0..400] x [0..320]
-      // 0..45   -> Host PC
-      // 45..90  -> USB Link
-      // 90..160 -> ESP32-S3
-      // 160..270-> I2C Bus & Probe
-      // 270..400-> SSD1306 (Explode)
-      if (p[0] < 45) {
+      // Scaled thresholds mapping to [0..400] x [0..320]
+      if (p[0] < 50) {
         share = null;
         setActive(0);
-      } else if (p[0] < 90) {
+      } else if (p[0] < 105) {
         share = null;
         setActive(1);
-      } else if (p[0] < 160) {
+      } else if (p[0] < 175) {
         share = null;
         setActive(2);
-      } else if (p[0] < 270) {
+      } else if (p[0] < 275) {
         share = 0.4;
         setActive(3);
       } else {
-        share = clamp((p[0] - 270) / 105, 0.2, 1.0);
+        share = clamp((p[0] - 275) / 105, 0.2, 1.0);
         setActive(4);
       }
     },
@@ -459,16 +477,17 @@ export function mountOledBench(
     set: (v) => { GAP = v; B.wake(); },
     update: (opts = {}) => {
       if (opts.serialConnected !== undefined) isConnected = Boolean(opts.serialConnected);
+      if (opts.isStreaming !== undefined) isStreaming = Boolean(opts.isStreaming);
       if (opts.baudRate !== undefined) baudRate = opts.baudRate;
       if (opts.targetFps !== undefined) targetFps = opts.targetFps;
 
-      g.style.opacity = isConnected ? "1.0" : "0.45";
-      pcPwrLed.setAttribute("class", isConnected ? "nf hi" : "nf lo");
-      cablePath.setAttribute("class", isConnected ? "nf hi" : "nf lo");
+      g.style.opacity = isConnected ? "1.0" : "0.75";
+      pcPwrLed.setAttribute("class", isStreaming ? "nf hi" : (isConnected ? "nf" : "nf lo"));
+      cablePath.setAttribute("class", isStreaming ? "nf hi" : (isConnected ? "nf" : "nf lo"));
       cablePath.style.strokeDasharray = isConnected ? "none" : "3 3";
-      pwrLed.setAttribute("class", isConnected ? "nf hi" : "nf lo");
+      pwrLed.setAttribute("class", isStreaming ? "nf hi" : (isConnected ? "nf" : "nf lo"));
 
-      if (!isConnected) {
+      if (!isStreaming) {
         usbPackets.forEach((el) => { el.style.opacity = "0"; });
         i2cPackets.forEach((el) => { el.style.opacity = "0"; });
       } else {
@@ -478,7 +497,7 @@ export function mountOledBench(
 
       drawBusWires();
       if (read && act < 0) {
-        read.textContent = getPipelineLabel(isConnected, targetFps, baudRate);
+        read.textContent = getPipelineLabel(isConnected, isStreaming, targetFps, baudRate);
       }
       B.wake();
     },

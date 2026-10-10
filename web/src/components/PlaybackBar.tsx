@@ -41,7 +41,7 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
         onChange={e => onFrameSeek(parseInt(e.target.value))}
         className="w-full cursor-pointer h-1 transition-colors"
         disabled={totalFrames === 0}
-        style={{ accentColor: isDark ? '#00FF66' : '#E85D2A' }}
+        style={{ accentColor: isDark ? '#00FF66' : '#FF5500' }}
       />
 
       {/* Controls row */}
@@ -80,8 +80,8 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
                   ? 'bg-[#00FF66]/15 border-2 border-[#00FF66] text-[#00FF66] shadow-[0_0_12px_rgba(0,255,102,0.4)]'
                   : 'bg-[#00FF66] border border-transparent text-[#000000] shadow-[0_4px_16px_rgba(0,255,102,0.3)] hover:brightness-110 active:translate-x-[1px] active:translate-y-[1px]'
                 : isPlaying
-                  ? 'bg-[#E85D2A]/10 border-[#E85D2A]/50 text-[#E85D2A]'
-                  : 'bg-[#E85D2A] border-[#1A1A1A] text-white hover:bg-[#C94E22]'
+                  ? 'bg-[#FF5500]/10 border-[#FF5500]/50 text-[#FF5500]'
+                  : 'bg-[#FF5500] border-[#1A1A1A] text-white hover:bg-[#FF6611]'
             }`}
             title="Play/Pause (Space)"
           >
@@ -117,7 +117,7 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
             className={`font-mono text-[10px] px-1.5 py-1 outline-none cursor-pointer transition-colors ${
               isDark 
                 ? 'bg-[#121216] border border-white/10 text-[#F1EEF8] focus:border-[#00FF66]' 
-                : 'bg-white border border-[#1A1A1A] text-[#1A1A1A] focus:border-[#E85D2A]'
+                : 'bg-white border border-[#1A1A1A] text-[#1A1A1A] focus:border-[#FF5500]'
             }`}
           >
             <option value="15">15 FPS</option>

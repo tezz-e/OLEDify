@@ -44,7 +44,7 @@ export function DecryptedText({
   characters = '0123456789ABCDEF_~<>[]',
   className = '',
   parentClassName = '',
-  encryptedClassName = 'text-[#E85D2A] opacity-75 font-mono',
+  encryptedClassName = 'text-[#FF5500] opacity-75 font-mono',
   animateOn = 'hover',
   clickMode = 'once',
   ...props

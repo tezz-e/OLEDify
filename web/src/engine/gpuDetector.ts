@@ -38,6 +38,9 @@ export function detectGpu(): GpuTelemetry {
           result.simplifiedName = rawRenderer.replace(/^ANGLE \(/, '').replace(/\)$/, '').slice(0, 32);
         }
 
+        // Strip "(0x...)" hex identifier suffix if present (e.g. PCI Device ID)
+        result.simplifiedName = result.simplifiedName.replace(/\s*\(\s*0x[0-9a-fA-F]+\s*\)/gi, '').trim();
+
         // Dedicated vs Integrated check
         const lower = rawRenderer.toLowerCase();
         result.isDedicated = (

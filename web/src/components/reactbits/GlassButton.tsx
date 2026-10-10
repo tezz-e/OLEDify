@@ -27,7 +27,7 @@ export const GlassButton: React.FC<GlassButtonProps> = ({ children, active, clas
       onClick={handleClick}
       className={twMerge(
         `relative overflow-hidden border border-[#1A1A1A]/30 bg-white/30 backdrop-blur-md text-[#1A1A1A] hover:bg-white/60 hover:border-[#1A1A1A] transition-colors shadow-sm flex items-center justify-center`,
-        active ? 'border-[#E85D2A] bg-white/80 text-[#E85D2A]' : '',
+        active ? 'border-[#FF5500] bg-white/80 text-[#FF5500]' : '',
         className
       )}
       {...props}

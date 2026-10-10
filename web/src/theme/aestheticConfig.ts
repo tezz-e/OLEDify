@@ -62,9 +62,9 @@ export const ARCADE_NEO_POP_THEME: AestheticThemeTokens = {
       ? 'bg-[#1E1735] text-[#00F0FF] border border-[#00F0FF]/40 shadow-[3px_3px_0_#FF2A85]'
       : 'bg-[#FFD485] text-[#1A1A1A] shadow-lg',
   panelHeader: (isDark) => (isDark ? 'bg-[#140F24] border-[#2D2344] text-[#A59CB8]' : 'bg-transparent border-[#1A1A1A] text-[#6B6B6B]'),
-  tabActive: (isDark) => (isDark ? 'text-[#00F0FF] border-b-2 border-[#00F0FF] bg-[#1A142C]' : 'text-[#1A1A1A] border-b-2 border-[#E85D2A] bg-white'),
+  tabActive: (isDark) => (isDark ? 'text-[#00F0FF] border-b-2 border-[#00F0FF] bg-[#1A142C]' : 'text-[#1A1A1A] border-b-2 border-[#FF5500] bg-white'),
   tabInactive: (isDark) => (isDark ? 'text-[#7E7694] hover:text-[#00F0FF]' : 'text-[#6B6B6B] hover:text-[#1A1A1A]'),
-  signalDot: (isDark) => (isDark ? 'bg-[#00F0FF]' : 'bg-[#E85D2A]'),
+  signalDot: (isDark) => (isDark ? 'bg-[#00F0FF]' : 'bg-[#FF5500]'),
   showStickyNote: true,
 };
 
@@ -191,9 +191,9 @@ export const DOCK_GLOW_PRESETS: Record<DockGlowColor, DockGlowPreset> = {
       rim: 'rgba(255, 119, 0, 0.85)',
     },
     light: {
-      accent: '#E85D2A',
-      glow: 'rgba(232, 93, 42, 0.25)',
-      rim: 'rgba(232, 93, 42, 0.7)',
+      accent: '#FF5500',
+      glow: 'rgba(255, 85, 0, 0.25)',
+      rim: 'rgba(255, 85, 0, 0.7)',
     },
   },
   white: {

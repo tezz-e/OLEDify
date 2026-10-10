@@ -211,7 +211,7 @@ export const SquishSwitch: React.FC<SquishSwitchProps> = ({
             '--ss-track': trackColor,
             '--ss-track-on': trackOnColor,
             '--ss-thumb-color': thumbColor || '#1A1A1A',
-            '--ss-thumb-on': thumbOnColor || '#E85D2A',
+            '--ss-thumb-on': thumbOnColor || '#FF5500',
             '--ss-fade': `${colorDuration}ms`
           } as CSSProperties
         }

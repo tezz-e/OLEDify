@@ -319,14 +319,14 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
           </>
         ) : (
           <>
-            {/* Phosphor green ONLY for live/connected status dots and the playing state */}
+            {/* Single green rule: ONLY top bar connect pill is green. Orange for live, steady dot for connected, grey for disconnected */}
             <span
               className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                serialConnected || isPlaying ? 'bg-[#00FF66]' : 'bg-[#71717A]'
+                isPlaying ? 'bg-[#FF5500]' : serialConnected ? 'bg-zinc-300' : 'bg-[#71717A]'
               }`}
             />
             <TextScramble
-              text={serialConnected ? `${portName} • ${baudRate}B` : 'OLED SIMULATOR'}
+              text={serialConnected ? `${portName} • ${baudRate >= 1000 ? `${(baudRate / 1000).toFixed(1).replace('.0', '')}K` : baudRate}` : 'OLED SIMULATOR'}
               triggerOnHover={true}
               durationMs={200}
             />

@@ -40,10 +40,12 @@ interface TimelineTrackProps {
   onLaunchLyrics?: () => void;
   onSplitClip?: () => void;
   serialConnected?: boolean;
+  isStreaming?: boolean;
   baudRate?: number;
   targetFps?: number;
   themeMode?: 'light' | 'dark';
   onToggleSerial?: () => void;
+  onOpenSamples?: () => void;
 }
 
 export const TimelineTrack: React.FC<TimelineTrackProps> = ({
@@ -62,10 +64,12 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
   onLaunchLyrics,
   onSplitClip,
   serialConnected = false,
+  isStreaming = false,
   baudRate = 921600,
   targetFps = 30,
   themeMode = 'light',
   onToggleSerial,
+  onOpenSamples,
 }) => {
   const isDark = themeMode === 'dark';
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -317,7 +321,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
 
   return (
     <div 
-      className={`flex-1 flex flex-col min-h-0 relative select-none transition-colors ${
+      className={`w-full h-full flex-1 flex flex-col min-h-0 relative select-none transition-colors ${
         isDark ? 'bg-[#181A1B] text-[#FAFAFA]' : 'bg-[#F5F0EB] text-[#1A1A1A]'
       }`}
     >
@@ -338,7 +342,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
             <span className={`text-[8px] font-mono font-bold px-1.5 py-0.5 rounded-[2px] tracking-wider uppercase ${
               isDark 
                 ? 'bg-[#FF5500] text-black border-none' 
-                : 'bg-[#E85D2A] text-white border border-[#1A1A1A]'
+                : 'bg-[#FF5500] text-black border border-[#1A1A1A]'
             }`}>
               SELECTED: {selectedClipIds.length} CLIP{selectedClipIds.length > 1 ? 'S' : ''}
             </span>
@@ -392,13 +396,13 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
           }
         }}
         className={`flex-1 overflow-auto relative transition-colors ${
-          isDropTargetOver ? (isDark ? 'bg-[#00FF66]/10' : 'bg-[#E85D2A]/10') : ''
+          isDropTargetOver ? (isDark ? 'bg-[#FF5500]/10' : 'bg-[#FF5500]/10') : ''
         }`}
-        style={{ minHeight: clips.length === 0 ? 250 : RULER_H + CLIP_HEIGHT + 40 }}
+        style={{ minHeight: clips.length === 0 ? undefined : RULER_H + CLIP_HEIGHT + 40 }}
       >
         <div
-          className="relative min-h-full"
-          style={{ width: clips.length === 0 ? '100%' : Math.max(contentWidth, 100), minHeight: clips.length === 0 ? 250 : RULER_H + CLIP_HEIGHT + 40 }}
+          className="relative h-full min-h-full"
+          style={{ width: clips.length === 0 ? '100%' : Math.max(contentWidth, 100), minHeight: clips.length === 0 ? undefined : RULER_H + CLIP_HEIGHT + 40 }}
         >
 
           {/* RULER */}
@@ -432,7 +436,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
                 width: 0, height: 0,
                 borderLeft: '5px solid transparent',
                 borderRight: '5px solid transparent',
-                borderTop: `${RULER_H}px solid ${isDark ? '#FF5500' : '#E85D2A'}`,
+                borderTop: `${RULER_H}px solid #FF5500`,
               }} />
             </div>
           </div>
@@ -443,9 +447,11 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
               isDark={isDark}
               isDropTargetOver={isDropTargetOver}
               serialConnected={serialConnected}
+              isStreaming={isStreaming}
               baudRate={baudRate}
               targetFps={targetFps}
               onToggleSerial={onToggleSerial}
+              onOpenSamples={onOpenSamples}
             />
           )}
 
@@ -506,11 +512,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
           {/* Marquee Selection Box Overlay */}
           {marqueeBox && (
             <div
-              className={`absolute border-2 border-dashed pointer-events-none z-40 ${
-                isDark 
-                  ? 'border-[#FF5500] bg-[#FF5500]/15' 
-                  : 'border-[#E85D2A] bg-[#E85D2A]/15'
-              }`}
+              className="absolute border-2 border-dashed pointer-events-none z-40 border-[#FF5500] bg-[#FF5500]/15"
               style={{
                 left: Math.min(marqueeBox.startX, marqueeBox.currentX),
                 top: Math.min(marqueeBox.startY, marqueeBox.currentY),
@@ -524,9 +526,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
       </div>
 
       {isDropTargetOver && (
-        <div className={`absolute inset-0 border-2 border-dashed pointer-events-none flex items-center justify-center z-50 ${
-          isDark ? 'bg-[#FF5500]/15 border-[#FF5500]' : 'bg-[#E85D2A]/15 border-[#E85D2A]'
-        }`}>
+        <div className="absolute inset-0 border-2 border-dashed pointer-events-none flex items-center justify-center z-50 bg-[#FF5500]/15 border-[#FF5500]">
           <div className={`text-[10px] font-mono px-3 py-1.5 font-bold tracking-widest uppercase shadow-lg ${
             isDark ? 'bg-[#282A2E] text-[#FF5500] border border-[#FF5500]/50' : 'bg-[#1A1A1A] text-white'
           }`}>

@@ -87,7 +87,7 @@ export const InertiaTimelineScrubber: React.FC<InertiaTimelineScrubberProps> = (
       // Draw tick mark
       ctx.beginPath();
       if (isBeat) {
-        ctx.strokeStyle = isDark ? '#FF5500' : '#E85D2A';
+        ctx.strokeStyle = '#FF5500';
         ctx.lineWidth = 1.5;
         ctx.moveTo(x, height);
         ctx.lineTo(x, height - 20);

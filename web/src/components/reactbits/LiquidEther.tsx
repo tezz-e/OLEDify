@@ -37,7 +37,7 @@ export function LiquidEther({
   BFECC = true,
   resolution = 0.5,
   isBounce = false,
-  colors = ['#E85D2A', '#FFA472', '#111111'],
+  colors = ['#FF5500', '#FFA472', '#111111'],
   style = {},
   className = '',
   autoDemo = true,
@@ -65,7 +65,7 @@ export function LiquidEther({
       if (Array.isArray(stops) && stops.length > 0) {
         arr = stops.length === 1 ? [stops[0], stops[0]] : stops;
       } else {
-        arr = ['#E85D2A', '#000000'];
+        arr = ['#FF5500', '#000000'];
       }
       const w = arr.length;
       const data = new Uint8Array(w * 4);

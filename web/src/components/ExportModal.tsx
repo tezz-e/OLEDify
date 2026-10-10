@@ -211,7 +211,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         {/* Flash Status & Progress Banner */}
         {flashStatus === 'flashing' && (
           <div className={`mx-4 mb-4 p-3 border font-mono text-[10px] space-y-2 ${
-            isDark ? 'bg-[#0D0D10] border-[#00FF66] text-[#00FF66]' : 'bg-[#FFF5F0] border-[#E85D2A] text-[#E85D2A]'
+            isDark ? 'bg-[#0D0D10] border-[#00FF66] text-[#00FF66]' : 'bg-[#FFF5F0] border-[#FF5500] text-[#FF5500]'
           }`}>
             <div className="flex justify-between items-center font-bold">
               <span className="flex items-center gap-2">
@@ -222,7 +222,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             </div>
             <div className={`w-full h-2 overflow-hidden ${isDark ? 'bg-[#181820]' : 'bg-[#E5D7C9]'}`}>
               <div
-                className={`h-full transition-all duration-200 ${isDark ? 'bg-[#00FF66]' : 'bg-[#E85D2A]'}`}
+                className={`h-full transition-all duration-200 ${isDark ? 'bg-[#00FF66]' : 'bg-[#FF5500]'}`}
                 style={{ width: `${flashProgress.percent}%` }}
               />
             </div>

@@ -6,18 +6,22 @@ interface TapeDeckEmptyStateProps {
   isDark?: boolean;
   isDropTargetOver?: boolean;
   serialConnected?: boolean;
+  isStreaming?: boolean;
   baudRate?: number;
   targetFps?: number;
   onToggleSerial?: () => void;
+  onOpenSamples?: () => void;
 }
 
 export const TapeDeckEmptyState: React.FC<TapeDeckEmptyStateProps> = ({
   isDark = true,
   isDropTargetOver = false,
   serialConnected = false,
+  isStreaming = false,
   baudRate = 921600,
   targetFps = 30,
   onToggleSerial,
+  onOpenSamples,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const readRef = useRef<HTMLSpanElement>(null);
@@ -30,7 +34,7 @@ export const TapeDeckEmptyState: React.FC<TapeDeckEmptyStateProps> = ({
     HL.inject(document);
 
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('viewBox', '0 0 800 160');
+    svg.setAttribute('viewBox', '0 0 760 160');
     svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
     svg.setAttribute('aria-hidden', 'true');
     svg.style.position = 'absolute';
@@ -46,7 +50,7 @@ export const TapeDeckEmptyState: React.FC<TapeDeckEmptyStateProps> = ({
         svg,
         read: readRef.current || { textContent: '' }
       },
-      { serialConnected, baudRate, targetFps }
+      { serialConnected, isStreaming, baudRate, targetFps }
     );
     figureRef.current = figure;
 
@@ -58,77 +62,84 @@ export const TapeDeckEmptyState: React.FC<TapeDeckEmptyStateProps> = ({
   }, []);
 
   useEffect(() => {
-    figureRef.current?.update?.({ serialConnected, baudRate, targetFps });
-  }, [serialConnected, baudRate, targetFps]);
+    figureRef.current?.update?.({ serialConnected, isStreaming, baudRate, targetFps });
+  }, [serialConnected, isStreaming, baudRate, targetFps]);
 
-  const baudFormatted = baudRate >= 1000000 ? `${(baudRate / 1000000).toFixed(1)}m` : `${Math.round(baudRate / 1000)}k`;
+  const benchState = isStreaming ? 'streaming' : (serialConnected ? 'connected-idle' : 'disconnected');
 
   return (
     <div
       onMouseDown={(e) => e.stopPropagation()}
-      className={`absolute inset-0 top-[28px] bottom-[72px] flex items-center justify-center select-none overflow-hidden transition-colors ${
+      className={`absolute inset-0 top-[28px] flex flex-col items-center justify-between select-none overflow-hidden transition-colors pb-14 ${
         isDropTargetOver
           ? isDark ? 'bg-[#FF5500]/10' : 'bg-[#FF5500]/10'
           : isDark ? 'bg-[#181A1B]' : 'bg-[#EAE7E1]'
       }`}
       style={{
-        // High contrast line art matching Teenage Engineering hardware aesthetic
         ['--hairline-plate' as any]: isDark ? '#181A1B' : '#EAE7E1',
-        ['--hairline-hi' as any]: isDropTargetOver ? '#00FF66' : '#FF5500',
+        ['--hairline-hi' as any]: '#FF5500',
         ['--hairline-edge' as any]: isDark ? '#E4E4E7' : '#3F3F46',
         ['--hairline-mid' as any]: isDark ? 'rgba(255, 255, 255, 0.40)' : 'rgba(0, 0, 0, 0.35)',
         ['--hairline-lo' as any]: isDark ? 'rgba(255, 255, 255, 0.22)' : 'rgba(0, 0, 0, 0.16)',
         ['--hairline-stroke' as any]: 0.95,
       }}
     >
-      {/* Corner Readout - Technically accurate pipeline label with interactive toggle */}
+      {/* Corner Readout - Reattached ref as single source of truth for pipeline & hover strings */}
       <div
         onClick={onToggleSerial}
-        className={`absolute top-2 left-4 z-10 flex items-center gap-2 font-mono text-[9px] tracking-wider uppercase select-none transition-opacity ${
+        className={`absolute top-2 left-4 z-20 flex items-center gap-2 select-none transition-opacity ${
           onToggleSerial ? 'cursor-pointer hover:opacity-80' : 'pointer-events-none'
         }`}
-        title={serialConnected ? 'Serial Connected (Click to disconnect)' : 'Serial Standby (Click to simulate connection)'}
+        title={serialConnected ? 'Serial Connected (Click to toggle)' : 'Serial Standby (Click to simulate connection)'}
       >
         <span
           className={`w-1.5 h-1.5 rounded-full transition-colors ${
-            serialConnected ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-600'
+            benchState === 'disconnected' ? 'bg-zinc-500' : 'bg-[#FF5500]'
           }`}
         />
-        <span className={`font-semibold transition-colors ${serialConnected ? 'text-emerald-400' : 'text-zinc-500'}`}>
-          {serialConnected ? 'LIVE //' : 'STANDBY //'}
-        </span>
-        <span ref={readRef} className="text-zinc-300 font-mono">
-          {serialConnected
-            ? `pc ──[usb ${baudFormatted} baud @ ${targetFps}fps]──> esp32-s3 ──[i²c 400 khz]──> ssd1306`
-            : 'pc ──[usb disconnected]── esp32-s3 ──[i²c standby]── ssd1306'}
-        </span>
+        <span
+          ref={readRef}
+          className="text-[11px] font-sans text-zinc-300 select-none"
+        />
       </div>
 
-      {/* Ghost Track / Action Guidance Prompt */}
-      <div
-        className={`absolute bottom-2.5 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-3.5 py-1 rounded-[4px] border border-dashed transition-all select-none pointer-events-none ${
-          isDropTargetOver
-            ? 'border-[#FF5500] bg-[#FF5500]/20 text-[#FF5500]'
-            : isDark
-            ? 'border-white/15 bg-black/50 text-zinc-400'
-            : 'border-black/20 bg-white/70 text-zinc-600'
-        }`}
-      >
-        <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500]" />
-        <span className="font-mono text-[9px] tracking-widest uppercase">
-          DROP MEDIA TO BEGIN TIMELINE
-        </span>
-      </div>
-
-      {/* Full-width hardware bench: Host PC -> USB Serial -> ESP32-S3 -> I2C -> 0.96" SSD1306 */}
-      <div className="w-full h-full relative flex items-center justify-center">
+      {/* SVG Container: gets remaining height (flex-1 min-h-0 max-h-full) */}
+      <div className="w-full flex-1 min-h-0 relative flex items-center justify-center px-4">
         <div
           ref={containerRef}
           data-hairline="oled-bench"
           data-hairline-theme={isDark ? 'dark' : 'light'}
-          className="w-full h-full relative cursor-default"
+          className="w-full h-full max-h-full relative cursor-default"
           style={{ touchAction: 'pan-y' }}
         />
+      </div>
+
+      {/* Normal-flow Action Guidance Prompt: sits in normal flow below the SVG */}
+      <div
+        className={`shrink-0 mb-1 z-10 flex items-center gap-2 px-3.5 py-1.5 rounded-[4px] border border-dashed transition-all select-none pointer-events-auto whitespace-nowrap ${
+          isDropTargetOver
+            ? 'border-[#FF5500] bg-[#FF5500]/20 text-[#FF5500]'
+            : isDark
+            ? 'border-white/15 bg-black/60 text-zinc-400'
+            : 'border-black/20 bg-white/70 text-zinc-600'
+        }`}
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500]" />
+        <span className="text-[11px] font-sans tracking-normal">
+          Drop media to begin
+        </span>
+        {onOpenSamples && (
+          <>
+            <span className="text-zinc-600 text-[11px]">or</span>
+            <button
+              type="button"
+              onClick={onOpenSamples}
+              className="text-[11px] font-sans text-zinc-300 hover:text-white underline underline-offset-2 cursor-pointer"
+            >
+              browse samples
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

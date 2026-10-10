@@ -39,7 +39,7 @@ export const TactileRotaryKnob: React.FC<TactileRotaryKnobProps> = ({
   const angle = -135 + norm * 270; // -135 deg to +135 deg
 
   const accentColor = {
-    amber: isDark ? '#FF5500' : '#E85D2A',
+    amber: '#FF5500',
     phosphor: isDark ? '#00FF66' : '#02963B',
     cyan: isDark ? '#00F0FF' : '#0077CC',
     bone: isDark ? '#E8E5DE' : '#1A1A1A',

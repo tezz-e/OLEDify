@@ -64,21 +64,20 @@ export const Header: React.FC<HeaderProps> = ({
       )}
       
       <div className="flex items-center gap-2">
-        {/* GPU Chip (Unified 30px height, 4px radius) */}
+        {/* GPU Chip (Truncated with ellipsis & tooltip, no green) */}
         {gpuInfo && gpuInfo.webGlSupported && (
           <div
             onClick={onSettingsOpen}
-            className="hidden lg:flex items-center gap-2 h-7 px-2.5 rounded-[4px] border border-white/10 bg-[#202225] text-[10px] text-[#A1A1AA] hover:text-[#FAFAFA] hover:border-white/20 cursor-pointer transition-colors"
+            className="hidden lg:flex items-center gap-2 h-7 px-2.5 rounded-[4px] border border-white/10 bg-[#202225] text-[10px] text-[#A1A1AA] hover:text-[#FAFAFA] hover:border-white/20 cursor-pointer transition-colors max-w-[210px]"
             title={`${gpuInfo.renderer}\nArchitecture: ${gpuInfo.isDedicated ? 'Dedicated GPU' : 'Integrated GPU'}`}
           >
             <span
-              className={`w-1.5 h-1.5 rounded-full ${
-                gpuInfo.isDedicated ? 'bg-[#00FF66]' : 'bg-[#FF5500]'
+              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                gpuInfo.isDedicated ? 'bg-zinc-400' : 'bg-zinc-500'
               }`}
             />
-            <span className="font-medium text-[#FAFAFA]">{gpuInfo.simplifiedName}</span>
-            <span className="text-[9px] text-[#71717A] uppercase">
-              {gpuInfo.isDedicated ? 'DED' : 'INT'}
+            <span className="font-medium text-[#FAFAFA] truncate">
+              {gpuInfo.simplifiedName.replace(/\s*\(\s*0x[0-9a-fA-F]+\s*\)/gi, '').trim()}
             </span>
           </div>
         )}
@@ -93,7 +92,7 @@ export const Header: React.FC<HeaderProps> = ({
           <Settings className="w-3.5 h-3.5 stroke-[1.5]" />
         </button>
 
-        {/* USB Connect Chip */}
+        {/* USB Connect Chip - THE SINGLE GREEN ELEMENT IN THE ENTIRE UI */}
         <button
           onClick={onSerialToggle}
           className="h-7 px-2.5 rounded-[4px] border border-white/10 bg-[#202225] text-[10px] text-[#FAFAFA] hover:border-white/20 flex items-center gap-2 transition-colors cursor-pointer"
@@ -125,7 +124,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         {serialConnected && (
           <span
-            className="h-7 px-2 rounded-[4px] border border-white/10 bg-[#202225] text-[10px] text-[#00FF66] flex items-center"
+            className="h-7 px-2 rounded-[4px] border border-white/10 bg-[#202225] text-[10px] text-[#FAFAFA] flex items-center"
           >
             {baudRate === 115200 ? '115.2K' : '921.6K'}
           </span>

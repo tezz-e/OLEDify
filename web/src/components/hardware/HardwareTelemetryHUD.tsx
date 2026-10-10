@@ -36,20 +36,30 @@ export const HardwareTelemetryHUD: React.FC<HardwareTelemetryHUDProps> = ({
     if (!ctx) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = isDark ? '#00FF66' : '#02963B';
     ctx.lineWidth = 1.2;
 
+    if (totalFrames === 0 && audioTelemetry.length === 0) {
+      // Honest empty state: clean flat baseline without fake data
+      ctx.beginPath();
+      ctx.moveTo(0, canvas.height / 2);
+      ctx.lineTo(canvas.width, canvas.height / 2);
+      ctx.strokeStyle = isDark ? '#3F3F46' : '#D4D4D8';
+      ctx.stroke();
+      return;
+    }
+
+    ctx.strokeStyle = '#FF5500';
     ctx.beginPath();
     const len = Math.max(2, audioTelemetry.length > 0 ? audioTelemetry.length : 32);
     for (let i = 0; i < len; i++) {
-      const val = audioTelemetry[i] ?? (Math.sin(i * 0.45 + Date.now() * 0.005) * 0.4 + 0.5);
+      const val = audioTelemetry[i] ?? 0.5;
       const x = (i / (len - 1)) * canvas.width;
       const y = canvas.height - val * canvas.height;
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
     ctx.stroke();
-  }, [audioTelemetry, isDark]);
+  }, [audioTelemetry, isDark, totalFrames]);
 
   return (
     <div
@@ -68,8 +78,8 @@ export const HardwareTelemetryHUD: React.FC<HardwareTelemetryHUDProps> = ({
             <span
               className={`w-1 h-1 rounded-full ${
                 isConnected
-                  ? 'bg-[#00FF66] shadow-[0_0_6px_#00FF66]'
-                  : 'bg-[#FF5500]'
+                  ? 'bg-[#FF5500]'
+                  : 'bg-zinc-600'
               }`}
             />
             <span className="w-1 h-1 rounded-full bg-current opacity-40" />
@@ -96,7 +106,7 @@ export const HardwareTelemetryHUD: React.FC<HardwareTelemetryHUDProps> = ({
         </div>
         <div>
           <span className="opacity-50 block text-[8px] uppercase">SERIAL SPEED</span>
-          <span className="font-bold text-[#00FF66]">{baudRate.toLocaleString()} BAUD</span>
+          <span className="font-bold text-[#FAFAFA]">{baudRate === 921600 ? '921.6K' : baudRate.toLocaleString()} BAUD</span>
         </div>
         <div>
           <span className="opacity-50 block text-[8px] uppercase">STREAM CLOCK</span>
@@ -108,8 +118,10 @@ export const HardwareTelemetryHUD: React.FC<HardwareTelemetryHUDProps> = ({
       <div className="flex items-center justify-between gap-2 p-1.5 rounded-[4px] bg-black/40 border border-current/15">
         <div className="flex flex-col">
           <span className="opacity-50 text-[8px]">FRAME BUFFER</span>
-          <span className="font-bold text-[#00FF66] tabular-nums">
-            {String(currentFrame + 1).padStart(3, '0')} / {String(totalFrames).padStart(3, '0')}
+          <span className="font-bold text-[#FAFAFA] tabular-nums">
+            {totalFrames > 0
+              ? `${String(currentFrame + 1).padStart(3, '0')} / ${String(totalFrames).padStart(3, '0')}`
+              : '000 / 000'}
           </span>
         </div>
 
