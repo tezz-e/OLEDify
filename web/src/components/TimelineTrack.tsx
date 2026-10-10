@@ -18,6 +18,7 @@ import { TimelineClip, MediaAsset } from '../types/media';
 import { ClipBlock, CLIP_HEIGHT } from './ClipBlock';
 import { ContextMenu } from './ContextMenu';
 import ElasticSlider from './reactbits/ElasticSlider';
+import { TapeDeckEmptyState } from './timeline/TapeDeckEmptyState';
 
 const THUMB_BASE = 16; // px per frame at zoom=1 — clear default view
 const RULER_H = 28;
@@ -35,6 +36,8 @@ interface TimelineTrackProps {
   onSelectClips: (ids: string[]) => void;
   onPreviewAssetFrame?: (assetId: string | null, frameIndex?: number) => void;
   onAssetDrop?: (assetId: string) => void;
+  onLoadSample?: (sampleId: string) => void;
+  onLaunchLyrics?: () => void;
   onSplitClip?: () => void;
   themeMode?: 'light' | 'dark';
 }
@@ -51,6 +54,8 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
   onSelectClips,
   onPreviewAssetFrame,
   onAssetDrop,
+  onLoadSample,
+  onLaunchLyrics,
   onSplitClip,
   themeMode = 'light',
 }) => {
@@ -423,30 +428,18 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
             </div>
           </div>
 
-          {/* CLIP TRACK: Hairline Tape Cradle Empty State */}
+          {/* FULL-BLEED TEENAGE ENGINEERING TAPE TRANSPORT DECK EMPTY STATE */}
           {clips.length === 0 && (
-            <div className="absolute inset-x-0 top-7 bottom-4 flex flex-col items-center justify-start z-10 pt-1 pointer-events-auto select-none">
-              <div className="flex flex-col items-center mb-2 pointer-events-none text-center">
-                <span className={`text-[10px] font-mono uppercase tracking-widest font-bold ${
-                  isDark ? 'text-[#FAFAFA]' : 'text-[#1A1A1A]'
-                }`}>
-                  {isDropTargetOver ? '+ DROP ASSET TO START TIMELINE' : 'EMPTY TIMELINE • DRAG & DROP MEDIA FROM POOL'}
-                </span>
-                <span className={`text-[8px] font-mono uppercase tracking-wider mt-0.5 ${
-                  isDark ? 'text-[#71717A]' : 'text-[#888]'
-                }`}>
-                  or click + ADD on any sample or imported card
-                </span>
-              </div>
-              <div className="w-[250px] h-[115px] overflow-hidden rounded-[4px] border border-white/10 bg-[#181A1B] flex items-center justify-center shadow-inner relative group">
-                <iframe
-                  src="/hairline-cradle.html?embed=1"
-                  className="w-[380px] h-[300px] scale-[0.46] origin-center border-none pointer-events-auto select-none"
-                  title="Hairline Tape Splicer Cradle"
-                  tabIndex={-1}
-                />
-              </div>
-            </div>
+            <TapeDeckEmptyState
+              isDark={isDark}
+              isDropTargetOver={isDropTargetOver}
+              onLoadSample={onLoadSample || onAssetDrop}
+              onLaunchLyrics={onLaunchLyrics}
+              onTriggerImport={() => {
+                const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+                if (input) input.click();
+              }}
+            />
           )}
 
           <div

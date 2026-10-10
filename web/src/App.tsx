@@ -1331,6 +1331,8 @@ function MainApp() {
                 selectedClipIds={selectedClipIds}
                 onSelectClips={setSelectedClipIds}
                 onAssetDrop={handleAddAssetToTimeline}
+                onLoadSample={handleAddAssetToTimeline}
+                onLaunchLyrics={() => setActiveView('lyrics-studio')}
                 onSplitClip={handleSplitClip}
                 themeMode={themeMode}
               />
