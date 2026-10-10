@@ -395,13 +395,13 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
 
           {/* RULER */}
           <div
-            className="ruler-area absolute top-0 left-0 right-0 select-none cursor-crosshair z-20"
+            className={`ruler-area absolute top-0 left-0 right-0 select-none ${clips.length > 0 ? 'cursor-crosshair' : 'cursor-default'} z-20`}
             style={{ 
               height: RULER_H, 
               background: isDark ? '#282A2E' : '#E8E4DF', 
               borderBottom: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(26,26,26,0.2)' 
             }}
-            onMouseDown={handleRulerMouseDown}
+            onMouseDown={clips.length > 0 ? handleRulerMouseDown : undefined}
           >
             {rulerTicks.map(({ label, px }) => (
               <div key={px} className="absolute bottom-0 pointer-events-none" style={{ left: px }}>

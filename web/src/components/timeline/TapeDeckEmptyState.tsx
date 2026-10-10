@@ -76,7 +76,7 @@ export const TapeDeckEmptyState: React.FC<TapeDeckEmptyStateProps> = ({
           ref={containerRef}
           data-hairline="oled-bench"
           data-hairline-theme={isDark ? 'dark' : 'light'}
-          className="w-full h-full relative cursor-crosshair"
+          className="w-full h-full relative cursor-default"
           style={{ touchAction: 'pan-y' }}
         />
       </div>
