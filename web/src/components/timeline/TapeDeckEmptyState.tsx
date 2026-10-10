@@ -1,6 +1,6 @@
 import React, { useRef, useLayoutEffect } from 'react';
 import { HL } from './hairlineKernel.js';
-import { mountOled } from './oledFigure.js';
+import { mountOledBench } from './oledBenchFigure.js';
 
 interface TapeDeckEmptyStateProps {
   isDark?: boolean;
@@ -12,6 +12,7 @@ export const TapeDeckEmptyState: React.FC<TapeDeckEmptyStateProps> = ({
   isDropTargetOver = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const readRef = useRef<HTMLSpanElement>(null);
 
   useLayoutEffect(() => {
     const el = containerRef.current;
@@ -20,7 +21,8 @@ export const TapeDeckEmptyState: React.FC<TapeDeckEmptyStateProps> = ({
     HL.inject(document);
 
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('viewBox', '0 0 400 320');
+    svg.setAttribute('viewBox', '0 0 800 160');
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
     svg.setAttribute('aria-hidden', 'true');
     svg.style.position = 'absolute';
     svg.style.inset = '0';
@@ -29,7 +31,11 @@ export const TapeDeckEmptyState: React.FC<TapeDeckEmptyStateProps> = ({
     svg.style.display = 'block';
     el.appendChild(svg);
 
-    const figure = mountOled({ stage: el, svg, read: { textContent: '' } }, 28);
+    const figure = mountOledBench({
+      stage: el,
+      svg,
+      read: readRef.current || { textContent: '' }
+    }, 24);
 
     return () => {
       figure.destroy();
@@ -40,7 +46,7 @@ export const TapeDeckEmptyState: React.FC<TapeDeckEmptyStateProps> = ({
   return (
     <div
       onMouseDown={(e) => e.stopPropagation()}
-      className={`absolute inset-0 top-7 flex items-center justify-center select-none overflow-hidden transition-colors ${
+      className={`absolute inset-0 top-[28px] bottom-[72px] flex items-center justify-center select-none overflow-hidden transition-colors ${
         isDropTargetOver
           ? isDark ? 'bg-[#FF5500]/10' : 'bg-[#FF5500]/10'
           : isDark ? 'bg-[#181A1B]' : 'bg-[#EAE7E1]'
@@ -55,13 +61,22 @@ export const TapeDeckEmptyState: React.FC<TapeDeckEmptyStateProps> = ({
         ['--hairline-stroke' as any]: 0.95,
       }}
     >
-      {/* Pure aesthetic multi-layer 0.96" SSD1306 OLED showcase (Zero text, zero buttons) */}
-      <div className="w-full h-full max-h-[260px] flex items-center justify-center p-2">
+      {/* Corner Readout - Hairline Rule 10: Geometry carries identity, text in corner */}
+      <div className="absolute top-2 left-4 z-10 flex items-center gap-2 font-mono text-[9px] tracking-wider uppercase text-zinc-500 pointer-events-none select-none">
+        <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500] animate-pulse" />
+        <span className="text-zinc-600">BENCH //</span>
+        <span ref={readRef} className="text-zinc-400 font-mono">
+          esp32-s3 ──[ 921.6k i2c ]──&gt; ssd1306 oled
+        </span>
+      </div>
+
+      {/* Full-width hardware bench: ESP32-S3 Host -> 4-Wire I2C Bus -> 0.96" OLED Module */}
+      <div className="w-full h-full relative flex items-center justify-center">
         <div
           ref={containerRef}
-          data-hairline="oled"
+          data-hairline="oled-bench"
           data-hairline-theme={isDark ? 'dark' : 'light'}
-          className="h-full aspect-[5/4] max-w-full flex items-center justify-center relative cursor-crosshair"
+          className="w-full h-full relative cursor-crosshair"
           style={{ touchAction: 'pan-y' }}
         />
       </div>
