@@ -304,14 +304,14 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
   return (
     <div 
       className={`flex-1 flex flex-col min-h-0 relative select-none transition-colors ${
-        isDark ? 'bg-[#100D1C] text-[#F1EEF8]' : 'bg-[#F5F0EB] text-[#1A1A1A]'
+        isDark ? 'bg-[#181A1B] text-[#FAFAFA]' : 'bg-[#F5F0EB] text-[#1A1A1A]'
       }`}
     >
 
       {/* Header bar */}
       <div className={`px-3 py-1.5 border-b flex items-center justify-between shrink-0 overflow-x-visible transition-colors ${
         isDark 
-          ? 'bg-[#0D0D10] border-white/10 text-[#F1EEF8]' 
+          ? 'bg-[#202225] border-white/10 text-[#FAFAFA]' 
           : 'bg-[#EDEAE5] border-[#1A1A1A]/20 text-[#1A1A1A]'
       }`}>
         <div className="flex items-center gap-2">
@@ -321,10 +321,10 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
             {totalActiveFrames} frames ({clips.length} clips)
           </span>
           {selectedClipIds.length > 0 && (
-            <span className={`text-[8px] font-mono font-bold px-1.5 py-0.5 tracking-wider uppercase ${
+            <span className={`text-[8px] font-mono font-bold px-1.5 py-0.5 rounded-[2px] tracking-wider uppercase ${
               isDark 
-                ? 'bg-[#FF5500] text-white border-none shadow-[0_0_8px_rgba(255,85,0,0.4)]' 
-                : 'bg-[#E85D2A] text-white border border-[#1A1A1A] shadow-[1px_1px_0_0_#1A1A1A]'
+                ? 'bg-[#FF5500] text-black border-none' 
+                : 'bg-[#E85D2A] text-white border border-[#1A1A1A]'
             }`}>
               SELECTED: {selectedClipIds.length} CLIP{selectedClipIds.length > 1 ? 'S' : ''}
             </span>
@@ -380,11 +380,11 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
         className={`flex-1 overflow-auto relative transition-colors ${
           isDropTargetOver ? (isDark ? 'bg-[#00FF66]/10' : 'bg-[#E85D2A]/10') : ''
         }`}
-        style={{ minHeight: RULER_H + CLIP_HEIGHT + 40 }}
+        style={{ minHeight: clips.length === 0 ? 250 : RULER_H + CLIP_HEIGHT + 40 }}
       >
         <div
           className="relative min-h-full"
-          style={{ width: Math.max(contentWidth, 100), minHeight: RULER_H + CLIP_HEIGHT + 40 }}
+          style={{ width: Math.max(contentWidth, 100), minHeight: clips.length === 0 ? 250 : RULER_H + CLIP_HEIGHT + 40 }}
         >
 
           {/* RULER */}
@@ -392,14 +392,14 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
             className="ruler-area absolute top-0 left-0 right-0 select-none cursor-crosshair z-20"
             style={{ 
               height: RULER_H, 
-              background: isDark ? '#0D0D10' : '#E8E4DF', 
-              borderBottom: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(26,26,26,0.2)' 
+              background: isDark ? '#282A2E' : '#E8E4DF', 
+              borderBottom: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(26,26,26,0.2)' 
             }}
             onMouseDown={handleRulerMouseDown}
           >
             {rulerTicks.map(({ label, px }) => (
               <div key={px} className="absolute bottom-0 pointer-events-none" style={{ left: px }}>
-                <div style={{ width: 1, height: 7, background: isDark ? 'rgba(0,255,102,0.4)' : 'rgba(26,26,26,0.35)' }} />
+                <div style={{ width: 1, height: 7, background: isDark ? 'rgba(255,85,0,0.6)' : 'rgba(26,26,26,0.35)' }} />
                 <span
                   className={`absolute text-[7px] font-mono select-none ${isDark ? 'text-[#71717A]' : 'text-[#6B6B6B]'}`}
                   style={{ bottom: 9, left: 2, whiteSpace: 'nowrap' }}
@@ -419,24 +419,33 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
                 borderLeft: '5px solid transparent',
                 borderRight: '5px solid transparent',
                 borderTop: `${RULER_H}px solid ${isDark ? '#FF5500' : '#E85D2A'}`,
-                filter: isDark ? 'drop-shadow(0 0 5px rgba(255,85,0,0.8))' : undefined,
               }} />
             </div>
           </div>
 
-          {/* CLIP TRACK */}
+          {/* CLIP TRACK: Hairline Tape Cradle Empty State */}
           {clips.length === 0 && (
-            <div className="absolute inset-x-0 top-10 bottom-0 flex flex-col items-center justify-center pointer-events-none z-10 opacity-75">
-              <span className={`text-[10px] font-mono uppercase tracking-widest font-bold mb-1 ${
-                isDark ? 'text-[#7E7694]' : 'text-[#6B6B6B]'
-              }`}>
-                {isDropTargetOver ? '+ DROP ASSET TO START TIMELINE' : 'DRAG & DROP MEDIA FROM POOL HERE'}
-              </span>
-              <span className={`text-[8px] font-mono uppercase tracking-wider ${
-                isDark ? 'text-[#5A536F]' : 'text-[#888]'
-              }`}>
-                or click + ADD on any sample or imported card
-              </span>
+            <div className="absolute inset-x-0 top-8 bottom-0 flex flex-col items-center justify-center z-10 py-2 pointer-events-auto select-none">
+              <div className="w-[280px] h-[155px] overflow-hidden rounded-[4px] border border-white/10 bg-[#181A1B] flex items-center justify-center shadow-inner relative group">
+                <iframe
+                  src="/hairline-cradle.html?embed=1"
+                  className="w-[400px] h-[320px] scale-[0.55] origin-center border-none pointer-events-auto select-none"
+                  title="Hairline Tape Splicer Cradle"
+                  tabIndex={-1}
+                />
+              </div>
+              <div className="flex flex-col items-center mt-2 pointer-events-none">
+                <span className={`text-[9px] font-mono uppercase tracking-widest font-bold ${
+                  isDark ? 'text-[#A1A1AA]' : 'text-[#6B6B6B]'
+                }`}>
+                  {isDropTargetOver ? '+ DROP ASSET TO START TIMELINE' : 'EMPTY TIMELINE • DRAG & DROP MEDIA FROM POOL'}
+                </span>
+                <span className={`text-[8px] font-mono uppercase tracking-wider ${
+                  isDark ? 'text-[#71717A]' : 'text-[#888]'
+                }`}>
+                  or click + ADD on any sample or imported card
+                </span>
+              </div>
             </div>
           )}
 
@@ -487,10 +496,9 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
             className="absolute top-0 pointer-events-none z-30"
             style={{
               left: playheadPx,
-              width: isDark ? 2 : 1,
+              width: 1,
               height: '100%',
-              background: isDark ? '#FF5500' : '#E85D2A',
-              boxShadow: isDark ? '0 0 10px rgba(255,85,0,0.8), 0 0 2px #FFFFFF' : '0 0 4px rgba(232,93,42,0.5)',
+              background: '#FF5500',
               transform: 'translateX(-50%)',
             }}
           />
@@ -520,7 +528,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
           isDark ? 'bg-[#FF5500]/15 border-[#FF5500]' : 'bg-[#E85D2A]/15 border-[#E85D2A]'
         }`}>
           <div className={`text-[10px] font-mono px-3 py-1.5 font-bold tracking-widest uppercase shadow-lg ${
-            isDark ? 'bg-[#08080A] text-[#FF5500] border border-[#FF5500]/50' : 'bg-[#1A1A1A] text-white'
+            isDark ? 'bg-[#282A2E] text-[#FF5500] border border-[#FF5500]/50' : 'bg-[#1A1A1A] text-white'
           }`}>
             + RELEASE TO APPEND CLIP TO TIMELINE
           </div>
