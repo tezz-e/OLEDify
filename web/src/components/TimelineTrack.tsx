@@ -66,6 +66,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
   const [marqueeBox, setMarqueeBox] = useState<{ startX: number; startY: number; currentX: number; currentY: number } | null>(null);
 
   const handleTrackMouseDown = (e: React.MouseEvent) => {
+    if (clips.length === 0) return; // Disable box marquee selection when timeline is empty
     if (e.button === 1) {
       handleMiddleMouseDown(e);
       return;
@@ -428,17 +429,11 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
             </div>
           </div>
 
-          {/* FULL-BLEED TEENAGE ENGINEERING TAPE TRANSPORT DECK EMPTY STATE */}
+          {/* PURE AESTHETIC HAIRLINE MULTI-LAYER SHOWCASE */}
           {clips.length === 0 && (
             <TapeDeckEmptyState
               isDark={isDark}
               isDropTargetOver={isDropTargetOver}
-              onLoadSample={onLoadSample || onAssetDrop}
-              onLaunchLyrics={onLaunchLyrics}
-              onTriggerImport={() => {
-                const input = document.querySelector('input[type="file"]') as HTMLInputElement;
-                if (input) input.click();
-              }}
             />
           )}
 
