@@ -1,6 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { CropSettings, FitMode } from '../types/media';
 import { ResizeHandle, resizeCropWithHandle } from '../engine/cropEngine';
+import { HW_SPRINGS } from '../theme/springPresets';
 
 interface CropControlsProps {
   settings: CropSettings;
@@ -153,7 +155,7 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
                 width={settings.width} 
                 height={settings.height} 
                 fill="none" 
-                stroke={isDark ? "#00FF66" : "#E85D2A"} 
+                stroke="#FF5500" 
                 strokeWidth={Math.max(2, sourceFrame.width / 100)} 
                 strokeDasharray={`${Math.max(4, sourceFrame.width/50)}`}
               />
@@ -186,48 +188,58 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
                     cx={cx}
                     cy={cy}
                     r={Math.max(5, sourceFrame.width / 45)}
-                    fill={isDark ? "#08080A" : "#F5F0EB"}
-                    stroke={isDark ? "#00FF66" : "#E85D2A"}
+                    fill={isDark ? "#202225" : "#F5F0EB"}
+                    stroke="#FF5500"
                     strokeWidth={Math.max(2, sourceFrame.width / 150)}
                     pointerEvents="all"
                     className={handle === 'nw' || handle === 'se' ? 'cursor-nwse-resize' : handle === 'ne' || handle === 'sw' ? 'cursor-nesw-resize' : handle === 'n' || handle === 's' ? 'cursor-ns-resize' : 'cursor-ew-resize'}
                   />
                 );
               })}
-              <circle cx={settings.x + settings.width/2} cy={settings.y + settings.height/2} r={Math.max(2, sourceFrame.width/150)} fill={isDark ? "#00FF66" : "#E85D2A"} pointerEvents="none" />
+              <circle cx={settings.x + settings.width/2} cy={settings.y + settings.height/2} r={Math.max(2, sourceFrame.width/150)} fill="#FF5500" pointerEvents="none" />
             </svg>
           </div>
         </div>
       )}
 
+      {/* Crop Mode Switcher with shared sliding pill */}
       <div className="space-y-2">
         <label className={`text-[10px] font-bold tracking-widest uppercase font-mono ${
           isDark ? 'text-[#FAFAFA]' : 'text-[#1A1A1A]'
         }`}>Crop Mode</label>
-        <div className={`border p-1 flex gap-1 ${
-          isDark ? 'bg-[#0A0A0C]/80 border-white/10' : 'bg-[#F6F6F4] border-[#1A1A1A]'
+        <div className={`border rounded-[4px] p-1 flex gap-1 relative ${
+          isDark ? 'bg-[#202225] border-white/10' : 'bg-[#F6F6F4] border-[#1A1A1A]'
         }`}>
-          {modes.map((mode) => (
-            <button
-              key={mode}
-              onClick={() => handleModeChange(mode)}
-              disabled={disabled}
-              className={`flex-1 text-[10px] font-mono font-bold tracking-wide py-1.5 transition-all duration-150 border uppercase cursor-pointer ${
-                settings.mode === mode
-                  ? isDark
-                    ? 'bg-[#FF5500] text-white border-[#FF5500] font-extrabold shadow-[0_0_10px_rgba(255,85,0,0.35)]'
-                    : 'bg-[#1A1A1A] text-white border-[#1A1A1A]'
-                  : isDark
-                    ? 'bg-[#121216] text-[#A1A1AA] border-white/10 hover:border-white/30 hover:text-white'
-                    : 'bg-white text-[#6B6B6B] border-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white'
-              }`}
-            >
-              {mode}
-            </button>
-          ))}
+          {modes.map((mode) => {
+            const isSelected = settings.mode === mode;
+            return (
+              <button
+                key={mode}
+                onClick={() => handleModeChange(mode)}
+                disabled={disabled}
+                className={`relative flex-1 text-[10px] font-mono font-bold tracking-wide py-1.5 rounded-[4px] transition-colors duration-150 uppercase z-10 cursor-pointer ${
+                  isSelected
+                    ? isDark ? 'text-black font-extrabold' : 'text-white font-extrabold'
+                    : isDark ? 'text-[#A1A1AA] hover:text-[#FAFAFA]' : 'text-[#6B6B6B] hover:text-[#1A1A1A]'
+                }`}
+              >
+                {isSelected && (
+                  <motion.div
+                    layoutId="cropModeActivePill"
+                    transition={HW_SPRINGS.smooth}
+                    className={`absolute inset-0 rounded-[4px] z-[-1] ${
+                      isDark ? 'bg-[#FF5500]' : 'bg-[#1A1A1A]'
+                    }`}
+                  />
+                )}
+                <span className="relative z-10">{mode}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
+      {/* Tactile Hardware Toggle Switch */}
       <div className="flex items-center justify-between pt-2">
         <label className={`text-[10px] font-bold tracking-widest uppercase font-mono ${
           isDark ? 'text-[#A1A1AA]' : 'text-[#6B6B6B]'
@@ -236,17 +248,28 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
           type="button"
           disabled={disabled}
           onClick={() => onChange({ ...settings, smoothing: !settings.smoothing })}
-          className={`px-3 py-1 text-[9px] font-mono font-bold tracking-wider uppercase border transition-colors cursor-pointer ${
-            settings.smoothing
-              ? isDark
-                ? 'bg-[#FF5500] text-white border-[#FF5500] font-extrabold shadow-[0_0_8px_rgba(255,85,0,0.4)]'
-                : 'bg-[#1A1A1A] text-white border-[#1A1A1A]'
-              : isDark
-                ? 'bg-[#121216] text-[#71717A] border-white/10 hover:border-white/30'
-                : 'bg-white text-[#6B6B6B] border-[#1A1A1A]'
+          className={`flex items-center gap-2 px-2 py-1 text-[9px] font-mono font-bold tracking-wider uppercase border rounded-[4px] transition-colors cursor-pointer ${
+            isDark ? 'border-white/10 bg-[#202225]' : 'border-[#1A1A1A] bg-white'
           }`}
         >
-          {settings.smoothing ? 'ACTIVE' : 'OFF'}
+          <span className={settings.smoothing ? (isDark ? 'text-[#FF5500]' : 'text-[#1A1A1A]') : 'text-[#71717A]'}>
+            {settings.smoothing ? 'ON' : 'OFF'}
+          </span>
+          <div className={`w-7 h-4 rounded-full relative transition-colors p-0.5 ${
+            settings.smoothing
+              ? isDark ? 'bg-[#FF5500]' : 'bg-[#1A1A1A]'
+              : isDark ? 'bg-[#282A2E] border border-white/10' : 'bg-[#E8E4DF]'
+          }`}>
+            <motion.div
+              layout
+              transition={HW_SPRINGS.snappy}
+              className={`w-3 h-3 rounded-full ${
+                settings.smoothing
+                  ? 'bg-black ml-auto'
+                  : 'bg-[#71717A] ml-0'
+              }`}
+            />
+          </div>
         </button>
       </div>
 
@@ -261,9 +284,9 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
             value={settings.x}
             disabled={disabled || settings.mode !== 'manual'}
             onChange={(e) => onChange({ ...settings, x: parseInt(e.target.value) || 0 })}
-            className={`w-full px-2 py-1 text-xs font-mono disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
+            className={`w-full px-2 py-1 text-xs font-mono rounded-[4px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
               isDark 
-                ? 'bg-[#0A0A0C] border border-white/10 text-[#FAFAFA] focus:border-[#00FF66]' 
+                ? 'bg-[#202225] border border-white/10 text-[#FAFAFA] focus:border-[#FF5500] outline-none' 
                 : 'bg-white border border-[#1A1A1A] text-[#1A1A1A]'
             }`}
           />
@@ -277,9 +300,9 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
             value={settings.y}
             disabled={disabled || settings.mode !== 'manual'}
             onChange={(e) => onChange({ ...settings, y: parseInt(e.target.value) || 0 })}
-            className={`w-full px-2 py-1 text-xs font-mono disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
+            className={`w-full px-2 py-1 text-xs font-mono rounded-[4px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
               isDark 
-                ? 'bg-[#0A0A0C] border border-white/10 text-[#FAFAFA] focus:border-[#00FF66]' 
+                ? 'bg-[#202225] border border-white/10 text-[#FAFAFA] focus:border-[#FF5500] outline-none' 
                 : 'bg-white border border-[#1A1A1A] text-[#1A1A1A]'
             }`}
           />
@@ -287,7 +310,7 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
       </div>
       )}
 
-      {settings.mode === 'manual' && <div className={`text-[10px] font-mono ${isDark ? 'text-[#7E7694]' : 'text-[#6B6B6B]'}`}>
+      {settings.mode === 'manual' && <div className={`text-[10px] font-mono ${isDark ? 'text-[#71717A]' : 'text-[#6B6B6B]'}`}>
         Source: {settings.sourceWidth}×{settings.sourceHeight} <br />
         Crop: {Math.round(settings.width)}×{Math.round(settings.height)}
       </div>}

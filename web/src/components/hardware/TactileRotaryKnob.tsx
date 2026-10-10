@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { playHapticClick } from './hapticAudio';
+import { SlidingNumber } from '../motion/SlidingNumber';
 
 export interface TactileRotaryKnobProps {
   value: number;            // 0..100
@@ -120,8 +121,8 @@ export const TactileRotaryKnob: React.FC<TactileRotaryKnobProps> = ({
         <div
           className={`w-7 h-7 rounded-full border relative flex items-center justify-center transition-transform ${
             isDark
-              ? 'bg-[#18181C] border-[#3F3F46] shadow-[0_2px_6px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.15)]'
-              : 'bg-[#EBEAE5] border-[#1A1A1A] shadow-[0_2px_4px_rgba(0,0,0,0.15),inset_0_1px_1px_rgba(255,255,255,0.9)]'
+              ? 'bg-[#282A2E] border-white/10 shadow-[0_2px_6px_rgba(0,0,0,0.6)]'
+              : 'bg-[#EBEAE5] border-[#1A1A1A] shadow-[0_2px_4px_rgba(0,0,0,0.15)]'
           }`}
           style={{ transform: `rotate(${angle}deg)` }}
         >
@@ -133,14 +134,14 @@ export const TactileRotaryKnob: React.FC<TactileRotaryKnobProps> = ({
         </div>
       </div>
 
-      {/* Numerical Tabular Readout & Label */}
+      {/* Numerical Tabular Readout with Rolling Digits */}
       <div className="flex flex-col items-center mt-1">
         <span
-          className={`text-[9px] font-bold tabular-nums ${
+          className={`text-[9px] font-bold tabular-nums flex items-center ${
             isDark ? 'text-[#FAFAFA]' : 'text-[#1A1A1A]'
           }`}
         >
-          {value.toFixed(step < 1 ? 1 : 0)}
+          <SlidingNumber value={value} className={isDark ? 'text-[#FAFAFA]' : 'text-[#1A1A1A]'} />
           {unit}
         </span>
         <span
