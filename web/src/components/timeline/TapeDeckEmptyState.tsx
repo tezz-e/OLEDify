@@ -1,18 +1,27 @@
-import React, { useRef, useLayoutEffect } from 'react';
+import React, { useRef, useLayoutEffect, useEffect } from 'react';
 import { HL } from './hairlineKernel.js';
 import { mountOledBench } from './oledBenchFigure.js';
 
 interface TapeDeckEmptyStateProps {
   isDark?: boolean;
   isDropTargetOver?: boolean;
+  serialConnected?: boolean;
+  baudRate?: number;
+  targetFps?: number;
+  onLoadSample?: (sampleId: string) => void;
 }
 
 export const TapeDeckEmptyState: React.FC<TapeDeckEmptyStateProps> = ({
   isDark = true,
   isDropTargetOver = false,
+  serialConnected = false,
+  baudRate = 921600,
+  targetFps = 30,
+  onLoadSample,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const readRef = useRef<HTMLSpanElement>(null);
+  const figureRef = useRef<ReturnType<typeof mountOledBench> | null>(null);
 
   useLayoutEffect(() => {
     const el = containerRef.current;
@@ -31,17 +40,26 @@ export const TapeDeckEmptyState: React.FC<TapeDeckEmptyStateProps> = ({
     svg.style.display = 'block';
     el.appendChild(svg);
 
-    const figure = mountOledBench({
-      stage: el,
-      svg,
-      read: readRef.current || { textContent: '' }
-    }, 24);
+    const figure = mountOledBench(
+      {
+        stage: el,
+        svg,
+        read: readRef.current || { textContent: '' }
+      },
+      { serialConnected, baudRate, targetFps }
+    );
+    figureRef.current = figure;
 
     return () => {
       figure.destroy();
+      figureRef.current = null;
       svg.remove();
     };
   }, []);
+
+  useEffect(() => {
+    figureRef.current?.update?.({ serialConnected, baudRate, targetFps });
+  }, [serialConnected, baudRate, targetFps]);
 
   return (
     <div
@@ -52,25 +70,59 @@ export const TapeDeckEmptyState: React.FC<TapeDeckEmptyStateProps> = ({
           : isDark ? 'bg-[#181A1B]' : 'bg-[#EAE7E1]'
       }`}
       style={{
-        // Match matte hardware canvas #181A1B and amber accent #FF5500
+        // High contrast line art matching Teenage Engineering hardware aesthetic
         ['--hairline-plate' as any]: isDark ? '#181A1B' : '#EAE7E1',
         ['--hairline-hi' as any]: isDropTargetOver ? '#00FF66' : '#FF5500',
-        ['--hairline-edge' as any]: isDark ? '#A1A1AA' : '#52525B',
-        ['--hairline-mid' as any]: isDark ? 'rgba(255, 255, 255, 0.20)' : 'rgba(0, 0, 0, 0.20)',
-        ['--hairline-lo' as any]: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+        ['--hairline-edge' as any]: isDark ? '#E4E4E7' : '#3F3F46',
+        ['--hairline-mid' as any]: isDark ? 'rgba(255, 255, 255, 0.40)' : 'rgba(0, 0, 0, 0.35)',
+        ['--hairline-lo' as any]: isDark ? 'rgba(255, 255, 255, 0.22)' : 'rgba(0, 0, 0, 0.16)',
         ['--hairline-stroke' as any]: 0.95,
       }}
     >
-      {/* Corner Readout - Hairline Rule 10: Geometry carries identity, text in corner */}
-      <div className="absolute top-2 left-4 z-10 flex items-center gap-2 font-mono text-[9px] tracking-wider uppercase text-zinc-500 pointer-events-none select-none">
-        <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500] animate-pulse" />
-        <span className="text-zinc-600">BENCH //</span>
-        <span ref={readRef} className="text-zinc-400 font-mono">
-          esp32-s3 ──[ 921.6k i2c ]──&gt; ssd1306 oled
+      {/* Corner Readout - Technically accurate pipeline label */}
+      <div className="absolute top-2 left-4 z-10 flex items-center gap-2 font-mono text-[9px] tracking-wider uppercase select-none pointer-events-none">
+        <span
+          className={`w-1.5 h-1.5 rounded-full ${
+            serialConnected ? 'bg-emerald-400 animate-pulse' : 'bg-[#FF5500]'
+          }`}
+        />
+        <span className="text-zinc-500 font-semibold">
+          {serialConnected ? 'LIVE //' : 'STANDBY //'}
+        </span>
+        <span ref={readRef} className="text-zinc-300 font-mono">
+          pc ──[usb 921.6k baud]──&gt; esp32-s3 ──[i²c 400 khz]──&gt; ssd1306
         </span>
       </div>
 
-      {/* Full-width hardware bench: ESP32-S3 Host -> 4-Wire I2C Bus -> 0.96" OLED Module */}
+      {/* Ghost Track / Action Guidance Prompt */}
+      <div
+        className={`absolute bottom-2.5 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-3 py-1 rounded-[4px] border border-dashed transition-all select-none pointer-events-auto ${
+          isDropTargetOver
+            ? 'border-[#FF5500] bg-[#FF5500]/20 text-[#FF5500]'
+            : isDark
+            ? 'border-white/15 bg-black/50 text-zinc-400 hover:border-white/30 hover:text-zinc-200'
+            : 'border-black/20 bg-white/70 text-zinc-600 hover:border-black/40 hover:text-zinc-900'
+        }`}
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500]" />
+        <span className="font-mono text-[9px] tracking-widest uppercase">
+          DROP MEDIA TO BEGIN TIMELINE
+        </span>
+        {onLoadSample && (
+          <>
+            <span className="text-zinc-600 text-[9px]">|</span>
+            <button
+              type="button"
+              onClick={() => onLoadSample('bad_apple')}
+              className="font-mono text-[9px] tracking-wider uppercase text-[#FF5500] hover:underline cursor-pointer"
+            >
+              LOAD DEMO
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Full-width hardware bench: Host PC -> USB Serial -> ESP32-S3 -> I2C -> 0.96" SSD1306 */}
       <div className="w-full h-full relative flex items-center justify-center">
         <div
           ref={containerRef}

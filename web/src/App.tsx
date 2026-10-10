@@ -1334,6 +1334,9 @@ function MainApp() {
                 onLoadSample={handleAddAssetToTimeline}
                 onLaunchLyrics={() => setActiveView('lyrics-studio')}
                 onSplitClip={handleSplitClip}
+                serialConnected={serialConnected}
+                baudRate={baudRate}
+                targetFps={targetFps}
                 themeMode={themeMode}
               />
             </div>

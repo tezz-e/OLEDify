@@ -39,6 +39,9 @@ interface TimelineTrackProps {
   onLoadSample?: (sampleId: string) => void;
   onLaunchLyrics?: () => void;
   onSplitClip?: () => void;
+  serialConnected?: boolean;
+  baudRate?: number;
+  targetFps?: number;
   themeMode?: 'light' | 'dark';
 }
 
@@ -57,6 +60,9 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
   onLoadSample,
   onLaunchLyrics,
   onSplitClip,
+  serialConnected = false,
+  baudRate = 921600,
+  targetFps = 30,
   themeMode = 'light',
 }) => {
   const isDark = themeMode === 'dark';
@@ -434,6 +440,10 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
             <TapeDeckEmptyState
               isDark={isDark}
               isDropTargetOver={isDropTargetOver}
+              serialConnected={serialConnected}
+              baudRate={baudRate}
+              targetFps={targetFps}
+              onLoadSample={onLoadSample}
             />
           )}
 
