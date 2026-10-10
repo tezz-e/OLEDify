@@ -43,6 +43,7 @@ interface TimelineTrackProps {
   baudRate?: number;
   targetFps?: number;
   themeMode?: 'light' | 'dark';
+  onToggleSerial?: () => void;
 }
 
 export const TimelineTrack: React.FC<TimelineTrackProps> = ({
@@ -64,6 +65,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
   baudRate = 921600,
   targetFps = 30,
   themeMode = 'light',
+  onToggleSerial,
 }) => {
   const isDark = themeMode === 'dark';
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -443,7 +445,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
               serialConnected={serialConnected}
               baudRate={baudRate}
               targetFps={targetFps}
-              onLoadSample={onLoadSample}
+              onToggleSerial={onToggleSerial}
             />
           )}
 

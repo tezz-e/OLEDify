@@ -1331,13 +1331,13 @@ function MainApp() {
                 selectedClipIds={selectedClipIds}
                 onSelectClips={setSelectedClipIds}
                 onAssetDrop={handleAddAssetToTimeline}
-                onLoadSample={handleAddAssetToTimeline}
                 onLaunchLyrics={() => setActiveView('lyrics-studio')}
                 onSplitClip={handleSplitClip}
                 serialConnected={serialConnected}
                 baudRate={baudRate}
                 targetFps={targetFps}
                 themeMode={themeMode}
+                onToggleSerial={() => setSerialConnected(prev => !prev)}
               />
             </div>
           </BlueprintHoverCard>

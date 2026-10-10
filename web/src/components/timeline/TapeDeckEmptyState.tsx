@@ -8,7 +8,7 @@ interface TapeDeckEmptyStateProps {
   serialConnected?: boolean;
   baudRate?: number;
   targetFps?: number;
-  onLoadSample?: (sampleId: string) => void;
+  onToggleSerial?: () => void;
 }
 
 export const TapeDeckEmptyState: React.FC<TapeDeckEmptyStateProps> = ({
@@ -17,7 +17,7 @@ export const TapeDeckEmptyState: React.FC<TapeDeckEmptyStateProps> = ({
   serialConnected = false,
   baudRate = 921600,
   targetFps = 30,
-  onLoadSample,
+  onToggleSerial,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const readRef = useRef<HTMLSpanElement>(null);
@@ -61,6 +61,8 @@ export const TapeDeckEmptyState: React.FC<TapeDeckEmptyStateProps> = ({
     figureRef.current?.update?.({ serialConnected, baudRate, targetFps });
   }, [serialConnected, baudRate, targetFps]);
 
+  const baudFormatted = baudRate >= 1000000 ? `${(baudRate / 1000000).toFixed(1)}m` : `${Math.round(baudRate / 1000)}k`;
+
   return (
     <div
       onMouseDown={(e) => e.stopPropagation()}
@@ -79,47 +81,43 @@ export const TapeDeckEmptyState: React.FC<TapeDeckEmptyStateProps> = ({
         ['--hairline-stroke' as any]: 0.95,
       }}
     >
-      {/* Corner Readout - Technically accurate pipeline label */}
-      <div className="absolute top-2 left-4 z-10 flex items-center gap-2 font-mono text-[9px] tracking-wider uppercase select-none pointer-events-none">
+      {/* Corner Readout - Technically accurate pipeline label with interactive toggle */}
+      <div
+        onClick={onToggleSerial}
+        className={`absolute top-2 left-4 z-10 flex items-center gap-2 font-mono text-[9px] tracking-wider uppercase select-none transition-opacity ${
+          onToggleSerial ? 'cursor-pointer hover:opacity-80' : 'pointer-events-none'
+        }`}
+        title={serialConnected ? 'Serial Connected (Click to disconnect)' : 'Serial Standby (Click to simulate connection)'}
+      >
         <span
-          className={`w-1.5 h-1.5 rounded-full ${
-            serialConnected ? 'bg-emerald-400 animate-pulse' : 'bg-[#FF5500]'
+          className={`w-1.5 h-1.5 rounded-full transition-colors ${
+            serialConnected ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-600'
           }`}
         />
-        <span className="text-zinc-500 font-semibold">
+        <span className={`font-semibold transition-colors ${serialConnected ? 'text-emerald-400' : 'text-zinc-500'}`}>
           {serialConnected ? 'LIVE //' : 'STANDBY //'}
         </span>
         <span ref={readRef} className="text-zinc-300 font-mono">
-          pc ──[usb 921.6k baud]──&gt; esp32-s3 ──[i²c 400 khz]──&gt; ssd1306
+          {serialConnected
+            ? `pc ──[usb ${baudFormatted} baud @ ${targetFps}fps]──> esp32-s3 ──[i²c 400 khz]──> ssd1306`
+            : 'pc ──[usb disconnected]── esp32-s3 ──[i²c standby]── ssd1306'}
         </span>
       </div>
 
       {/* Ghost Track / Action Guidance Prompt */}
       <div
-        className={`absolute bottom-2.5 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-3 py-1 rounded-[4px] border border-dashed transition-all select-none pointer-events-auto ${
+        className={`absolute bottom-2.5 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-3.5 py-1 rounded-[4px] border border-dashed transition-all select-none pointer-events-none ${
           isDropTargetOver
             ? 'border-[#FF5500] bg-[#FF5500]/20 text-[#FF5500]'
             : isDark
-            ? 'border-white/15 bg-black/50 text-zinc-400 hover:border-white/30 hover:text-zinc-200'
-            : 'border-black/20 bg-white/70 text-zinc-600 hover:border-black/40 hover:text-zinc-900'
+            ? 'border-white/15 bg-black/50 text-zinc-400'
+            : 'border-black/20 bg-white/70 text-zinc-600'
         }`}
       >
         <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500]" />
         <span className="font-mono text-[9px] tracking-widest uppercase">
           DROP MEDIA TO BEGIN TIMELINE
         </span>
-        {onLoadSample && (
-          <>
-            <span className="text-zinc-600 text-[9px]">|</span>
-            <button
-              type="button"
-              onClick={() => onLoadSample('bad_apple')}
-              className="font-mono text-[9px] tracking-wider uppercase text-[#FF5500] hover:underline cursor-pointer"
-            >
-              LOAD DEMO
-            </button>
-          </>
-        )}
       </div>
 
       {/* Full-width hardware bench: Host PC -> USB Serial -> ESP32-S3 -> I2C -> 0.96" SSD1306 */}

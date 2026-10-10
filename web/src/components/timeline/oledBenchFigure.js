@@ -23,7 +23,13 @@ const {
 const TG = 2.0, TIC = 1.2, TFPC = 1.0, TPCB = 2.0;
 const REST_EXPLODE = [1.2, 0.35, 0.35];
 
-const PIPELINE_REST_LABEL = "pc ──[usb 921.6k baud]──> esp32-s3 ──[i²c 400 khz]──> ssd1306";
+const getPipelineLabel = (connected, fps = 30, baud = 921600) => {
+  if (!connected) {
+    return "pc ──[usb disconnected]── esp32-s3 ──[i²c standby]── ssd1306";
+  }
+  const baudText = baud >= 1000000 ? `${(baud / 1000000).toFixed(1)}m` : `${Math.round(baud / 1000)}k`;
+  return `pc ──[usb ${baudText} baud @ ${fps}fps]──> esp32-s3 ──[i²c 400 khz]──> ssd1306`;
+};
 
 const NAMES = [
   "host workstation · webserial cdc interface",
@@ -74,6 +80,8 @@ export function mountOledBench(
   const flat = (pts, z) => poly(pts.map(([x, y]) => P(x, y, z)));
 
   const g = mk("g", {}, svg);
+  g.style.transition = "opacity 320ms cubic-bezier(0.4, 0, 0.2, 1)";
+  g.style.opacity = isConnected ? "1.0" : "0.45";
 
   // ─────────────────────────────────────────────────────────────
   // 0. BENCH SURFACE & ALIGNMENT GUIDES (Backdrop at z = 0)
@@ -120,6 +128,8 @@ export function mountOledBench(
   // ─────────────────────────────────────────────────────────────
   const ucg = mk("g", {}, g);
   const cablePath = mk("path", { class: isConnected ? "nf hi" : "nf lo" }, ucg);
+  cablePath.style.transition = "stroke 260ms ease";
+  if (!isConnected) cablePath.style.strokeDasharray = "3 3";
   const usbP0 = P(-124.5, 136, 1.8);
   const usbP1 = P(-115, 128, 0.5);
   const usbP2 = P(-104, 110, 0.5);
@@ -132,7 +142,12 @@ export function mountOledBench(
   put(sleeve, prism(P, front, sleeveR, sleeveI, 0, 2.6));
 
   // USB Packet Indicator Dots (traveling from PC to ESP32)
-  const usbPackets = [0, 1].map(() => mk("circle", { r: "1.4", class: "dot" }, ucg));
+  const usbPackets = [0, 1].map(() => {
+    const dot = mk("circle", { r: "1.4", class: "dot" }, ucg);
+    dot.style.opacity = isConnected ? "1" : "0";
+    dot.style.transition = "opacity 200ms ease";
+    return dot;
+  });
 
   // ─────────────────────────────────────────────────────────────
   // 3. ESP32-S3 HOST MICROCONTROLLER (LEFT, sx ≈ 138..238)
@@ -218,7 +233,12 @@ export function mountOledBench(
   probeLead.setAttribute("d", `M${pCenter[0]} ${pCenter[1]} Q${pCenter[0]} ${pCenter[1] + 16} ${prLeadEnd[0]} ${prLeadEnd[1]}`);
 
   // I2C Signal Packet Indicator Dots
-  const i2cPackets = [0, 1].map(() => mk("circle", { r: "1.4", class: "dot" }, bg));
+  const i2cPackets = [0, 1].map(() => {
+    const dot = mk("circle", { r: "1.4", class: "dot" }, bg);
+    dot.style.opacity = isConnected ? "1" : "0";
+    dot.style.transition = "opacity 200ms ease";
+    return dot;
+  });
 
   function drawBusWires() {
     busWires.forEach(({ path, y0, y1, i }) => {
@@ -228,9 +248,10 @@ export function mountOledBench(
       const p3 = P(46, y1, 3.5);
       const d = `M${p0[0]} ${p0[1]} C${p1[0]} ${p1[1]} ${p2[0]} ${p2[1]} ${p3[0]} ${p3[1]}`;
       path.setAttribute("d", d);
-      // SCL (2) and SDA (3) are bright amber
+      // SCL (2) and SDA (3) are bright amber ONLY when connected or when bus is actively hovered
       const isSig = (i === 2 || i === 3);
-      path.setAttribute("class", (act === 3 || (act < 0 && isSig)) ? "nf hi" : "nf");
+      const isHi = (act === 3 || (act < 0 && isSig && isConnected));
+      path.setAttribute("class", isHi ? "nf hi" : (isConnected ? "nf" : "nf lo"));
     });
   }
 
@@ -342,33 +363,41 @@ export function mountOledBench(
   // 6. ANIMATION LOOP: Physics + Data Packet Transmission Stream
   // ─────────────────────────────────────────────────────────────
   const B = register(stage, (dt) => {
-    // 1. Advance data packets along wires
-    const pSpeed = isConnected ? (1.3 * (targetFps / 30)) : 0.35;
-    packetPhase = (packetPhase + dt * pSpeed) % 1.0;
+    // 1. Advance data packets along wires ONLY when connected
+    if (isConnected) {
+      const pSpeed = (targetFps / 30) * 1.35;
+      packetPhase = (packetPhase + dt * pSpeed) % 1.0;
 
-    // USB packets
-    usbPackets.forEach((el, idx) => {
-      const u = (packetPhase + idx * 0.5) % 1.0;
-      const pt = bezierPoint(usbP0, usbP1, usbP2, usbP3, u);
-      el.setAttribute("cx", String(pt[0].toFixed(1)));
-      el.setAttribute("cy", String(pt[1].toFixed(1)));
-      el.setAttribute("class", isConnected ? "dot" : "dot off");
-    });
+      // USB packets (PC -> ESP32)
+      usbPackets.forEach((el, idx) => {
+        el.style.opacity = "1";
+        const u = (packetPhase + idx * 0.5) % 1.0;
+        const pt = bezierPoint(usbP0, usbP1, usbP2, usbP3, u);
+        el.setAttribute("cx", String(pt[0].toFixed(1)));
+        el.setAttribute("cy", String(pt[1].toFixed(1)));
+        el.setAttribute("class", "dot");
+      });
 
-    // I2C packets on SCL and SDA
-    const sclP0 = P(-46, 74, 3.5), sclP1 = P(-10, 8, -4.1), sclP2 = P(15, -24, -4.1), sclP3 = P(46, -68, 3.5);
-    const sdaP0 = P(-46, 78, 3.5), sdaP1 = P(-10, 10, -4.9), sdaP2 = P(15, -22, -4.9), sdaP3 = P(46, -64, 3.5);
-    const ptScl = bezierPoint(sclP0, sclP1, sclP2, sclP3, packetPhase);
-    const ptSda = bezierPoint(sdaP0, sdaP1, sdaP2, sdaP3, (packetPhase + 0.5) % 1.0);
-    i2cPackets[0].setAttribute("cx", String(ptScl[0].toFixed(1)));
-    i2cPackets[0].setAttribute("cy", String(ptScl[1].toFixed(1)));
-    i2cPackets[1].setAttribute("cx", String(ptSda[0].toFixed(1)));
-    i2cPackets[1].setAttribute("cy", String(ptSda[1].toFixed(1)));
+      // I2C packets on SCL and SDA (ESP32 -> OLED)
+      const sclP0 = P(-46, 74, 3.5), sclP1 = P(-10, 8, -4.1), sclP2 = P(15, -24, -4.1), sclP3 = P(46, -68, 3.5);
+      const sdaP0 = P(-46, 78, 3.5), sdaP1 = P(-10, 10, -4.9), sdaP2 = P(15, -22, -4.9), sdaP3 = P(46, -64, 3.5);
+      const ptScl = bezierPoint(sclP0, sclP1, sclP2, sclP3, packetPhase);
+      const ptSda = bezierPoint(sdaP0, sdaP1, sdaP2, sdaP3, (packetPhase + 0.5) % 1.0);
+      i2cPackets[0].style.opacity = "1";
+      i2cPackets[0].setAttribute("cx", String(ptScl[0].toFixed(1)));
+      i2cPackets[0].setAttribute("cy", String(ptScl[1].toFixed(1)));
+      i2cPackets[1].style.opacity = "1";
+      i2cPackets[1].setAttribute("cx", String(ptSda[0].toFixed(1)));
+      i2cPackets[1].setAttribute("cy", String(ptSda[1].toFixed(1)));
+    } else {
+      usbPackets.forEach((el) => { el.style.opacity = "0"; });
+      i2cPackets.forEach((el) => { el.style.opacity = "0"; });
+    }
 
     // 2. Step spring physics for exploded display layers
     const T = targets();
-    let m = true; // Keep packets streaming smoothly
-    for (let j = 0; j < 3; j++) { gs[j].t = T[j]; stepS(gs[j], dt); }
+    let m = isConnected; // Keep continuous packet stream awake when connected
+    for (let j = 0; j < 3; j++) { gs[j].t = T[j]; if (stepS(gs[j], dt)) m = true; }
     const b = bases(gs.map((s) => s.x));
     let changed = false;
     b.forEach((z, i) => { if (z !== drawn[i]) { drawn[i] = z; oledDraw[i](z); changed = true; } });
@@ -391,11 +420,11 @@ export function mountOledBench(
     glass.sil.classList.toggle("hi", act === 4);
     dispPath.classList.toggle("hi", act === -1 || act === 4);
     drawBusWires();
-    if (read) read.textContent = act < 0 ? PIPELINE_REST_LABEL : NAMES[act];
+    if (read) read.textContent = act < 0 ? getPipelineLabel(isConnected, targetFps, baudRate) : NAMES[act];
     B.wake();
   }
 
-  if (read) read.textContent = PIPELINE_REST_LABEL;
+  if (read) read.textContent = getPipelineLabel(isConnected, targetFps, baudRate);
 
   bag.add(pointer(stage, {
     move: (p) => {
@@ -429,12 +458,28 @@ export function mountOledBench(
   return {
     set: (v) => { GAP = v; B.wake(); },
     update: (opts = {}) => {
-      if (opts.serialConnected !== undefined) isConnected = opts.serialConnected;
+      if (opts.serialConnected !== undefined) isConnected = Boolean(opts.serialConnected);
       if (opts.baudRate !== undefined) baudRate = opts.baudRate;
       if (opts.targetFps !== undefined) targetFps = opts.targetFps;
+
+      g.style.opacity = isConnected ? "1.0" : "0.45";
       pcPwrLed.setAttribute("class", isConnected ? "nf hi" : "nf lo");
       cablePath.setAttribute("class", isConnected ? "nf hi" : "nf lo");
-      pwrLed.setAttribute("class", isConnected ? "nf hi" : "nf");
+      cablePath.style.strokeDasharray = isConnected ? "none" : "3 3";
+      pwrLed.setAttribute("class", isConnected ? "nf hi" : "nf lo");
+
+      if (!isConnected) {
+        usbPackets.forEach((el) => { el.style.opacity = "0"; });
+        i2cPackets.forEach((el) => { el.style.opacity = "0"; });
+      } else {
+        usbPackets.forEach((el) => { el.style.opacity = "1"; });
+        i2cPackets.forEach((el) => { el.style.opacity = "1"; });
+      }
+
+      drawBusWires();
+      if (read && act < 0) {
+        read.textContent = getPipelineLabel(isConnected, targetFps, baudRate);
+      }
       B.wake();
     },
     destroy: bag.dispose
