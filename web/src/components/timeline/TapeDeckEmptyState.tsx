@@ -1,6 +1,6 @@
 import React, { useRef, useLayoutEffect } from 'react';
 import { HL } from './hairlineKernel.js';
-import { mountCassette } from './cassetteFigure.js';
+import { mountOled } from './oledFigure.js';
 
 interface TapeDeckEmptyStateProps {
   isDark?: boolean;
@@ -29,7 +29,7 @@ export const TapeDeckEmptyState: React.FC<TapeDeckEmptyStateProps> = ({
     svg.style.display = 'block';
     el.appendChild(svg);
 
-    const figure = mountCassette({ stage: el, svg, read: { textContent: '' } }, 36);
+    const figure = mountOled({ stage: el, svg, read: { textContent: '' } }, 28);
 
     return () => {
       figure.destroy();
@@ -55,11 +55,11 @@ export const TapeDeckEmptyState: React.FC<TapeDeckEmptyStateProps> = ({
         ['--hairline-stroke' as any]: 0.95,
       }}
     >
-      {/* Pure aesthetic multi-layer cassette showcase (Zero text, zero buttons) */}
+      {/* Pure aesthetic multi-layer 0.96" SSD1306 OLED showcase (Zero text, zero buttons) */}
       <div className="w-full h-full max-h-[260px] flex items-center justify-center p-2">
         <div
           ref={containerRef}
-          data-hairline="cassette"
+          data-hairline="oled"
           data-hairline-theme={isDark ? 'dark' : 'light'}
           className="h-full aspect-[5/4] max-w-full flex items-center justify-center relative cursor-crosshair"
           style={{ touchAction: 'pan-y' }}
