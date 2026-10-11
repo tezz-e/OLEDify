@@ -2,26 +2,28 @@ import React, { useEffect, useRef } from 'react';
 
 export interface HardwareTelemetryHUDProps {
   mcu?: string;            // "ESP32-S3"
-  displayDriver?: string;  // "SH1106 128x64"
+  displayDriver?: string;  // "SSD1306 128x64"
   baudRate?: number;       // 921600
   fps?: number;            // 30
   currentFrame?: number;
   totalFrames?: number;
   audioTelemetry?: number[]; // [0..1] normalized audio energy buffer
   isConnected?: boolean;
+  isStreaming?: boolean;
   themeMode?: 'light' | 'dark';
   className?: string;
 }
 
 export const HardwareTelemetryHUD: React.FC<HardwareTelemetryHUDProps> = ({
   mcu = 'ESP32-S3',
-  displayDriver = 'SH1106',
+  displayDriver = 'SSD1306',
   baudRate = 921600,
   fps = 30,
   currentFrame = 0,
   totalFrames = 120,
   audioTelemetry = [],
   isConnected = true,
+  isStreaming = false,
   themeMode = 'dark',
   className = '',
 }) => {
@@ -38,7 +40,7 @@ export const HardwareTelemetryHUD: React.FC<HardwareTelemetryHUDProps> = ({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.lineWidth = 1.2;
 
-    if (totalFrames === 0 && audioTelemetry.length === 0) {
+    if (totalFrames === 0) {
       // Honest empty state: clean flat baseline without fake data
       ctx.beginPath();
       ctx.moveTo(0, canvas.height / 2);
@@ -48,77 +50,85 @@ export const HardwareTelemetryHUD: React.FC<HardwareTelemetryHUDProps> = ({
       return;
     }
 
-    ctx.strokeStyle = '#FF5500';
+    // Category 3 allowed orange ONLY when streaming; neutral when idle
+    ctx.strokeStyle = isStreaming ? '#FF5500' : (isDark ? '#A1A1AA' : '#71717A');
     ctx.beginPath();
-    const len = Math.max(2, audioTelemetry.length > 0 ? audioTelemetry.length : 32);
-    for (let i = 0; i < len; i++) {
-      const val = audioTelemetry[i] ?? 0.5;
-      const x = (i / (len - 1)) * canvas.width;
-      const y = canvas.height - val * canvas.height;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+    if (audioTelemetry.length > 0) {
+      const len = audioTelemetry.length;
+      for (let i = 0; i < len; i++) {
+        const val = audioTelemetry[i];
+        const x = (i / (len - 1)) * canvas.width;
+        const y = canvas.height - val * canvas.height;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+    } else {
+      // Clean flat active level when frames exist but no audio track
+      ctx.moveTo(0, canvas.height / 2);
+      ctx.lineTo(canvas.width, canvas.height / 2);
     }
     ctx.stroke();
-  }, [audioTelemetry, isDark, totalFrames]);
+  }, [audioTelemetry, isDark, totalFrames, isStreaming]);
 
   return (
     <div
-      className={`p-3 rounded-[8px] border font-mono text-[10px] flex flex-col gap-2.5 backdrop-blur-xl select-none ${
+      className={`p-3.5 rounded-[12px] border border-white/[0.08] font-sans text-xs flex flex-col gap-3 select-none ${
         isDark
-          ? 'bg-[#080808]/90 border-[#27272A] text-[#FAFAFA] shadow-[0_8px_24px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.14)]'
-          : 'bg-[#F6F6F4]/90 border-[#1A1A1A] text-[#1A1A1A] shadow-[0_4px_16px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.95)]'
+          ? 'bg-[var(--hw-bg-surface)] text-[var(--hw-text-primary)]'
+          : 'bg-[var(--hw-bg-surface)] text-[var(--hw-text-primary)]'
       } ${className}`}
       aria-label="Hardware Telemetry HUD"
     >
-      {/* Top Header with Nothing Glyph Matrix and LED Beacon */}
-      <div className="flex items-center justify-between border-b border-current/15 pb-2">
+      {/* Top Header */}
+      <div className="flex items-center justify-between border-b border-white/[0.08] pb-2">
         <div className="flex items-center gap-2">
-          {/* 2x2 Glyph Matrix */}
-          <div className="grid grid-cols-2 gap-[2px]">
-            <span
-              className={`w-1 h-1 rounded-full ${
-                isConnected
-                  ? 'bg-[#FF5500]'
-                  : 'bg-zinc-600'
-              }`}
-            />
-            <span className="w-1 h-1 rounded-full bg-current opacity-40" />
-            <span className="w-1 h-1 rounded-full bg-current opacity-60" />
-            <span className="w-1 h-1 rounded-full bg-current opacity-20" />
-          </div>
-          <span className="font-bold tracking-widest text-[9px]">HARDWARE_HUD</span>
+          <span
+            className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${
+              isStreaming
+                ? 'bg-[#FF5500]'
+                : isConnected
+                ? 'bg-white'
+                : 'bg-[#71717A]'
+            }`}
+          />
+          <span className="font-semibold text-xs tracking-tight text-[var(--hw-text-primary)]">
+            Telemetry
+          </span>
         </div>
-
-        <span className="text-[8px] px-1.5 py-0.2 rounded border border-current/20 uppercase font-semibold">
-          1-BIT MONO
-        </span>
       </div>
 
-      {/* Telemetry Matrix Grid */}
-      <div className="grid grid-cols-2 gap-2 text-[9px]">
+      {/* Signal Chain Topology: Three rows, no wrapping, lowercase 'k' on baud, no ASCII arrows */}
+      <div className="p-2.5 rounded-[8px] bg-[var(--hw-bg-canvas)] border border-white/[0.06] text-[11px] font-sans space-y-1">
+        <div className="text-[var(--hw-text-primary)] whitespace-nowrap">
+          USB · <span className="font-mono">{baudRate === 921600 ? '921.6' : '115.2'}</span><span className="font-sans">k baud</span>
+        </div>
+        <div className="text-[var(--hw-text-primary)] whitespace-nowrap">
+          I²C · <span className="font-mono">400</span> <span className="font-sans">kHz</span>
+        </div>
+        <div className="text-[var(--hw-text-primary)] whitespace-nowrap">
+          SSD1306 · <span className="font-mono">128×64</span> <span className="font-sans">px</span>
+        </div>
+      </div>
+
+      {/* Telemetry Matrix Grid: Target MCU & Stream clock only (no duplicate bus/serial cells) */}
+      <div className="grid grid-cols-2 gap-2.5 text-xs">
         <div>
-          <span className="opacity-50 block text-[8px] uppercase">TARGET MCU</span>
-          <span className="font-bold text-[#FF5500] uppercase">{mcu}</span>
+          <span className="text-[var(--hw-text-secondary)] block text-[11px] font-sans">Target MCU</span>
+          <span className="font-medium text-[var(--hw-text-primary)] font-sans">{mcu}</span>
         </div>
         <div>
-          <span className="opacity-50 block text-[8px] uppercase">CONTROLLER</span>
-          <span className="font-bold uppercase">{displayDriver} 128×64</span>
-        </div>
-        <div>
-          <span className="opacity-50 block text-[8px] uppercase">SERIAL SPEED</span>
-          <span className="font-bold text-[#FAFAFA]">{baudRate === 921600 ? '921.6K' : baudRate.toLocaleString()} BAUD</span>
-        </div>
-        <div>
-          <span className="opacity-50 block text-[8px] uppercase">STREAM CLOCK</span>
-          <span className="font-bold">{fps} FPS • 33ms</span>
+          <span className="text-[var(--hw-text-secondary)] block text-[11px] font-sans">Stream clock</span>
+          <span className="font-medium text-[var(--hw-text-primary)]">
+            <span className="font-mono">{fps}</span> <span className="font-sans text-[11px]">FPS</span>
+          </span>
         </div>
       </div>
 
       {/* Frame Counter & Oscilloscope Strip */}
-      <div className="flex items-center justify-between gap-2 p-1.5 rounded-[4px] bg-black/40 border border-current/15">
+      <div className="flex items-center justify-between gap-2 p-2 rounded-[8px] bg-[var(--hw-bg-canvas)] border border-white/[0.06]">
         <div className="flex flex-col">
-          <span className="opacity-50 text-[8px]">FRAME BUFFER</span>
-          <span className="font-bold text-[#FAFAFA] tabular-nums">
+          <span className="text-[var(--hw-text-secondary)] text-[11px]">Frame buffer</span>
+          <span className="font-mono text-xs font-medium text-[var(--hw-text-primary)] tabular-nums">
             {totalFrames > 0
               ? `${String(currentFrame + 1).padStart(3, '0')} / ${String(totalFrames).padStart(3, '0')}`
               : '000 / 000'}
@@ -126,7 +136,7 @@ export const HardwareTelemetryHUD: React.FC<HardwareTelemetryHUDProps> = ({
         </div>
 
         {/* Micro-Oscilloscope Canvas */}
-        <div className="w-16 h-5 border border-current/20 bg-black/60 overflow-hidden rounded-[2px]">
+        <div className="w-16 h-5 border border-white/[0.08] bg-black/40 overflow-hidden rounded-[4px]">
           <canvas ref={canvasRef} width={64} height={20} className="w-full h-full block" />
         </div>
       </div>

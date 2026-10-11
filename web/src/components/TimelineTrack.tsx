@@ -333,18 +333,12 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
           : 'bg-[#EDEAE5] border-[#1A1A1A]/20 text-[#1A1A1A]'
       }`}>
         <div className="flex items-center gap-2">
-          <span className={`text-[9px] font-mono font-bold tracking-widest uppercase ${
-            isDark ? 'text-[#FAFAFA]' : 'text-[#1A1A1A]'
-          }`}>
-            {totalActiveFrames} frames ({clips.length} clips)
+          <span className="text-xs font-sans text-[var(--hw-text-secondary)]">
+            <span className="font-mono">{totalActiveFrames}</span> frames (<span className="font-mono">{clips.length}</span> {clips.length === 1 ? 'clip' : 'clips'}) · <span className="font-mono">{targetFps}</span> FPS
           </span>
           {selectedClipIds.length > 0 && (
-            <span className={`text-[8px] font-mono font-bold px-1.5 py-0.5 rounded-[2px] tracking-wider uppercase ${
-              isDark 
-                ? 'bg-[#FF5500] text-black border-none' 
-                : 'bg-[#FF5500] text-black border border-[#1A1A1A]'
-            }`}>
-              SELECTED: {selectedClipIds.length} CLIP{selectedClipIds.length > 1 ? 'S' : ''}
+            <span className="text-[11px] font-sans font-medium px-2 py-0.5 rounded-[4px] bg-white/10 border border-white/15 text-[var(--hw-text-primary)]">
+              Selected: <span className="font-mono">{selectedClipIds.length}</span> {selectedClipIds.length > 1 ? 'clips' : 'clip'}
             </span>
           )}
         </div>
@@ -352,7 +346,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
         <div className="ml-auto mr-16 flex min-w-0 shrink-0 items-center">
           <div className="w-48 sm:w-52 min-w-0">
               <ElasticSlider
-                leftIcon={<span className="flex items-center gap-1"><span className="text-[9px] tracking-wider">ZOOM</span><span>-</span></span>}
+                leftIcon={<span className="flex items-center gap-1 font-sans text-xs text-[var(--hw-text-secondary)]"><span>Zoom</span><span>-</span></span>}
                 startingValue={0}
                 maxValue={100}
                 defaultValue={Math.max(0, Math.min(100, 100 * Math.log(zoomLevel / MIN_ZOOM) / Math.log(ZOOM_RATIO)))}
@@ -366,6 +360,8 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
           </div>
         </div>
       </div>
+
+
 
       {/* Scrollable track area (horizontal AND vertical scrolling enabled) */}
       <div
@@ -419,8 +415,8 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
               <div key={px} className="absolute bottom-0 pointer-events-none" style={{ left: px }}>
                 <div style={{ width: 1, height: 7, background: isDark ? 'rgba(255,85,0,0.6)' : 'rgba(26,26,26,0.35)' }} />
                 <span
-                  className={`absolute text-[7px] font-mono select-none ${isDark ? 'text-[#71717A]' : 'text-[#6B6B6B]'}`}
-                  style={{ bottom: 9, left: 2, whiteSpace: 'nowrap' }}
+                  className={`absolute text-[11px] font-mono select-none ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}
+                  style={{ bottom: 8, left: 2, whiteSpace: 'nowrap' }}
                 >
                   {label}
                 </span>

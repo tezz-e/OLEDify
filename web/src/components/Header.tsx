@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Settings, Cpu } from 'lucide-react';
 import { detectGpu, GpuTelemetry } from '../engine/gpuDetector';
 import { LiquidStudioNav } from './navigation/LiquidStudioNav';
 import { TextScramble } from './motion/TextScramble';
+import { HW_SPRINGS } from '../theme/springPresets';
 
 interface HeaderProps {
   serialConnected: boolean;
@@ -45,30 +47,28 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   return (
-    <header className="relative w-full h-12 px-4 border-b border-white/10 bg-[#181A1B] text-[#FAFAFA] flex items-center justify-between shrink-0 z-20 font-mono">
-      <div className="flex items-center gap-3">
-        <h1 className="text-xs font-bold tracking-widest flex items-center gap-2 select-none group cursor-default">
-          <span className="text-[#FF5500]">▲</span>
-          <TextScramble text="OLED_STUDIO" className="text-[#FAFAFA]" triggerOnHover={true} />
+    <header className="relative w-full h-12 px-4 border-b border-white/[0.08] bg-[var(--hw-bg-canvas)] text-[var(--hw-text-primary)] flex items-center justify-between shrink-0 z-20 font-sans">
+      {/* Left: Logo + Mode Switcher Tabs */}
+      <div className="flex items-center gap-4">
+        <h1 className="text-sm font-semibold tracking-tight flex items-center gap-2 select-none group cursor-default">
+          <span className="text-[var(--hw-text-primary)] font-semibold">OLED Studio</span>
         </h1>
-      </div>
 
-      {/* Center View Mode Switcher: Hero Moment 1 */}
-      {onViewChange && (
-        <div className="hidden md:flex items-center justify-center">
+        {onViewChange && (
           <LiquidStudioNav
             activeView={activeView}
             onViewChange={onViewChange}
           />
-        </div>
-      )}
-      
+        )}
+      </div>
+
+      {/* Right: Device cluster (GPU, connect, baud) + Primary action (Compile) */}
       <div className="flex items-center gap-2">
-        {/* GPU Chip (Truncated with ellipsis & tooltip, no green) */}
+        {/* GPU Chip */}
         {gpuInfo && gpuInfo.webGlSupported && (
           <div
             onClick={onSettingsOpen}
-            className="hidden lg:flex items-center gap-2 h-7 px-2.5 rounded-[4px] border border-white/10 bg-[#202225] text-[10px] text-[#A1A1AA] hover:text-[#FAFAFA] hover:border-white/20 cursor-pointer transition-colors max-w-[210px]"
+            className="hidden xl:flex items-center gap-2 h-8 px-2.5 rounded-[8px] border border-white/[0.08] bg-[var(--hw-bg-surface)] text-xs text-[var(--hw-text-secondary)] hover:text-[var(--hw-text-primary)] hover:border-white/20 cursor-pointer transition-colors max-w-[190px]"
             title={`${gpuInfo.renderer}\nArchitecture: ${gpuInfo.isDedicated ? 'Dedicated GPU' : 'Integrated GPU'}`}
           >
             <span
@@ -76,80 +76,87 @@ export const Header: React.FC<HeaderProps> = ({
                 gpuInfo.isDedicated ? 'bg-zinc-400' : 'bg-zinc-500'
               }`}
             />
-            <span className="font-medium text-[#FAFAFA] truncate">
+            <span className="font-medium text-[var(--hw-text-primary)] truncate">
               {gpuInfo.simplifiedName.replace(/\s*\(\s*0x[0-9a-fA-F]+\s*\)/gi, '').trim()}
             </span>
           </div>
         )}
 
-        {/* Settings button */}
-        <button 
-          onClick={onSettingsOpen}
-          className="h-7 w-7 rounded-[4px] border border-white/10 bg-[#202225] text-[#A1A1AA] hover:text-[#FAFAFA] hover:border-white/20 flex items-center justify-center transition-colors cursor-pointer"
-          title="Hardware Configuration & Settings"
-          aria-label="Settings"
-        >
-          <Settings className="w-3.5 h-3.5 stroke-[1.5]" />
-        </button>
-
-        {/* USB Connect Chip - THE SINGLE GREEN ELEMENT IN THE ENTIRE UI */}
-        <button
+        {/* USB Connect Button */}
+        <motion.button
+          whileTap={{ scale: 0.96 }}
+          transition={HW_SPRINGS.snappy}
           onClick={onSerialToggle}
-          className="h-7 px-2.5 rounded-[4px] border border-white/10 bg-[#202225] text-[10px] text-[#FAFAFA] hover:border-white/20 flex items-center gap-2 transition-colors cursor-pointer"
+          className="h-8 px-3 rounded-[8px] border border-white/[0.08] bg-[var(--hw-bg-surface)] text-xs font-medium text-[var(--hw-text-primary)] hover:border-white/20 flex items-center gap-2 transition-colors cursor-pointer"
         >
           <span
             className={`w-1.5 h-1.5 rounded-full ${
               serialConnected 
-                ? 'bg-[#00FF66]' 
+                ? 'bg-white' 
                 : 'bg-[#71717A]'
             }`}
           />
-          <span>{serialConnected ? 'CONNECTED' : 'CONNECT USB'}</span>
-        </button>
+          <span>{serialConnected ? 'Connected' : 'Connect USB'}</span>
+        </motion.button>
 
-        {/* Serial Baud Chip (Unified style, no emoji) */}
+        {/* USB Serial Baud Chip (Mono number, clean sans label) */}
         {onBaudRateToggle && !serialConnected && (
-          <button
+          <motion.button
+            whileTap={{ scale: 0.96 }}
+            transition={HW_SPRINGS.snappy}
             onClick={onBaudRateToggle}
-            title={`Serial Speed: ${baudRate === 115200 ? '115,200 Baud' : '921,600 Baud'}\nClick to toggle.`}
-            className={`h-7 px-2 rounded-[4px] border text-[10px] font-medium transition-colors cursor-pointer ${
-              baudRate === 921600
-                ? 'border-[#FF5500] text-[#FF5500] bg-transparent'
-                : 'border-white/10 text-[#A1A1AA] bg-[#202225] hover:text-[#FAFAFA]'
-            }`}
+            title={`USB serial speed: ${baudRate === 115200 ? '115,200 baud' : '921,600 baud'}\nClick to toggle.`}
+            className="h-8 px-2.5 rounded-[8px] border border-white/[0.08] text-xs font-medium text-[var(--hw-text-secondary)] bg-[var(--hw-bg-surface)] hover:text-[var(--hw-text-primary)] hover:border-white/20 transition-colors cursor-pointer flex items-center gap-1"
           >
-            {baudRate === 115200 ? '115.2K' : '921.6K'}
-          </button>
+            <span className="font-mono">{baudRate === 115200 ? '115.2k' : '921.6k'}</span>
+            <span className="text-[11px] text-[var(--hw-text-secondary)] font-sans">baud</span>
+          </motion.button>
         )}
 
         {serialConnected && (
           <span
-            className="h-7 px-2 rounded-[4px] border border-white/10 bg-[#202225] text-[10px] text-[#FAFAFA] flex items-center"
+            className="h-8 px-2.5 rounded-[8px] border border-white/[0.08] bg-[var(--hw-bg-surface)] text-xs text-[var(--hw-text-primary)] flex items-center gap-1"
+            title={`USB serial speed: ${baudRate === 115200 ? '115,200 baud' : '921,600 baud'}`}
           >
-            {baudRate === 115200 ? '115.2K' : '921.6K'}
+            <span className="font-mono">{baudRate === 115200 ? '115.2k' : '921.6k'}</span>
+            <span className="text-[11px] text-[var(--hw-text-secondary)] font-sans">baud</span>
           </span>
         )}
 
-        {/* Compile Button (Unified 4px radius, amber active, tertiary disabled) */}
-        <button
+        {/* Hardware Settings Button */}
+        <motion.button 
+          whileTap={{ scale: 0.94 }}
+          transition={HW_SPRINGS.snappy}
+          onClick={onSettingsOpen}
+          className="h-8 w-8 rounded-[8px] border border-white/[0.08] bg-[var(--hw-bg-surface)] text-[var(--hw-text-secondary)] hover:text-[var(--hw-text-primary)] hover:border-white/20 flex items-center justify-center transition-colors cursor-pointer"
+          title="Hardware Configuration & Settings"
+          aria-label="Settings"
+        >
+          <Settings className="w-4 h-4 stroke-[1.5]" />
+        </motion.button>
+
+        {/* Compile Button (Primary action - ONE orange) */}
+        <motion.button
+          whileTap={hasMedia && !isExporting ? { scale: 0.96 } : undefined}
+          transition={HW_SPRINGS.snappy}
           onClick={onExportClick}
           disabled={!hasMedia || isExporting}
-          className={`h-7 px-3 rounded-[4px] border text-[10px] font-bold tracking-wider uppercase transition-colors flex items-center justify-center ${
+          className={`h-8 px-3.5 rounded-[8px] border text-xs font-semibold transition-colors flex items-center justify-center ${
             hasMedia && !isExporting
-              ? 'border-[#FF5500] bg-[#FF5500] text-[#000000] cursor-pointer hover:bg-[#FF6611]'
-              : 'border-white/10 bg-[#202225] text-[#71717A] opacity-50 cursor-not-allowed'
+              ? 'border-[#FF5500] bg-[#FF5500] text-black cursor-pointer hover:bg-[#FF6611]'
+              : 'border-white/[0.08] bg-[var(--hw-bg-surface)] text-[var(--hw-text-tertiary)] opacity-40 cursor-not-allowed'
           }`}
         >
-          {isExporting ? `COMPILING ${exportProgress}%` : 'COMPILE'}
-        </button>
+          {isExporting ? `Compiling ${exportProgress}%` : 'Compile'}
+        </motion.button>
       </div>
       {exportError && (
-        <div role="alert" className={`absolute right-6 top-full mt-2 max-w-sm border px-3 py-2 text-[10px] font-mono shadow-md ${
+        <div role="alert" className={`absolute right-6 top-full mt-2 max-w-sm border px-3 py-2 text-xs font-sans rounded-[8px] shadow-md ${
           isDark 
-            ? 'border-[#FF1A35] bg-[#0A0A0C] text-[#FF1A35]' 
+            ? 'border-[#EF4444] bg-[#1c1c1f] text-[#EF4444]' 
             : 'border-[#1A1A1A] bg-white text-[#B42318]'
         }`}>
-          EXPORT FAILED: {exportError}
+          Export failed: {exportError}
         </div>
       )}
     </header>

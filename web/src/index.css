@@ -87,43 +87,59 @@
 
 :root {
   /* ------------------------------------------------------------------------
-     TEENAGE ENGINEERING / NOTHING TOKEN CONTRACT
+     PRECISION INSTRUMENT TOKEN CONTRACT
      ------------------------------------------------------------------------ */
-  --hw-bg-canvas: #181A1B;              /* Canvas #181A1B (Hardware matte grey) */
-  --hw-bg-surface: #202225;             /* Surface #202225 (Panels, header, sidebars) */
-  --hw-bg-raised: #282A2E;              /* Raised #282A2E (Wells, active cards) */
-  --hw-border-hairline: rgba(255, 255, 255, 0.10); /* Hairline rgba(255,255,255,0.10) */
-  --hw-border-specular: rgba(255, 255, 255, 0.18); /* Glass top edge */
+  --hw-bg-canvas: #141415;              /* Canvas base: warm charcoal */
+  --hw-bg-surface: #1c1c1f;             /* Surface raised: panels & sections */
+  --hw-bg-raised: #252528;              /* Floating / interactive surface */
+  --hw-border-hairline: rgba(255, 255, 255, 0.08); /* 1px low-contrast hairline */
+  --hw-border-specular: rgba(255, 255, 255, 0.14); /* Specular edge */
 
-  --hw-text-primary: #FAFAFA;           /* Primary text #FAFAFA */
-  --hw-text-secondary: #A1A1AA;         /* Secondary text #A1A1AA */
-  --hw-text-tertiary: #71717A;          /* Tertiary text #71717A (min contrast) */
+  --hw-text-primary: #FAFAFA;           /* Primary text */
+  --hw-text-secondary: #A1A1AA;         /* Secondary text (readable) */
+  --hw-text-tertiary: #71717A;          /* Tertiary text */
 
-  --hw-signal-amber: #FF5500;           /* Amber #FF5500 (THE ONLY ACCENT) */
-  --hw-signal-phosphor: #00FF66;        /* Phosphor green (live/connected only) */
-  --hw-signal-danger: #EF4444;          /* Danger red (record/error only) */
+  --hw-signal-amber: #FF5500;           /* The single orange accent */
+  --hw-signal-danger: #EF4444;          /* Error / danger only */
 
   --hw-shadow-chassis: none;
-  --hw-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --hw-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .dark, [data-theme="dark"] {
-  --hw-bg-canvas: #181A1B;
-  --hw-bg-surface: #202225;
-  --hw-bg-raised: #282A2E;
-  --hw-border-hairline: rgba(255, 255, 255, 0.10);
-  --hw-border-specular: rgba(255, 255, 255, 0.18);
+  --hw-bg-canvas: #141415;
+  --hw-bg-surface: #1c1c1f;
+  --hw-bg-raised: #252528;
+  --hw-border-hairline: rgba(255, 255, 255, 0.08);
+  --hw-border-specular: rgba(255, 255, 255, 0.14);
 
   --hw-text-primary: #FAFAFA;
   --hw-text-secondary: #A1A1AA;
   --hw-text-tertiary: #71717A;
 
   --hw-signal-amber: #FF5500;
-  --hw-signal-phosphor: #00FF66;
   --hw-signal-danger: #EF4444;
 
   --hw-shadow-chassis: none;
-  --hw-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --hw-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+[data-theme="light"], .light {
+  --hw-bg-canvas: #F4F3EF;
+  --hw-bg-surface: #EAE8E2;
+  --hw-bg-raised: #DFDDD6;
+  --hw-border-hairline: rgba(0, 0, 0, 0.08);
+  --hw-border-specular: rgba(0, 0, 0, 0.12);
+
+  --hw-text-primary: #18181A;
+  --hw-text-secondary: #57575E;
+  --hw-text-tertiary: #7E7E87;
+
+  --hw-signal-amber: #FF5500;
+  --hw-signal-danger: #DC2626;
+
+  --hw-shadow-chassis: none;
+  --hw-shadow-inset: inset 0 1px 0 rgba(0, 0, 0, 0.04);
 }
 
 /* ==========================================================================
@@ -131,18 +147,15 @@
    ========================================================================== */
 
 .hw-acrylic-glass {
-  background: var(--hw-bg-acrylic);
-  backdrop-filter: blur(24px) saturate(190%) contrast(108%);
-  -webkit-backdrop-filter: blur(24px) saturate(190%) contrast(108%);
-  border-top: 1px solid var(--hw-border-specular);
-  border-left: 1px solid var(--hw-border-hairline);
-  border-right: 1px solid var(--hw-border-hairline);
-  border-bottom: 1px solid var(--hw-border-perimeter);
-  box-shadow: var(--hw-shadow-specular), var(--hw-shadow-chassis);
+  background: var(--hw-bg-surface);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--hw-border-hairline);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
 }
 
 .hw-milled-slot {
-  background: var(--hw-bg-recessed);
+  background: var(--hw-bg-surface);
   box-shadow: var(--hw-shadow-inset);
   border: 1px solid var(--hw-border-hairline);
 }
@@ -160,7 +173,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: var(--hw-grain-opacity);
+  opacity: var(--hw-grain-opacity, 0.04);
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)'/%3E%3C/svg%3E");
   mix-blend-mode: overlay;
 }
@@ -169,11 +182,8 @@
   * { box-sizing: border-box; }
   
   body {
-    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-family: 'Inter', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     background-color: var(--hw-bg-canvas);
-    background-image:
-      repeating-linear-gradient(0deg, #e0dbd5 0 1px, transparent 1px 40px),
-      repeating-linear-gradient(90deg, #e0dbd5 0 1px, transparent 1px 40px);
     color: var(--hw-text-primary);
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
@@ -188,8 +198,8 @@
   /* Custom scrollbars - Technical style */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: var(--hw-bg-canvas); }
-  ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 2px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--hw-signal-amber); }
+  ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.22); }
 
   /* Technical panel */
   .tech-panel {
@@ -202,15 +212,13 @@
     background: var(--hw-bg-surface);
     border: 1px solid var(--hw-border-hairline);
     color: var(--hw-text-primary);
-    font-family: 'JetBrains Mono', monospace;
-    font-weight: 600;
-    font-size: 10px;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-weight: 500;
+    font-size: 12px;
     padding: 6px 12px;
     cursor: pointer;
     transition: background-color 0.15s, color 0.15s;
-    border-radius: 4px;
+    border-radius: 8px;
   }
 
   .tech-btn:hover:not(:disabled) {
@@ -221,6 +229,7 @@
   .tech-btn.active {
     background: var(--hw-signal-amber);
     color: #000000;
+    font-weight: 600;
   }
 
   /* Accent button */
@@ -228,29 +237,27 @@
     background: var(--hw-signal-amber);
     border: 1px solid var(--hw-signal-amber);
     color: #000000;
-    font-family: 'JetBrains Mono', monospace;
-    font-weight: 700;
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    padding: 8px 16px;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+    padding: 6px 14px;
     cursor: pointer;
-    border-radius: 4px;
+    border-radius: 8px;
     transition: filter 0.15s;
   }
 
   .accent-btn:hover:not(:disabled) {
-    filter: brightness(1.1);
+    filter: brightness(1.08);
   }
 
   .accent-btn:disabled {
-    opacity: 0.3;
+    opacity: 0.35;
     cursor: not-allowed;
   }
 
   /* Display font */
   .font-display {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Inter', system-ui, sans-serif;
   }
 
   /* ── Dedicated Zero-Ghost Scrubber Range Input ──────────────────────────
@@ -305,6 +312,18 @@
     border: none !important;
     background: transparent !important;
     box-shadow: none !important;
+  }
+
+  /* Respect prefers-reduced-motion: disable beam/spotlight/springs to simple fades */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 

@@ -3,6 +3,7 @@ import { createAvatar } from '@dicebear/core';
 import { bottts, pixelArt, funEmoji, adventurer } from '@dicebear/collection';
 import { WigglyEngine } from '../../engine/wigglyEngine';
 import { DecodedMedia, ExtractedFrame } from '../../types/media';
+import { Sparkles, X, Dices } from 'lucide-react';
 
 interface CharacterStudioModalProps {
   onClose: () => void;
@@ -178,8 +179,8 @@ export function CharacterStudioModal({ onClose, onInject }: CharacterStudioModal
       <div className="bg-[#f5f0eb] border-2 border-[#1a1a1a] shadow-[8px_8px_0_#1a1a1a] w-full max-w-3xl flex flex-col">
         {/* Header */}
         <div className="bg-[#1a1a1a] text-[#f5f0eb] p-3 flex justify-between items-center">
-          <h2 className="font-mono text-xl tracking-widest uppercase">✨ Character Studio</h2>
-          <button onClick={onClose} className="hover:text-[#e85d2a]">✕</button>
+          <h2 className="font-sans text-sm font-semibold tracking-normal flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-white" /> Character studio</h2>
+          <button onClick={onClose} className="hover:text-white p-1 cursor-pointer"><X className="w-4 h-4" /></button>
         </div>
 
         <div className="p-6 flex flex-col md:flex-row gap-6">
@@ -253,9 +254,10 @@ export function CharacterStudioModal({ onClose, onInject }: CharacterStudioModal
                     />
                     <button 
                       onClick={() => setSeed(Math.random().toString(36).substring(7))}
-                      className="bg-[#1a1a1a] text-white px-4 border-2 border-[#1a1a1a] hover:bg-[#e85d2a] hover:border-[#e85d2a]"
+                      className="bg-[#1a1a1a] text-white px-3 py-2 border-2 border-[#1a1a1a] hover:bg-black cursor-pointer flex items-center justify-center"
+                      title="Randomize seed"
                     >
-                      🎲
+                      <Dices className="w-4 h-4" />
                     </button>
                   </div>
                 </div>

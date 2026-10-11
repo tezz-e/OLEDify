@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { X, Copy, Download, Save, Check, Zap, AlertCircle, Loader } from 'lucide-react';
 import { flashAnimationToDevice, FlashProgress } from '../engine/flasher';
 import { CountUp } from './reactbits/CountUp';
-import { ClickSpark } from './reactbits/ClickSpark';
-import { DecryptedText } from './reactbits/DecryptedText';
+import { HW_SPRINGS } from '../theme/springPresets';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -25,12 +25,21 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   themeMode = 'light',
 }) => {
   const isDark = themeMode === 'dark';
+  const shouldReduceMotion = useReducedMotion();
   const [activeTab, setActiveTab] = useState<'flash' | 'save' | 'download' | 'copy'>('flash');
   const [copied, setCopied] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [flashStatus, setFlashStatus] = useState<'idle' | 'flashing' | 'flashed' | 'error'>('idle');
   const [flashProgress, setFlashProgress] = useState<FlashProgress>({ percent: 0, message: '' });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   if (!isOpen) return null;
 
@@ -62,31 +71,36 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       await writable.write(cppCode);
       await writable.close();
       setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 3000);
+      setTimeout(() => setSaveStatus('idle'), 2000);
     } catch (err: any) {
-      if (err.name !== 'AbortError') setSaveStatus('error');
-      else setSaveStatus('idle');
+      if (err.name !== 'AbortError') {
+        console.error(err);
+        setSaveStatus('error');
+      } else {
+        setSaveStatus('idle');
+      }
     }
   };
 
   const handleFlash = async () => {
+    if (xbmpFrames.length === 0) {
+      setErrorMessage('No frame data available to flash.');
+      return;
+    }
+
     try {
-      setErrorMessage(null);
       setFlashStatus('flashing');
-      setFlashProgress({ percent: 0, message: 'Initializing flasher...' });
+      setErrorMessage(null);
+      setFlashProgress({ percent: 0, message: 'Opening serial port...' });
+
       await flashAnimationToDevice(xbmpFrames, targetFps, (p) => {
         setFlashProgress(p);
       });
+
       setFlashStatus('flashed');
-      setTimeout(() => {
-        setFlashStatus('idle');
-        setFlashProgress({ percent: 0, message: '' });
-      }, 4000);
     } catch (err: any) {
-      if (err?.name === 'NotFoundError' || err?.message?.includes('No port selected')) {
-        // User closed or cancelled the port selection dialog - silently return to idle
+      if (err.name === 'NotFoundError' || err.message?.includes('No port selected')) {
         setFlashStatus('idle');
-        setFlashProgress({ percent: 0, message: '' });
         return;
       }
       console.error(err);
@@ -99,40 +113,57 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const validFrameCount = typeof frameCount === 'number' && !isNaN(frameCount) ? Math.max(0, frameCount) : 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-[20px] p-4">
-      <div className={`max-w-2xl w-full flex flex-col border rounded-[4px] transition-all ${
-        isDark 
-          ? 'bg-[#202225] border-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.95)]' 
-          : 'bg-white border-[#1A1A1A] shadow-[8px_8px_0_0_#1A1A1A]'
-      }`}>
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.15 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div 
+        initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 8 }}
+        animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
+        exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 8 }}
+        transition={shouldReduceMotion ? { duration: 0.15 } : HW_SPRINGS.soft}
+        className={`max-w-2xl w-full flex flex-col border rounded-[12px] overflow-hidden transition-colors ${
+          isDark 
+            ? 'bg-[var(--hw-bg-surface)] border-white/[0.10] shadow-[0_24px_60px_rgba(0,0,0,0.85)]' 
+            : 'bg-white border-[#1A1A1A]/15 shadow-[0_12px_32px_rgba(0,0,0,0.12)]'
+        }`}
+      >
         {/* Header */}
-        <div className={`flex items-center justify-between p-4 border-b ${isDark ? 'border-white/10' : 'border-[#1A1A1A]'}`}>
-          <h3 className={`text-xs font-bold tracking-widest uppercase font-mono ${isDark ? 'text-[#FAFAFA]' : 'text-[#1A1A1A]'}`}>
-            EXPORT_CPP_ARRAY
+        <div className={`flex items-center justify-between p-4 border-b ${isDark ? 'border-white/[0.08]' : 'border-black/[0.08]'}`}>
+          <h3 className={`text-xs font-semibold font-sans tracking-normal ${isDark ? 'text-[var(--hw-text-primary)]' : 'text-[#18181A]'}`}>
+            Compile & export
           </h3>
-          <button 
+          <motion.button 
+            whileTap={{ scale: 0.92 }}
+            transition={HW_SPRINGS.snappy}
             onClick={onClose} 
-            className={`transition-colors p-1 border rounded-[4px] cursor-pointer ${
+            className={`p-1.5 border rounded-[8px] cursor-pointer transition-colors ${
               isDark 
-                ? 'text-[#A1A1AA] border-white/10 hover:bg-[#FF5500] hover:text-[#000000] hover:border-[#FF5500]' 
-                : 'text-[#6B6B6B] border-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white'
+                ? 'text-[var(--hw-text-secondary)] border-white/[0.08] hover:text-[var(--hw-text-primary)] hover:bg-white/[0.05]' 
+                : 'text-[#57575E] border-black/[0.08] hover:bg-black/[0.05] hover:text-[#18181A]'
             }`}
           >
             <X className="w-4 h-4" />
-          </button>
+          </motion.button>
         </div>
 
         {/* Content */}
         <div className="p-4 flex flex-col md:flex-row gap-4">
           {/* Actions Sidebar */}
           <div className="w-full md:w-48 space-y-2 shrink-0">
-            <button
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              transition={HW_SPRINGS.snappy}
               onClick={() => { setActiveTab('flash'); handleFlash(); }}
               disabled={flashStatus === 'flashing'}
-              className={`w-full flex items-center justify-between px-3 py-2 text-[10px] font-bold tracking-widest uppercase font-mono transition-colors border rounded-[4px] cursor-pointer ${
+              className={`w-full flex items-center justify-between px-3 py-2 text-xs font-medium font-sans transition-colors border rounded-[8px] cursor-pointer ${
                 activeTab === 'flash' 
-                  ? (isDark ? 'bg-[#FF5500] border-[#FF5500] text-[#000000]' : 'bg-[#1A1A1A] border-[#1A1A1A] text-white')
-                  : (isDark ? 'bg-[#282A2E] border-white/10 text-[#FAFAFA] hover:border-white/30' : 'bg-white border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white')
+                  ? 'bg-[#FF5500] border-[#FF5500] text-black font-semibold'
+                  : (isDark ? 'bg-[var(--hw-bg-canvas)] border-white/[0.08] text-[var(--hw-text-primary)] hover:border-white/20' : 'bg-white border-black/[0.1] text-[#18181A] hover:border-black/20')
               }`}
             >
               <div className="flex items-center gap-2">
@@ -143,65 +174,71 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 ) : (
                   <Zap className="w-4 h-4" />
                 )}
-                <span>{flashStatus === 'flashing' ? `${flashProgress.percent}%` : 'FLASH_DEVICE'}</span>
+                <span>{flashStatus === 'flashing' ? `${flashProgress.percent}%` : 'Flash device'}</span>
               </div>
-            </button>
+            </motion.button>
             
-            <div className={`my-2 border-t ${isDark ? 'border-white/10' : 'border-[#1A1A1A]'}`}></div>
+            <div className={`my-2 border-t ${isDark ? 'border-white/[0.08]' : 'border-black/[0.08]'}`}></div>
 
-            <button
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              transition={HW_SPRINGS.snappy}
               onClick={() => { setActiveTab('save'); handleSaveToProject(); }}
-              className={`w-full flex items-center justify-between px-3 py-2 text-[10px] font-bold tracking-widest uppercase font-mono transition-colors border rounded-[4px] cursor-pointer ${
+              className={`w-full flex items-center justify-between px-3 py-2 text-xs font-medium font-sans transition-colors border rounded-[8px] cursor-pointer ${
                 activeTab === 'save' 
-                  ? (isDark ? 'bg-[#FF5500] border-[#FF5500] text-black' : 'bg-[#1A1A1A] border-[#1A1A1A] text-white')
-                  : (isDark ? 'bg-[#282A2E] border-white/10 text-[#FAFAFA] hover:border-white/30' : 'bg-[#1A1A1A] text-white hover:bg-white hover:text-[#1A1A1A]')
+                  ? 'bg-[#FF5500] border-[#FF5500] text-black font-semibold'
+                  : (isDark ? 'bg-[var(--hw-bg-canvas)] border-white/[0.08] text-[var(--hw-text-primary)] hover:border-white/20' : 'bg-white border-black/[0.1] text-[#18181A] hover:border-black/20')
               }`}
             >
               <div className="flex items-center gap-2">
                 {saveStatus === 'saved' ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                <span>SAVE_TO_PROJECT</span>
+                <span>Save to file</span>
               </div>
-            </button>
+            </motion.button>
             
-            <button
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              transition={HW_SPRINGS.snappy}
               onClick={() => { setActiveTab('download'); handleDownload(); }}
-              className={`w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold tracking-widest uppercase font-mono transition-colors border rounded-[4px] cursor-pointer ${
+              className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium font-sans transition-colors border rounded-[8px] cursor-pointer ${
                 activeTab === 'download' 
-                  ? (isDark ? 'bg-[#FF5500] border-[#FF5500] text-black' : 'bg-[#1A1A1A] border-[#1A1A1A] text-white')
-                  : (isDark ? 'bg-[#282A2E] border-white/10 text-[#FAFAFA] hover:border-white/30' : 'bg-white border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white')
+                  ? 'bg-[#FF5500] border-[#FF5500] text-black font-semibold'
+                  : (isDark ? 'bg-[var(--hw-bg-canvas)] border-white/[0.08] text-[var(--hw-text-primary)] hover:border-white/20' : 'bg-white border-black/[0.1] text-[#18181A] hover:border-black/20')
               }`}
             >
               <Download className="w-4 h-4" />
-              <span>DOWNLOAD_FILE</span>
-            </button>
+              <span>Download .h</span>
+            </motion.button>
             
-            <button
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              transition={HW_SPRINGS.snappy}
               onClick={() => { setActiveTab('copy'); handleCopy(); }}
-              className={`w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold tracking-widest uppercase font-mono transition-colors border rounded-[4px] cursor-pointer ${
+              className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium font-sans transition-colors border rounded-[8px] cursor-pointer ${
                 activeTab === 'copy' 
-                  ? (isDark ? 'bg-[#FF5500] border-[#FF5500] text-black' : 'bg-[#1A1A1A] border-[#1A1A1A] text-white')
-                  : (isDark ? 'bg-[#282A2E] border-white/10 text-[#FAFAFA] hover:border-white/30' : 'bg-white border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white')
+                  ? 'bg-[#FF5500] border-[#FF5500] text-black font-semibold'
+                  : (isDark ? 'bg-[var(--hw-bg-canvas)] border-white/[0.08] text-[var(--hw-text-primary)] hover:border-white/20' : 'bg-white border-black/[0.1] text-[#18181A] hover:border-black/20')
               }`}
             >
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              <span>{copied ? 'COPIED' : 'COPY_CLIPBOARD'}</span>
-            </button>
+              <span>{copied ? 'Copied' : 'Copy array'}</span>
+            </motion.button>
           </div>
 
           {/* Preview Panel */}
-          <div className={`flex-1 border rounded-[4px] overflow-hidden flex flex-col ${isDark ? 'border-white/10' : 'border-[#1A1A1A]'}`}>
-            <div className={`px-3 py-2 border-b flex justify-between items-center text-[10px] font-mono ${
-              isDark ? 'bg-[#282A2E] border-white/10 text-[#A1A1AA]' : 'bg-[#F5F0EB] border-[#1A1A1A] text-[#6B6B6B]'
+          <div className={`flex-1 border rounded-[8px] overflow-hidden flex flex-col ${isDark ? 'border-white/[0.08]' : 'border-black/[0.08]'}`}>
+            <div className={`px-3 py-2 border-b flex justify-between items-center text-[11px] font-sans ${
+              isDark ? 'bg-[var(--hw-bg-canvas)] border-white/[0.08] text-[var(--hw-text-secondary)]' : 'bg-[#F4F3EF] border-black/[0.08] text-[#57575E]'
             }`}>
-              <span>PREVIEW: frames.h</span>
-              <span className={`font-bold flex items-center gap-1 ${isDark ? 'text-[#00FF66]' : 'text-[#FF5500]'}`}>
-                <span>PROGMEM: ~</span>
+              <span className="font-medium">Preview: frames.h</span>
+              <span className="flex items-center gap-1 font-mono text-[11px]">
+                <span>PROGMEM ~</span>
                 <CountUp to={Math.round((validFrameCount * 1024) / 1024)} duration={0.8} />
-                <span>KB</span>
+                <span>kB</span>
               </span>
             </div>
-            <pre className={`p-3 text-[10px] leading-relaxed font-mono overflow-auto h-[200px] ${
-              isDark ? 'bg-[#181A1B] text-[#00FF66]' : 'bg-white text-[#1A1A1A]'
+            <pre className={`p-3 text-[11px] leading-relaxed font-mono overflow-auto h-[200px] ${
+              isDark ? 'bg-[#0f0f11] text-[var(--hw-text-secondary)]' : 'bg-white text-[#18181A]'
             }`}>
               {previewLines}
             </pre>
@@ -210,64 +247,68 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
         {/* Flash Status & Progress Banner */}
         {flashStatus === 'flashing' && (
-          <div className={`mx-4 mb-4 p-3 border font-mono text-[10px] space-y-2 ${
-            isDark ? 'bg-[#0D0D10] border-[#00FF66] text-[#00FF66]' : 'bg-[#FFF5F0] border-[#FF5500] text-[#FF5500]'
+          <div className={`mx-4 mb-4 p-3 border rounded-[8px] font-sans text-xs space-y-2 ${
+            isDark ? 'bg-[var(--hw-bg-canvas)] border-white/[0.12] text-[var(--hw-text-primary)]' : 'bg-[#F4F3EF] border-black/[0.1] text-[#18181A]'
           }`}>
-            <div className="flex justify-between items-center font-bold">
+            <div className="flex justify-between items-center font-medium">
               <span className="flex items-center gap-2">
-                <Loader className="w-3.5 h-3.5 animate-spin" />
-                <span>FLASHING TO ESP32 (PARTITION 0x200000 @ 460800 BAUD)</span>
+                <Loader className="w-3.5 h-3.5 animate-spin text-[#FF5500]" />
+                <span>Flashing ESP32 (partition 0x200000 @ 460.8k baud)</span>
               </span>
-              <span>{flashProgress.percent}%</span>
+              <span className="font-mono">{flashProgress.percent}%</span>
             </div>
-            <div className={`w-full h-2 overflow-hidden ${isDark ? 'bg-[#181820]' : 'bg-[#E5D7C9]'}`}>
+            <div className={`w-full h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-white/[0.08]' : 'bg-black/[0.08]'}`}>
               <div
-                className={`h-full transition-all duration-200 ${isDark ? 'bg-[#00FF66]' : 'bg-[#FF5500]'}`}
+                className="h-full bg-[#FF5500] transition-all duration-200"
                 style={{ width: `${flashProgress.percent}%` }}
               />
             </div>
-            <div className={`text-[9px] truncate ${isDark ? 'text-[#A1A1AA]' : 'text-[#6B6B6B]'}`}>
+            <div className={`text-[11px] font-mono truncate ${isDark ? 'text-[var(--hw-text-tertiary)]' : 'text-[#7E7E87]'}`}>
               {flashProgress.message || 'Writing flash memory...'}
             </div>
           </div>
         )}
 
         {flashStatus === 'flashed' && (
-          <div className="mx-4 mb-4 p-3 border font-mono text-[10px] bg-emerald-950/40 border-emerald-500 text-emerald-400 flex items-start gap-2">
-            <Check className="w-4 h-4 shrink-0 text-emerald-400 mt-0.5" />
+          <div className={`mx-4 mb-4 p-3 border rounded-[8px] font-sans text-xs flex items-start gap-2.5 ${
+            isDark ? 'bg-[var(--hw-bg-canvas)] border-white/[0.12] text-[var(--hw-text-primary)]' : 'bg-[#F4F3EF] border-black/[0.1] text-[#18181A]'
+          }`}>
+            <Check className="w-4 h-4 shrink-0 text-[#FF5500] mt-0.5" />
             <div>
-              <div className="font-bold">FLASH COMPLETE! REBOOTING ESP32</div>
-              <div className="text-[9px] text-emerald-300 mt-0.5">
-                Animation loaded to partition 0x200000. ESP32 rebooted and is now playing standalone at {targetFps} FPS.
+              <div className="font-medium">Flash complete. Device rebooted.</div>
+              <div className="text-[11px] text-[var(--hw-text-secondary)] mt-0.5">
+                Animation loaded to partition 0x200000. ESP32 rebooted and playing standalone at {targetFps} FPS.
               </div>
             </div>
           </div>
         )}
 
         {errorMessage && (
-          <div className="mx-4 mb-4 p-3 border font-mono text-[10px] bg-red-950/40 border-red-500 text-red-400 space-y-1">
-            <div className="flex items-center gap-1.5 font-bold text-red-400">
+          <div className={`mx-4 mb-4 p-3 border rounded-[8px] font-sans text-xs space-y-1.5 ${
+            isDark ? 'bg-[var(--hw-bg-canvas)] border-[var(--hw-signal-danger)] text-[var(--hw-signal-danger)]' : 'bg-white border-[#DC2626] text-[#DC2626]'
+          }`}>
+            <div className="flex items-center gap-1.5 font-medium">
               <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-              <span>FLASH ERROR</span>
+              <span>Flash error</span>
             </div>
-            <div className="text-[9px] text-red-300 break-words">{errorMessage}</div>
-            <div className="text-[9px] text-[#A1A1AA] pt-1 border-t border-red-900/50">
+            <div className="text-[11px] text-[var(--hw-text-secondary)] break-words">{errorMessage}</div>
+            <div className={`text-[11px] text-[var(--hw-text-tertiary)] pt-1 border-t ${isDark ? 'border-white/[0.08]' : 'border-black/[0.08]'}`}>
               Troubleshooting: Close serial monitors (PlatformIO/Arduino IDE). For ESP32-S3 USB, hold BOOT button, press RST once, release BOOT, then retry flashing.
             </div>
           </div>
         )}
 
         {/* Footer */}
-        <div className={`px-4 py-3 border-t flex justify-between items-center text-[10px] font-mono ${
-          isDark ? 'border-white/10 bg-[#282A2E] text-[#A1A1AA]' : 'border-[#1A1A1A] bg-[#F5F0EB] text-[#6B6B6B]'
+        <div className={`px-4 py-3 border-t flex justify-between items-center text-[11px] font-sans ${
+          isDark ? 'border-white/[0.08] bg-[var(--hw-bg-canvas)] text-[var(--hw-text-secondary)]' : 'border-black/[0.08] bg-[#F4F3EF] text-[#57575E]'
         }`}>
           <span className="flex items-center gap-1">
-            <CountUp to={validFrameCount} duration={0.8} />
-            <span>FRAMES_EXPORTED</span>
+            <span className="font-mono"><CountUp to={validFrameCount} duration={0.8} /></span>
+            <span>frames exported</span>
           </span>
-          <span>FRAME_SIZE: 1024 BYTES</span>
+          <span className="font-mono">1,024 bytes / frame</span>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };

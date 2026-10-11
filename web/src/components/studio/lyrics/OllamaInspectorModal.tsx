@@ -343,7 +343,7 @@ export const OllamaInspectorModal: React.FC<OllamaInspectorModalProps> = ({
                         >
                           {(availableModels && availableModels.length > 0 ? availableModels : ['qwen3.5:2b-q4_K_M', 'qwen2.5:3b']).map((m) => (
                             <option key={m} value={m}>
-                              {m} {m.includes('qwen3.5:2b-q4_K_M') ? '⚡ 66.5 tok/s (100% GPU)' : ''}
+                              {m} {m.includes('qwen3.5:2b-q4_K_M') ? '66.5 tok/s (100% GPU)' : ''}
                             </option>
                           ))}
                         </select>
@@ -536,7 +536,7 @@ export const OllamaInspectorModal: React.FC<OllamaInspectorModalProps> = ({
                               : 'text-[#87867F] hover:text-[#141413] dark:hover:text-white'
                           }`}
                         >
-                          📤 Exact Prompt Sent
+                          Exact Prompt Sent
                         </button>
                         <button
                           type="button"
@@ -547,7 +547,7 @@ export const OllamaInspectorModal: React.FC<OllamaInspectorModalProps> = ({
                               : 'text-[#87867F] hover:text-[#141413] dark:hover:text-white'
                           }`}
                         >
-                          📥 Raw LLM Output
+                          Raw LLM Output
                         </button>
                       </div>
 
@@ -629,7 +629,7 @@ export const OllamaInspectorModal: React.FC<OllamaInspectorModalProps> = ({
                                       themeMode === 'dark' ? 'text-white/50' : 'text-[#87867F]'
                                     }`}>
                                       <span className="text-white/70 dark:text-white/70 font-semibold shrink-0">
-                                        ⚡ Motion:
+                                        Motion:
                                       </span>
                                       <span>{item.reason}</span>
                                     </div>
@@ -710,14 +710,14 @@ export const OllamaInspectorModal: React.FC<OllamaInspectorModalProps> = ({
                               ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
                               : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
                           }`}>
-                            {log.provider === 'groq' ? '⚡ Groq Cloud' : '💻 Local Ollama'}
+                            {log.provider === 'groq' ? 'Groq Cloud' : 'Local Ollama'}
                           </span>
                           <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
                             {log.model}
                           </span>
                           {log.tokensPerSecond && (
                             <span className="text-[10px] font-mono text-emerald-500 font-medium">
-                              ⚡ {log.tokensPerSecond} tok/s
+                              {log.tokensPerSecond} tok/s
                             </span>
                           )}
                           {log.totalDurationMs && (

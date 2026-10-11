@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { TimelineClip, MediaAsset } from '../types/media';
+import { HW_SPRINGS } from '../theme/springPresets';
 
 interface ContextMenuProps {
   x: number;
@@ -24,14 +25,15 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   clips, 
   assets,
   onClipsChange, 
-  onSplitClip,
-  onSelectClips,
-  onZoomChange,
+  onSplitClip, 
+  onSelectClips, 
+  onZoomChange, 
   onClose,
   themeMode = 'light'
 }) => {
   const isDark = themeMode === 'dark';
   const menuRef = useRef<HTMLDivElement>(null);
+  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
     const handlePointerDownOutside = (e: PointerEvent) => {
@@ -59,59 +61,51 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     };
   }, [onClose]);
 
-  const activeClip = clipId ? clips.find(c => c.id === clipId) : undefined;
-  const hasSpecificClip = Boolean(activeClip);
+  const targetClip = clipId ? clips.find(c => c.id === clipId) : null;
+  const hasSpecificClip = Boolean(targetClip);
 
   const handleDelete = () => {
-    if (clipId) {
-      onClipsChange(clips.filter(c => c.id !== clipId));
-      if (onSelectClips) onSelectClips([]);
-    }
+    if (!clipId) return;
+    const remaining = clips.filter(c => c.id !== clipId);
+    onClipsChange(remaining);
     onClose();
   };
 
   const handleDuplicate = () => {
-    if (!clipId) return;
-    const clipToDup = clips.find(c => c.id === clipId);
-    if (!clipToDup) return;
-    
+    if (!targetClip) return;
     const newClip: TimelineClip = {
-      ...clipToDup,
-      id: "clip_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5)
+      ...targetClip,
+      id: 'clip_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
     };
-    
-    const index = clips.findIndex(c => c.id === clipId);
-    const newClips = [...clips];
-    newClips.splice(index + 1, 0, newClip);
-    onClipsChange(newClips);
-    if (onSelectClips) onSelectClips([newClip.id]);
+    const clipIndex = clips.findIndex(c => c.id === clipId);
+    const updated = [...clips];
+    updated.splice(clipIndex + 1, 0, newClip);
+    onClipsChange(updated);
     onClose();
   };
 
   const handleResetTrim = () => {
-    if (!clipId || !activeClip) return;
-    const asset = assets?.[activeClip.assetId];
-    const maxFrame = asset ? Math.max(0, asset.media.frames.length - 1) : activeClip.outFrame;
-    
-    onClipsChange(clips.map(c => {
-      if (c.id === clipId) {
-        return { ...c, inFrame: 0, outFrame: maxFrame };
-      }
-      return c;
-    }));
+    if (!targetClip || !assets) return;
+    const asset = assets[targetClip.assetId];
+    if (!asset) return;
+    const maxFrames = asset.media.frames.length;
+    const updated = clips.map(c => 
+      c.id === clipId ? { ...c, inFrame: 0, outFrame: maxFrames - 1 } : c
+    );
+    onClipsChange(updated);
     onClose();
   };
 
   const handleMoveClip = (direction: 'left' | 'right') => {
     if (!clipId) return;
-    const idx = clips.findIndex(c => c.id === clipId);
-    if (idx === -1) return;
-    const targetIdx = direction === 'left' ? idx - 1 : idx + 1;
-    if (targetIdx < 0 || targetIdx >= clips.length) return;
+    const index = clips.findIndex(c => c.id === clipId);
+    if (index === -1) return;
+    const targetIndex = direction === 'left' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= clips.length) return;
 
     const newClips = [...clips];
-    const [moved] = newClips.splice(idx, 1);
-    newClips.splice(targetIdx, 0, moved);
+    const [moved] = newClips.splice(index, 1);
+    newClips.splice(targetIndex, 0, moved);
     onClipsChange(newClips);
     onClose();
   };
@@ -143,8 +137,8 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     onClose();
   };
 
-  const menuWidth = 220;
-  const menuHeight = hasSpecificClip ? 340 : 230;
+  const menuWidth = 200;
+  const menuHeight = hasSpecificClip ? 260 : 160;
   const safeX = Math.max(8, Math.min(x, window.innerWidth - menuWidth - 8));
   const safeY = Math.max(8, Math.min(y, window.innerHeight - menuHeight - 8));
 
@@ -152,10 +146,10 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     <AnimatePresence>
       <motion.div 
         ref={menuRef}
-        initial={{ opacity: 0, scale: 0.88, rotate: -1.5, y: -6 }}
-        animate={{ opacity: 1, scale: 1, rotate: 0, y: 0 }}
-        exit={{ opacity: 0, scale: 0.92, rotate: 1, y: -4 }}
-        transition={{ type: 'spring', damping: 26, stiffness: 520, mass: 0.45 }}
+        initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: -4 }}
+        animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
+        exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: -4 }}
+        transition={shouldReduceMotion ? { duration: 0.1 } : HW_SPRINGS.snappy}
         style={{ 
           left: safeX, 
           top: safeY, 
@@ -166,54 +160,34 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
           e.preventDefault();
           e.stopPropagation();
         }}
-        className={`fixed z-[99999] w-[220px] max-h-[calc(100vh-16px)] overflow-y-auto border p-1.5 select-none font-mono text-xs pointer-events-auto rounded-none transition-colors backdrop-blur-xl ${
+        className={`fixed z-[99999] w-[200px] border p-1 select-none font-sans text-xs pointer-events-auto rounded-[8px] transition-colors shadow-[0_12px_32px_rgba(0,0,0,0.6)] ${
           isDark 
-            ? 'bg-[#08080A]/95 text-[#F1EEF8] border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.15)]' 
-            : 'bg-[#FAF7F2]/95 text-[#1A1A1A] border-[#1A1A1A] shadow-[4px_4px_0_0_#1A1A1A]'
+            ? 'bg-[var(--hw-bg-surface)] text-[var(--hw-text-primary)] border-white/[0.12]' 
+            : 'bg-white text-[#18181A] border-black/[0.12]'
         }`}
       >
-        {/* Header Badge */}
-        <div className={`px-2.5 py-1.5 mb-2 border flex justify-between items-center ${
-          isDark 
-            ? 'bg-[#121216] border-white/10' 
-            : 'bg-[#EFECE6] border-[#1A1A1A] shadow-[1px_1px_0_0_#1A1A1A]'
+        {/* Header Label */}
+        <div className={`px-2 py-1 border-b text-[11px] font-medium font-sans mb-1 flex items-center justify-between ${
+          isDark ? 'border-white/[0.08] text-[var(--hw-text-secondary)]' : 'border-black/[0.08] text-[#57575E]'
         }`}>
-          <span className={`text-[9px] font-bold tracking-widest uppercase flex items-center gap-1.5 font-mono ${
-            isDark ? 'text-[#00FF66]' : 'text-[#FF5500]'
-          }`}>
-            <span className={`w-2 h-2 border animate-pulse shrink-0 ${
-              isDark ? 'bg-[#00FF66] border-[#00FF66]/50' : 'bg-[#FF5500] border-[#1A1A1A]'
-            }`} />
-            {hasSpecificClip ? 'CLIP EDITING' : 'TIMELINE MENU'}
-          </span>
-          <span className={`text-[8px] font-mono font-bold tracking-wider ${isDark ? 'text-[#71717A]' : 'text-[#6B6B6B]'}`}>NLE // 2.0</span>
+          <span>{hasSpecificClip ? 'Clip actions' : 'Timeline actions'}</span>
         </div>
 
-        <div className="space-y-0.5 relative">
+        <div className="space-y-0.5">
           {/* Split Action */}
           {onSplitClip && (
             <motion.button 
-              whileHover={{ x: 2 }}
               whileTap={{ scale: 0.97 }}
+              transition={HW_SPRINGS.snappy}
               onClick={(e) => {
                 e.stopPropagation();
                 onSplitClip();
                 onClose();
               }}
-              className={`w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group border border-transparent rounded-none font-bold ${
-                isDark 
-                  ? 'text-[#F1EEF8] hover:bg-[#00FF66] hover:text-[#000000] hover:border-[#00FF66]' 
-                  : 'text-[#1A1A1A] hover:bg-[#FF5500] hover:text-white hover:border-[#1A1A1A]'
-              }`}
+              className="w-full text-left px-2 py-1.5 flex justify-between items-center rounded-[6px] hover:bg-white/[0.08] transition-colors cursor-pointer"
             >
-              <span className="flex items-center gap-2 font-medium text-[10px]">
-                <span className={isDark ? 'text-[#00FF66] group-hover:text-[#000000]' : 'text-[#FF5500] group-hover:text-white'}>✂</span> Split at Playhead
-              </span>
-              <kbd className={`text-[8px] border px-1 py-0.5 font-mono font-bold ${
-                isDark 
-                  ? 'bg-[#141418] border-white/10 text-[#00FF66] group-hover:bg-[#000000] group-hover:text-[#00FF66]' 
-                  : 'bg-white border-[#1A1A1A] text-[#1A1A1A] shadow-[1px_1px_0_0_#1A1A1A] group-hover:bg-[#1A1A1A] group-hover:text-white group-hover:border-white'
-              }`}>Ctrl+B</kbd>
+              <span className="font-sans text-xs">Split at playhead</span>
+              <kbd className="text-[11px] font-mono text-[var(--hw-text-tertiary)]">Ctrl+B</kbd>
             </motion.button>
           )}
 
@@ -221,45 +195,29 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             <>
               {/* Duplicate */}
               <motion.button 
-                whileHover={{ x: 2 }}
                 whileTap={{ scale: 0.97 }}
+                transition={HW_SPRINGS.snappy}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDuplicate();
                 }}
-                className={`w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group border border-transparent rounded-none font-bold ${
-                  isDark 
-                    ? 'text-[#F1EEF8] hover:bg-[#00FF66] hover:text-[#000000] hover:border-[#00FF66]' 
-                    : 'text-[#1A1A1A] hover:bg-[#FF5500] hover:text-white hover:border-[#1A1A1A]'
-                }`}
+                className="w-full text-left px-2 py-1.5 flex justify-between items-center rounded-[6px] hover:bg-white/[0.08] transition-colors cursor-pointer"
               >
-                <span className="flex items-center gap-2 font-medium text-[10px]">
-                  <span>📄</span> Duplicate Clip
-                </span>
-                <kbd className={`text-[8px] border px-1 py-0.5 font-mono font-bold ${
-                  isDark 
-                    ? 'bg-[#141418] border-white/10 text-[#00FF66] group-hover:bg-[#000000] group-hover:text-[#00FF66]' 
-                    : 'bg-white border-[#1A1A1A] text-[#1A1A1A] shadow-[1px_1px_0_0_#1A1A1A] group-hover:bg-[#1A1A1A] group-hover:text-white group-hover:border-white'
-                }`}>Ctrl+D</kbd>
+                <span className="font-sans text-xs">Duplicate clip</span>
+                <kbd className="text-[11px] font-mono text-[var(--hw-text-tertiary)]">Ctrl+D</kbd>
               </motion.button>
 
               {/* Reset Trim */}
               <motion.button 
-                whileHover={{ x: 2 }}
                 whileTap={{ scale: 0.97 }}
+                transition={HW_SPRINGS.snappy}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleResetTrim();
                 }}
-                className={`w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group border border-transparent rounded-none font-bold ${
-                  isDark 
-                    ? 'text-[#F1EEF8] hover:bg-[#00FF66] hover:text-[#000000] hover:border-[#00FF66]' 
-                    : 'text-[#1A1A1A] hover:bg-[#FF5500] hover:text-white hover:border-[#1A1A1A]'
-                }`}
+                className="w-full text-left px-2 py-1.5 flex justify-between items-center rounded-[6px] hover:bg-white/[0.08] transition-colors cursor-pointer"
               >
-                <span className="flex items-center gap-2 font-medium text-[10px]">
-                  <span>↺</span> Reset Trim Bounds
-                </span>
+                <span className="font-sans text-xs">Reset trim bounds</span>
               </motion.button>
 
               {/* Reorder Left / Right Buttons */}
@@ -267,149 +225,105 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                 <div className="flex gap-1 py-0.5">
                   <motion.button 
                     whileTap={{ scale: 0.95 }}
+                    transition={HW_SPRINGS.snappy}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleMoveClip('left');
                     }}
-                    className={`flex-1 px-1.5 py-0.5 text-[8px] font-mono font-bold border transition-colors flex items-center justify-center gap-1 cursor-pointer ${
-                      isDark 
-                        ? 'border-white/10 bg-[#121216] text-[#F1EEF8] hover:bg-[#00FF66] hover:text-[#000000]' 
-                        : 'border-[#1A1A1A] bg-white hover:bg-[#FF5500] hover:text-white shadow-[1px_1px_0_0_#1A1A1A]'
-                    }`}
+                    className="flex-1 px-2 py-1 text-xs font-sans rounded-[6px] border border-white/[0.08] bg-[var(--hw-bg-canvas)] hover:border-white/20 transition-colors flex items-center justify-center cursor-pointer"
                     title="Move clip left in timeline"
                   >
-                    ⬅ Left
+                    Move left
                   </motion.button>
                   <motion.button 
                     whileTap={{ scale: 0.95 }}
+                    transition={HW_SPRINGS.snappy}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleMoveClip('right');
                     }}
-                    className={`flex-1 px-1.5 py-0.5 text-[8px] font-mono font-bold border transition-colors flex items-center justify-center gap-1 cursor-pointer ${
-                      isDark 
-                        ? 'border-white/10 bg-[#121216] text-[#F1EEF8] hover:bg-[#00FF66] hover:text-[#000000]' 
-                        : 'border-[#1A1A1A] bg-white hover:bg-[#FF5500] hover:text-white shadow-[1px_1px_0_0_#1A1A1A]'
-                    }`}
+                    className="flex-1 px-2 py-1 text-xs font-sans rounded-[6px] border border-white/[0.08] bg-[var(--hw-bg-canvas)] hover:border-white/20 transition-colors flex items-center justify-center cursor-pointer"
                     title="Move clip right in timeline"
                   >
-                    Right ➡️
+                    Move right
                   </motion.button>
                 </div>
               )}
 
-              <div className={`h-px my-0.5 mx-0.5 ${isDark ? 'bg-white/10' : 'bg-[#1A1A1A]/20'}`} />
+              <div className={`h-px my-1 ${isDark ? 'bg-white/[0.08]' : 'bg-black/[0.08]'}`} />
 
-              {/* Delete Clip */}
+              {/* Delete Clip (Neutral text, orange reserved) */}
               <motion.button 
-                whileHover={{ x: 2 }}
                 whileTap={{ scale: 0.97 }}
+                transition={HW_SPRINGS.snappy}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDelete();
                 }}
-                className={`w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group border border-transparent font-bold ${
-                  isDark
-                    ? 'text-[#FF3344] hover:bg-[#FF3344] hover:text-white hover:border-[#FF3344]'
-                    : 'text-[#D32F2F] hover:bg-[#D32F2F] hover:text-white hover:border-[#1A1A1A]'
-                }`}
+                className="w-full text-left px-2 py-1.5 flex justify-between items-center rounded-[6px] hover:bg-white/[0.08] transition-colors cursor-pointer"
               >
-                <span className="flex items-center gap-2 font-medium text-[10px]">
-                  <span>🗑</span> Delete Clip
-                </span>
-                <kbd className={`text-[8px] border px-1 py-0.5 font-mono font-bold ${
-                  isDark
-                    ? 'bg-[#141418] border-white/10 text-[#FF3344] group-hover:bg-[#000000] group-hover:text-white'
-                    : 'bg-white border-[#1A1A1A] text-[#1A1A1A] shadow-[1px_1px_0_0_#1A1A1A] group-hover:bg-[#1A1A1A] group-hover:text-white group-hover:border-white'
-                }`}>DEL</kbd>
+                <span className="font-sans text-xs text-[var(--hw-text-primary)]">Delete clip</span>
+                <kbd className="text-[11px] font-mono text-[var(--hw-text-tertiary)]">Del</kbd>
               </motion.button>
             </>
           )}
 
           {/* Section Divider */}
-          <div className={`h-px my-0.5 mx-0.5 ${isDark ? 'bg-white/10' : 'bg-[#1A1A1A]/20'}`} />
+          <div className={`h-px my-1 ${isDark ? 'bg-white/[0.08]' : 'bg-black/[0.08]'}`} />
 
           {/* Timeline & Selection Actions */}
           <motion.button 
-            whileHover={{ x: 2 }}
             whileTap={{ scale: 0.97 }}
+            transition={HW_SPRINGS.snappy}
             onClick={(e) => {
               e.stopPropagation();
               handleSelectAll();
             }}
-            className={`w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group border border-transparent rounded-none font-bold ${
-              isDark 
-                ? 'text-[#F1EEF8] hover:bg-[#00FF66] hover:text-[#000000] hover:border-[#00FF66]' 
-                : 'text-[#1A1A1A] hover:bg-[#FF5500] hover:text-white hover:border-[#1A1A1A]'
-            }`}
+            className="w-full text-left px-2 py-1.5 flex justify-between items-center rounded-[6px] hover:bg-white/[0.08] transition-colors cursor-pointer"
           >
-            <span className="flex items-center gap-2 font-medium text-[10px]">
-              <span>🎯</span> Select All Clips
-            </span>
-            <kbd className={`text-[8px] border px-1 py-0.5 font-mono font-bold ${
-              isDark 
-                ? 'bg-[#141418] border-white/10 text-[#00FF66] group-hover:bg-[#000000] group-hover:text-[#00FF66]' 
-                : 'bg-white border-[#1A1A1A] text-[#1A1A1A] shadow-[1px_1px_0_0_#1A1A1A] group-hover:bg-[#1A1A1A] group-hover:text-white group-hover:border-white'
-            }`}>Ctrl+A</kbd>
+            <span className="font-sans text-xs">Select all clips</span>
+            <kbd className="text-[11px] font-mono text-[var(--hw-text-tertiary)]">Ctrl+A</kbd>
           </motion.button>
 
           <motion.button 
-            whileHover={{ x: 2 }}
             whileTap={{ scale: 0.97 }}
+            transition={HW_SPRINGS.snappy}
             onClick={(e) => {
               e.stopPropagation();
               handleDeselectAll();
             }}
-            className={`w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group border border-transparent rounded-none font-bold ${
-              isDark 
-                ? 'text-[#F1EEF8] hover:bg-[#00FF66] hover:text-[#000000] hover:border-[#00FF66]' 
-                : 'text-[#1A1A1A] hover:bg-[#FF5500] hover:text-white hover:border-[#1A1A1A]'
-            }`}
+            className="w-full text-left px-2 py-1.5 flex justify-between items-center rounded-[6px] hover:bg-white/[0.08] transition-colors cursor-pointer"
           >
-            <span className="flex items-center gap-2 font-medium text-[10px]">
-              <span>✖</span> Deselect All
-            </span>
+            <span className="font-sans text-xs">Deselect all</span>
           </motion.button>
 
           {onZoomChange && (
             <motion.button 
-              whileHover={{ x: 2 }}
               whileTap={{ scale: 0.97 }}
+              transition={HW_SPRINGS.snappy}
               onClick={(e) => {
                 e.stopPropagation();
                 handleResetZoom();
               }}
-              className={`w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group border border-transparent rounded-none font-bold ${
-                isDark 
-                  ? 'text-[#F1EEF8] hover:bg-[#00FF66] hover:text-[#000000] hover:border-[#00FF66]' 
-                  : 'text-[#1A1A1A] hover:bg-[#FF5500] hover:text-white hover:border-[#1A1A1A]'
-              }`}
+              className="w-full text-left px-2 py-1.5 flex justify-between items-center rounded-[6px] hover:bg-white/[0.08] transition-colors cursor-pointer"
             >
-              <span className="flex items-center gap-2 font-medium text-[10px]">
-                <span>🔍</span> Reset Zoom (100%)
-              </span>
+              <span className="font-sans text-xs">Reset zoom (100%)</span>
             </motion.button>
           )}
 
           {!hasSpecificClip && clips.length > 0 && (
             <>
-              <div className={`h-px my-0.5 mx-0.5 ${isDark ? 'bg-white/10' : 'bg-[#1A1A1A]/20'}`} />
+              <div className={`h-px my-1 ${isDark ? 'bg-white/[0.08]' : 'bg-black/[0.08]'}`} />
               <motion.button 
-                whileHover={{ x: 2 }}
                 whileTap={{ scale: 0.97 }}
+                transition={HW_SPRINGS.snappy}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleClearAll();
                 }}
-                className={`w-full text-left px-2 py-1 flex justify-between items-center transition-all cursor-pointer group border border-transparent font-bold ${
-                  isDark
-                    ? 'text-[#FF3344] hover:bg-[#FF3344] hover:text-white hover:border-[#FF3344]'
-                    : 'text-[#D32F2F] hover:bg-[#D32F2F] hover:text-white hover:border-[#1A1A1A]'
-                }`}
+                className="w-full text-left px-2 py-1.5 flex justify-between items-center rounded-[6px] hover:bg-white/[0.08] transition-colors cursor-pointer"
               >
-                <span className="flex items-center gap-2 font-medium text-[10px]">
-                  <span>🧹</span> Clear All Clips
-                </span>
+                <span className="font-sans text-xs text-[var(--hw-text-primary)]">Clear all clips</span>
               </motion.button>
             </>
           )}

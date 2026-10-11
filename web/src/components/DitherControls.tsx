@@ -14,13 +14,12 @@ interface DitherControlsProps {
 export const DitherControls: React.FC<DitherControlsProps> = ({ config, onChange, disabled, themeMode = 'light' }) => {
   const isDark = themeMode === 'dark';
   const algorithms: { id: DitherAlgorithm; label: string }[] = [
-    { id: 'atkinson', label: 'ATKINSON' },
-    { id: 'floyd-steinberg', label: 'FLOYD-STEINBERG' },
-    { id: 'bayer-4', label: 'BAYER 4X4' },
-    { id: 'bayer-8', label: 'BAYER 8X8' },
-    { id: 'threshold', label: 'THRESHOLD' }
+    { id: 'atkinson', label: 'Atkinson' },
+    { id: 'floyd-steinberg', label: 'Floyd–Steinberg' },
+    { id: 'bayer-4', label: 'Bayer 4×4' },
+    { id: 'bayer-8', label: 'Bayer 8×8' },
+    { id: 'threshold', label: 'Threshold' }
   ];
-
 
   return (
     <div className={`space-y-4 transition-all duration-300 ${
@@ -29,31 +28,27 @@ export const DitherControls: React.FC<DitherControlsProps> = ({ config, onChange
         : ''
     }`}>
       <div className="space-y-2">
-        <label className={`text-[10px] font-bold tracking-widest uppercase font-mono ${
-          isDark ? 'text-[#FAFAFA]' : 'text-[#1A1A1A]'
-        }`}>Algorithm</label>
-        <div className={`border rounded-[4px] p-1 flex flex-wrap gap-1 relative ${
-          isDark ? 'bg-[#202225] border-white/10' : 'bg-[#F6F6F4] border-[#1A1A1A]'
-        }`}>
+        <label className="text-xs font-medium text-[var(--hw-text-secondary)] font-sans">
+          Algorithm
+        </label>
+        <div className="border border-white/[0.08] rounded-[8px] p-1 flex flex-wrap gap-1 relative bg-[var(--hw-bg-surface)]">
           {algorithms.map((algo) => {
             const isSelected = config.algorithm === algo.id;
             return (
               <button
                 key={algo.id}
                 onClick={() => onChange({ ...config, algorithm: algo.id })}
-                className={`relative flex-1 min-w-[70px] text-[10px] font-mono font-bold tracking-wide py-1.5 rounded-[4px] transition-colors duration-150 z-10 cursor-pointer ${
+                className={`relative flex-1 min-w-[70px] text-xs font-sans font-medium py-1.5 rounded-[6px] transition-colors duration-150 z-10 cursor-pointer ${
                   isSelected
-                    ? isDark ? 'text-black font-extrabold' : 'text-white font-extrabold'
-                    : isDark ? 'text-[#A1A1AA] hover:text-[#FAFAFA]' : 'text-[#6B6B6B] hover:text-[#1A1A1A]'
+                    ? 'text-[var(--hw-text-primary)] font-semibold'
+                    : 'text-[var(--hw-text-secondary)] hover:text-[var(--hw-text-primary)]'
                 }`}
               >
                 {isSelected && (
                   <motion.div
                     layoutId="ditherAlgoActivePill"
                     transition={HW_SPRINGS.smooth}
-                    className={`absolute inset-0 rounded-[4px] z-[-1] ${
-                      isDark ? 'bg-[#FF5500]' : 'bg-[#1A1A1A]'
-                    }`}
+                    className="absolute inset-0 rounded-[6px] bg-white/[0.12] dark:bg-white/[0.12] border border-white/10 shadow-xs z-[-1]"
                   />
                 )}
                 <span className="relative z-10">{algo.label}</span>
@@ -107,25 +102,23 @@ export const DitherControls: React.FC<DitherControlsProps> = ({ config, onChange
         )}
       </div>
 
-      {/* Tactile Hardware Toggle Switch */}
+      {/* Hardware Toggle Switch */}
       <div className="flex items-center justify-between pt-2">
-        <label className={`text-[10px] font-bold tracking-widest uppercase font-mono ${
-          isDark ? 'text-[#A1A1AA]' : 'text-[#6B6B6B]'
-        }`}>Invert Colors</label>
+        <label className="text-xs font-medium text-[var(--hw-text-secondary)] font-sans">
+          Invert colors
+        </label>
         <button
           type="button"
           onClick={() => onChange({ ...config, invert: !config.invert })}
-          className={`flex items-center gap-2 px-2 py-1 text-[9px] font-mono font-bold tracking-wider uppercase border rounded-[4px] transition-colors cursor-pointer ${
-            isDark ? 'border-white/10 bg-[#202225]' : 'border-[#1A1A1A] bg-white'
-          }`}
+          className="flex items-center gap-2 px-2.5 py-1 text-xs font-sans font-medium border border-white/[0.08] rounded-[8px] bg-[var(--hw-bg-surface)] hover:bg-[var(--hw-bg-raised)] transition-colors cursor-pointer"
         >
-          <span className={config.invert ? (isDark ? 'text-[#FF5500]' : 'text-[#1A1A1A]') : 'text-[#71717A]'}>
-            {config.invert ? 'INVERTED' : 'NORMAL'}
+          <span className={config.invert ? 'text-[#FF5500]' : 'text-[var(--hw-text-secondary)]'}>
+            {config.invert ? 'Inverted' : 'Normal'}
           </span>
           <div className={`w-7 h-4 rounded-full relative transition-colors p-0.5 ${
             config.invert
-              ? isDark ? 'bg-[#FF5500]' : 'bg-[#1A1A1A]'
-              : isDark ? 'bg-[#282A2E] border border-white/10' : 'bg-[#E8E4DF]'
+              ? 'bg-[#FF5500]'
+              : 'bg-[var(--hw-bg-raised)] border border-white/10'
           }`}>
             <motion.div
               layout
@@ -140,24 +133,20 @@ export const DitherControls: React.FC<DitherControlsProps> = ({ config, onChange
         </button>
       </div>
 
-      <div className={`space-y-2 pt-4 border-t ${isDark ? 'border-white/10' : 'border-[#1A1A1A]'}`}>
-        <label className={`text-[10px] font-bold tracking-widest uppercase font-mono ${
-          isDark ? 'text-[#FAFAFA]' : 'text-[#1A1A1A]'
-        }`}>Phosphor Theme</label>
+      <div className="space-y-2 pt-4 border-t border-white/[0.08]">
+        <label className="text-xs font-medium text-[var(--hw-text-secondary)] font-sans">
+          Phosphor theme
+        </label>
         <select
           value={config.theme}
           onChange={(e) => onChange({ ...config, theme: e.target.value as PhosphorTheme })}
-          className={`w-full font-mono px-3 py-2 text-xs rounded-[4px] cursor-pointer transition-colors ${
-            isDark 
-              ? 'bg-[#202225] border border-white/10 text-[#FAFAFA] focus:border-[#FF5500] outline-none' 
-              : 'bg-white border border-[#1A1A1A] text-[#1A1A1A] focus:border-[#FF5500]'
-          }`}
+          className="w-full font-sans px-3 py-2 text-xs rounded-[8px] cursor-pointer transition-colors bg-[var(--hw-bg-surface)] border border-white/[0.08] text-[var(--hw-text-primary)] focus:border-[#FF5500] outline-none"
         >
-          <option value="cyan">CYAN</option>
-          <option value="white">WHITE</option>
-          <option value="amber">AMBER</option>
-          <option value="green">GREEN</option>
-          <option value="yellow-blue">YELLOW / BLUE</option>
+          <option value="cyan">Cyan</option>
+          <option value="white">White</option>
+          <option value="amber">Amber</option>
+          <option value="green">Green</option>
+          <option value="yellow-blue">Yellow / Blue</option>
         </select>
       </div>
     </div>

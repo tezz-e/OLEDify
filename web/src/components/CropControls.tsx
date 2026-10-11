@@ -106,10 +106,10 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
       
       {settings.mode === 'manual' && sourceFrame && (
         <div className="space-y-2">
-          <label className="text-[10px] font-bold tracking-widest text-[#6B6B6B] uppercase font-mono">Manual Crop (Move or Resize)</label>
+          <label className="text-xs font-medium text-[var(--hw-text-secondary)] font-sans">Manual crop (drag or resize)</label>
           <div 
             ref={containerRef}
-            className="relative w-full aspect-video bg-[#080808] border-2 border-[#1A1A1A] overflow-hidden flex items-center justify-center touch-none cursor-move"
+            className="relative w-full aspect-video bg-[var(--hw-bg-canvas)] border border-white/[0.08] rounded-[8px] overflow-hidden flex items-center justify-center touch-none cursor-move"
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
@@ -204,61 +204,61 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
 
       {/* Crop Mode Switcher with shared sliding pill */}
       <div className="space-y-2">
-        <label className={`text-[10px] font-bold tracking-widest uppercase font-mono ${
-          isDark ? 'text-[#FAFAFA]' : 'text-[#1A1A1A]'
-        }`}>Crop Mode</label>
-        <div className={`border rounded-[4px] p-1 flex gap-1 relative ${
-          isDark ? 'bg-[#202225] border-white/10' : 'bg-[#F6F6F4] border-[#1A1A1A]'
-        }`}>
+        <label className="text-xs font-medium text-[var(--hw-text-secondary)] font-sans">
+          Crop mode
+        </label>
+        <div className="border border-white/[0.08] rounded-[8px] p-1 flex gap-1 relative bg-[var(--hw-bg-surface)]">
           {modes.map((mode) => {
             const isSelected = settings.mode === mode;
+            const modeLabels: Record<FitMode, string> = {
+              cover: 'Cover',
+              contain: 'Contain',
+              stretch: 'Stretch',
+              manual: 'Manual'
+            };
             return (
               <button
                 key={mode}
                 onClick={() => handleModeChange(mode)}
                 disabled={disabled}
-                className={`relative flex-1 text-[10px] font-mono font-bold tracking-wide py-1.5 rounded-[4px] transition-colors duration-150 uppercase z-10 cursor-pointer ${
+                className={`relative flex-1 text-xs font-sans font-medium py-1.5 rounded-[6px] transition-colors duration-150 z-10 cursor-pointer ${
                   isSelected
-                    ? isDark ? 'text-black font-extrabold' : 'text-white font-extrabold'
-                    : isDark ? 'text-[#A1A1AA] hover:text-[#FAFAFA]' : 'text-[#6B6B6B] hover:text-[#1A1A1A]'
+                    ? 'text-[var(--hw-text-primary)] font-semibold'
+                    : 'text-[var(--hw-text-secondary)] hover:text-[var(--hw-text-primary)]'
                 }`}
               >
                 {isSelected && (
                   <motion.div
                     layoutId="cropModeActivePill"
                     transition={HW_SPRINGS.smooth}
-                    className={`absolute inset-0 rounded-[4px] z-[-1] ${
-                      isDark ? 'bg-[#FF5500]' : 'bg-[#1A1A1A]'
-                    }`}
+                    className="absolute inset-0 rounded-[6px] bg-white/[0.12] dark:bg-white/[0.12] border border-white/10 shadow-xs z-[-1]"
                   />
                 )}
-                <span className="relative z-10">{mode}</span>
+                <span className="relative z-10">{modeLabels[mode]}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Tactile Hardware Toggle Switch */}
+      {/* Hardware Toggle Switch */}
       <div className="flex items-center justify-between pt-2">
-        <label className={`text-[10px] font-bold tracking-widest uppercase font-mono ${
-          isDark ? 'text-[#A1A1AA]' : 'text-[#6B6B6B]'
-        }`}>Bicubic Smoothing</label>
+        <label className="text-xs font-medium text-[var(--hw-text-secondary)] font-sans">
+          Bicubic smoothing
+        </label>
         <button
           type="button"
           disabled={disabled}
           onClick={() => onChange({ ...settings, smoothing: !settings.smoothing })}
-          className={`flex items-center gap-2 px-2 py-1 text-[9px] font-mono font-bold tracking-wider uppercase border rounded-[4px] transition-colors cursor-pointer ${
-            isDark ? 'border-white/10 bg-[#202225]' : 'border-[#1A1A1A] bg-white'
-          }`}
+          className="flex items-center gap-2 px-2.5 py-1 text-xs font-sans font-medium border border-white/[0.08] rounded-[8px] bg-[var(--hw-bg-surface)] hover:bg-[var(--hw-bg-raised)] transition-colors cursor-pointer"
         >
-          <span className={settings.smoothing ? (isDark ? 'text-[#FF5500]' : 'text-[#1A1A1A]') : 'text-[#71717A]'}>
-            {settings.smoothing ? 'ON' : 'OFF'}
+          <span className={settings.smoothing ? 'text-[var(--hw-text-primary)] font-medium' : 'text-[var(--hw-text-secondary)]'}>
+            {settings.smoothing ? 'On' : 'Off'}
           </span>
           <div className={`w-7 h-4 rounded-full relative transition-colors p-0.5 ${
             settings.smoothing
-              ? isDark ? 'bg-[#FF5500]' : 'bg-[#1A1A1A]'
-              : isDark ? 'bg-[#282A2E] border border-white/10' : 'bg-[#E8E4DF]'
+              ? 'bg-white'
+              : 'bg-[var(--hw-bg-raised)] border border-white/10'
           }`}>
             <motion.div
               layout
@@ -276,44 +276,38 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
       {settings.mode === 'manual' && (
       <div className="flex gap-2 pt-2">
         <div className="flex-1 space-y-1">
-          <label className={`text-[10px] font-bold tracking-widest uppercase font-mono ${
-            isDark ? 'text-[#A1A1AA]' : 'text-[#6B6B6B]'
-          }`}>Pan X</label>
+          <label className="text-xs font-medium text-[var(--hw-text-secondary)] font-sans">
+            Pan X
+          </label>
           <input
             type="number"
             value={settings.x}
             disabled={disabled || settings.mode !== 'manual'}
             onChange={(e) => onChange({ ...settings, x: parseInt(e.target.value) || 0 })}
-            className={`w-full px-2 py-1 text-xs font-mono rounded-[4px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
-              isDark 
-                ? 'bg-[#202225] border border-white/10 text-[#FAFAFA] focus:border-[#FF5500] outline-none' 
-                : 'bg-white border border-[#1A1A1A] text-[#1A1A1A]'
-            }`}
+            className="w-full px-2.5 py-1.5 text-xs font-mono rounded-[8px] bg-[var(--hw-bg-canvas)] border border-white/[0.08] text-[var(--hw-text-primary)] focus:border-[#FF5500] outline-none disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           />
         </div>
         <div className="flex-1 space-y-1">
-          <label className={`text-[10px] font-bold tracking-widest uppercase font-mono ${
-            isDark ? 'text-[#A1A1AA]' : 'text-[#6B6B6B]'
-          }`}>Pan Y</label>
+          <label className="text-xs font-medium text-[var(--hw-text-secondary)] font-sans">
+            Pan Y
+          </label>
           <input
             type="number"
             value={settings.y}
             disabled={disabled || settings.mode !== 'manual'}
             onChange={(e) => onChange({ ...settings, y: parseInt(e.target.value) || 0 })}
-            className={`w-full px-2 py-1 text-xs font-mono rounded-[4px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
-              isDark 
-                ? 'bg-[#202225] border border-white/10 text-[#FAFAFA] focus:border-[#FF5500] outline-none' 
-                : 'bg-white border border-[#1A1A1A] text-[#1A1A1A]'
-            }`}
+            className="w-full px-2.5 py-1.5 text-xs font-mono rounded-[8px] bg-[var(--hw-bg-canvas)] border border-white/[0.08] text-[var(--hw-text-primary)] focus:border-[#FF5500] outline-none disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           />
         </div>
       </div>
       )}
 
-      {settings.mode === 'manual' && <div className={`text-[10px] font-mono ${isDark ? 'text-[#71717A]' : 'text-[#6B6B6B]'}`}>
-        Source: {settings.sourceWidth}×{settings.sourceHeight} <br />
-        Crop: {Math.round(settings.width)}×{Math.round(settings.height)}
-      </div>}
+      {settings.mode === 'manual' && (
+        <div className="text-[11px] font-sans text-[var(--hw-text-secondary)] pt-1">
+          Source: <span className="font-mono">{settings.sourceWidth}×{settings.sourceHeight}</span> <br />
+          Crop: <span className="font-mono">{Math.round(settings.width)}×{Math.round(settings.height)}</span>
+        </div>
+      )}
     </div>
   );
 };

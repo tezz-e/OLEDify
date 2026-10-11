@@ -18,14 +18,14 @@ interface NavTab {
 }
 
 const TABS: NavTab[] = [
-  { id: 'editor', label: 'NLE TIMELINE', icon: Film, badge: 'TRACKS' },
-  { id: 'lyrics-studio', label: 'KINETIC LYRICS', icon: Sparkles, badge: 'AI DIRECTOR' },
+  { id: 'editor', label: 'Timeline', icon: Film },
+  { id: 'lyrics-studio', label: 'Kinetic lyrics', icon: Sparkles },
 ];
 
 /**
- * Hero Moment 1: Tab Switcher
- * Flat, hard-edged solid amber pill with black text that slides via layoutId smooth spring.
- * Inactive tabs render secondary text (#A1A1AA). Hard bans: No blur, no glow, no gooey SVG filter.
+ * Tab Switcher
+ * Flat solid amber pill for active state with black text that slides via layoutId spring.
+ * Inactive tabs render secondary text (#A1A1AA).
  */
 export const LiquidStudioNav: React.FC<LiquidStudioNavProps> = ({
   activeView,
@@ -34,7 +34,7 @@ export const LiquidStudioNav: React.FC<LiquidStudioNavProps> = ({
 }) => {
   return (
     <nav
-      className={`relative inline-flex items-center p-0.5 rounded-[4px] bg-[#202225] border border-white/10 select-none font-mono ${className}`}
+      className={`relative inline-flex items-center p-1 rounded-[10px] bg-[var(--hw-bg-surface)] border border-white/[0.08] select-none font-sans ${className}`}
       aria-label="Studio View Switcher"
     >
       {TABS.map((tab) => {
@@ -46,31 +46,20 @@ export const LiquidStudioNav: React.FC<LiquidStudioNavProps> = ({
             key={tab.id}
             type="button"
             onClick={() => onViewChange(tab.id)}
-            className={`relative h-7 px-3 flex items-center gap-1.5 rounded-[4px] text-[10px] font-mono font-medium tracking-wide uppercase transition-colors duration-150 z-10 cursor-pointer ${
-              isActive ? 'text-[#000000] font-bold' : 'text-[#A1A1AA] hover:text-[#FAFAFA]'
+            className={`relative h-8 px-3.5 flex items-center gap-2 rounded-[8px] text-xs font-sans font-medium transition-colors duration-150 z-10 cursor-pointer ${
+              isActive ? 'text-[var(--hw-text-primary)] font-semibold' : 'text-[var(--hw-text-secondary)] hover:text-[var(--hw-text-primary)]'
             }`}
           >
-            {/* Hero Moment 1: Flat solid amber sliding pill */}
             {isActive && (
               <motion.div
                 layoutId="heroTabSwitcherPill"
                 transition={HW_SPRINGS.smooth}
-                className="absolute inset-0 bg-[#FF5500] rounded-[4px] z-[-1]"
+                className="absolute inset-0 bg-white/[0.08] rounded-[8px] border-b-2 border-[#FF5500] z-[-1]"
               />
             )}
 
             <Icon className="w-3.5 h-3.5 shrink-0 stroke-[1.5]" />
             <span>{tab.label}</span>
-
-            {tab.badge && (
-              <span
-                className={`text-[9px] px-1 py-0.2 rounded-[2px] font-mono font-medium transition-colors ${
-                  isActive ? 'bg-black/20 text-[#000000]' : 'bg-white/5 text-[#71717A]'
-                }`}
-              >
-                {tab.badge}
-              </span>
-            )}
           </button>
         );
       })}

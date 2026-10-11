@@ -8,18 +8,17 @@ export default {
   theme: {
     extend: {
       colors: {
-        canvas: '#181A1B',
-        surface: '#202225',
-        raised: '#282A2E',
-        hairline: 'rgba(255, 255, 255, 0.10)',
-        specular: 'rgba(255, 255, 255, 0.18)',
-        amber: '#FF5500',
-        phosphor: '#00FF66',
-        danger: '#EF4444',
+        canvas: 'var(--hw-bg-canvas)',
+        surface: 'var(--hw-bg-surface)',
+        raised: 'var(--hw-bg-raised)',
+        hairline: 'var(--hw-border-hairline)',
+        specular: 'var(--hw-border-specular)',
+        accent: 'var(--hw-signal-amber)',
+        danger: 'var(--hw-signal-danger)',
         text: {
-          primary: '#FAFAFA',
-          secondary: '#A1A1AA',
-          tertiary: '#71717A',
+          primary: 'var(--hw-text-primary)',
+          secondary: 'var(--hw-text-secondary)',
+          tertiary: 'var(--hw-text-tertiary)',
         },
         hw: {
           canvas: 'var(--hw-bg-canvas)',
@@ -28,7 +27,6 @@ export default {
           hairline: 'var(--hw-border-hairline)',
           specular: 'var(--hw-border-specular)',
           amber: 'var(--hw-signal-amber)',
-          phosphor: 'var(--hw-signal-phosphor)',
           danger: 'var(--hw-signal-danger)',
           text: {
             primary: 'var(--hw-text-primary)',
@@ -38,20 +36,21 @@ export default {
         },
       },
       fontFamily: {
-        mono: ['"JetBrains Mono"', 'monospace'],
-        sans: ['"JetBrains Mono"', 'monospace'],
+        sans: ['"Inter"', '"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['"JetBrains Mono"', '"IBM Plex Mono"', 'ui-monospace', 'monospace'],
+        display: ['"Inter"', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
-        DEFAULT: '4px',
-        sm: '4px',
-        md: '4px',
-        lg: '4px',
-        xl: '4px',
-        '2xl': '4px',
-        '3xl': '4px',
-        'hw-sm': '4px',
-        'hw-md': '4px',
-        'hw-lg': '4px',
+        DEFAULT: '8px',
+        sm: '8px',
+        md: '12px',
+        lg: '16px',
+        xl: '20px',
+        '2xl': '24px',
+        '3xl': '32px',
+        'hw-sm': '8px',
+        'hw-md': '12px',
+        'hw-lg': '20px',
         full: '9999px',
         'hw-pill': '9999px',
       },
@@ -65,16 +64,10 @@ export default {
         '90': '90',
         '100': '100',
       },
-      fontFamily: {
-        serif: ['"DM Serif Display"', 'Georgia', 'serif'],
-        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
-        mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
-        display: ['"DM Serif Display"', 'Georgia', 'serif'],
-        dot: ['"Silkscreen"', '"DotGothic16"', '"IBM Plex Mono"', 'monospace'],
-      },
       animation: {
         'fade-in': 'fadeIn 0.15s ease-out',
         'slide-up': 'slideUp 0.15s ease-out',
+        'border-beam': 'border-beam calc(var(--duration)*1s) infinite linear',
       },
       keyframes: {
         fadeIn: {
@@ -84,6 +77,11 @@ export default {
         slideUp: {
           from: { opacity: '0', transform: 'translateY(4px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        'border-beam': {
+          '100%': {
+            'offset-distance': '100%',
+          },
         },
       },
     },

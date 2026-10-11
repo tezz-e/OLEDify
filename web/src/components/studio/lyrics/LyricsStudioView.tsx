@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Search, Music, FileText, Upload, Play, Pause, ArrowLeft, ArrowRight, Plus, Sparkles, Check, RefreshCw, X, RotateCcw, ChevronUp, ChevronDown, CheckCheck, Bot, Cpu, Activity, Zap, Volume2, Terminal, Sliders, Layers, Type, Video, Clock } from 'lucide-react';
+import { Search, Music, FileText, Upload, Play, Pause, ArrowLeft, ArrowRight, Plus, Sparkles, Check, RefreshCw, X, RotateCcw, ChevronUp, ChevronDown, CheckCheck, Bot, Cpu, Activity, Zap, Volume2, Terminal, Sliders, Layers, Type, Video, Clock, Star } from 'lucide-react';
 import { exportFramesToWebM, downloadBlob } from '../../../engine/kinetic/webmExporter';
 import { searchLrclib, getLrclibExact, searchLyricsOvhFallback } from '../../../engine/lyrics/lrclibClient';
 import { parseLrc, parsePlainTextLyrics } from '../../../engine/lyrics/lrcParser';
@@ -2084,9 +2084,9 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                       themeMode === 'dark' ? 'bg-[#141416] border-white/10' : 'bg-[#FAF9F5] border-[#E8E5DE]'
                     }`}>
                       {[
-                        { id: 'ballad' as const, label: '🕊️ Ballad', desc: 'Slow' },
-                        { id: 'pop' as const, label: '🎵 Pop', desc: 'Mid' },
-                        { id: 'rap' as const, label: '⚡ Rap', desc: 'Fast' },
+                        { id: 'ballad' as const, label: 'Ballad', desc: 'Slow' },
+                        { id: 'pop' as const, label: 'Pop', desc: 'Mid' },
+                        { id: 'rap' as const, label: 'Rap', desc: 'Fast' },
                       ].map(p => (
                         <button
                           key={p.id}
@@ -2459,12 +2459,12 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                           {lineOverrideStatusMap[idx]?.hasCustom ? (
                             <span className="text-[8px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 flex items-center gap-1 shadow-xs">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                              <span>{inferenceMode === 'ollama' ? '✨ AI Cloud Directed' : '✨ Custom Overrides'} ({lineOverrideStatusMap[idx].count} styles)</span>
+                              <span>{inferenceMode === 'ollama' ? 'AI Cloud Directed' : 'Custom Overrides'} ({lineOverrideStatusMap[idx].count} styles)</span>
                             </span>
                           ) : (
                             <span className="text-[8px] font-mono font-medium px-2 py-0.5 rounded bg-black/5 dark:bg-white/5 text-[#5E5D59] dark:text-white/50 border border-black/5 dark:border-white/10 flex items-center gap-1">
                               <span className="w-1.5 h-1.5 rounded-full bg-[#D97757]" />
-                              <span>⚡ Auto Rules</span>
+                              <span>Auto Rules</span>
                             </span>
                           )}
                           {isActiveLine && (
@@ -3569,8 +3569,8 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                               {pack.tag}
                             </span>
                             {isRecommended && !isSelected && (
-                              <span className="text-[9px] text-[#D97757] font-bold" title="Auto-matched to detected song vibe">
-                                ★
+                              <span title="Auto-matched to detected song vibe">
+                                <Star className="w-2.5 h-2.5 fill-current text-[#D97757]" />
                               </span>
                             )}
                           </div>
@@ -3707,7 +3707,7 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                         ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30'
                         : 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30'
                     }`}>
-                      {songMoodProfile.vibe === 'hype_aggressive' ? '🔥 BANGER' : songMoodProfile.vibe === 'groove_dance' ? '⚡ GROOVE' : '✨ SMOOTH'}
+                      {songMoodProfile.vibe === 'hype_aggressive' ? 'BANGER' : songMoodProfile.vibe === 'groove_dance' ? 'GROOVE' : 'SMOOTH'}
                     </span>
                   )}
                 </div>
@@ -3932,11 +3932,11 @@ export const LyricsStudioView: React.FC<LyricsStudioViewProps> = ({
                   </span>
                   {(wordOverrides[`${editingWordTarget.word.word}_${editingWordTarget.word.startMs}`] || wordOverrides[editingWordTarget.word.word.toLowerCase().replace(/[^a-z0-9]/g, '')]) ? (
                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/20 font-mono font-medium">
-                      ✨ Custom Override
+                      Custom Override
                     </span>
                   ) : (
                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/5 text-[#5E5D59] dark:text-white/60 border border-current/10 font-mono font-medium">
-                      ⚡ Following Auto Rules
+                      Following Auto Rules
                     </span>
                   )}
                 </div>

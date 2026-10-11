@@ -78,76 +78,114 @@ export const TactileRotaryKnob: React.FC<TactileRotaryKnobProps> = ({
   const r = 18;
   const c = 22;
   const strokeLen = 2 * Math.PI * r * (270 / 360);
-  const strokeOffset = strokeLen * (1 - norm);
+  const isBipolar = min < 0 && max > 0;
+  const zeroNorm = isBipolar ? (0 - min) / range : 0;
+  const isModulated = isBipolar ? Math.abs(value) > 0.001 : (value - min) > 0.001;
 
   return (
-    <div className={`flex flex-col items-center select-none font-mono ${className}`}>
+    <div className={`flex flex-col items-center select-none font-sans ${className}`}>
       {/* Knob Assembly */}
       <div
         ref={knobRef}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
+        role="slider"
+        aria-label={label}
+        aria-valuenow={value}
+        aria-valuemin={min}
+        aria-valuemax={max}
+        tabIndex={0}
         className="relative w-11 h-11 cursor-ns-resize flex items-center justify-center group"
       >
         {/* Radial SVG Gauge Background */}
         <svg className="absolute inset-0 w-full h-full -rotate-45" viewBox="0 0 44 44">
+          {/* Neutral Background Track */}
           <circle
             cx={c}
             cy={c}
             r={r}
             fill="none"
-            stroke={isDark ? '#27272A' : '#D1CFCA'}
+            stroke={isDark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(0, 0, 0, 0.18)'}
             strokeWidth="2.5"
             strokeDasharray={`${strokeLen} 100`}
             strokeLinecap="round"
           />
-          {/* Active Accent Stroke */}
-          <circle
-            cx={c}
-            cy={c}
-            r={r}
-            fill="none"
-            stroke={accentColor}
-            strokeWidth="2.5"
-            strokeDasharray={`${strokeLen} 100`}
-            strokeDashoffset={strokeOffset}
-            strokeLinecap="round"
-            className="transition-all duration-75"
-          />
+
+          {/* Active Accent Stroke: Orange ONLY when modulated from default/0; completely neutral at 0 */}
+          {isModulated && !isBipolar && (
+            <circle
+              cx={c}
+              cy={c}
+              r={r}
+              fill="none"
+              stroke="#FF5500"
+              strokeWidth="2.5"
+              strokeDasharray={`${norm * strokeLen} 100`}
+              strokeLinecap="round"
+              className="transition-all duration-75"
+            />
+          )}
+
+          {isModulated && isBipolar && value > 0 && (
+            <circle
+              cx={c}
+              cy={c}
+              r={r}
+              fill="none"
+              stroke="#FF5500"
+              strokeWidth="2.5"
+              strokeDasharray={`${(norm - zeroNorm) * strokeLen} 100`}
+              strokeLinecap="round"
+              style={{ transform: `rotate(${zeroNorm * 270}deg)`, transformOrigin: `${c}px ${c}px` }}
+              className="transition-all duration-75"
+            />
+          )}
+
+          {isModulated && isBipolar && value < 0 && (
+            <circle
+              cx={c}
+              cy={c}
+              r={r}
+              fill="none"
+              stroke="#FF5500"
+              strokeWidth="2.5"
+              strokeDasharray={`${(zeroNorm - norm) * strokeLen} 100`}
+              strokeLinecap="round"
+              style={{ transform: `rotate(${norm * 270}deg)`, transformOrigin: `${c}px ${c}px` }}
+              className="transition-all duration-75"
+            />
+          )}
         </svg>
 
         {/* Machined Metal Rotor */}
         <div
           className={`w-7 h-7 rounded-full border relative flex items-center justify-center transition-transform ${
             isDark
-              ? 'bg-[#282A2E] border-white/10 shadow-[0_2px_6px_rgba(0,0,0,0.6)]'
+              ? 'bg-[var(--hw-bg-raised)] border-white/20 shadow-[0_2px_6px_rgba(0,0,0,0.6)]'
               : 'bg-[#EBEAE5] border-[#1A1A1A] shadow-[0_2px_4px_rgba(0,0,0,0.15)]'
           }`}
           style={{ transform: `rotate(${angle}deg)` }}
         >
-          {/* Laser-etched Pip */}
+          {/* Laser-etched Pip: neutral at 0, orange when modulated */}
           <div
-            className="absolute top-0.5 w-[2px] h-2 rounded-[1px]"
-            style={{ backgroundColor: accentColor }}
+            className="absolute top-0.5 w-[2px] h-2 rounded-[1px] transition-colors"
+            style={{ backgroundColor: isModulated ? '#FF5500' : (isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)') }}
           />
         </div>
       </div>
 
       {/* Numerical Tabular Readout with Rolling Digits */}
-      <div className="flex flex-col items-center mt-1">
+      <div className="flex flex-col items-center mt-1.5">
         <span
-          className={`text-[9px] font-bold tabular-nums flex items-center ${
-            isDark ? 'text-[#FAFAFA]' : 'text-[#1A1A1A]'
+          className={`text-xs font-mono font-medium tabular-nums flex items-center ${
+            isDark ? 'text-[var(--hw-text-primary)]' : 'text-[#1A1A1A]'
           }`}
         >
-          <SlidingNumber value={value} className={isDark ? 'text-[#FAFAFA]' : 'text-[#1A1A1A]'} />
+          <SlidingNumber value={value} className={isDark ? 'text-[var(--hw-text-primary)]' : 'text-[#1A1A1A]'} />
           {unit}
         </span>
         <span
-          className={`text-[8px] uppercase tracking-wider font-semibold ${
-            isDark ? 'text-[#71717A]' : 'text-[#8C8A84]'
-          }`}
+          className={`text-[11px] font-sans font-medium text-[var(--hw-text-secondary)]`}
         >
           {label}
         </span>

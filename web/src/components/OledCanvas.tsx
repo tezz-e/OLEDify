@@ -4,23 +4,23 @@ import '../styles/oled.css';
 
 interface OledCanvasProps {
   frameData: ImageData | null;
-  theme: PhosphorTheme;
+  theme?: PhosphorTheme;
   scale?: number;
 }
 
-export const OledCanvas: React.FC<OledCanvasProps> = ({ frameData, theme, scale = 4 }) => {
+export const OledCanvas: React.FC<OledCanvasProps> = ({ frameData, theme = 'cyan', scale = 4 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const bufferRef = useRef<ImageData | null>(null);
-  const canvasWidth = 128 * scale;
-  const canvasHeight = 64 * scale;
+  const intScale = Math.max(1, Math.round(scale));
+  const cssWidth = 128 * intScale;
+  const cssHeight = 64 * intScale;
 
   const phosphorColor = useMemo(() => {
     switch (theme) {
-      case 'cyan': return [0, 240, 255];
-      case 'white': return [255, 255, 255];
-      case 'amber': return [255, 176, 0];
-      case 'green': return [0, 255, 102];
-      default: return [0, 240, 255];
+      case 'white': return '#FFFFFF';
+      case 'amber': return '#FFB000';
+      case 'green': return '#00FF66';
+      case 'cyan':
+      default: return '#00F0FF';
     }
   }, [theme]);
 
@@ -30,63 +30,58 @@ export const OledCanvas: React.FC<OledCanvasProps> = ({ frameData, theme, scale 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1;
+    canvas.width = Math.round(cssWidth * dpr);
+    canvas.height = Math.round(cssHeight * dpr);
+
+    ctx.save();
+    ctx.scale(dpr, dpr);
+
+    // Unlit background: deep OLED black
+    ctx.fillStyle = '#020305';
+    ctx.fillRect(0, 0, cssWidth, cssHeight);
+
     if (!frameData) {
-      ctx.fillStyle = '#020304';
-      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-      ctx.fillStyle = `rgb(${phosphorColor[0]}, ${phosphorColor[1]}, ${phosphorColor[2]})`;
-      ctx.font = "14px 'IBM Plex Mono', monospace";
+      // Standby status text in phosphor blue
+      ctx.fillStyle = 'rgba(0, 240, 255, 0.75)';
+      const fontSize = Math.max(9, Math.round(10 * (intScale / 2)));
+      ctx.font = `500 ${fontSize}px Inter, -apple-system, sans-serif`;
       ctx.textAlign = 'center';
-      ctx.fillText('DROP_MEDIA_TO_BEGIN', canvasWidth / 2, canvasHeight / 2);
+      ctx.textBaseline = 'middle';
+      ctx.fillText('SSD1306 128×64 · Standby', cssWidth / 2, cssHeight / 2);
+      ctx.restore();
       return;
     }
 
-    if (!bufferRef.current || bufferRef.current.width !== canvasWidth || bufferRef.current.height !== canvasHeight) {
-      bufferRef.current = new ImageData(canvasWidth, canvasHeight);
-    }
-    const buffer = bufferRef.current;
-    const bufData = buffer.data;
-    const bgR = 8, bgG = 12, bgB = 18;
+    const hasGap = intScale >= 3;
+    const pixelSize = hasGap ? intScale - 1 : intScale;
 
+    // Lit pixels: authentic SSD1306 phosphor blue (#00F0FF)
+    ctx.fillStyle = phosphorColor;
     for (let y = 0; y < 64; y++) {
       for (let x = 0; x < 128; x++) {
         const srcIdx = (y * 128 + x) * 4;
-        const isLit = frameData.data[srcIdx] > 128;
-        
-        let r, g, b;
-        if (isLit) {
-          if (theme === 'yellow-blue') {
-            [r, g, b] = y < 16 ? [255, 204, 0] : [0, 229, 255];
-          } else {
-            [r, g, b] = phosphorColor;
-          }
-        } else {
-          [r, g, b] = [bgR, bgG, bgB];
-        }
-
-        // Draw pixel block of (scale-1) x (scale-1), leaving 1px gap for sub-pixel grid
-        for (let sy = 0; sy < scale - 1; sy++) {
-          for (let sx = 0; sx < scale - 1; sx++) {
-            const destIdx = ((y * scale + sy) * canvasWidth + (x * scale + sx)) * 4;
-            bufData[destIdx] = r;
-            bufData[destIdx + 1] = g;
-            bufData[destIdx + 2] = b;
-            bufData[destIdx + 3] = 255;
-          }
+        if (frameData.data[srcIdx] > 128) {
+          ctx.fillRect(x * intScale, y * intScale, pixelSize, pixelSize);
         }
       }
     }
-    
-    ctx.putImageData(buffer, 0, 0);
-  }, [frameData, theme, scale, canvasWidth, canvasHeight, phosphorColor]);
+    ctx.restore();
+  }, [frameData, theme, intScale, cssWidth, cssHeight, phosphorColor]);
 
   return (
-    <div className="flex flex-col items-center justify-center select-none max-w-full max-h-full">
+    <div className="flex items-center justify-center select-none shrink-0">
       <canvas
         ref={canvasRef}
-        width={canvasWidth}
-        height={canvasHeight}
-        className={`oled-screen block glow-${theme} max-w-full max-h-full object-contain`}
-        style={{ aspectRatio: '128/64' }}
+        width={cssWidth}
+        height={cssHeight}
+        className={`oled-screen block shrink-0 glow-${theme || 'cyan'}`}
+        style={{
+          width: `${cssWidth}px`,
+          height: `${cssHeight}px`,
+          imageRendering: 'pixelated',
+          aspectRatio: '128 / 64',
+        }}
       />
     </div>
   );

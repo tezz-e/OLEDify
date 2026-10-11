@@ -201,7 +201,7 @@ const Slider: React.FC<SliderProps> = ({
               <div 
                 className={`absolute h-full transition-colors ${
                   isDark 
-                    ? 'bg-[#FF5500]' 
+                    ? 'bg-zinc-300' 
                     : 'bg-[#1A1A1A]'
                 }`} 
                 style={{ width: `${getRangePercentage()}%` }} 

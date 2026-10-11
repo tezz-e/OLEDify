@@ -304,18 +304,23 @@ export const ClipBlock: React.FC<ClipBlockProps> = ({
         }`} />
       </div>
 
-      {/* ---- Clip label ---- */}
+      {/* ---- Clip label (>= 11px sans with readable contrast) ---- */}
       <div
-        className="absolute bottom-0 left-0 right-0 flex items-center px-1.5 pointer-events-none z-20 overflow-hidden"
-        style={{ height: 16, background: isDark ? 'rgba(10,10,10,0.9)' : 'rgba(0,0,0,0.7)' }}
+        className="absolute bottom-0 left-0 right-0 flex items-center pointer-events-none z-20 overflow-hidden"
+        style={{
+          height: 18,
+          background: isDark ? 'rgba(10,10,10,0.92)' : 'rgba(0,0,0,0.78)',
+          paddingLeft: HANDLE_W + 6,
+          paddingRight: HANDLE_W + 6,
+        }}
       >
-        <span className={`text-[7px] font-mono truncate tracking-wide flex items-center gap-1 ${isDark ? 'text-[#FAFAFA]' : 'text-white/80'}`}>
+        <span className={`text-[11px] font-sans truncate tracking-tight flex items-center gap-1.5 ${isDark ? 'text-zinc-200' : 'text-white'}`}>
           {isSelected && (
             <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-[#FF5500]" />
           )}
-          <span>{asset.media.sourceInfo.filename}</span>
+          <span className="truncate">{asset.media.sourceInfo.filename}</span>
           {isActiveDrag && !trimDrag?.fading && (
-            <span className="ml-1 text-[#FF5500] font-bold">[{activeIn}–{activeOut}]</span>
+            <span className="ml-1 text-zinc-300 font-mono font-medium">[{activeIn}–{activeOut}]</span>
           )}
         </span>
       </div>

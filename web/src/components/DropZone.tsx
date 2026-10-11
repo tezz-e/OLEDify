@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { UploadCloud, FileVideo, CheckCircle2 } from 'lucide-react';
 import { DecodedMedia, DecodeProgress } from '../types/media';
 import { decodeVideo } from '../engine/mediaDecoder';
+import { Spotlight } from './ui/Spotlight';
 
 interface DropZoneProps {
   onMediaLoaded: (media: DecodedMedia) => void;
@@ -55,20 +56,20 @@ export const DropZone: React.FC<DropZoneProps> = ({ onMediaLoaded, currentMedia,
   // Processing state
   if (progress) {
     return (
-      <div className={`p-4 border-b shrink-0 ${isDark ? 'border-white/10' : 'border-[#1A1A1A]'}`}>
+      <div className="p-4 border-b border-white/[0.08] shrink-0">
         <div className="flex flex-col items-center justify-center py-4 space-y-3">
-          <FileVideo className={`w-8 h-8 ${isDark ? 'text-[#00FF66]' : 'text-[#FF5500]'}`} />
+          <FileVideo className="w-7 h-7 text-[#FF5500]" />
           <div className="text-center">
-            <p className={`text-xs font-bold mb-1 uppercase tracking-widest font-mono ${
-              isDark ? 'text-[#FAFAFA]' : 'text-[#1A1A1A]'
-            }`}>{progress.stage}...</p>
-            <p className={`text-[10px] font-mono ${isDark ? 'text-[#71717A]' : 'text-[#6B6B6B]'}`}>
+            <p className="text-xs font-semibold mb-1 capitalize font-sans text-[var(--hw-text-primary)]">
+              {progress.stage}...
+            </p>
+            <p className="text-xs font-mono text-[var(--hw-text-secondary)]">
               {progress.currentFrame} / {progress.totalFrames || '?'} frames
             </p>
           </div>
-          <div className={`w-full h-2 border rounded-[4px] overflow-hidden ${isDark ? 'bg-[#282A2E] border-white/10' : 'bg-[#F5F0EB] border-[#1A1A1A]'}`}>
+          <div className="w-full h-2 border border-white/[0.08] rounded-[8px] overflow-hidden bg-[var(--hw-bg-canvas)]">
             <div 
-              className={`h-full transition-all duration-200 ${isDark ? 'bg-[#00FF66]' : 'bg-[#FF5500]'}`} 
+              className="h-full bg-[#FF5500] transition-all duration-200" 
               style={{ width: `${progress.percent}%` }}
             />
           </div>
@@ -79,29 +80,28 @@ export const DropZone: React.FC<DropZoneProps> = ({ onMediaLoaded, currentMedia,
 
   // Idle dropzone (Always available to add more media)
   return (
-    <div className={`p-3 border-b shrink-0 ${isDark ? 'border-white/10' : 'border-[#1A1A1A]'}`}>
+    <div className="p-3 border-b border-white/[0.08] shrink-0">
       <label
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
-        className={`flex flex-col items-center justify-center p-4 border border-dashed rounded-[4px] cursor-pointer transition-colors duration-150 ${
+        className={`relative overflow-hidden flex flex-col items-center justify-center p-4 border border-dashed rounded-[8px] cursor-pointer transition-colors duration-150 ${
           isDragging 
-            ? isDark ? 'border-[#FF5500] bg-[#FF5500]/10' : 'border-[#FF5500] bg-[#FF5500]/5' 
-            : isDark ? 'border-white/10 hover:border-[#FF5500]/60 hover:bg-white/[0.03]' : 'border-[#1A1A1A] hover:border-[#FF5500] hover:bg-[#F5F0EB]'
+            ? 'border-[#FF5500] bg-[#FF5500]/10' 
+            : 'border-white/[0.08] hover:border-white/20 hover:bg-white/[0.02]'
         }`}
       >
-        <UploadCloud className={`w-8 h-8 mb-2 transition-colors ${
-          isDragging 
-            ? 'text-[#FF5500]' 
-            : isDark ? 'text-[#71717A] hover:text-[#FF5500]' : 'text-[#6B6B6B]'
+        <Spotlight size={180} />
+        <UploadCloud className={`w-7 h-7 mb-2 transition-colors ${
+          isDragging ? 'text-[#FF5500]' : 'text-[var(--hw-text-secondary)]'
         }`} />
-        <span className={`text-xs font-bold tracking-widest mb-1 font-mono uppercase ${
-          isDark ? 'text-[#FAFAFA]' : 'text-[#1A1A1A]'
-        }`}>IMPORT_MEDIA</span>
-        <span className={`text-[10px] text-center uppercase tracking-widest font-mono ${
-          isDark ? 'text-[#71717A]' : 'text-[#6B6B6B]'
-        }`}>MP4, WEBM, GIF, .H, .JSON</span>
+        <span className="text-xs font-semibold mb-1 font-sans text-[var(--hw-text-primary)]">
+          Import media
+        </span>
+        <span className="text-[11px] text-center font-sans text-[var(--hw-text-secondary)]">
+          MP4, WebM, GIF, or APNG
+        </span>
         <input type="file" className="hidden" accept="video/mp4,video/webm,image/gif,.h,.json,application/json" onChange={handleChange} />
       </label>
     </div>

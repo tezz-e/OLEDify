@@ -17,7 +17,7 @@ export const BlueprintHoverCard: React.FC<BlueprintHoverCardProps> = ({
 }) => {
   return (
     <div
-      className={`relative rounded-[4px] border border-white/10 bg-[#0A0A0A] overflow-hidden ${className}`}
+      className={`relative rounded-[12px] border border-white/[0.08] bg-[var(--hw-bg-surface)] overflow-hidden ${className}`}
     >
       <div className="relative z-10 w-full h-full bg-transparent flex flex-col">
         {children}

@@ -75,21 +75,21 @@ export const ARCADE_NEO_POP_THEME: AestheticThemeTokens = {
  */
 export const PRECISION_HARDWARE_THEME: AestheticThemeTokens = {
   id: 'hardware',
-  name: 'Teenage Engineering / Nothing Monospaced Hardware',
-  sectionBg: () => 'bg-[#181A1B]',
-  sectionBorder: () => 'border-white/10',
+  name: 'Quiet Instrument (Teenage Engineering / Vercel)',
+  sectionBg: () => 'bg-[var(--hw-bg-canvas)]',
+  sectionBorder: () => 'border-white/[0.08]',
   gridStyle: () => ({}), // HARD BAN: No gradient or colored background haze on canvas
-  cardBg: () => 'bg-[#202225]', // Surface #202225
-  cardBorder: () => 'border-white/10', // Hairline border
+  cardBg: () => 'bg-[var(--hw-bg-surface)]',
+  cardBorder: () => 'border-white/[0.08]',
   cardShadow: () => 'shadow-none',
-  accentTitle: () => 'text-[#FAFAFA]', // Primary text #FAFAFA
-  accentSub: () => 'text-[#A1A1AA]',   // Secondary text #A1A1AA
-  previewBox: () => 'bg-[#202225] border-white/10',
-  stickyNote: () => 'bg-[#282A2E] text-[#FAFAFA] border-white/10',
-  panelHeader: () => 'bg-[#202225] border-white/10 text-[#FAFAFA]',
+  accentTitle: () => 'text-[var(--hw-text-primary)]',
+  accentSub: () => 'text-[var(--hw-text-secondary)]',
+  previewBox: () => 'bg-[var(--hw-bg-surface)] border-white/[0.08]',
+  stickyNote: () => 'bg-[var(--hw-bg-raised)] text-[var(--hw-text-primary)] border-white/[0.08]',
+  panelHeader: () => 'bg-[var(--hw-bg-surface)] border-white/[0.08] text-[var(--hw-text-primary)]',
   tabActive: () => 'text-black bg-[#FF5500]',
-  tabInactive: () => 'text-[#A1A1AA] hover:text-[#FAFAFA]',
-  signalDot: () => 'bg-[#FF5500]',
+  tabInactive: () => 'text-[var(--hw-text-secondary)] hover:text-[var(--hw-text-primary)]',
+  signalDot: () => 'hidden',
   showStickyNote: false,
 };
 

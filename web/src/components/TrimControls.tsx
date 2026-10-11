@@ -98,7 +98,7 @@ export const TrimControls: React.FC<TrimControlsProps> = ({
                 : 'accent-btn'
             }`}
           >
-            {justApplied ? '✓ Applied' : 'Apply Trim'}
+            {justApplied ? 'Applied' : 'Apply Trim'}
           </button>
         </ClickSpark>
 

@@ -2,16 +2,15 @@
 
 .oled-bezel {
   background: #080808;
-  border: 2px solid #1A1A1A;
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .oled-screen {
-  background: #020304;
+  background: #020305;
 }
 
-/* Phosphor glow effects - rich OLED bloom */
+/* Authentic SSD1306 Phosphor Bloom Glow */
 .glow-cyan { filter: drop-shadow(0 0 4px rgba(0, 240, 255, 0.45)); }
 .glow-white { filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.45)); }
 .glow-amber { filter: drop-shadow(0 0 4px rgba(255, 176, 0, 0.45)); }
 .glow-green { filter: drop-shadow(0 0 4px rgba(0, 255, 102, 0.45)); }
-.glow-yellow-blue { filter: drop-shadow(0 0 4px rgba(0, 229, 255, 0.45)); }

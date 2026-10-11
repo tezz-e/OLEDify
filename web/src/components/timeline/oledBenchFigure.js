@@ -95,10 +95,35 @@ export function mountOledBench(
   g.style.transition = "opacity 320ms cubic-bezier(0.4, 0, 0.2, 1)";
   g.style.opacity = isConnected ? "1.0" : "0.75";
 
+  // Task 8: Initial load draw-on animation (<1s total) respecting prefers-reduced-motion
+  const prefersReduced = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!prefersReduced) {
+    const styleEl = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+    styleEl.textContent = `
+      @keyframes benchDrawOutline {
+        0% { opacity: 0; stroke-dasharray: 240; stroke-dashoffset: 240; }
+        60% { opacity: 1; stroke-dashoffset: 0; }
+        100% { opacity: 1; stroke-dasharray: none; stroke-dashoffset: 0; }
+      }
+      @keyframes benchFadeComponent {
+        0% { opacity: 0; transform: translateY(1.5px); }
+        100% { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes benchDrawWire {
+        0% { opacity: 0; stroke-dasharray: 300; stroke-dashoffset: 300; }
+        100% { opacity: 1; stroke-dasharray: none; stroke-dashoffset: 0; }
+      }
+      .bench-anim-outline { animation: benchDrawOutline 480ms cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      .bench-anim-component { animation: benchFadeComponent 420ms cubic-bezier(0.16, 1, 0.3, 1) 160ms forwards; }
+      .bench-anim-wire { animation: benchDrawWire 480ms cubic-bezier(0.16, 1, 0.3, 1) 320ms forwards; }
+    `;
+    svg.appendChild(styleEl);
+  }
+
   // ─────────────────────────────────────────────────────────────
   // 0. BENCH SURFACE & ALIGNMENT GUIDES (Backdrop at z = 0)
   // ─────────────────────────────────────────────────────────────
-  const benchGuides = mk("g", { class: "nf lo" }, g);
+  const benchGuides = mk("g", { class: `nf lo ${prefersReduced ? '' : 'bench-anim-outline'}` }, g);
   
   // Dashed centerline connecting host PC to display
   const pStart = P(-136, 136, 0), pEnd = P(90, -90, 0);
@@ -115,7 +140,7 @@ export function mountOledBench(
   // 1. HOST WORKSTATION PC (FAR LEFT, sx ≈ 25..55)
   // Footprint: (-146, 126) to (-126, 146)
   // ─────────────────────────────────────────────────────────────
-  const pcG = mk("g", {}, g);
+  const pcG = mk("g", { class: prefersReduced ? '' : 'bench-anim-outline' }, g);
   const pcChassis = solid(pcG);
   const [pcR, pcI] = rings(-146, 126, -126, 146, 2.8, 0.8);
   put(pcChassis, prism(P, front, pcR, pcI, 0, 3.8));
@@ -138,7 +163,7 @@ export function mountOledBench(
   // 2. USB-C 2.0 SERIAL LINK CABLE (sx ≈ 55..135)
   // From PC port (-124.5, 136) to ESP32 port (-92, 92)
   // ─────────────────────────────────────────────────────────────
-  const ucg = mk("g", {}, g);
+  const ucg = mk("g", { class: prefersReduced ? '' : 'bench-anim-wire' }, g);
   const cablePath = mk("path", { class: isStreaming ? "nf hi" : (isConnected ? "nf" : "nf lo") }, ucg);
   cablePath.style.transition = "stroke 260ms ease";
   if (!isConnected) cablePath.style.strokeDasharray = "3 3";
@@ -165,7 +190,7 @@ export function mountOledBench(
   // 3. ESP32-S3 HOST MICROCONTROLLER (LEFT, sx ≈ 138..238)
   // Footprint: (-92, 52) to (-52, 92)
   // ─────────────────────────────────────────────────────────────
-  const eg = mk("g", {}, g);
+  const eg = mk("g", { class: prefersReduced ? '' : 'bench-anim-outline' }, g);
   const espPcb = solid(eg);
   const [eR, eI] = rings(-92, 52, -52, 92, 3.5, 1.4);
   put(espPcb, prism(P, front, eR, eI, 0, 2.2));
@@ -176,14 +201,14 @@ export function mountOledBench(
     hole.setAttribute("d", poly(ringAt(P, atPt(circ(1.5, 10), hx, hy), 2.2)));
   });
 
-  // Clean 7-Pin GPIO Headers (Fewer, thicker, non-noisy ticks)
-  const gpioX = [-84, -79.2, -74.4, -69.6, -64.8, -60, -55.2];
+  // Clean 5-Pin GPIO Headers (Thicker, fewer pin ticks, not an aliased comb)
+  const gpioX = [-84, -77, -70, -63, -56];
   gpioX.forEach((x) => {
     // Top rail along y = 55.5
-    const p1 = solid(eg), [r1, i1] = rings(x - 1.2, 54.3, x + 1.2, 56.7, 0.6, 0.2);
+    const p1 = solid(eg), [r1, i1] = rings(x - 1.4, 53.8, x + 1.4, 56.8, 0.8, 0.3);
     put(p1, prism(P, front, r1, i1, 2.2, 5.0));
     // Bottom rail along y = 88.5
-    const p2 = solid(eg), [r2, i2] = rings(x - 1.2, 87.3, x + 1.2, 89.7, 0.6, 0.2);
+    const p2 = solid(eg), [r2, i2] = rings(x - 1.4, 87.2, x + 1.4, 90.2, 0.8, 0.3);
     put(p2, prism(P, front, r2, i2, 2.2, 5.0));
   });
 
