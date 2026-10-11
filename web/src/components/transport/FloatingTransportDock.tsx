@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useSpring } from 'framer-motion';
 import { Play, Pause, SkipBack, SkipForward, RotateCcw, Repeat, Zap } from 'lucide-react';
 import { HW_SPRINGS } from '../../theme/springPresets';
 import { triggerNativeHaptic } from '../../theme/haptics';
@@ -67,17 +67,57 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
 }) => {
   const dockRef = useRef<HTMLElement>(null);
   const [localCursor, setLocalCursor] = useState<{ x: number; y: number } | null>(null);
+  const [isHovered, setIsHovered] = useState(false);
+
+  // 3D Inertial tilt springs driven by cursor proximity
+  const rawTiltX = useMotionValue(0);
+  const rawTiltY = useMotionValue(0);
+  const springRotateX = useSpring(rawTiltX, { stiffness: 240, damping: 22, mass: 0.28 });
+  const springRotateY = useSpring(rawTiltY, { stiffness: 240, damping: 22, mass: 0.28 });
+
+  // Floating magnetic translation (followPointer physics)
+  const rawFloatX = useMotionValue(0);
+  const rawFloatY = useMotionValue(0);
+  const springFloatX = useSpring(rawFloatX, { stiffness: 280, damping: 24, mass: 0.35 });
+  const springFloatY = useSpring(rawFloatY, { stiffness: 280, damping: 24, mass: 0.35 });
+
+  // Gelatinous aspect squish & stretch (fluid glass physics reacting to moving near borders)
+  const rawScaleX = useMotionValue(1);
+  const rawScaleY = useMotionValue(1);
+  const springScaleX = useSpring(rawScaleX, { stiffness: 320, damping: 25, mass: 0.22 });
+  const springScaleY = useSpring(rawScaleY, { stiffness: 320, damping: 25, mass: 0.22 });
 
   const handlePointerMove = (e: React.PointerEvent<HTMLElement>) => {
     if (!dockRef.current) return;
+    setIsHovered(true);
     const rect = dockRef.current.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = e.clientX - cx;
+    const dy = e.clientY - cy;
+
+    // Normalized distance from center to border (-1 to 1)
+    const normX = Math.max(-1, Math.min(1, dx / (rect.width / 2)));
+    const normY = Math.max(-1, Math.min(1, dy / (rect.height / 2)));
+
+    // 1. Physical 3D tilt reacting to cursor depth
+    rawTiltX.set(-normY * 2.8);
+    rawTiltY.set(normX * 2.8);
+
+    // 2. Magnetic followPointer displacement reacting to mouse
+    rawFloatX.set(normX * 14);
+    rawFloatY.set(normY * 5 - 3);
+
+    // 3. Gelatinous liquid stretch along movement axis (squish & stretch near borders)
+    const stretch = Math.abs(normX) * 0.024;
+    rawScaleX.set(1 + stretch);
+    rawScaleY.set(1 - stretch * 0.75);
+
     setLocalCursor({
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
     });
   };
-
-  const [isHovered, setIsHovered] = useState(false);
 
   const handlePointerEnter = () => {
     setIsHovered(true);
@@ -85,6 +125,12 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
 
   const handlePointerLeave = () => {
     setIsHovered(false);
+    rawTiltX.set(0);
+    rawTiltY.set(0);
+    rawFloatX.set(0);
+    rawFloatY.set(0);
+    rawScaleX.set(1);
+    rawScaleY.set(1);
     setLocalCursor(null);
   };
 
@@ -141,6 +187,8 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
   const scrubVal = mode === 'audio-lyrics' ? (playheadMs || 0) : safeFrame;
   const scrubPct = scrubMax > 0 ? (scrubVal / scrubMax) * 100 : 0;
 
+  const isExpanded = isHovered || isPlaying;
+
   const dockContent = (
     <motion.aside
       ref={dockRef}
@@ -149,10 +197,17 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
       transition={HW_SPRINGS.islandExpand}
-      className={`select-none font-sans text-[11px] flex items-center relative transition-all ${
+      style={{
+        rotateX: springRotateX,
+        rotateY: springRotateY,
+        transformPerspective: 1000,
+      }}
+      className={`select-none font-sans text-[11px] flex items-center relative transition-all duration-300 ${
         docked
           ? 'w-full px-4 py-2 rounded-full border border-white/10 bg-[#202225] text-[#FAFAFA]'
-          : 'pointer-events-auto rounded-full border border-white/10 border-t-white/25 bg-[#202225]/85 backdrop-blur-[24px] shadow-[0_16px_40px_rgba(0,0,0,0.55)] px-4 py-2 gap-3 text-[#FAFAFA]'
+          : `pointer-events-auto rounded-full border border-white/10 border-t-white/25 bg-[#202225]/85 backdrop-blur-[24px] shadow-[0_16px_40px_rgba(0,0,0,0.55)] text-[#FAFAFA] ${
+              isExpanded ? 'px-5 py-2.5 gap-3.5 shadow-[0_24px_55px_rgba(0,0,0,0.7)]' : 'px-4 py-2 gap-3'
+            }`
       } ${className}`}
       aria-label="Floating Transport Dock"
     >
@@ -476,16 +531,18 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
   }
 
   return (
-    <motion.div
-      animate={!isHovered ? { y: [0, -3.5, 0] } : { y: 0 }}
-      transition={{
-        duration: 3.6,
-        repeat: Infinity,
-        ease: 'easeInOut',
-      }}
-      className={`fixed bottom-5 left-1/2 -translate-x-1/2 z-40 pointer-events-none flex justify-center ${className}`}
-    >
-      {dockContent}
-    </motion.div>
+    <div className={`fixed bottom-5 left-1/2 -translate-x-1/2 z-40 pointer-events-none flex justify-center ${className}`}>
+      <motion.div
+        style={{
+          x: springFloatX,
+          y: springFloatY,
+          scaleX: springScaleX,
+          scaleY: springScaleY,
+        }}
+        className="pointer-events-auto"
+      >
+        {dockContent}
+      </motion.div>
+    </div>
   );
 };
