@@ -87,44 +87,55 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
   const springScaleX = useSpring(rawScaleX, { stiffness: 320, damping: 25, mass: 0.22 });
   const springScaleY = useSpring(rawScaleY, { stiffness: 320, damping: 25, mass: 0.22 });
 
+  const dockBoundsRef = useRef<{ left: number; top: number; width: number; height: number } | null>(null);
+
+  const handlePointerEnter = (e: React.PointerEvent<HTMLElement>) => {
+    setIsHovered(true);
+    if (dockRef.current) {
+      const r = dockRef.current.getBoundingClientRect();
+      dockBoundsRef.current = { left: r.left, top: r.top, width: r.width, height: r.height };
+    }
+  };
+
   const handlePointerMove = (e: React.PointerEvent<HTMLElement>) => {
     if (!dockRef.current) return;
-    setIsHovered(true);
-    const rect = dockRef.current.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
+    if (!dockBoundsRef.current) {
+      const r = dockRef.current.getBoundingClientRect();
+      dockBoundsRef.current = { left: r.left, top: r.top, width: r.width, height: r.height };
+    }
+
+    const { left, top, width, height } = dockBoundsRef.current;
+    const cx = left + width / 2;
+    const cy = top + height / 2;
     const dx = e.clientX - cx;
     const dy = e.clientY - cy;
 
-    // Normalized distance from center to border (-1 to 1)
-    const normX = Math.max(-1, Math.min(1, dx / (rect.width / 2)));
-    const normY = Math.max(-1, Math.min(1, dy / (rect.height / 2)));
+    // Normalized distance from center (-1 to 1)
+    const normX = Math.max(-1, Math.min(1, dx / (width / 2)));
+    const normY = Math.max(-1, Math.min(1, dy / (height / 2)));
 
-    // 1. Physical 3D tilt reacting to cursor depth
-    rawTiltX.set(-normY * 2.8);
-    rawTiltY.set(normX * 2.8);
+    // 1. Subtle 3D physical tilt (max ±2.5 deg)
+    rawTiltX.set(-normY * 2.5);
+    rawTiltY.set(normX * 2.5);
 
-    // 2. Magnetic followPointer displacement reacting to mouse
-    rawFloatX.set(normX * 14);
-    rawFloatY.set(normY * 5 - 3);
+    // 2. Magnetic followPointer displacement
+    rawFloatX.set(normX * 12);
+    rawFloatY.set(normY * 4 - 2);
 
-    // 3. Gelatinous liquid stretch along movement axis (squish & stretch near borders)
-    const stretch = Math.abs(normX) * 0.024;
+    // 3. Subtle gelatinous tension along movement axis
+    const stretch = Math.abs(normX) * 0.018;
     rawScaleX.set(1 + stretch);
-    rawScaleY.set(1 - stretch * 0.75);
+    rawScaleY.set(1 - stretch * 0.5);
 
     setLocalCursor({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: e.clientX - left,
+      y: e.clientY - top,
     });
-  };
-
-  const handlePointerEnter = () => {
-    setIsHovered(true);
   };
 
   const handlePointerLeave = () => {
     setIsHovered(false);
+    dockBoundsRef.current = null;
     rawTiltX.set(0);
     rawTiltY.set(0);
     rawFloatX.set(0);
@@ -187,27 +198,21 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
   const scrubVal = mode === 'audio-lyrics' ? (playheadMs || 0) : safeFrame;
   const scrubPct = scrubMax > 0 ? (scrubVal / scrubMax) * 100 : 0;
 
-  const isExpanded = isHovered || isPlaying;
-
   const dockContent = (
     <motion.aside
       ref={dockRef}
-      layout
       onPointerMove={handlePointerMove}
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
-      transition={HW_SPRINGS.islandExpand}
       style={{
         rotateX: springRotateX,
         rotateY: springRotateY,
         transformPerspective: 1000,
       }}
-      className={`select-none font-sans text-[11px] flex items-center relative transition-all duration-300 ${
+      className={`select-none font-sans text-[11px] flex items-center relative ${
         docked
           ? 'w-full px-4 py-2 rounded-full border border-white/10 bg-[#202225] text-[#FAFAFA]'
-          : `pointer-events-auto rounded-full border border-white/10 border-t-white/25 bg-[#202225]/85 backdrop-blur-[24px] shadow-[0_16px_40px_rgba(0,0,0,0.55)] text-[#FAFAFA] ${
-              isExpanded ? 'px-5 py-2.5 gap-3.5 shadow-[0_24px_55px_rgba(0,0,0,0.7)]' : 'px-4 py-2 gap-3'
-            }`
+          : 'pointer-events-auto rounded-full border border-white/10 border-t-white/25 bg-[#202225]/85 backdrop-blur-[24px] shadow-[0_16px_40px_rgba(0,0,0,0.55)] px-4 py-2 gap-3 text-[#FAFAFA]'
       } ${className}`}
       aria-label="Floating Transport Dock"
     >
