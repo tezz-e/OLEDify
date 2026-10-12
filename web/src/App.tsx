@@ -861,7 +861,8 @@ function MainApp() {
         onThemeToggle={() => setThemeMode(m => m === 'light' ? 'dark' : 'light')}
       />
 
-      <main className="flex-1 flex flex-col min-h-0 z-10">
+      {activeView === 'editor' ? (
+        <main className="flex-1 flex flex-col min-h-0 z-10">
         {/* Top: Preview Stage Section (Task 3: Identical 3-pane structure in empty & loaded states) */}
         <section className={`flex-1 flex items-stretch relative min-h-0 border-b transition-colors ${
           aesthetic.sectionBg(isDark)
@@ -1563,6 +1564,40 @@ function MainApp() {
 
         </aside>
       </main>
+      ) : (
+        <main className="flex-1 flex flex-col min-h-0 z-10 overflow-hidden relative">
+          <React.Suspense fallback={<div className="flex-1 flex items-center justify-center font-mono text-xs text-[var(--hw-text-secondary)]">Loading Kinetic Studio...</div>}>
+            <LyricsStudioView 
+              isOpen={activeView === 'lyrics-studio'}
+              onClose={() => setActiveView('editor')}
+              themeMode={themeMode}
+              onThemeChange={setThemeMode}
+              onInjectToTimeline={(kineticMedia, shouldClose = true) => {
+                const assetId = "asset_kinetic_" + Date.now();
+                const clipId = "clip_" + Date.now();
+                setAssets(prev => ({ ...prev, [assetId]: { id: assetId, media: kineticMedia } }));
+                setClipsWithHistory(prev => [
+                  ...prev,
+                  { id: clipId, assetId, inFrame: 0, outFrame: kineticMedia.frames.length - 1 }
+                ]);
+                setCropSettings({
+                  mode: 'cover',
+                  sourceWidth: 128,
+                  sourceHeight: 64,
+                  x: 0,
+                  y: 0,
+                  width: 128,
+                  height: 64,
+                  smoothing: true
+                });
+                if (shouldClose) {
+                  setActiveView('editor');
+                }
+              }}
+            />
+          </React.Suspense>
+        </main>
+      )}
 
       {/* Modals & Studios (Lazy-Loaded On Demand) */}
       <React.Suspense fallback={null}>
@@ -1605,36 +1640,6 @@ function MainApp() {
             }}
           />
         )}
-        <div className={activeView === 'lyrics-studio' ? 'contents' : 'hidden'}>
-          <LyricsStudioView 
-            isOpen={activeView === 'lyrics-studio'}
-            onClose={() => setActiveView('editor')}
-            themeMode={themeMode}
-            onThemeChange={setThemeMode}
-            onInjectToTimeline={(kineticMedia, shouldClose = true) => {
-              const assetId = "asset_kinetic_" + Date.now();
-              const clipId = "clip_" + Date.now();
-              setAssets(prev => ({ ...prev, [assetId]: { id: assetId, media: kineticMedia } }));
-              setClipsWithHistory(prev => [
-                ...prev,
-                { id: clipId, assetId, inFrame: 0, outFrame: kineticMedia.frames.length - 1 }
-              ]);
-              setCropSettings({
-                mode: 'cover',
-                sourceWidth: 128,
-                sourceHeight: 64,
-                x: 0,
-                y: 0,
-                width: 128,
-                height: 64,
-                smoothing: true
-              });
-              if (shouldClose) {
-                setActiveView('editor');
-              }
-            }}
-          />
-        </div>
       </React.Suspense>
 
       {/* Floating Dynamic Island Transport Dock (Option A) */}
