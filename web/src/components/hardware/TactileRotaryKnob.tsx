@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { playHapticClick } from './hapticAudio';
+import { triggerTactileFeedback } from './hapticAudio';
 import { SlidingNumber } from '../motion/SlidingNumber';
 
 export interface TactileRotaryKnobProps {
@@ -63,7 +63,7 @@ export const TactileRotaryKnob: React.FC<TactileRotaryKnobProps> = ({
     // Trigger mechanical detent click every 15 degrees
     const currentAngle = -135 + (range > 0 ? ((next - min) / range) * 270 : 0);
     if (Math.abs(currentAngle - lastDetentAngle.current) >= 15) {
-      playHapticClick(3800, 0.003);
+      triggerTactileFeedback('detent');
       lastDetentAngle.current = currentAngle;
     }
 
@@ -157,18 +157,23 @@ export const TactileRotaryKnob: React.FC<TactileRotaryKnobProps> = ({
           )}
         </svg>
 
-        {/* Machined Metal Rotor */}
+        {/* Machined Metal Rotor with Elastic Press & Specular Highlight */}
         <div
-          className={`w-7 h-7 rounded-full border relative flex items-center justify-center transition-transform ${
+          className={`w-7 h-7 rounded-full border relative flex items-center justify-center transition-all ${
+            isDragging.current ? 'scale-[0.93]' : 'hover:scale-[1.03]'
+          } ${
             isDark
-              ? 'bg-[var(--hw-bg-raised)] border-white/20 shadow-[0_2px_6px_rgba(0,0,0,0.6)]'
+              ? 'bg-[var(--hw-bg-raised)] border-white/20 shadow-[0_4px_10px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.25)]'
               : 'bg-[#EBEAE5] border-[#1A1A1A] shadow-[0_2px_4px_rgba(0,0,0,0.15)]'
           }`}
           style={{ transform: `rotate(${angle}deg)` }}
         >
+          {/* Subtle localized Fresnel glare arc along upper rim */}
+          <div className="absolute inset-0 rounded-full pointer-events-none bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.2),transparent_60%)]" />
+
           {/* Laser-etched Pip: neutral at 0, orange when modulated */}
           <div
-            className="absolute top-0.5 w-[2px] h-2 rounded-[1px] transition-colors"
+            className="absolute top-0.5 w-[2px] h-2 rounded-[1px] transition-colors z-10"
             style={{ backgroundColor: isModulated ? '#FF5500' : (isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)') }}
           />
         </div>

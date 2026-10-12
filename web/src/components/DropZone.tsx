@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { UploadCloud, FileVideo, CheckCircle2 } from 'lucide-react';
+import { FileVideo } from 'lucide-react';
+import { Drawer } from '@lucasmarkes/hairline/react';
 import { DecodedMedia, DecodeProgress } from '../types/media';
 import { decodeVideo } from '../engine/mediaDecoder';
 import { Spotlight } from './ui/Spotlight';
@@ -14,6 +15,7 @@ export const DropZone: React.FC<DropZoneProps> = ({ onMediaLoaded, currentMedia,
   const isDark = themeMode === 'dark';
   const [isDragging, setIsDragging] = useState(false);
   const [progress, setProgress] = useState<DecodeProgress | null>(null);
+  const [drawerReadout, setDrawerReadout] = useState<string>('rest');
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -78,29 +80,55 @@ export const DropZone: React.FC<DropZoneProps> = ({ onMediaLoaded, currentMedia,
     );
   }
 
-  // Idle dropzone (Always available to add more media)
+  // Idle dropzone with official Hairline Drawer component
   return (
-    <div className="p-3 border-b border-white/[0.08] shrink-0">
+    <div className="p-3 border-b border-[var(--hw-border-hairline)] shrink-0">
       <label
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
-        className={`relative overflow-hidden flex flex-col items-center justify-center p-4 border border-dashed rounded-[8px] cursor-pointer transition-colors duration-150 ${
+        className={`relative overflow-hidden flex flex-col items-center justify-center p-3 border border-dashed rounded-[10px] cursor-pointer transition-all duration-200 group ${
           isDragging 
-            ? 'border-[#FF5500] bg-[#FF5500]/10' 
-            : 'border-white/[0.08] hover:border-white/20 hover:bg-white/[0.02]'
+            ? 'border-[#FF5500] bg-[#FF5500]/10 scale-[1.02] shadow-[0_0_24px_rgba(255,85,0,0.2),inset_0_1px_0_rgba(255,255,255,0.2)]' 
+            : (isDark
+                ? 'border-white/[0.08] hover:border-white/20 hover:bg-white/[0.02]'
+                : 'border-black/[0.12] hover:border-black/25 hover:bg-black/[0.02]')
         }`}
+        style={{
+          ['--hairline-plate' as any]: isDark ? '#141416' : '#EAE7E1',
+          ['--hairline-hi' as any]: '#FF5500',
+          ['--hairline-edge' as any]: isDark ? '#FFFFFF' : '#27272A',
+          ['--hairline-mid' as any]: isDark ? 'rgba(255, 255, 255, 0.65)' : 'rgba(0, 0, 0, 0.55)',
+          ['--hairline-lo' as any]: isDark ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.25)',
+          ['--hairline-stroke' as any]: 1.1,
+        }}
       >
         <Spotlight size={180} />
-        <UploadCloud className={`w-7 h-7 mb-2 transition-colors ${
-          isDragging ? 'text-[#FF5500]' : 'text-[var(--hw-text-secondary)]'
-        }`} />
-        <span className="text-xs font-semibold mb-1 font-sans text-[var(--hw-text-primary)]">
-          Import media
-        </span>
+        
+        {/* Hairline Drawer Figure: Filing cabinet with three drawers and dividers */}
+        <div className="w-full h-28 relative flex items-center justify-center mb-1 pointer-events-auto">
+          <Drawer 
+            theme={isDark ? 'dark' : 'light'}
+            intensity={isDragging ? 1.0 : 0.6}
+            onRead={setDrawerReadout}
+            className="w-full h-full"
+          />
+        </div>
+
+        <div className="flex items-center gap-1.5 mb-0.5">
+          <span
+            className={`w-1.5 h-1.5 rounded-full transition-colors ${
+              isDragging ? 'bg-[#FF5500]' : 'bg-zinc-500'
+            }`}
+          />
+          <span className="text-xs font-semibold font-sans text-[var(--hw-text-primary)]">
+            {isDragging ? 'Drop to archive clip' : 'Import media pool'}
+          </span>
+        </div>
+
         <span className="text-[11px] text-center font-sans text-[var(--hw-text-secondary)]">
-          MP4, WebM, GIF, or APNG
+          {drawerReadout !== 'rest' ? drawerReadout : 'MP4, WebM, GIF, or APNG'}
         </span>
         <input type="file" className="hidden" accept="video/mp4,video/webm,image/gif,.h,.json,application/json" onChange={handleChange} />
       </label>

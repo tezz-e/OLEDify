@@ -5,6 +5,8 @@ import { detectGpu, GpuTelemetry } from '../engine/gpuDetector';
 import { LiquidStudioNav } from './navigation/LiquidStudioNav';
 import { TextScramble } from './motion/TextScramble';
 import { HW_SPRINGS } from '../theme/springPresets';
+import { ThemeToggle } from './reactbits/ThemeToggle';
+import { triggerTactileFeedback } from './hardware/hapticAudio';
 
 interface HeaderProps {
   serialConnected: boolean;
@@ -47,11 +49,11 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   return (
-    <header className="relative w-full h-12 px-4 border-b border-white/[0.08] bg-[var(--hw-bg-canvas)] text-[var(--hw-text-primary)] flex items-center justify-between shrink-0 z-20 font-sans">
+    <header className="relative w-full h-12 px-4 border-b border-[var(--hw-border-hairline)] bg-[var(--hw-bg-canvas)] text-[var(--hw-text-primary)] flex items-center justify-between shrink-0 z-20 font-sans">
       {/* Left: Logo + Mode Switcher Tabs */}
-      <div className="flex items-center gap-4">
-        <h1 className="text-sm font-semibold tracking-tight flex items-center gap-2 select-none group cursor-default">
-          <span className="text-[var(--hw-text-primary)] font-semibold">OLED Studio</span>
+      <div className="flex items-center gap-5">
+        <h1 className="text-base tracking-widest flex items-center gap-2 select-none group cursor-default font-ndot uppercase text-[var(--hw-text-primary)]">
+          <span>OLED STUDIO</span>
         </h1>
 
         {onViewChange && (
@@ -68,12 +70,14 @@ export const Header: React.FC<HeaderProps> = ({
         {gpuInfo && gpuInfo.webGlSupported && (
           <div
             onClick={onSettingsOpen}
-            className="hidden xl:flex items-center gap-2 h-8 px-2.5 rounded-[8px] border border-white/[0.08] bg-[var(--hw-bg-surface)] text-xs text-[var(--hw-text-secondary)] hover:text-[var(--hw-text-primary)] hover:border-white/20 cursor-pointer transition-colors max-w-[190px]"
-            title={`${gpuInfo.renderer}\nArchitecture: ${gpuInfo.isDedicated ? 'Dedicated GPU' : 'Integrated GPU'}`}
+            className="hidden xl:flex items-center gap-2 h-8 px-2.5 rounded-[8px] border border-[var(--hw-border-hairline)] bg-[var(--hw-bg-surface)] text-xs text-[var(--hw-text-secondary)] hover:text-[var(--hw-text-primary)] hover:border-[var(--hw-border-specular)] cursor-pointer transition-colors max-w-[200px]"
+            title={`${gpuInfo.renderer}\nArchitecture: ${gpuInfo.isDedicated ? 'Dedicated GPU (Active)' : 'Integrated GPU'}\nHardware acceleration enabled`}
           >
             <span
               className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                gpuInfo.isDedicated ? 'bg-zinc-400' : 'bg-zinc-500'
+                gpuInfo.isDedicated 
+                  ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.7)]' 
+                  : 'bg-emerald-500/70'
               }`}
             />
             <span className="font-medium text-[var(--hw-text-primary)] truncate">
@@ -87,12 +91,12 @@ export const Header: React.FC<HeaderProps> = ({
           whileTap={{ scale: 0.96 }}
           transition={HW_SPRINGS.snappy}
           onClick={onSerialToggle}
-          className="h-8 px-3 rounded-[8px] border border-white/[0.08] bg-[var(--hw-bg-surface)] text-xs font-medium text-[var(--hw-text-primary)] hover:border-white/20 flex items-center gap-2 transition-colors cursor-pointer"
+          className="h-8 px-3 rounded-[8px] border border-[var(--hw-border-hairline)] bg-[var(--hw-bg-surface)] text-xs font-medium text-[var(--hw-text-primary)] hover:border-[var(--hw-border-specular)] flex items-center gap-2 transition-colors cursor-pointer"
         >
           <span
             className={`w-1.5 h-1.5 rounded-full ${
               serialConnected 
-                ? 'bg-white' 
+                ? (isDark ? 'bg-white' : 'bg-black')
                 : 'bg-[#71717A]'
             }`}
           />
@@ -106,7 +110,7 @@ export const Header: React.FC<HeaderProps> = ({
             transition={HW_SPRINGS.snappy}
             onClick={onBaudRateToggle}
             title={`USB serial speed: ${baudRate === 115200 ? '115,200 baud' : '921,600 baud'}\nClick to toggle.`}
-            className="h-8 px-2.5 rounded-[8px] border border-white/[0.08] text-xs font-medium text-[var(--hw-text-secondary)] bg-[var(--hw-bg-surface)] hover:text-[var(--hw-text-primary)] hover:border-white/20 transition-colors cursor-pointer flex items-center gap-1"
+            className="h-8 px-2.5 rounded-[8px] border border-[var(--hw-border-hairline)] text-xs font-medium text-[var(--hw-text-secondary)] bg-[var(--hw-bg-surface)] hover:text-[var(--hw-text-primary)] hover:border-[var(--hw-border-specular)] transition-colors cursor-pointer flex items-center gap-1"
           >
             <span className="font-mono">{baudRate === 115200 ? '115.2k' : '921.6k'}</span>
             <span className="text-[11px] text-[var(--hw-text-secondary)] font-sans">baud</span>
@@ -115,7 +119,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         {serialConnected && (
           <span
-            className="h-8 px-2.5 rounded-[8px] border border-white/[0.08] bg-[var(--hw-bg-surface)] text-xs text-[var(--hw-text-primary)] flex items-center gap-1"
+            className="h-8 px-2.5 rounded-[8px] border border-[var(--hw-border-hairline)] bg-[var(--hw-bg-surface)] text-xs text-[var(--hw-text-primary)] flex items-center gap-1"
             title={`USB serial speed: ${baudRate === 115200 ? '115,200 baud' : '921,600 baud'}`}
           >
             <span className="font-mono">{baudRate === 115200 ? '115.2k' : '921.6k'}</span>
@@ -123,12 +127,22 @@ export const Header: React.FC<HeaderProps> = ({
           </span>
         )}
 
+        {/* Blueprint Light / Precision Dark Mode Toggle */}
+        <ThemeToggle
+          themeMode={themeMode}
+          onToggle={() => {
+            triggerTactileFeedback('click');
+            onThemeToggle?.();
+          }}
+          size="sm"
+        />
+
         {/* Hardware Settings Button */}
         <motion.button 
           whileTap={{ scale: 0.94 }}
           transition={HW_SPRINGS.snappy}
           onClick={onSettingsOpen}
-          className="h-8 w-8 rounded-[8px] border border-white/[0.08] bg-[var(--hw-bg-surface)] text-[var(--hw-text-secondary)] hover:text-[var(--hw-text-primary)] hover:border-white/20 flex items-center justify-center transition-colors cursor-pointer"
+          className="h-8 w-8 rounded-[8px] border border-[var(--hw-border-hairline)] bg-[var(--hw-bg-surface)] text-[var(--hw-text-secondary)] hover:text-[var(--hw-text-primary)] hover:border-[var(--hw-border-specular)] flex items-center justify-center transition-colors cursor-pointer"
           title="Hardware Configuration & Settings"
           aria-label="Settings"
         >
@@ -144,7 +158,7 @@ export const Header: React.FC<HeaderProps> = ({
           className={`h-8 px-3.5 rounded-[8px] border text-xs font-semibold transition-colors flex items-center justify-center ${
             hasMedia && !isExporting
               ? 'border-[#FF5500] bg-[#FF5500] text-black cursor-pointer hover:bg-[#FF6611]'
-              : 'border-white/[0.08] bg-[var(--hw-bg-surface)] text-[var(--hw-text-tertiary)] opacity-40 cursor-not-allowed'
+              : 'border-[var(--hw-border-hairline)] bg-[var(--hw-bg-surface)] text-[var(--hw-text-tertiary)] opacity-40 cursor-not-allowed'
           }`}
         >
           {isExporting ? `Compiling ${exportProgress}%` : 'Compile'}

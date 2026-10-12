@@ -211,8 +211,8 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
       }}
       className={`select-none font-sans text-[11px] flex items-center relative ${
         docked
-          ? 'w-full px-4 py-2 rounded-full border border-white/10 bg-[#202225] text-[#FAFAFA]'
-          : 'pointer-events-auto rounded-full border border-white/10 border-t-white/25 bg-[#202225]/85 backdrop-blur-[24px] shadow-[0_16px_40px_rgba(0,0,0,0.55)] px-4 py-2 gap-3 text-[#FAFAFA]'
+          ? 'w-full px-4 py-2 rounded-full border border-white/10 bg-[#1A1A1E] text-[#FAFAFA]'
+          : 'pointer-events-auto rounded-full border border-white/10 border-t-white/25 border-b-black/50 bg-[#18181C]/75 backdrop-blur-[24px] saturate-[140%] shadow-[0_20px_50px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.22),inset_0_-1px_0_rgba(0,0,0,0.4)] px-4 py-2 gap-3 text-[#FAFAFA]'
       } ${className}`}
       aria-label="Floating Transport Dock"
     >
@@ -225,7 +225,7 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
           className="absolute inset-0"
           style={{
             background: localCursor
-              ? `radial-gradient(circle 100px at ${localCursor.x}px ${localCursor.y}px, rgba(255, 255, 255, 0.16) 0%, rgba(255, 85, 0, 0.08) 40%, transparent 80%)`
+              ? `radial-gradient(circle 100px at ${localCursor.x}px ${localCursor.y}px, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 40%, transparent 80%)`
               : 'none',
           }}
         />
@@ -234,7 +234,7 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
           className="absolute top-0 inset-x-0 h-[1.5px]"
           style={{
             background: localCursor
-              ? `radial-gradient(130px circle at ${localCursor.x}px 0px, #FFFFFF 0%, rgba(255, 85, 0, 0.5) 40%, transparent 80%)`
+              ? `radial-gradient(130px circle at ${localCursor.x}px 0px, #FFFFFF 0%, rgba(255, 255, 255, 0.3) 40%, transparent 80%)`
               : 'none',
           }}
         />
@@ -519,11 +519,11 @@ export const FloatingTransportDock: React.FC<FloatingTransportDockProps> = ({
             </div>
 
             {serialConnected ? (
-              <span className="font-sans">
+              <span className="font-ndot tracking-wider text-[10px] text-[#FAFAFA]">
                 {portName} · <span className="font-mono tabular-nums">{baudRate >= 1000 ? `${(baudRate / 1000).toFixed(1).replace('.0', '')}k` : baudRate}</span> baud
               </span>
             ) : (
-              <span className="font-sans">OLED simulator</span>
+              <span className="font-ndot tracking-wider text-[10px] text-[var(--hw-text-secondary)]">OLED SIMULATOR</span>
             )}
           </>
         )}

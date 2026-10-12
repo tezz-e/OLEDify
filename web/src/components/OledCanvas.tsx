@@ -45,10 +45,10 @@ export const OledCanvas: React.FC<OledCanvasProps> = ({ frameData, theme = 'cyan
       // Standby status text in phosphor blue
       ctx.fillStyle = 'rgba(0, 240, 255, 0.75)';
       const fontSize = Math.max(9, Math.round(10 * (intScale / 2)));
-      ctx.font = `500 ${fontSize}px Inter, -apple-system, sans-serif`;
+      ctx.font = `500 ${fontSize}px "JetBrains Mono", "IBM Plex Mono", monospace`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('SSD1306 128×64 · Standby', cssWidth / 2, cssHeight / 2);
+      ctx.fillText('SSD1306 128×64 · STANDBY', cssWidth / 2, cssHeight / 2);
       ctx.restore();
       return;
     }

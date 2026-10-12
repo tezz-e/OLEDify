@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { CropSettings, FitMode } from '../types/media';
 import { ResizeHandle, resizeCropWithHandle } from '../engine/cropEngine';
 import { HW_SPRINGS } from '../theme/springPresets';
+import { triggerTactileFeedback } from './hardware/hapticAudio';
+import { GooeySegmentedControl } from './ui/GooeySegmentedControl';
 
 interface CropControlsProps {
   settings: CropSettings;
@@ -202,73 +204,68 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
         </div>
       )}
 
-      {/* Crop Mode Switcher with shared sliding pill */}
+      {/* Crop Mode Switcher with fluid sliding gooey pill */}
       <div className="space-y-2">
         <label className="text-xs font-medium text-[var(--hw-text-secondary)] font-sans">
           Crop mode
         </label>
-        <div className="border border-white/[0.08] rounded-[8px] p-1 flex gap-1 relative bg-[var(--hw-bg-surface)]">
-          {modes.map((mode) => {
-            const isSelected = settings.mode === mode;
-            const modeLabels: Record<FitMode, string> = {
-              cover: 'Cover',
-              contain: 'Contain',
-              stretch: 'Stretch',
-              manual: 'Manual'
-            };
-            return (
-              <button
-                key={mode}
-                onClick={() => handleModeChange(mode)}
-                disabled={disabled}
-                className={`relative flex-1 text-xs font-sans font-medium py-1.5 rounded-[6px] transition-colors duration-150 z-10 cursor-pointer ${
-                  isSelected
-                    ? 'text-[var(--hw-text-primary)] font-semibold'
-                    : 'text-[var(--hw-text-secondary)] hover:text-[var(--hw-text-primary)]'
-                }`}
-              >
-                {isSelected && (
-                  <motion.div
-                    layoutId="cropModeActivePill"
-                    transition={HW_SPRINGS.smooth}
-                    className="absolute inset-0 rounded-[6px] bg-white/[0.12] dark:bg-white/[0.12] border border-white/10 shadow-xs z-[-1]"
-                  />
-                )}
-                <span className="relative z-10">{modeLabels[mode]}</span>
-              </button>
-            );
-          })}
-        </div>
+        <GooeySegmentedControl<FitMode>
+          options={[
+            { id: 'cover', label: 'Cover' },
+            { id: 'contain', label: 'Contain' },
+            { id: 'stretch', label: 'Stretch' },
+            { id: 'manual', label: 'Manual' }
+          ]}
+          value={settings.mode}
+          onChange={handleModeChange}
+          themeMode={themeMode}
+        />
       </div>
 
-      {/* Hardware Toggle Switch */}
+      {/* Authentic Physical Industrial Mechanical Toggle Switch for Bicubic Smoothing */}
       <div className="flex items-center justify-between pt-2">
-        <label className="text-xs font-medium text-[var(--hw-text-secondary)] font-sans">
-          Bicubic smoothing
-        </label>
+        <div>
+          <label className="text-xs font-medium text-[var(--hw-text-primary)] font-sans block">
+            Bicubic smoothing
+          </label>
+          <span className="text-[10px] text-[var(--hw-text-secondary)] font-mono">
+            {settings.smoothing ? 'ANTI-ALIASED · BICUBIC RESAMPLE' : 'NEAREST NEIGHBOR · 1-BIT CRISP'}
+          </span>
+        </div>
+
+        {/* Machined Metal Bat Lever Toggle */}
         <button
           type="button"
           disabled={disabled}
-          onClick={() => onChange({ ...settings, smoothing: !settings.smoothing })}
-          className="flex items-center gap-2 px-2.5 py-1 text-xs font-sans font-medium border border-white/[0.08] rounded-[8px] bg-[var(--hw-bg-surface)] hover:bg-[var(--hw-bg-raised)] transition-colors cursor-pointer"
+          onClick={() => {
+            triggerTactileFeedback('toggle');
+            onChange({ ...settings, smoothing: !settings.smoothing });
+          }}
+          className={`flex items-center gap-2 p-1.5 pl-2.5 rounded-[8px] border border-[var(--hw-border-hairline)] ${
+            isDark ? 'bg-black/40 hover:bg-black/60' : 'bg-black/5 hover:bg-black/10'
+          } transition-all cursor-pointer group disabled:opacity-40 disabled:cursor-not-allowed`}
+          title="Toggle bicubic interpolation filter"
         >
-          <span className={settings.smoothing ? 'text-[var(--hw-text-primary)] font-medium' : 'text-[var(--hw-text-secondary)]'}>
-            {settings.smoothing ? 'On' : 'Off'}
-          </span>
-          <div className={`w-7 h-4 rounded-full relative transition-colors p-0.5 ${
-            settings.smoothing
-              ? 'bg-white'
-              : 'bg-[var(--hw-bg-raised)] border border-white/10'
-          }`}>
+          {/* Signal Indicator LED */}
+          <div className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${
+            settings.smoothing 
+              ? 'bg-[#FF5500] shadow-[0_0_6px_#FF5500]' 
+              : 'bg-zinc-600'
+          }`} />
+
+          {/* Physical Toggle Base Well */}
+          <div className="w-10 h-5 rounded-full bg-[#141517] border border-[#2A2B2E] p-0.5 relative shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.8)] flex items-center">
+            {/* Sliding Metal Toggle Bat Lever with Chamfer Ring */}
             <motion.div
-              layout
+              animate={{
+                x: settings.smoothing ? 20 : 0,
+              }}
               transition={HW_SPRINGS.snappy}
-              className={`w-3 h-3 rounded-full ${
-                settings.smoothing
-                  ? 'bg-black ml-auto'
-                  : 'bg-[#71717A] ml-0'
-              }`}
-            />
+              className="w-4 h-4 rounded-full bg-gradient-to-b from-[#E4E4E7] via-[#A1A1AA] to-[#52525B] shadow-[0_1px_3px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.8)] border border-black/60 flex items-center justify-center relative"
+            >
+              {/* Center knurled metal slot */}
+              <div className="w-[1px] h-2 bg-black/50" />
+            </motion.div>
           </div>
         </button>
       </div>
@@ -284,7 +281,7 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
             value={settings.x}
             disabled={disabled || settings.mode !== 'manual'}
             onChange={(e) => onChange({ ...settings, x: parseInt(e.target.value) || 0 })}
-            className="w-full px-2.5 py-1.5 text-xs font-mono rounded-[8px] bg-[var(--hw-bg-canvas)] border border-white/[0.08] text-[var(--hw-text-primary)] focus:border-[#FF5500] outline-none disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="w-full px-2.5 py-1.5 text-xs font-mono rounded-[8px] bg-[var(--hw-bg-canvas)] border border-[var(--hw-border-hairline)] text-[var(--hw-text-primary)] focus:border-[#FF5500] outline-none disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           />
         </div>
         <div className="flex-1 space-y-1">
@@ -296,7 +293,7 @@ export const CropControls: React.FC<CropControlsProps> = ({ settings, onChange, 
             value={settings.y}
             disabled={disabled || settings.mode !== 'manual'}
             onChange={(e) => onChange({ ...settings, y: parseInt(e.target.value) || 0 })}
-            className="w-full px-2.5 py-1.5 text-xs font-mono rounded-[8px] bg-[var(--hw-bg-canvas)] border border-white/[0.08] text-[var(--hw-text-primary)] focus:border-[#FF5500] outline-none disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="w-full px-2.5 py-1.5 text-xs font-mono rounded-[8px] bg-[var(--hw-bg-canvas)] border border-[var(--hw-border-hairline)] text-[var(--hw-text-primary)] focus:border-[#FF5500] outline-none disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           />
         </div>
       </div>

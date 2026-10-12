@@ -34,3 +34,4 @@ experiments/
 # IDE / Editor
 .kiro/
 
+*.tgz

@@ -72,22 +72,18 @@ export const HardwareTelemetryHUD: React.FC<HardwareTelemetryHUDProps> = ({
 
   return (
     <div
-      className={`p-3.5 rounded-[12px] border border-white/[0.08] font-sans text-xs flex flex-col gap-3 select-none ${
-        isDark
-          ? 'bg-[var(--hw-bg-surface)] text-[var(--hw-text-primary)]'
-          : 'bg-[var(--hw-bg-surface)] text-[var(--hw-text-primary)]'
-      } ${className}`}
+      className={`p-3.5 rounded-[12px] border border-[var(--hw-border-hairline)] font-sans text-xs flex flex-col gap-3 select-none bg-[var(--hw-bg-surface)] text-[var(--hw-text-primary)] ${className}`}
       aria-label="Hardware Telemetry HUD"
     >
       {/* Top Header */}
-      <div className="flex items-center justify-between border-b border-white/[0.08] pb-2">
+      <div className="flex items-center justify-between border-b border-[var(--hw-border-hairline)] pb-2">
         <div className="flex items-center gap-2">
           <span
             className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${
               isStreaming
                 ? 'bg-[#FF5500]'
                 : isConnected
-                ? 'bg-white'
+                ? (isDark ? 'bg-white' : 'bg-black')
                 : 'bg-[#71717A]'
             }`}
           />
@@ -98,7 +94,7 @@ export const HardwareTelemetryHUD: React.FC<HardwareTelemetryHUDProps> = ({
       </div>
 
       {/* Signal Chain Topology: Three rows, no wrapping, lowercase 'k' on baud, no ASCII arrows */}
-      <div className="p-2.5 rounded-[8px] bg-[var(--hw-bg-canvas)] border border-white/[0.06] text-[11px] font-sans space-y-1">
+      <div className="p-2.5 rounded-[8px] bg-[var(--hw-bg-canvas)] border border-[var(--hw-border-hairline)] text-[11px] font-sans space-y-1">
         <div className="text-[var(--hw-text-primary)] whitespace-nowrap">
           USB · <span className="font-mono">{baudRate === 921600 ? '921.6' : '115.2'}</span><span className="font-sans">k baud</span>
         </div>
@@ -125,7 +121,7 @@ export const HardwareTelemetryHUD: React.FC<HardwareTelemetryHUDProps> = ({
       </div>
 
       {/* Frame Counter & Oscilloscope Strip */}
-      <div className="flex items-center justify-between gap-2 p-2 rounded-[8px] bg-[var(--hw-bg-canvas)] border border-white/[0.06]">
+      <div className="flex items-center justify-between gap-2 p-2 rounded-[8px] bg-[var(--hw-bg-canvas)] border border-[var(--hw-border-hairline)]">
         <div className="flex flex-col">
           <span className="text-[var(--hw-text-secondary)] text-[11px]">Frame buffer</span>
           <span className="font-mono text-xs font-medium text-[var(--hw-text-primary)] tabular-nums">
@@ -136,7 +132,7 @@ export const HardwareTelemetryHUD: React.FC<HardwareTelemetryHUDProps> = ({
         </div>
 
         {/* Micro-Oscilloscope Canvas */}
-        <div className="w-16 h-5 border border-white/[0.08] bg-black/40 overflow-hidden rounded-[4px]">
+        <div className={`w-16 h-5 border border-[var(--hw-border-hairline)] overflow-hidden rounded-[4px] ${isDark ? 'bg-black/40' : 'bg-black/10'}`}>
           <canvas ref={canvasRef} width={64} height={20} className="w-full h-full block" />
         </div>
       </div>

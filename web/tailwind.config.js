@@ -39,6 +39,7 @@ export default {
         sans: ['"Inter"', '"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['"JetBrains Mono"', '"IBM Plex Mono"', 'ui-monospace', 'monospace'],
         display: ['"Inter"', 'system-ui', 'sans-serif'],
+        ndot: ['"NDot57"', '"Space Mono"', 'monospace'],
       },
       borderRadius: {
         DEFAULT: '8px',

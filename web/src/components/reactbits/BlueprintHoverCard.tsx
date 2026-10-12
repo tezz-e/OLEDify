@@ -14,10 +14,16 @@ interface BlueprintHoverCardProps {
 export const BlueprintHoverCard: React.FC<BlueprintHoverCardProps> = ({ 
   children, 
   className = "",
+  themeMode = 'dark',
 }) => {
+  const isDark = themeMode === 'dark';
   return (
     <div
-      className={`relative rounded-[12px] border border-white/[0.08] bg-[var(--hw-bg-surface)] overflow-hidden ${className}`}
+      className={`relative rounded-[8px] border transition-colors ${
+        isDark
+          ? 'border-white/[0.06] border-t-white/[0.10] bg-[var(--hw-bg-surface)] shadow-[0_8px_20px_-6px_rgba(0,0,0,0.45)]'
+          : 'border-black/[0.08] border-t-black/[0.12] bg-[var(--hw-bg-surface)] shadow-[0_4px_16px_-4px_rgba(0,0,0,0.06)]'
+      } overflow-hidden ${className}`}
     >
       <div className="relative z-10 w-full h-full bg-transparent flex flex-col">
         {children}

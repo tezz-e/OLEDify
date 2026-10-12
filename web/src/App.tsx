@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { Header } from './components/Header';
 import { DropZone } from './components/DropZone';
 import { TimelineTrack } from './components/TimelineTrack';
@@ -15,6 +15,9 @@ import { getActiveTheme } from './theme/aestheticConfig';
 import { HW_SPRINGS } from './theme/springPresets';
 import { BorderBeam } from './components/magicui/BorderBeam';
 import { Spotlight } from './components/ui/Spotlight';
+import { DropStageCassette } from './components/DropStageCassette';
+import { triggerTactileFeedback } from './components/hardware/hapticAudio';
+import { GooeySegmentedControl } from './components/ui/GooeySegmentedControl';
 
 // Lazy-loaded heavy studios and modals to speed up initial page reload
 const SettingsModal = React.lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
@@ -762,11 +765,13 @@ function MainApp() {
   // --- ACTIONS ---
   const handleSerialToggle = async () => {
     if (serialConnected) {
+      triggerTactileFeedback('toggle');
       await serialStreamer.disconnect();
       setSerialConnected(false);
     } else {
       const success = await serialStreamer.connect(baudRate);
       if (success) {
+        triggerTactileFeedback('snap');
         setSerialConnected(true);
       }
     }
@@ -831,13 +836,14 @@ function MainApp() {
     }
   };
 
+  const activeMedia = timelineMedia || media;
   const aesthetic = getActiveTheme();
-  const isStreaming = Boolean(serialConnected && isPlaying && (timelineMedia || media));
-  const activeOledScaleMode = userOledScale ?? (media ? 1 : 'fit');
+  const isStreaming = Boolean(serialConnected && isPlaying && activeMedia);
+  const activeOledScaleMode = userOledScale ?? (activeMedia ? 1 : 'fit');
   const effectiveOledScale = activeOledScaleMode === 'fit' ? oledMaxN : activeOledScaleMode;
 
   return (
-    <div className={`h-screen flex flex-col overflow-hidden relative transition-colors ${isDark ? 'bg-[#181A1B] text-[#FAFAFA]' : 'bg-[#F6F6F4] text-[#1A1A1A]'}`}>
+    <div className={`h-screen flex flex-col overflow-hidden relative transition-colors ${isDark ? 'bg-[var(--hw-bg-canvas)] text-[#FAFAFA]' : 'bg-[#F4F2EC] text-[#1A1A1A]'}`}>
       <Header 
         serialConnected={serialConnected}
         baudRate={baudRate}
@@ -845,7 +851,7 @@ function MainApp() {
         onSerialToggle={handleSerialToggle}
         onExportClick={handleExport}
         onSettingsOpen={() => setSettingsOpen(true)}
-        hasMedia={!!media}
+        hasMedia={!!activeMedia}
         isExporting={isExporting}
         exportProgress={exportProgress}
         exportError={exportError}
@@ -864,17 +870,19 @@ function MainApp() {
           <div className={`flex-1 min-w-0 p-4 flex flex-col items-stretch justify-between relative border-r h-full transition-colors ${
             aesthetic.sectionBorder(isDark)
           }`}>
-            {!media ? (
-              /* Empty state: Large dashed drop target filling the pane */
+            {!activeMedia ? (
+              /* Empty state: Large dashed drop target filling the pane with Hairline Tape Cassette */
               <label
                 onDragEnter={handleStageDrag}
                 onDragLeave={handleStageDrag}
                 onDragOver={handleStageDrag}
                 onDrop={handleStageDrop}
-                className={`relative overflow-hidden w-full h-full border-2 border-dashed rounded-[10px] flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors ${
+                className={`relative overflow-hidden w-full h-full border border-dashed rounded-[10px] flex flex-col items-center justify-between p-3 cursor-pointer transition-colors ${
                   isStageDragging
-                    ? 'border-[#FF5500] bg-[#FF5500]/10'
-                    : 'border-white/[0.12] bg-[var(--hw-bg-surface)] hover:border-white/20'
+                    ? 'border-[#FF5500] bg-[#FF5500]/10 shadow-[0_0_30px_rgba(255,85,0,0.15)]'
+                    : isDark
+                    ? 'border-white/[0.12] bg-[var(--hw-bg-surface)] hover:border-white/20'
+                    : 'border-black/[0.12] bg-[var(--hw-bg-surface)] hover:border-black/20'
                 }`}
               >
                 <Spotlight size={280} />
@@ -884,16 +892,24 @@ function MainApp() {
                   className="hidden"
                   onChange={handleStageFileInput}
                 />
-                <UploadCloud className="w-8 h-8 text-zinc-400 shrink-0" />
-                <div className="text-center">
-                  <div className="text-sm font-semibold text-[var(--hw-text-primary)] font-sans">
-                    {isStageDecoding ? 'Processing video...' : 'Drop media to begin'}
+                
+                {/* Interactive Hairline Isometric Cassette Figure */}
+                <DropStageCassette
+                  isDark={isDark}
+                  isDragOver={isStageDragging}
+                  isDecoding={isStageDecoding}
+                />
+
+                <div className="text-center z-10 shrink-0 mb-1">
+                  <div className="text-xs font-semibold text-[var(--hw-text-primary)] font-sans">
+                    {isStageDecoding ? 'Mounting media...' : 'Drop video or GIF to mount'}
                   </div>
                   <div className="text-[11px] text-[var(--hw-text-secondary)] font-sans mt-0.5">
-                    MP4, WebM, GIF, or APNG
+                    MP4, WebM, GIF, or APNG · Optical 30 FPS
                   </div>
                 </div>
-                <div className="flex items-center gap-2 mt-1 z-10">
+
+                <div className="flex items-center gap-2 z-10 shrink-0">
                   <button
                     type="button"
                     onClick={(e) => {
@@ -901,7 +917,7 @@ function MainApp() {
                       e.stopPropagation();
                       handleLoadSample('dino', 'replace');
                     }}
-                    className="px-3 py-1.5 text-xs font-sans font-medium rounded-[6px] border border-white/[0.08] bg-[var(--hw-bg-canvas)] text-[var(--hw-text-secondary)] hover:text-[var(--hw-text-primary)] hover:border-white/20 transition-colors cursor-pointer"
+                    className="px-3 py-1 text-xs font-sans font-medium rounded-[6px] border border-[var(--hw-border-hairline)] bg-[var(--hw-bg-canvas)] text-[var(--hw-text-secondary)] hover:text-[var(--hw-text-primary)] hover:border-[var(--hw-border-specular)] transition-colors cursor-pointer"
                   >
                     Try Dino
                   </button>
@@ -912,7 +928,7 @@ function MainApp() {
                       e.stopPropagation();
                       setMediaPoolTab('samples');
                     }}
-                    className="text-xs font-sans text-zinc-400 hover:text-white underline underline-offset-2 cursor-pointer"
+                    className="text-xs font-sans text-zinc-400 hover:text-[var(--hw-text-primary)] underline underline-offset-2 cursor-pointer"
                   >
                     browse samples
                   </button>
@@ -927,14 +943,16 @@ function MainApp() {
                     Full preview
                   </h3>
                   <p className="text-[11px] text-[var(--hw-text-secondary)]">
-                    <span className="font-sans">{media.sourceInfo.filename}</span> · <span className="font-mono">{media.sourceInfo.sourceWidth}×{media.sourceInfo.sourceHeight}</span> <span className="font-sans">px</span> · <span className="font-sans">{fullPreviewScaleMode === 'fit' ? `Fit (${fullPreviewDims.fitScale.toFixed(1)}×)` : '100%'}</span>
+                    <span className="font-sans">{activeMedia.sourceInfo.filename}</span> · <span className="font-mono">{activeMedia.sourceInfo.sourceWidth}×{activeMedia.sourceInfo.sourceHeight}</span> <span className="font-sans">px</span> · <span className="font-sans">{fullPreviewScaleMode === 'fit' ? `Fit (${fullPreviewDims.fitScale.toFixed(1)}×)` : '100%'}</span>
                   </p>
                 </div>
 
                 {/* Content: Main source display filling pane */}
                 <div 
                   ref={fullPreviewContainerRef}
-                  className="flex-1 w-full min-h-0 relative flex items-center justify-center overflow-auto rounded-[6px] bg-black/40 border border-white/[0.06] p-2"
+                  className={`flex-1 w-full min-h-0 relative flex items-center justify-center overflow-auto rounded-[6px] ${
+                    isDark ? 'bg-black/40' : 'bg-black/5'
+                  } border border-[var(--hw-border-hairline)] p-2`}
                 >
                   {rawSourceFrame ? (
                     <canvas 
@@ -943,8 +961,8 @@ function MainApp() {
                       style={
                         fullPreviewScaleMode === '100%'
                           ? {
-                              width: `${media.sourceInfo.sourceWidth}px`,
-                              height: `${media.sourceInfo.sourceHeight}px`,
+                              width: `${activeMedia.sourceInfo.sourceWidth}px`,
+                              height: `${activeMedia.sourceInfo.sourceHeight}px`,
                               imageRendering: 'pixelated',
                               flexShrink: 0,
                             }
@@ -964,7 +982,7 @@ function MainApp() {
                 </div>
 
                 {/* Controls Row */}
-                <div className="h-8 flex items-center px-2.5 gap-2 rounded-[6px] border border-white/[0.08] shrink-0 mt-2 bg-[var(--hw-bg-surface)] text-[var(--hw-text-primary)]">
+                <div className="h-8 flex items-center px-2.5 gap-2 rounded-[6px] border border-[var(--hw-border-hairline)] shrink-0 mt-2 bg-[var(--hw-bg-surface)] text-[var(--hw-text-primary)]">
                   <button 
                     onClick={(e) => {
                       e.preventDefault();
@@ -994,34 +1012,34 @@ function MainApp() {
                       e.currentTarget.setPointerCapture(e.pointerId);
                       const rect = e.currentTarget.getBoundingClientRect();
                       const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                      if (media && media.frames.length > 0) {
-                        setActiveFrameIndex(Math.min(media.frames.length - 1, Math.floor(pos * media.frames.length)));
+                      if (activeMedia && activeMedia.frames.length > 0) {
+                        setActiveFrameIndex(Math.min(activeMedia.frames.length - 1, Math.floor(pos * activeMedia.frames.length)));
                       }
                     }}
                     onPointerMove={(e) => {
                       if (e.buttons === 1) {
                         const rect = e.currentTarget.getBoundingClientRect();
                         const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                        if (media && media.frames.length > 0) {
-                          setActiveFrameIndex(Math.min(media.frames.length - 1, Math.floor(pos * media.frames.length)));
+                        if (activeMedia && activeMedia.frames.length > 0) {
+                          setActiveFrameIndex(Math.min(activeMedia.frames.length - 1, Math.floor(pos * activeMedia.frames.length)));
                         }
                       }
                     }}
                   >
-                    <div className="w-full h-1 rounded-full bg-white/10 relative overflow-hidden">
+                    <div className={`w-full h-1 rounded-full ${isDark ? 'bg-white/10' : 'bg-black/10'} relative overflow-hidden`}>
                       <div 
                         className={`h-full bg-[#FF5500] rounded-full ${isPlaying ? 'transition-none' : 'transition-all duration-75'}`}
-                        style={{ width: media && media.frames.length ? `${((activeFrameIndex + 1) / media.frames.length) * 100}%` : '0%' }}
+                        style={{ width: activeMedia && activeMedia.frames.length ? `${((activeFrameIndex + 1) / activeMedia.frames.length) * 100}%` : '0%' }}
                       />
                     </div>
                     {/* Draggable orange scroll head */}
                     <div 
                       className="absolute pointer-events-none w-2.5 h-2.5 rounded-full bg-[#FF5500] border border-white/60 -translate-x-1/2 top-1/2 -translate-y-1/2 shadow-xs group-hover:scale-125 transition-transform"
-                      style={{ left: media && media.frames.length ? `${((activeFrameIndex + 1) / media.frames.length) * 100}%` : '0%' }}
+                      style={{ left: activeMedia && activeMedia.frames.length ? `${((activeFrameIndex + 1) / activeMedia.frames.length) * 100}%` : '0%' }}
                     />
                   </div>
                   {/* Fit | 100% toggle */}
-                  <div className="flex items-center p-0.5 rounded-[4px] border border-white/[0.08] bg-[var(--hw-bg-canvas)]">
+                  <div className="flex items-center p-0.5 rounded-[4px] border border-[var(--hw-border-hairline)] bg-[var(--hw-bg-canvas)]">
                     <button 
                       onClick={(e) => {
                         e.preventDefault();
@@ -1030,7 +1048,7 @@ function MainApp() {
                       }} 
                       className={`text-[10px] font-sans font-medium px-2 py-0.5 rounded-[3px] transition-colors cursor-pointer ${
                         fullPreviewScaleMode === 'fit'
-                          ? 'bg-white/15 text-[var(--hw-text-primary)] font-semibold'
+                          ? (isDark ? 'bg-white/15' : 'bg-black/10') + ' text-[var(--hw-text-primary)] font-semibold'
                           : 'text-[var(--hw-text-secondary)] hover:text-[var(--hw-text-primary)]'
                       }`}
                     >
@@ -1044,7 +1062,7 @@ function MainApp() {
                       }} 
                       className={`text-[10px] font-sans font-medium px-2 py-0.5 rounded-[3px] transition-colors cursor-pointer ${
                         fullPreviewScaleMode === '100%'
-                          ? 'bg-white/15 text-[var(--hw-text-primary)] font-semibold'
+                          ? (isDark ? 'bg-white/15' : 'bg-black/10') + ' text-[var(--hw-text-primary)] font-semibold'
                           : 'text-[var(--hw-text-secondary)] hover:text-[var(--hw-text-primary)]'
                       }`}
                     >
@@ -1071,12 +1089,12 @@ function MainApp() {
               </p>
             </div>
 
-            {/* 2. Content: Hardware Bezel at exact integer scale (frame area shrinks/grows, ResizeObserver measured) */}
-            <div ref={oledFrameAreaRef} className="flex-1 min-h-0 min-w-0 flex items-center justify-center p-2 relative overflow-auto">
-              <div className={`rounded-[12px] p-4 sm:p-5 border relative z-10 shrink-0 flex flex-col justify-center items-center transition-all ${
+            {/* 2. Content: Hardware Bezel at exact integer scale (overflow hidden to prevent scrollbars) */}
+            <div ref={oledFrameAreaRef} className="flex-1 min-h-0 min-w-0 flex items-center justify-center p-1 relative overflow-hidden">
+              <div className={`rounded-[12px] p-3.5 sm:p-4 border relative z-10 shrink-0 flex flex-col justify-center items-center transition-all ${
                 isDark 
-                  ? 'bg-[#1c1c1f] border-white/15 shadow-[0_12px_40px_rgba(0,0,0,0.5)]' 
-                  : 'bg-[#2A2A2A] border-[#111] shadow-[0_10px_30px_rgba(0,0,0,0.5)]'
+                  ? 'bg-[#18181c] border-white/15 shadow-[0_22px_50px_rgba(0,0,0,0.65),inset_0_1px_1px_rgba(255,255,255,0.18)]' 
+                  : 'bg-[#2A2A2A] border-[#111] shadow-[0_16px_36px_rgba(0,0,0,0.45),inset_0_1px_1px_rgba(255,255,255,0.2)]'
               }`}>
                 {/* BorderBeam ONLY while connected/streaming */}
                 {serialConnected && isStreaming && (
@@ -1084,47 +1102,43 @@ function MainApp() {
                 )}
 
                 {/* Screws */}
-                <div className="absolute top-2.5 left-2.5 w-2.5 h-2.5 rounded-full bg-[#181A1B] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-45"><div className="w-full h-[1px] bg-[#444]" /></div>
-                <div className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-[#181A1B] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-12"><div className="w-full h-[1px] bg-[#444]" /></div>
-                <div className="absolute bottom-2.5 left-2.5 w-2.5 h-2.5 rounded-full bg-[#181A1B] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center -rotate-12"><div className="w-full h-[1px] bg-[#444]" /></div>
-                <div className="absolute bottom-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-[#181A1B] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-90"><div className="w-full h-[1px] bg-[#444]" /></div>
+                <div className="absolute top-2.5 left-2.5 w-2.5 h-2.5 rounded-full bg-[#141517] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-45"><div className="w-full h-[1px] bg-[#444]" /></div>
+                <div className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-[#141517] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-12"><div className="w-full h-[1px] bg-[#444]" /></div>
+                <div className="absolute bottom-2.5 left-2.5 w-2.5 h-2.5 rounded-full bg-[#141517] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center -rotate-12"><div className="w-full h-[1px] bg-[#444]" /></div>
+                <div className="absolute bottom-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-[#141517] border border-[#333] shadow-[inset_0_1px_2px_#000] flex items-center justify-center rotate-90"><div className="w-full h-[1px] bg-[#444]" /></div>
                 
-                <div className="font-sans text-[11px] font-medium text-center mb-2 text-[var(--hw-text-secondary)]">
+                <div className="font-mono text-[10.5px] tracking-wider uppercase text-center mb-2 text-[var(--hw-text-secondary)] select-none font-medium">
                   SSD1306 128×64 · 0.96″
                 </div>
                 
-                {/* Recessed Display Glass */}
-                <div className="bg-[#000] p-1.5 shadow-[inset_0_2px_10px_rgba(0,0,0,0.9)] rounded-[8px] shrink-0 flex items-center justify-center border border-white/[0.05]">
+                {/* Recessed Display Glass Well with Authentic Chamfer */}
+                <div className="bg-[#000] p-1.5 shadow-[inset_0_3px_12px_rgba(0,0,0,0.95)] rounded-[8px] shrink-0 flex items-center justify-center border border-white/[0.08] ring-1 ring-black/80">
                   <OledCanvas frameData={processedFrame} theme={ditherConfig.theme} scale={effectiveOledScale} />
                 </div>
 
-                <div className="font-mono text-[11px] text-center mt-2 text-[var(--hw-text-secondary)]">
+                <div className="font-mono text-[10px] tracking-wider uppercase text-center mt-2 text-[var(--hw-text-secondary)] select-none font-medium">
                   I²C 0x3C
                 </div>
               </div>
             </div>
 
-            {/* 3. Controls Row: Segmented Scale Toggle (1x, 2x, 4x, Fit all enabled) */}
-            <div className="flex items-center gap-1 p-0.5 rounded-[6px] border border-white/[0.08] bg-[var(--hw-bg-surface)] mt-2 shrink-0">
-              {([1, 2, 4, 'fit'] as const).map((s) => {
-                const isFit = s === 'fit';
-                const isSel = activeOledScaleMode === s;
-                const label = isFit ? 'Fit' : `${s}×`;
-                return (
-                  <button
-                    key={String(s)}
-                    type="button"
-                    onClick={() => setUserOledScale(s)}
-                    className={`px-2 py-0.5 text-[11px] font-sans font-medium rounded-[4px] transition-colors cursor-pointer ${
-                      isSel
-                        ? 'bg-white/10 text-[var(--hw-text-primary)] font-semibold border border-white/10 shadow-xs'
-                        : 'text-[var(--hw-text-secondary)] hover:text-[var(--hw-text-primary)]'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
+            {/* 3. Controls Row: Gooey Sliding & Clickable Scale Segmented Selector */}
+            <div className="mt-2 shrink-0 w-44">
+              <GooeySegmentedControl
+                options={[
+                  { id: '1', label: '1×' },
+                  { id: '2', label: '2×' },
+                  { id: '4', label: '4×' },
+                  { id: 'fit', label: 'Fit' },
+                ]}
+                value={String(activeOledScaleMode)}
+                onChange={(val) => {
+                  const s = val === 'fit' ? 'fit' : Number(val);
+                  setUserOledScale(s as any);
+                }}
+                size="sm"
+                themeMode={themeMode}
+              />
             </div>
           </div>
 
@@ -1138,7 +1152,7 @@ function MainApp() {
               baudRate={baudRate}
               fps={targetFps}
               currentFrame={activeFrameIndex}
-              totalFrames={media ? media.frames.length : 0}
+              totalFrames={activeMedia ? activeMedia.frames.length : 0}
               isConnected={serialConnected}
               isStreaming={isStreaming}
               themeMode={themeMode}
@@ -1153,43 +1167,51 @@ function MainApp() {
           
           {/* Zone 1: Media Pool (Left) */}
           <BlueprintHoverCard className="w-[280px] shrink-0 min-w-0" themeMode={themeMode}>
-            <h2 className="text-xs font-semibold px-4 py-2.5 border-b border-white/[0.08] font-sans z-[2] relative flex items-center bg-[var(--hw-bg-surface)] text-[var(--hw-text-primary)]">
+            <h2 className="text-xs font-semibold px-4 py-2.5 border-b border-[var(--hw-border-hairline)] font-sans z-[2] relative flex items-center bg-[var(--hw-bg-surface)] text-[var(--hw-text-primary)]">
               <span>Media pool</span>
             </h2>
             
-            {/* Media Pool Tabs */}
-            <div className="flex border-b border-white/[0.08] shrink-0 p-1 gap-1 relative bg-[var(--hw-bg-surface)]">
-              {(
-                [
-                  { id: 'import', label: 'Import' },
-                  { id: 'samples', label: 'Samples' },
-                  { id: 'recent', label: 'Recent' },
-                  { id: 'create', label: 'Create' },
-                ] as const
-              ).map((tab) => {
-                const isActive = mediaPoolTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setMediaPoolTab(tab.id)}
-                    className={`relative flex-1 py-1.5 rounded-[6px] text-xs font-sans font-medium cursor-pointer transition-colors duration-150 z-10 ${
-                      isActive
-                        ? 'text-[var(--hw-text-primary)] font-semibold'
-                        : 'text-[var(--hw-text-secondary)] hover:text-[var(--hw-text-primary)]'
-                    }`}
-                  >
-                    {isActive && (
-                      <motion.div
-                        layoutId="mediaPoolActivePill"
-                        transition={HW_SPRINGS.smooth}
-                        className="absolute inset-0 rounded-[6px] bg-white/[0.12] dark:bg-white/[0.12] border border-white/10 shadow-xs z-[-1]"
-                      />
-                    )}
-                    <span className="relative z-10">{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
+            {/* Media Pool Tabs — Unified Morphing Liquid Glass Pill */}
+            <LayoutGroup id="mediaPoolTabGroup">
+              <div className={`flex border-b border-[var(--hw-border-hairline)] shrink-0 p-1 gap-1 relative ${isDark ? 'bg-black/20' : 'bg-black/5'}`}>
+                {(
+                  [
+                    { id: 'import', label: 'Import' },
+                    { id: 'samples', label: 'Samples' },
+                    { id: 'recent', label: 'Recent' },
+                    { id: 'create', label: 'Create' },
+                  ] as const
+                ).map((tab) => {
+                  const isActive = mediaPoolTab === tab.id;
+                  return (
+                    <motion.button
+                      key={tab.id}
+                      type="button"
+                      whileTap={{ scale: 0.94 }}
+                      onClick={() => setMediaPoolTab(tab.id)}
+                      className={`relative flex-1 py-1.5 rounded-[6px] text-xs font-sans font-medium cursor-pointer transition-colors duration-200 z-10 ${
+                        isActive
+                          ? (isDark ? 'text-[#FAFAFA]' : 'text-[#18181A]') + ' font-medium'
+                          : 'text-[var(--hw-text-secondary)] hover:text-[var(--hw-text-primary)]'
+                      }`}
+                    >
+                      {isActive && (
+                        <motion.div
+                          layoutId="mediaPoolActivePill"
+                          transition={HW_SPRINGS.smooth}
+                          className={`absolute inset-0 rounded-[6px] z-[-1] ${
+                            isDark
+                              ? 'bg-white/[0.12] backdrop-blur-md border border-white/20 border-t-white/35 border-b-black/35 shadow-[0_2px_8px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.25)]'
+                              : 'bg-white backdrop-blur-md border border-black/10 border-t-white shadow-[0_2px_8px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.8)]'
+                          }`}
+                        />
+                      )}
+                      <span className="relative z-10">{tab.label}</span>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </LayoutGroup>
 
             <div className="flex-1 flex flex-col min-h-0 overflow-y-auto z-[2] relative">
               {mediaPoolTab === 'import' && (
@@ -1464,7 +1486,7 @@ function MainApp() {
 
           {/* Zone 2: Timeline & Trimming (Center) */}
           <BlueprintHoverCard className="flex-1 min-w-0 flex flex-col overflow-hidden" themeMode={themeMode}>
-            <h2 className="text-xs font-semibold px-4 py-2.5 border-b border-white/[0.08] font-sans z-[2] relative flex justify-between items-center shrink-0 bg-[var(--hw-bg-surface)] text-[var(--hw-text-primary)]">
+            <h2 className="text-xs font-semibold px-4 py-2.5 border-b border-[var(--hw-border-hairline)] font-sans z-[2] relative flex justify-between items-center shrink-0 bg-[var(--hw-bg-surface)] text-[var(--hw-text-primary)]">
               <div className="flex items-center gap-2">
                 <span>Timeline</span>
               </div>
@@ -1508,7 +1530,7 @@ function MainApp() {
 
           {/* Zone 3: Inspector (Right) */}
           <BlueprintHoverCard className="w-[340px] shrink-0 min-w-0" themeMode={themeMode}>
-            <h2 className="text-xs font-semibold px-4 py-2.5 border-b border-white/[0.08] font-sans z-[2] relative bg-[var(--hw-bg-surface)] text-[var(--hw-text-primary)]">
+            <h2 className="text-xs font-semibold px-4 py-2.5 border-b border-[var(--hw-border-hairline)] font-sans z-[2] relative bg-[var(--hw-bg-surface)] text-[var(--hw-text-primary)]">
               <span>Inspector</span>
             </h2>
             <div className="flex-1 overflow-y-auto pr-4 px-4 py-4 pb-24 space-y-6 z-[2] relative">
@@ -1516,7 +1538,7 @@ function MainApp() {
                 <DitherControls 
                   config={ditherConfig} 
                   onChange={setDitherConfig} 
-                  disabled={!media} 
+                  disabled={!activeMedia} 
                   themeMode={themeMode}
                 />
               </div>
@@ -1524,14 +1546,14 @@ function MainApp() {
                 <CropControls 
                   settings={cropSettings} 
                   onChange={(newSettings) => {
-                    if (newSettings.mode !== cropSettings.mode && newSettings.mode === 'cover' && media) {
-                      const cover = computeCoverCrop(media.sourceInfo.sourceWidth, media.sourceInfo.sourceHeight);
+                    if (newSettings.mode !== cropSettings.mode && newSettings.mode === 'cover' && activeMedia) {
+                      const cover = computeCoverCrop(activeMedia.sourceInfo.sourceWidth, activeMedia.sourceInfo.sourceHeight);
                       setCropSettings({ ...newSettings, ...cover });
                     } else {
                       setCropSettings(newSettings);
                     }
                   }} 
-                  disabled={!media}
+                  disabled={!activeMedia}
                   sourceFrame={rawSourceFrame}
                   themeMode={themeMode}
                 />

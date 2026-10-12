@@ -115,10 +115,10 @@ export const TapeDeckEmptyState: React.FC<TapeDeckEmptyStateProps> = ({
       className={`absolute inset-0 top-[28px] flex flex-col items-center justify-between select-none overflow-hidden transition-colors pb-[76px] ${
         isDropTargetOver
           ? 'bg-[#FF5500]/10'
-          : isDark ? 'bg-[#181A1B]' : 'bg-[#EAE7E1]'
+          : isDark ? 'bg-[var(--hw-bg-surface)]' : 'bg-[#EAE7E1]'
       }`}
       style={{
-        ['--hairline-plate' as any]: isDark ? '#141415' : '#EAE7E1',
+        ['--hairline-plate' as any]: isDark ? '#18181C' : '#EAE7E1',
         ['--hairline-hi' as any]: '#FF5500',
         ['--hairline-edge' as any]: isDark ? '#FFFFFF' : '#27272A',
         ['--hairline-mid' as any]: isDark ? 'rgba(255, 255, 255, 0.65)' : 'rgba(0, 0, 0, 0.55)',
