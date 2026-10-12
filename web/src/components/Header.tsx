@@ -60,6 +60,7 @@ export const Header: React.FC<HeaderProps> = ({
           <LiquidStudioNav
             activeView={activeView}
             onViewChange={onViewChange}
+            themeMode={themeMode}
           />
         )}
       </div>
