@@ -13,6 +13,9 @@ src/previews/
 *.tmp
 test_captures/
 *.png
+!docs/assets/*.png
+!docs/screenshots/*.png
+firmware_backup/
 start_dev_bg.bat
 web/run_full_ui_test.cjs
 
